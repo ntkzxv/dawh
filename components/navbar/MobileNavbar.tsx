@@ -173,7 +173,7 @@ export default function MobileNavbar({
   const [isSubTabsFolded, setIsSubTabsFolded] = useState(false);
 
   // Determine active bottom nav route
-  const isHomeActive = pathname === "/workspace" || pathname === "/portal" || pathname === "/";
+  const isHomeActive = pathname === "/portal" || pathname === "/";
   const isAccountActive = pathname.startsWith("/account") || pathname.startsWith("/settings");
 
   const dynamicTabs: SubTabItem[] = useMemo(() => {

@@ -52,11 +52,9 @@ export default function HeaderNavbar({
   const { notify } = useNotification();
   const isLight = theme === "light";
 
-  // Check if current page is Workspace or Portal
+  // Check if current page is Portal
   const isPortalPage =
     showLogo ||
-    pathname === "/workspace" ||
-    pathname?.startsWith("/workspace") ||
     pathname === "/portal" ||
     pathname === "/" ||
     pathname?.startsWith("/portal");

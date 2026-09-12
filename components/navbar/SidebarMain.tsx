@@ -51,7 +51,7 @@ export default function NavbarMain({
   logoWhiteUrl = DEFAULT_LOGO_WHITE,
   logoDarkUrl = DEFAULT_LOGO_DARK,
   logoUrl,
-  hubPath = "/workspace",
+  hubPath = "/portal",
   settingsPath = "/settings",
   loginPath = "/auth/login",
   initialMinimized = false,
