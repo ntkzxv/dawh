@@ -1,0 +1,604 @@
+"use client";
+
+import React, { useState, useEffect, useRef } from "react";
+import {
+  Sun,
+  Moon,
+  ChevronDown,
+  ChevronRight,
+  LayoutGrid,
+  Monitor,
+  Settings,
+  LogOut,
+  Languages,
+} from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
+import { useTheme } from "@/context/ThemeContext";
+import { supabase } from "@/utils/supabase";
+import { clearAuthSession, checkProfileCompleteness, fetchAndStoreUserProfile } from "@/utils/auth";
+import { EmployeeProfile } from "@/types/user";
+import { useLoading } from "@/components/loading_screen";
+import { getDawhLogo } from "@/config/brand";
+import { ProfileGuardModal } from "@/components/auth";
+import { useNotification } from "@/context/NotificationContext";
+import { useAppLanguage, setAppLanguage } from "@/utils/language";
+import { motion, AnimatePresence } from "framer-motion";
+
+export interface HeaderNavbarProps {
+  title?: string;
+  subtitle?: string;
+  showLogo?: boolean;
+  showAccount?: boolean;
+  onNavigate?: (target: string) => void;
+  onBack?: () => void;
+  lang?: "TH" | "EN";
+  onLangChange?: (lang: "TH" | "EN") => void;
+}
+
+export default function HeaderNavbar({
+  title,
+  subtitle,
+  showLogo = false,
+  showAccount = false,
+  onNavigate,
+  onBack,
+  lang: controlledLang,
+  onLangChange,
+}: HeaderNavbarProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { navigateWithLoading } = useLoading();
+  const { theme, toggleTheme } = useTheme();
+  const { notify } = useNotification();
+  const isLight = theme === "light";
+
+  // Check if current page is Workspace or Portal
+  const isPortalPage =
+    showLogo ||
+    pathname === "/workspace" ||
+    pathname?.startsWith("/workspace") ||
+    pathname === "/portal" ||
+    pathname === "/" ||
+    pathname?.startsWith("/portal");
+
+  // Dropdown Menu State
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [showGuardModal, setShowGuardModal] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Language State with useAppLanguage hook
+  const appLang = useAppLanguage();
+  const activeLang: "TH" | "EN" = controlledLang ?? appLang;
+  const isThai = activeLang === "TH";
+
+  const toggleLanguage = () => {
+    const nextLang: "TH" | "EN" = activeLang === "TH" ? "EN" : "TH";
+    setAppLanguage(nextLang);
+    onLangChange?.(nextLang);
+  };
+
+  // Profile & Mounted State
+  const [profile, setProfile] = useState<Partial<EmployeeProfile>>({});
+  const [mounted, setMounted] = useState(false);
+
+  // Close Dropdown on Outside Click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Fetch real employee profile from Supabase Database
+  useEffect(() => {
+    setMounted(true);
+    // 1. Instant Cache Check (0ms)
+    try {
+      const cached = localStorage.getItem("dawh_user_profile");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed) setProfile(parsed);
+      }
+    } catch {
+      // Non-blocking
+    }
+
+    async function loadUserProfile() {
+      try {
+        let targetId = typeof window !== "undefined" ? localStorage.getItem("current_user_id") || undefined : undefined;
+        let targetEmail = typeof window !== "undefined" ? localStorage.getItem("current_user_email") || undefined : undefined;
+
+        if (!targetId) {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          targetId = session?.user?.id;
+          targetEmail = session?.user?.email;
+        }
+
+        if (targetId) {
+          const fetched = await fetchAndStoreUserProfile(targetId, targetEmail, 1);
+          if (fetched) {
+            setProfile(fetched);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error("Error loading user profile in navbar:", err);
+      }
+    }
+
+    loadUserProfile();
+  }, []);
+
+  // Check if active user has Admin / DevOps privileges to open Control Panel
+  const isAdmin =
+    profile.role?.toLowerCase() === "devops" ||
+    profile.role?.toLowerCase() === "super_admin" ||
+    profile.role?.toLowerCase() === "superadmin" ||
+    profile.role?.toLowerCase() === "admin" ||
+    profile.role?.toLowerCase().includes("devops") ||
+    profile.role?.toLowerCase().includes("administrator") ||
+    profile.role?.toLowerCase().includes("admin");
+
+  // Display calculations (Supporting Nicknames and usernames when full name is empty)
+  const validFullName =
+    profile.full_name &&
+    profile.full_name !== "Authorized Staff" &&
+    profile.full_name !== "H. Administrator" &&
+    profile.full_name !== "Staff Member"
+      ? profile.full_name
+      : "";
+
+  const fullName =
+    validFullName ||
+    [profile.first_name, profile.last_name].filter(Boolean).join(" ") ||
+    [profile.first_name_th, profile.last_name_th].filter(Boolean).join(" ") ||
+    (profile.nickname_th ? `ชื่อเล่น: ${profile.nickname_th}` : "") ||
+    (profile.nickname ? `Nickname: ${profile.nickname}` : "") ||
+    profile.username ||
+    (profile.email ? profile.email.split("@")[0] : "") ||
+    (typeof window !== "undefined" ? localStorage.getItem("current_user_email")?.split("@")[0] : "") ||
+    "Administrator";
+
+  const initials = (
+    profile.nickname_th?.charAt(0) ||
+    profile.nickname?.charAt(0) ||
+    profile.first_name?.charAt(0) ||
+    profile.username?.charAt(0) ||
+    (fullName !== "—" ? fullName.charAt(0) : "U")
+  ).toUpperCase();
+
+  const departmentDisplay =
+    profile.department ||
+    profile.branch_name ||
+    (profile.role ? `Role: ${profile.role}` : "");
+
+  // Dynamic Route-Aware Title & Subtitle Fallbacks
+  const getRouteTitleAndSubtitle = () => {
+    if (title && subtitle) return { title, subtitle };
+
+    if (pathname?.startsWith("/account") || pathname?.startsWith("/settings")) {
+      return {
+        title: title || (isThai ? "การตั้งค่าบัญชีและโปรไฟล์" : "Account & Profile Settings"),
+        subtitle: subtitle || (isThai ? "จัดการและตรวจสอบข้อมูลประวัติในระบบองค์กร" : "Configure and update your employee profile"),
+      };
+    }
+    if (pathname?.startsWith("/portal")) {
+      return {
+        title: title || (isThai ? "ศูนย์รวมระบบงาน DAWH" : "DAWH Ecosystem Hub"),
+        subtitle: subtitle || (isThai ? "ระบบปฏิบัติการองค์กรพร้อมสำหรับการพัฒนาโมดูล" : "Enterprise operations hub ready for refactor"),
+      };
+    }
+
+    return {
+      title: title || (isThai ? "ระบบจัดการองค์กร" : "Enterprise System"),
+      subtitle: subtitle || (isThai ? "ศูนย์ข้อมูลและระบบบริหารจัดการ DAWH" : "DAWH Operations & Platform Services"),
+    };
+  };
+
+  const { title: displayTitle, subtitle: displaySubtitle } = getRouteTitleAndSubtitle();
+
+  // Logout Handler
+  const handleLogout = async () => {
+    setIsDropdownOpen(false);
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // Non-blocking
+    }
+    await clearAuthSession();
+    if (typeof window !== "undefined") {
+      window.location.href = "/auth/login";
+    } else {
+      router.replace("/auth/login");
+    }
+  };
+
+  const { isComplete, missingFields } = checkProfileCompleteness(profile);
+
+  const handleGuardedNavigate = (target: string, fallbackPath?: string) => {
+    if (!isComplete && target !== "settings" && target !== "account" && target !== "auth" && target !== "portal") {
+      setShowGuardModal(true);
+      notify.warning(
+        isThai ? "ต้องกรอกข้อมูลให้ครบถ้วนก่อน" : "Incomplete Profile Information",
+        {
+          message: isThai
+            ? "กรุณากรอกข้อมูลส่วนตัวและตั้งรหัส PIN ในหน้าตั้งค่าก่อนเข้าใช้งานส่วนอื่นๆ"
+            : "Please complete your employee profile and PIN setup in Settings.",
+          duration: 5000,
+        }
+      );
+      return;
+    }
+
+    if (fallbackPath) {
+      navigateWithLoading(
+        fallbackPath,
+        isThai ? "กำลังเปิดศูนย์รวมโมดูล..." : "Opening Module Hub...",
+        isThai ? "กำลังโหลดโมดูลและสิทธิ์การใช้งาน..." : "Loading modules and permissions..."
+      );
+    } else if (onNavigate) {
+      onNavigate(target);
+    }
+  };
+
+  return (
+    <header
+      className={`hidden md:flex sticky top-0 z-40 w-full h-[72px] px-6 sm:px-8 py-4 flex-row justify-between items-center border-b transition-colors duration-300 ${
+        isLight
+          ? "bg-[#FFFFFF] border-[#E4E4E7]"
+          : "bg-[#222222] border-[#444444]"
+      }`}
+    >
+      {/* Left: Brand Logo OR Page Title & Subtitle */}
+      {showLogo ? (
+        <div
+          onClick={() => handleGuardedNavigate("portal", "/portal")}
+          className="flex items-center gap-2.5 cursor-pointer hover:opacity-90 transition-opacity select-none"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={getDawhLogo(theme, "horizontal")}
+            alt="DAWH Logo"
+            className="h-[36px] sm:h-[40px] w-auto object-contain select-none"
+            draggable={false}
+          />
+        </div>
+      ) : (
+        <div className="flex flex-col items-start gap-[2px]">
+          <h1
+            className={`font-bold text-[20px] leading-[25px] ${
+              isLight ? "text-[#222222]" : "text-[#FFFFFF]"
+            }`}
+            style={{ fontFamily: "var(--font-outfit), sans-serif" }}
+          >
+            {displayTitle}
+          </h1>
+          {Boolean(displaySubtitle) && (
+            <p
+              className={`font-normal text-[12px] leading-[16px] ${
+                isLight ? "text-[#666666]" : "text-[#E4E4E7]"
+              }`}
+            >
+              {displaySubtitle}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Right: Unboxed Clean Account Trigger & Dropdown (Hidden by default) */}
+      {showAccount && (
+        <div className="relative" ref={dropdownRef}>
+          <button
+          type="button"
+          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          className={`flex items-center gap-3 px-2 py-1.5 rounded-full transition-all duration-200 cursor-pointer ${
+            isLight
+              ? "hover:bg-[#F4F4F5] text-[#222222]"
+              : "hover:bg-white/10 text-white"
+          }`}
+        >
+          {/* Avatar Container with Real Avatar Image or Clean Monogram */}
+          <div
+            className={`relative flex items-center justify-center w-[38px] h-[38px] rounded-full overflow-hidden shrink-0 border ${
+              isLight
+                ? "bg-slate-100 border-slate-300 text-slate-800"
+                : "bg-[#282828] border-[#444444] text-[#E4E4E7]"
+            }`}
+          >
+            {mounted && profile.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={profile.avatar_url}
+                alt={fullName}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="font-bold text-[14px]" suppressHydrationWarning>
+                {mounted ? initials : ""}
+              </span>
+            )}
+          </div>
+
+          {/* User Details */}
+          <div className="hidden md:flex flex-col items-start text-left leading-tight">
+            <span
+              className={`font-semibold text-[13.5px] leading-[18px] max-w-[140px] truncate ${
+                isLight ? "text-[#222222]" : "text-[#FFFFFF]"
+              }`}
+              style={{ fontFamily: "var(--font-outfit), sans-serif" }}
+              suppressHydrationWarning
+            >
+              {mounted ? fullName : ""}
+            </span>
+            {mounted && departmentDisplay && (
+              <div className="flex items-center gap-1.5 mt-[1px]">
+                <span
+                  className={`font-medium text-[11px] leading-[14px] truncate max-w-[140px] ${
+                    isLight ? "text-[#666666]" : "text-[#E4E4E7]"
+                  }`}
+                  suppressHydrationWarning
+                >
+                  {departmentDisplay}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Chevron Indicator */}
+          <ChevronDown
+            size={16}
+            className={`transition-transform duration-200 shrink-0 ${
+              isDropdownOpen ? "rotate-180" : ""
+            } ${isLight ? "text-[#666666]" : "text-[#E4E4E7]"}`}
+          />
+        </button>
+
+        {/* Dropdown Menu Overlay with Smooth Slide-Down Animation */}
+        <AnimatePresence>
+          {isDropdownOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -18, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -14, scale: 0.96 }}
+              transition={{
+                duration: 0.22,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+              className={`absolute right-0 mt-2 w-[280px] rounded-2xl border p-2 shadow-2xl z-50 origin-top-right ${
+                isLight
+                  ? "bg-white border-[#E4E4E7] shadow-xl text-[#222222]"
+                  : "bg-[#282828] border-[#444444] shadow-2xl text-white"
+              }`}
+            >
+              {/* Account Info Header inside Dropdown */}
+              <div
+                className={`px-3 py-3 rounded-xl border mb-2 flex items-center gap-3 ${
+                  isLight
+                    ? "bg-slate-50 border-slate-200"
+                    : "bg-[#202020] border-[#383838]"
+                }`}
+              >
+                <div
+                  className={`flex items-center justify-center w-10 h-10 rounded-full shrink-0 border overflow-hidden ${
+                    isLight
+                      ? "bg-white border-slate-300 text-[#222222]"
+                      : "bg-[#2C2C2C] border-[#444444] text-[#FFFFFF]"
+                  }`}
+                >
+                  {mounted && profile.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={profile.avatar_url}
+                      alt={fullName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="font-bold text-sm" suppressHydrationWarning>
+                      {mounted ? initials : ""}
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className={`font-bold text-[13px] truncate ${isLight ? "text-[#222222]" : "text-[#FFFFFF]"}`} suppressHydrationWarning>
+                    {mounted ? fullName : ""}
+                  </span>
+                  {mounted && departmentDisplay ? (
+                    <span className={`text-[11px] truncate ${isLight ? "text-[#666666]" : "text-[#E4E4E7]"}`} suppressHydrationWarning>
+                      {departmentDisplay}
+                    </span>
+                  ) : mounted && profile.email ? (
+                    <span className="text-[11px] text-[#A1A1AA] truncate" suppressHydrationWarning>
+                      {profile.email}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+
+              {/* Quick Actions List */}
+              <div className="space-y-1">
+                {/* Account Settings */}
+                {pathname !== "/account" && pathname !== "/settings" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      handleGuardedNavigate("account", "/account");
+                    }}
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-[12px] font-semibold transition-all text-left cursor-pointer shadow-sm ${
+                      isLight
+                        ? "bg-slate-100/80 hover:bg-slate-200/90 border-slate-200 text-[#222222]"
+                        : "bg-[#333333] hover:bg-[#3D3D3D] border-[#484848] text-[#FFFFFF]"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <Settings
+                        size={15}
+                        className={`shrink-0 ${
+                          isLight ? "text-[#222222]" : "text-[#FFFFFF]"
+                        }`}
+                      />
+                      <span className="truncate">
+                        {isThai ? "จัดการบัญชีและโปรไฟล์" : "Account Settings"}
+                      </span>
+                    </div>
+                    <ChevronRight
+                      size={13}
+                      className={`shrink-0 ${isLight ? "text-[#666666]" : "text-[#E4E4E7]"}`}
+                    />
+                  </button>
+                )}
+
+                {/* Module Hub (ศูนย์รวมโมดูล - แสดงใน Dropdown ทุกหน้า) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsDropdownOpen(false);
+                    handleGuardedNavigate("portal", "/portal");
+                  }}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[12px] font-semibold transition-all text-left cursor-pointer ${
+                    isLight
+                      ? "text-slate-800 hover:bg-[#F4F4F5] hover:text-slate-950"
+                      : "text-[#F4F4F5] hover:bg-white/10 hover:text-[#FFFFFF]"
+                  }`}
+                >
+                  <LayoutGrid
+                    size={15}
+                    className={`shrink-0 ${
+                      isLight ? "text-[#222222]" : "text-[#FFFFFF]"
+                    }`}
+                  />
+                  <span className="truncate">{isThai ? "ศูนย์รวมโมดูล" : "Module Hub"}</span>
+                </button>
+
+                {/* Control Panel (DevOps / Admin Only) */}
+                {isAdmin && pathname !== "/controlpanel" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      handleGuardedNavigate("controlpanel", "/controlpanel");
+                    }}
+                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[12px] font-semibold transition-all text-left cursor-pointer ${
+                      isLight
+                        ? "text-slate-800 hover:bg-[#F4F4F5] hover:text-slate-950"
+                        : "text-[#F4F4F5] hover:bg-white/10 hover:text-[#FFFFFF]"
+                    }`}
+                  >
+                    <Monitor
+                      size={15}
+                      className={`shrink-0 ${
+                        isLight ? "text-[#222222]" : "text-[#FFFFFF]"
+                      }`}
+                    />
+                    <span className="truncate">{isThai ? "แผงควบคุมระบบ" : "Control Panel"}</span>
+                  </button>
+                )}
+
+                {/* เส้นขีดคั่นใต้ Control Panel / Module Hub */}
+                <div
+                  className={`my-1 border-t ${
+                    isLight ? "border-slate-200" : "border-[#383838]"
+                  }`}
+                />
+
+                {/* Theme Switcher Button */}
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-[12px] font-medium transition-all text-left cursor-pointer ${
+                    isLight
+                      ? "text-[#2C2C2C] hover:bg-[#F4F4F5] hover:text-[#222222]"
+                      : "text-[#F4F4F5] hover:bg-white/10 hover:text-[#FFFFFF]"
+                  }`}
+                >
+                  {isLight ? (
+                    <Moon size={15} className="shrink-0 text-[#222222]" />
+                  ) : (
+                    <Sun size={15} className="shrink-0 text-[#FFFFFF]" />
+                  )}
+                  <span className="truncate">
+                    {isLight ? (isThai ? "โหมดมืด" : "Dark Mode") : (isThai ? "โหมดสว่าง" : "Light Mode")}
+                  </span>
+                </button>
+
+                {/* Language Switcher Button */}
+                <button
+                  type="button"
+                  onClick={toggleLanguage}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-[12px] font-medium transition-all text-left cursor-pointer ${
+                    isLight
+                      ? "text-slate-800 hover:bg-[#F4F4F5] hover:text-slate-950"
+                      : "text-[#F4F4F5] hover:bg-white/10 hover:text-[#FFFFFF]"
+                  }`}
+                >
+                  <Languages
+                    size={15}
+                    className={`shrink-0 ${
+                      isLight ? "text-[#222222]" : "text-[#FFFFFF]"
+                    }`}
+                  />
+                  <span className="truncate">
+                    {isThai ? "ภาษาไทย" : "English"}
+                  </span>
+                </button>
+
+                {/* Profile Settings */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsDropdownOpen(false);
+                    if (onNavigate) onNavigate("settings");
+                    else navigateWithLoading("/settings");
+                  }}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-[12px] font-medium transition-all text-left cursor-pointer ${
+                    isLight
+                      ? "text-slate-800 hover:bg-[#F4F4F5] hover:text-slate-950"
+                      : "text-[#F4F4F5] hover:text-[#FFFFFF] hover:bg-white/10"
+                  }`}
+                >
+                  <Settings
+                    size={15}
+                    className={`shrink-0 ${
+                      isLight ? "text-[#222222]" : "text-[#FFFFFF]"
+                    }`}
+                  />
+                  <span className="truncate">{isThai ? "ตั้งค่าโปรไฟล์" : "Profile Settings"}</span>
+                </button>
+
+                {/* Log Out */}
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-red-400 hover:text-red-500 hover:bg-rose-500/10 text-[12px] font-medium transition-all text-left cursor-pointer"
+                >
+                  <LogOut size={15} className="shrink-0" />
+                  <span className="truncate">{isThai ? "ออกจากระบบ" : "Sign Out"}</span>
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+      )}
+
+      {/* Blocker Modal for Incomplete Profile */}
+      <ProfileGuardModal
+        isOpen={showGuardModal}
+        missingFields={missingFields}
+        onClose={() => setShowGuardModal(false)}
+        onGoToSettings={() => {
+          setShowGuardModal(false);
+          setIsDropdownOpen(false);
+          if (onNavigate) onNavigate("settings");
+          else navigateWithLoading("/settings");
+        }}
+      />
+    </header>
+  );
+}
