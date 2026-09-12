@@ -30,8 +30,6 @@ export interface WorkspaceViewProps {
   lang?: "en" | "th";
 }
 
-export type PortalViewProps = WorkspaceViewProps;
-
 export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
   const { theme } = useTheme();
   const { navigateWithLoading } = useLoading();
@@ -155,8 +153,8 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
               </h1>
               <p className="mt-1 text-sm sm:text-base text-zinc-600 dark:text-zinc-400">
                 {isThai
-                  ? "ศูนย์ควบคุมระบบหลัก (DAWH Workspace Portal) — สภาพแวดล้อมพร้อมสำหรับการ Refactor ทั้งเว็บใหม่"
-                  : "DAWH Enterprise Operations Hub — Workspace clean slate ready for application refactoring."}
+                  ? "ศูนย์ควบคุมระบบหลัก (DAWH Workspace) — สภาพแวดล้อมพร้อมสำหรับการพัฒนา"
+                  : "DAWH Enterprise Operations Hub — Workspace clean slate ready for operations."}
               </p>
             </div>
 
@@ -377,10 +375,9 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
         onClose={() => setShowGuardModal(false)}
         onGoToSettings={() => {
           setShowGuardModal(false);
+          handleOpenAccount();
         }}
       />
     </div>
   );
 }
-
-export { WorkspaceView, WorkspaceView as PortalView };
