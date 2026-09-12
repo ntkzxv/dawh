@@ -75,7 +75,7 @@ export const translations = {
     signInTitle: "เข้าสู่ระบบ",
     signInSubtitle: "เข้าสู่ระบบพนักงาน DAWH Enterprise",
     usernameOrEmailLabel: "ชื่อผู้ใช้หรืออีเมลองค์กร",
-    usernameOrEmailPlaceholder: "Username หรืออีเมล",
+    usernameOrEmailPlaceholder: "ชื่อผู้ใช้ หรือ อีเมล",
     passwordLabel: "รหัสผ่าน",
     passwordPlaceholder: "รหัสผ่าน",
     forgotPassword: "ลืมรหัสผ่าน?",

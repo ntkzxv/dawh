@@ -350,3 +350,15 @@ html.light select option:checked {
   border-color: rgba(46, 196, 182, 0.55);
   box-shadow: 0 0 16px rgba(46, 196, 182, 0.15);
 }
+
+/* Hide Next.js DevTools indicator and overlay buttons */
+nextjs-portal,
+[data-nextjs-toast],
+[data-nextjs-dialog-overlay],
+#nextjs-dev-overlay,
+div[data-next-badge],
+div[data-nextjs-route-announcer] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
