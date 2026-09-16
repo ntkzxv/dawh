@@ -112,10 +112,12 @@ For entry splash screens (`/`):
 - Progress Bar Track: `w-[240px] h-[4px] bg-[#444444] rounded-full`
 - Progress Bar Fill: `bg-white` (Dark) / `bg-[#222222]` (Light) `rounded-full` with dynamic progress animation.
 
-### 5. Strict Language Purity & No Redundant Bilingual Parentheses (ห้ามใส่วงเล็บภาษาซ้ำซ้อน)
+### 5. Strict Language Purity & No English Parentheses in Thai (ห้ามใส่วงเล็บภาษาอังกฤษต่อท้ายภาษาไทย)
 When rendering UI labels, titles, buttons, headers, or messages in either Thai (`isThai`) or English:
-- **Never include redundant bilingual translations in parentheses** (e.g. NEVER write `รายงานตรวจรับสินค้า (GRN)`, `ยอดตามบิล (Expected)`, `ยอดรับจริง (Received)`, `ส่วนต่าง (Variance)`, `ใบเสร็จ (A4)`, `ตารางเปรียบเทียบ (Side-by-Side Table)`).
-- Render cleanly in the active language only:
+- **เวลาเขียนภาษาไทย ให้เป็นภาษาไทยล้วน ห้ามมีวงเล็บภาษาอังกฤษต่อท้ายเด็ดขาด** (Never append English words/acronyms in parentheses when writing Thai).
+  - ❌ **ห้ามเขียน**: `ข้อกำหนดการให้บริการ (Terms of Service)`, `การคุ้มครองข้อมูลส่วนบุคคล (PDPA Protection)`, `การรับรองความถูกต้อง (Data Authenticity)`, `ความปลอดภัย (Security Policy)`, `รายงานตรวจรับสินค้า (GRN)`, `ส่วนต่าง (Variance)`
+  - ✅ **เขียนภาษาไทยล้วน**: `ข้อกำหนดการให้บริการ`, `การคุ้มครองข้อมูลส่วนบุคคล`, `การรับรองความถูกต้องของข้อมูล`, `ความปลอดภัยของบัญชีและรหัสผ่าน`, `รายงานตรวจรับสินค้า`, `ส่วนต่างสุทธิ`
+- **Active Language Only**: Keep each language clean and self-contained without bilingual mixing or parenthetical translation mirrors:
   - Thai: `รายงานตรวจรับสินค้า`, `ยอดตามใบกำกับภาษี`, `ยอดที่สแกนรับจริง`, `ส่วนต่างสุทธิ`, `ใบเสร็จทางการ`
   - English: `Goods Receipt Report`, `Expected Units`, `Received Units`, `Net Variance`, `Official Receipt`
 - **0% Emoji Rule**: Never use emojis in UI headings, buttons, notifications, or cards.
@@ -127,7 +129,7 @@ When rendering UI labels, titles, buttons, headers, or messages in either Thai (
 - [ ] Typography follows `Outfit` for display and `Geist` for content.
 - [ ] All colors adhere strictly to `customTheme` and the 3-Tier White Hierarchy.
 - [ ] Collapsible menus feature the Left Vertical Tree Guide Line.
-- [ ] Strict Language Purity: No redundant English/Thai translations inside parentheses (e.g. NO `ข้อความ (Text)`).
+- [ ] Strict Language Purity: ภาษาไทยต้องเป็นภาษาไทยล้วน ห้ามมีวงเล็บภาษาอังกฤษต่อท้ายเด็ดขาด (No English words/terms in parentheses in Thai UI).
 - [ ] 0% Emojis throughout UI components.
 - [ ] Transitions use cubic-bezier timing (`duration-300` / `duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]`).
 - [ ] Fully responsive on Mobile, Tablet, and Desktop with Safe Area insets.

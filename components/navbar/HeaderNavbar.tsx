@@ -131,6 +131,20 @@ export default function HeaderNavbar({
     }
 
     loadUserProfile();
+
+    const handleProfileUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent<Partial<EmployeeProfile>>;
+      if (customEvent.detail) {
+        setProfile((prev) => ({ ...prev, ...customEvent.detail }));
+      }
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("dawh_profile_updated", handleProfileUpdated);
+      return () => {
+        window.removeEventListener("dawh_profile_updated", handleProfileUpdated);
+      };
+    }
   }, []);
 
   // Check if active user has Admin / DevOps privileges to open Control Panel

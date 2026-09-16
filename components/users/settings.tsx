@@ -42,6 +42,9 @@ import {
   Camera,
   Delete,
   ArrowRight,
+  ArrowUpRight,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -1357,7 +1360,7 @@ function MajorSubjectAutocomplete({
 export interface SettingsViewProps {
   onNavigate?: (target: string) => void;
   onBack?: () => void;
-  initialTab?: "profile" | "employment" | "admin";
+  initialTab?: "profile" | "employment" | "security" | "admin";
 }
 
 export default function SettingsView({
@@ -1371,8 +1374,19 @@ export default function SettingsView({
   const { notify } = useNotification();
   const isLight = theme === "light";
 
-  // Tab State: 'profile' (Profile & Contact) | 'employment' (Employment Details) | 'admin' (Admin Control Panel)
-  const [activeTab, setActiveTab] = useState<"profile" | "employment" | "admin">(initialTab);
+  // Tab State: 'profile' (Profile & Contact) | 'employment' (Employment Details) | 'security' (Change Email & Password) | 'admin' (Admin Control Panel)
+  const [activeTab, setActiveTab] = useState<"profile" | "employment" | "security" | "admin">(() => {
+    if (initialTab === "security" || initialTab === "employment" || initialTab === "profile" || initialTab === "admin") {
+      return initialTab;
+    }
+    if (typeof window !== "undefined") {
+      const param = new URLSearchParams(window.location.search).get("tab");
+      if (param === "security" || param === "password" || param === "email") return "security";
+      if (param === "employment") return "employment";
+      if (param === "admin") return "admin";
+    }
+    return "profile";
+  });
 
   // Dropdown Menu State
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -1415,10 +1429,40 @@ export default function SettingsView({
   const [showSecondaryRegModal, setShowSecondaryRegModal] = useState(false);
   const [regStep, setRegStep] = useState<"fill" | "review">("fill");
   const [isTermsAgreed, setIsTermsAgreed] = useState(false);
+  const [showPinPromptModal, setShowPinPromptModal] = useState(false);
   const [showPinSetupModal, setShowPinSetupModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showExitConfirmModal, setShowExitConfirmModal] = useState(false);
   const [showAvatarCropModal, setShowAvatarCropModal] = useState(false);
+
+  const regFormScrollRef = useRef<HTMLDivElement | null>(null);
+  const reviewScrollRef = useRef<HTMLDivElement | null>(null);
+  const [isFormAtBottom, setIsFormAtBottom] = useState(false);
+  const [isReviewAtBottom, setIsReviewAtBottom] = useState(false);
+
+  const handleFormScroll = useCallback(() => {
+    if (!regFormScrollRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = regFormScrollRef.current;
+    setIsFormAtBottom(scrollTop + clientHeight >= scrollHeight - 40);
+  }, []);
+
+  const handleReviewScroll = useCallback(() => {
+    if (!reviewScrollRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = reviewScrollRef.current;
+    setIsReviewAtBottom(scrollTop + clientHeight >= scrollHeight - 40);
+  }, []);
+
+  useEffect(() => {
+    if (showSecondaryRegModal) {
+      setIsFormAtBottom(false);
+      setIsReviewAtBottom(false);
+      const timer = setTimeout(() => {
+        handleFormScroll();
+        handleReviewScroll();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [showSecondaryRegModal, regStep, handleFormScroll, handleReviewScroll]);
 
   // Religion Dropdown & Custom Input State
   const [religionChoice, setReligionChoice] = useState<string>("");
@@ -1433,6 +1477,7 @@ export default function SettingsView({
   useEffect(() => {
     const isAnyModalOpen =
       showSecondaryRegModal ||
+      showPinPromptModal ||
       showPinSetupModal ||
       showPasswordModal ||
       showExitConfirmModal ||
@@ -1445,7 +1490,7 @@ export default function SettingsView({
         document.body.style.overflow = originalOverflow;
       };
     }
-  }, [showSecondaryRegModal, showPinSetupModal, showPasswordModal, showExitConfirmModal, showAvatarCropModal]);
+  }, [showSecondaryRegModal, showPinPromptModal, showPinSetupModal, showPasswordModal, showExitConfirmModal, showAvatarCropModal]);
 
   // Helper to detect invalid required fields
   const isFieldInvalid = (fieldName: string) => {
@@ -1559,9 +1604,71 @@ export default function SettingsView({
   const pinInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const confirmPinInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Password Form Fields
+  // Password Form Fields (Current, New, Confirm New)
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+
+  // Security Tab Form State (Email & Password)
+  const [newEmail, setNewEmail] = useState("");
+  const [confirmNewEmail, setConfirmNewEmail] = useState("");
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [isSavingEmail, setIsSavingEmail] = useState(false);
+  const [emailSuccess, setEmailSuccess] = useState(false);
+
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+
+  // Password Strength Calculation (Identical to Register)
+  const passwordStrength = useMemo(() => {
+    if (!newPassword) return { score: 0, label: "", color: "bg-transparent", textClass: "" };
+
+    const hasLength = newPassword.length >= 8 && newPassword.length <= 32;
+    const hasUppercase = /[A-Z]/.test(newPassword);
+    const hasLowercase = /[a-z]/.test(newPassword);
+    const hasNumber = /[0-9]/.test(newPassword);
+
+    let score = 0;
+    if (hasLength) score += 1;
+    if (hasUppercase) score += 1;
+    if (hasLowercase) score += 1;
+    if (hasNumber) score += 1;
+
+    if (score <= 1) {
+      return {
+        score: 1,
+        label: isThai ? "ไม่ปลอดภัย (Weak)" : "Weak",
+        color: isLight ? "bg-[#E74C3C]" : "bg-[#E71D36]",
+        textClass: isLight ? "text-[#E74C3C] font-bold" : "text-[#E71D36] font-semibold",
+      };
+    }
+    if (score === 2) {
+      return {
+        score: 2,
+        label: isThai ? "ปานกลาง (Fair)" : "Fair",
+        color: "bg-[#FF9F1C]",
+        textClass: isLight ? "text-[#FF9F1C] font-bold" : "text-[#FF9F1C] font-semibold",
+      };
+    }
+    if (score === 3) {
+      return {
+        score: 3,
+        label: isThai ? "ระดับดี (Good)" : "Good",
+        color: "bg-[#2EC4B6]",
+        textClass: isLight ? "text-[#2EC4B6] font-bold" : "text-[#2EC4B6] font-semibold",
+      };
+    }
+    return {
+      score: 4,
+      label: isThai ? "ปลอดภัยมาก (Strong)" : "Strong",
+      color: "bg-[#2EC4B6]",
+      textClass: isLight ? "text-[#2EC4B6] font-bold" : "text-[#2EC4B6] font-semibold",
+    };
+  }, [newPassword, isThai, isLight]);
 
   // Helper to sync form state from employee profile data
   const syncFormFromProfile = useCallback((data: Partial<EmployeeProfile>) => {
@@ -1939,6 +2046,51 @@ export default function SettingsView({
     }
   };
 
+  // DEV_TESTPUSHFILL_START - Temporary auto-fill test values (DELETE ME EASILY WHEN DONE)
+  const handleTestPushFill = () => {
+    const defaultBranch = branchesList[0]?.branch_name || "สำนักงานใหญ่ (Headquarter)";
+    const defaultBranchId = branchesList[0]?.id || "00000000-0000-0000-0000-000000000001";
+
+    setRegForm((prev) => ({
+      ...prev,
+      username: prev.username || profile.username || "test_employee",
+      prefix: "mr",
+      first_name_th: "ทดสอบ",
+      last_name_th: "ระบบ",
+      nickname_th: "เทส",
+      first_name: "Test",
+      last_name: "User",
+      nickname: "Tester",
+      id_card: "1100500123456",
+      birth_date: "1995-05-15",
+      gender: "ชาย",
+      blood_type: "O",
+      marital_status: "โสด",
+      nationality: "ไทย",
+      religion: "พุทธ",
+      phone: prev.phone || profile.phone || "0812345678",
+      emergency_contact_name_th: "สมศรี ใจดี",
+      emergency_contact_name: "Emergency Contact",
+      emergency_contact_relationship: "บิดา/มารดา",
+      emergency_contact_phone: "0898765432",
+      current_address: "99/9 หมู่ 1 ต.คลองหนึ่ง อ.คลองหลวง จ.ปทุมธานี 12120",
+      registered_address: "99/9 หมู่ 1 ต.คลองหนึ่ง อ.คลองหลวง จ.ปทุมธานี 12120",
+      department: "Information Technology",
+      branch_id: defaultBranchId,
+      branch_name: defaultBranch,
+      education_level: "ปริญญาตรี",
+      major_subject: "วิทยาการคอมพิวเตอร์",
+      university_th: "จุฬาลงกรณ์มหาวิทยาลัย",
+      university_en: "Chulalongkorn University",
+      university_name: "จุฬาลงกรณ์มหาวิทยาลัย",
+      bio: "Test Account for system QA",
+    }));
+    setIsTermsAgreed(true);
+    setModalError(null);
+    setHasAttemptedSubmit(false);
+  };
+  // DEV_TESTPUSHFILL_END
+
   // Step 1: Validate Secondary Registration Form & Proceed to Review Step
   const handleValidateAndProceedToReview = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1949,7 +2101,7 @@ export default function SettingsView({
     if (!regForm.first_name_th.trim() || !regForm.last_name_th.trim()) {
       const msg = isThai ? "กรุณากรอกชื่อจริงและนามสกุล (ภาษาไทย) ให้ครบถ้วน" : "Please fill in Thai first and last name.";
       setModalError(msg);
-      notify.warning(isThai ? "ข้อมูลไม่ครบถ้วน" : "Incomplete Information", { message: msg, duration: 5000 });
+      regFormScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
     const cleanFirstNameEn = (regForm.first_name || profile.first_name || "").trim();
@@ -1957,46 +2109,46 @@ export default function SettingsView({
     if (!cleanFirstNameEn || !cleanLastNameEn) {
       const msg = isThai ? "กรุณากรอกชื่อจริงและนามสกุล (English) ให้ครบถ้วน" : "Please fill in English first and last name.";
       setModalError(msg);
-      notify.warning(isThai ? "ข้อมูลไม่ครบถ้วน" : "Incomplete Information", { message: msg, duration: 5000 });
+      regFormScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
     const cleanIdCard = regForm.id_card.trim().replace(/\D/g, "");
     if (!cleanIdCard || cleanIdCard.length !== 13) {
       const msg = isThai ? "กรุณากรอกเลขบัตรประชาชนให้ครบ 13 หลัก" : "Please enter a valid 13-digit National ID card.";
       setModalError(msg);
-      notify.warning(isThai ? "ข้อมูลไม่ถูกต้อง" : "Invalid Information", { message: msg, duration: 5000 });
+      regFormScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
     const activeBirthDate = regForm.birth_date || profile.birth_date || (typeof window !== "undefined" ? localStorage.getItem("current_user_birth_date") || "" : "");
     if (!activeBirthDate) {
       const msg = isThai ? "ไม่พบข้อมูลวันเดือนปีเกิดในระบบ กรุณาระบุวันเดือนปีเกิด" : "Birth date not found.";
       setModalError(msg);
-      notify.warning(isThai ? "ข้อมูลไม่ครบถ้วน" : "Incomplete Information", { message: msg, duration: 5000 });
+      regFormScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
     const activePhone = (regForm.phone || profile.phone || (typeof window !== "undefined" ? localStorage.getItem("current_user_phone") || "" : "")).trim();
     if (!activePhone) {
       const msg = isThai ? "กรุณาระบุเบอร์โทรศัพท์มือถือ" : "Please enter mobile phone number.";
       setModalError(msg);
-      notify.warning(isThai ? "ข้อมูลไม่ครบถ้วน" : "Incomplete Information", { message: msg, duration: 5000 });
+      regFormScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
     if (!regForm.current_address.trim()) {
       const msg = isThai ? "กรุณากรอกที่อยู่ปัจจุบัน ให้ครบถ้วน" : "Please enter current address.";
       setModalError(msg);
-      notify.warning(isThai ? "ข้อมูลไม่ครบถ้วน" : "Incomplete Information", { message: msg, duration: 5000 });
+      regFormScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
     if (!regForm.registered_address.trim()) {
       const msg = isThai ? "กรุณากรอกที่อยู่ตามทะเบียนบ้าน ให้ครบถ้วน" : "Please enter registered address.";
       setModalError(msg);
-      notify.warning(isThai ? "ข้อมูลไม่ครบถ้วน" : "Incomplete Information", { message: msg, duration: 5000 });
+      regFormScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
     if (!regForm.branch_name.trim()) {
       const msg = isThai ? "กรุณาเลือกสาขาที่สังกัด" : "Please select branch assignment.";
       setModalError(msg);
-      notify.warning(isThai ? "ข้อมูลไม่ครบถ้วน" : "Incomplete Information", { message: msg, duration: 5000 });
+      regFormScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
@@ -2162,11 +2314,8 @@ export default function SettingsView({
         setSaveSuccess(false);
         setShowSecondaryRegModal(false);
         setRegStep("fill");
-        // Step 3: Prompt for PIN Setup Popup!
-        setPinDigits(["", "", "", "", "", ""]);
-        setConfirmPinDigits(["", "", "", "", "", ""]);
-        setPinStep("enter");
-        setShowPinSetupModal(true);
+        // Prompt whether to create PIN or skip
+        setShowPinPromptModal(true);
       }, 700);
     } catch (err: unknown) {
       const errorMsg = (err instanceof Error ? err.message : null) || (isThai ? "เกิดข้อผิดพลาดในการบันทึกข้อมูล" : "Failed to update profile");
@@ -2375,15 +2524,23 @@ export default function SettingsView({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [showPinSetupModal, pinStep, pinDigits, confirmPinDigits, isSaving, profile.id, isThai, notify]);
 
-  // Change Password Handler
+  // Change Password Handler (Modal)
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentPassword.trim()) {
+      setModalError(isThai ? "กรุณาระบุรหัสผ่านปัจจุบัน" : "Please enter your current password");
+      return;
+    }
     if (newPassword.length < 8) {
-      setModalError(isThai ? "รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร" : "Password must be at least 8 characters");
+      setModalError(isThai ? "รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 8 ตัวอักษร" : "New password must be at least 8 characters");
       return;
     }
     if (newPassword !== confirmNewPassword) {
-      setModalError(isThai ? "รหัสผ่านไม่ตรงกัน" : "Passwords do not match");
+      setModalError(isThai ? "รหัสผ่านใหม่ไม่ตรงกัน" : "New passwords do not match");
+      return;
+    }
+    if (currentPassword === newPassword) {
+      setModalError(isThai ? "รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม" : "New password cannot be the same as current password");
       return;
     }
 
@@ -2391,6 +2548,18 @@ export default function SettingsView({
     setModalError(null);
 
     try {
+      // Verify current password first
+      const userEmail = profile.email || (await supabase.auth.getUser()).data.user?.email;
+      if (userEmail) {
+        const { error: verifyErr } = await supabase.auth.signInWithPassword({
+          email: userEmail,
+          password: currentPassword,
+        });
+        if (verifyErr) {
+          throw new Error(isThai ? "รหัสผ่านเดิมไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง" : "Current password is incorrect. Please try again.");
+        }
+      }
+
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
       });
@@ -2429,6 +2598,7 @@ export default function SettingsView({
       setTimeout(() => {
         setSaveSuccess(false);
         setShowPasswordModal(false);
+        setCurrentPassword("");
         setNewPassword("");
         setConfirmNewPassword("");
       }, 1200);
@@ -2441,6 +2611,176 @@ export default function SettingsView({
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Tab: Change Email Handler
+  const handleTabChangeEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!newEmail || !emailRegex.test(newEmail)) {
+      setEmailError(isThai ? "กรุณาระบุรูปแบบอีเมลที่ถูกต้อง" : "Please enter a valid email address");
+      return;
+    }
+    if (newEmail.toLowerCase() === (profile.email || "").toLowerCase()) {
+      setEmailError(isThai ? "อีเมลใหม่ตรงกับอีเมลปัจจุบันที่ใช้งานอยู่" : "New email cannot be identical to your current email");
+      return;
+    }
+    if (confirmNewEmail && newEmail.toLowerCase() !== confirmNewEmail.toLowerCase()) {
+      setEmailError(isThai ? "อีเมลทั้งสองช่องไม่ตรงกัน" : "Email confirmation does not match");
+      return;
+    }
+
+    setIsSavingEmail(true);
+    setEmailError(null);
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        email: newEmail,
+      });
+
+      if (error) throw error;
+
+      if (profile.id) {
+        try {
+          await supabase
+            .from("employees")
+            .update({ email: newEmail, updated_at: new Date().toISOString() })
+            .eq("id", profile.id);
+        } catch (dbErr) {
+          console.warn("Could not sync email to employees table:", dbErr);
+        }
+      }
+
+      setProfile((prev) => ({ ...prev, email: newEmail }));
+      try {
+        if (typeof window !== "undefined") {
+          const cached = localStorage.getItem("dawh_user_profile");
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            parsed.email = newEmail;
+            localStorage.setItem("dawh_user_profile", JSON.stringify(parsed));
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      setEmailSuccess(true);
+      notify.success(
+        isThai ? "ส่งคำขอยืนยันอีเมลสำเร็จ" : "Email Update Requested",
+        {
+          message: isThai
+            ? "ระบบได้ส่งลิงก์ยืนยันไปยังอีเมลใหม่เรียบร้อยแล้ว กรุณาคลิกลิงก์เพื่อยืนยันการเปลี่ยนแปลง"
+            : "A confirmation link has been sent to your new email. Please verify to complete.",
+          duration: 6000,
+        }
+      );
+
+      setTimeout(() => {
+        setEmailSuccess(false);
+        setNewEmail("");
+        setConfirmNewEmail("");
+      }, 2000);
+    } catch (err: unknown) {
+      const errorMsg = (err instanceof Error ? err.message : null) || (isThai ? "ไม่สามารถเปลี่ยนอีเมลได้" : "Failed to update email");
+      setEmailError(errorMsg);
+      notify.error(isThai ? "เกิดข้อผิดพลาด" : "Email Update Error", {
+        message: errorMsg,
+        duration: 5000,
+      });
+    } finally {
+      setIsSavingEmail(false);
+    }
+  };
+
+  // Tab: Change Password Handler (Requires Current Password + 2x New Password)
+  const handleTabChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentPassword.trim()) {
+      setPasswordError(isThai ? "กรุณาระบุรหัสผ่านเดิม (ปัจจุบัน)" : "Please enter your current password");
+      return;
+    }
+    if (newPassword.length < 8) {
+      setPasswordError(isThai ? "รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 8 ตัวอักษร" : "New password must be at least 8 characters");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setPasswordError(isThai ? "รหัสผ่านใหม่ทั้งสองช่องไม่ตรงกัน" : "New passwords do not match");
+      return;
+    }
+    if (currentPassword === newPassword) {
+      setPasswordError(isThai ? "รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านเดิม" : "New password cannot be the same as current password");
+      return;
+    }
+
+    setIsSavingPassword(true);
+    setPasswordError(null);
+
+    try {
+      // 1. Verify current password with signInWithPassword
+      const userEmail = profile.email || (await supabase.auth.getUser()).data.user?.email;
+      if (userEmail) {
+        const { error: verifyErr } = await supabase.auth.signInWithPassword({
+          email: userEmail,
+          password: currentPassword,
+        });
+        if (verifyErr) {
+          throw new Error(isThai ? "รหัสผ่านเดิมไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง" : "Current password is incorrect. Please try again.");
+        }
+      }
+
+      // 2. Update to new password
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) throw error;
+
+      setProfile((prev) => ({
+        ...prev,
+        needs_password_reset: false,
+      }));
+
+      try {
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("dawh_needs_password_reset");
+          const cached = localStorage.getItem("dawh_user_profile");
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            parsed.needs_password_reset = false;
+            localStorage.setItem("dawh_user_profile", JSON.stringify(parsed));
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      setPasswordSuccess(true);
+      notify.success(
+        isThai ? "เปลี่ยนรหัสผ่านสำเร็จ" : "Password Changed Successfully",
+        {
+          message: isThai
+            ? "รหัสผ่านใหม่ของคุณได้รับการบันทึกและเปิดใช้งานแล้ว"
+            : "Your new password has been securely updated.",
+          duration: 4000,
+        }
+      );
+      setTimeout(() => {
+        setPasswordSuccess(false);
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmNewPassword("");
+      }, 1500);
+    } catch (err: unknown) {
+      const errorMsg = (err instanceof Error ? err.message : null) || (isThai ? "ไม่สามารถเปลี่ยนรหัสผ่านได้" : "Failed to update password");
+      setPasswordError(errorMsg);
+      notify.error(isThai ? "เกิดข้อผิดพลาด" : "Password Update Error", {
+        message: errorMsg,
+        duration: 5000,
+      });
+    } finally {
+      setIsSavingPassword(false);
     }
   };
 
@@ -2458,6 +2798,7 @@ export default function SettingsView({
       {/* ========================================================================= */}
       <HeaderNavbar
         showLogo={true}
+        showAccount={true}
         title={isThai ? "การตั้งค่าบัญชีพนักงาน" : "Platform Settings"}
         subtitle={
           isThai
@@ -2599,44 +2940,103 @@ export default function SettingsView({
         )}
 
         <div
-          className={`w-full h-[42px] border-b flex flex-row items-start gap-2 select-none ${
+          className={`w-full h-[42px] border-b flex flex-row items-start gap-2 select-none overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
             isLight ? "border-[#E4E4E7]" : "border-[#444444]"
           }`}
         >
           <button
             type="button"
             onClick={() => setActiveTab("profile")}
-            className={`px-6 py-3 h-[42px] text-[14px] leading-[18px] font-semibold transition-all cursor-pointer ${
+            className={`relative px-6 py-3 h-[42px] text-[14px] leading-[18px] font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
               activeTab === "profile"
                 ? isLight
-                  ? "border-b-2 border-[#222222] text-[#222222]"
-                  : "border-b-2 border-white text-[#FFFFFF]"
+                  ? "text-[#222222]"
+                  : "text-[#FFFFFF]"
                 : isLight
-                ? "border-b-2 border-transparent text-[#666666] hover:text-[#222222]"
-                : "border-b-2 border-transparent text-[#E4E4E7] hover:text-[#FFFFFF]"
+                ? "text-[#666666] hover:text-[#222222]"
+                : "text-[#E4E4E7] hover:text-[#FFFFFF]"
             }`}
           >
-            {isThai ? "ข้อมูลประวัติส่วนตัว" : "Personal Profile"}
+            <span>{isThai ? "ข้อมูลประวัติส่วนตัว" : "Personal Profile"}</span>
+            {activeTab === "profile" && (
+              <motion.div
+                layoutId="activeSettingsTabUnderline"
+                className={`absolute bottom-0 left-0 right-0 h-[2px] ${
+                  isLight ? "bg-[#222222]" : "bg-white"
+                }`}
+                transition={{
+                  type: "spring",
+                  stiffness: 450,
+                  damping: 35,
+                }}
+              />
+            )}
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab("employment")}
-            className={`px-6 py-3 h-[42px] text-[14px] leading-[18px] font-semibold transition-all cursor-pointer ${
+            className={`relative px-6 py-3 h-[42px] text-[14px] leading-[18px] font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
               activeTab === "employment"
                 ? isLight
-                  ? "border-b-2 border-[#222222] text-[#222222]"
-                  : "border-b-2 border-white text-[#FFFFFF]"
+                  ? "text-[#222222]"
+                  : "text-[#FFFFFF]"
                 : isLight
-                ? "border-b-2 border-transparent text-[#666666] hover:text-[#222222]"
-                : "border-b-2 border-transparent text-[#E4E4E7] hover:text-[#FFFFFF]"
+                ? "text-[#666666] hover:text-[#222222]"
+                : "text-[#E4E4E7] hover:text-[#FFFFFF]"
             }`}
           >
-            {isThai ? "ข้อมูลเกี่ยวกับบริษัทและสัญญา" : "Company & Employment"}
+            <span>{isThai ? "ข้อมูลเกี่ยวกับบริษัทและสัญญา" : "Company & Employment"}</span>
+            {activeTab === "employment" && (
+              <motion.div
+                layoutId="activeSettingsTabUnderline"
+                className={`absolute bottom-0 left-0 right-0 h-[2px] ${
+                  isLight ? "bg-[#222222]" : "bg-white"
+                }`}
+                transition={{
+                  type: "spring",
+                  stiffness: 450,
+                  damping: 35,
+                }}
+              />
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("security")}
+            className={`relative px-6 py-3 h-[42px] text-[14px] leading-[18px] font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-2 ${
+              activeTab === "security"
+                ? isLight
+                  ? "text-[#222222]"
+                  : "text-[#FFFFFF]"
+                : isLight
+                ? "text-[#666666] hover:text-[#222222]"
+                : "text-[#E4E4E7] hover:text-[#FFFFFF]"
+            }`}
+          >
+            <span>{isThai ? "เปลี่ยนอีเมลและรหัสผ่าน" : "Change Email / Password"}</span>
+            {((profile.needs_password_reset) ||
+              (typeof window !== "undefined" && localStorage.getItem("dawh_needs_password_reset") === "true")) && (
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            )}
+            {activeTab === "security" && (
+              <motion.div
+                layoutId="activeSettingsTabUnderline"
+                className={`absolute bottom-0 left-0 right-0 h-[2px] ${
+                  isLight ? "bg-[#222222]" : "bg-white"
+                }`}
+                transition={{
+                  type: "spring",
+                  stiffness: 450,
+                  damping: 35,
+                }}
+              />
+            )}
           </button>
         </div>
 
-        {(activeTab === "profile" || activeTab === "employment") && (
+        {(activeTab === "profile" || activeTab === "employment" || activeTab === "security") && (
           <div className="w-full flex flex-col lg:flex-row items-start gap-6 animate-in fade-in duration-200">
             <div
               className={`w-full lg:w-[360px] p-8 flex flex-col items-center gap-6 rounded-[12px] border transition-colors shrink-0 ${
@@ -3237,6 +3637,455 @@ export default function SettingsView({
                 </div>
               </div>
             )}
+
+            {/* TAB: CHANGE EMAIL & PASSWORD */}
+            {activeTab === "security" && (
+              <div
+                className={`flex-1 w-full p-6 sm:p-8 flex flex-col items-start gap-6 rounded-[12px] border transition-colors ${
+                  isLight
+                    ? "bg-[#FFFFFF] border-[#E4E4E7] shadow-sm"
+                    : "bg-[#383838] border-[#444444] shadow-lg"
+                }`}
+              >
+                {/* Header */}
+                <div className="w-full flex items-center justify-between border-b pb-3.5 border-[#444444]/40">
+                  <div>
+                    <h3
+                      className={`font-bold text-[16px] leading-[20px] ${
+                        isLight ? "text-[#222222]" : "text-[#FFFFFF]"
+                      }`}
+                      style={{ fontFamily: "var(--font-outfit), sans-serif" }}
+                    >
+                      {isThai ? "เปลี่ยนอีเมลและรหัสผ่าน (Change Email & Password)" : "Change Email & Password"}
+                    </h3>
+                    <p className={`text-[12px] mt-0.5 ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
+                      {isThai
+                        ? "จัดการข้อมูลความปลอดภัย อัปเดตอีเมลสำหรับเข้าสู่ระบบ และตั้งรหัสผ่านใหม่"
+                        : "Manage authentication credentials, update login email, and set your new password"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Optional Alert: Temporary Password Reset Needed */}
+                {((profile.needs_password_reset) ||
+                  (typeof window !== "undefined" && localStorage.getItem("dawh_needs_password_reset") === "true")) && (
+                  <div className="w-full p-3.5 rounded-xl border flex items-start gap-3 bg-amber-500/10 border-amber-500/30 text-amber-500">
+                    <AlertCircle size={18} className="shrink-0 mt-0.5" />
+                    <div className="flex-1 text-xs leading-relaxed">
+                      <p className="font-bold">
+                        {isThai ? "แจ้งเตือน: บัญชีกำลังใช้งานรหัสผ่านชั่วคราว" : "Notice: Using Temporary Password"}
+                      </p>
+                      <p className={`mt-0.5 ${isLight ? "text-amber-700" : "text-amber-200/90"}`}>
+                        {isThai
+                          ? "เพื่อความปลอดภัยสูงสุด กรุณากำหนดรหัสผ่านใหม่ของคุณในส่วน 'เปลี่ยนรหัสผ่าน' ด้านล่าง"
+                          : "For system security, please update your account password to a permanent one below."}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* ------------------------------------------------------------- */}
+                {/* 1. CHANGE EMAIL SECTION                                       */}
+                {/* ------------------------------------------------------------- */}
+                <div className="w-full flex flex-col gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-bold uppercase tracking-wider ${isLight ? "text-[#222222]" : "text-[#FFFFFF]"}`}>
+                      {isThai ? "เปลี่ยนอีเมลสำหรับเข้าสู่ระบบ (Change Account Email)" : "Change Account Email"}
+                    </span>
+                  </div>
+
+                  {/* Current Email Display */}
+                  <div className="flex flex-col gap-1">
+                    <label className={`font-semibold text-[11.5px] ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
+                      {isThai ? "อีเมลปัจจุบันที่ใช้งานอยู่" : "Current Email Address"}
+                    </label>
+                    <div
+                      className={`w-full p-2.5 h-[40px] flex items-center justify-between rounded-[8px] border text-[13px] font-mono select-text ${
+                        isLight ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222]" : "bg-[#282828] border-[#444444] text-[#F4F4F5]"
+                      }`}
+                    >
+                      <span className="truncate">{emailText}</span>
+                      <span className="px-2 py-0.5 rounded text-[10.5px] font-sans font-semibold bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 flex items-center gap-1 shrink-0">
+                        <CheckCircle2 size={11} />
+                        {isThai ? "ใช้งานอยู่" : "Active"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Change Email Form */}
+                  <form onSubmit={handleTabChangeEmail} className="w-full flex flex-col gap-3">
+                    {emailError && (
+                      <div className="p-3 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2 animate-in fade-in duration-150">
+                        <AlertCircle size={14} className="shrink-0" />
+                        <span>{emailError}</span>
+                      </div>
+                    )}
+
+                    <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1">
+                        <label className={`text-xs font-semibold ${isLight ? "text-[#222222]" : "text-[#E4E4E7]"}`}>
+                          {isThai ? "อีเมลใหม่ *" : "New Email Address *"}
+                        </label>
+                        <div className="relative flex items-center">
+                          <input
+                            type="email"
+                            value={newEmail}
+                            onChange={(e) => {
+                              setNewEmail(e.target.value);
+                              if (emailError) setEmailError(null);
+                            }}
+                            placeholder={isThai ? "ระบุอีเมลใหม่ เช่น user@company.com" : "e.g. user@company.com"}
+                            className={`w-full p-2.5 h-[38px] rounded-lg border text-xs outline-none transition-all ${
+                              isLight
+                                ? "bg-white border-[#E5E5E5] text-[#222222] focus:border-[#222222] focus:ring-1 focus:ring-[#222222]"
+                                : "bg-[#282828] border-[#444444] text-[#FFFFFF] focus:border-white focus:ring-1 focus:ring-white"
+                            }`}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className={`text-xs font-semibold ${isLight ? "text-[#222222]" : "text-[#E4E4E7]"}`}>
+                          {isThai ? "ยืนยันอีเมลใหม่ *" : "Confirm New Email *"}
+                        </label>
+                        <div className="relative flex items-center">
+                          <input
+                            type="email"
+                            value={confirmNewEmail}
+                            onChange={(e) => {
+                              setConfirmNewEmail(e.target.value);
+                              if (emailError) setEmailError(null);
+                            }}
+                            placeholder={isThai ? "พิมพ์อีเมลใหม่อีกครั้ง" : "Re-enter new email"}
+                            className={`w-full p-2.5 h-[38px] rounded-lg border text-xs outline-none transition-all ${
+                              isLight
+                                ? "bg-white border-[#E5E5E5] text-[#222222] focus:border-[#222222] focus:ring-1 focus:ring-[#222222]"
+                                : "bg-[#282828] border-[#444444] text-[#FFFFFF] focus:border-white focus:ring-1 focus:ring-white"
+                            }`}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className={`text-[11.5px] leading-relaxed ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
+                      {isThai
+                        ? "หมายเหตุ: เมื่อกดบันทึก ระบบจะส่งลิงก์ยืนยันไปยังอีเมลใหม่ กรุณาคลิกลิงก์ในอีเมลเพื่อเสร็จสิ้นกระบวนการ"
+                        : "Note: A confirmation link will be sent to the new email address. You must verify it before the change takes effect."}
+                    </p>
+
+                    <div className="flex justify-end pt-1">
+                      <button
+                        type="submit"
+                        disabled={isSavingEmail || !newEmail.trim()}
+                        className={`px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all shadow-sm cursor-pointer ${
+                          !newEmail.trim() || isSavingEmail
+                            ? "opacity-50 cursor-not-allowed bg-zinc-300 dark:bg-[#444444] text-zinc-500 dark:text-zinc-400"
+                            : isLight
+                            ? "bg-[#222222] hover:bg-black text-white active:scale-95"
+                            : "bg-[#FFFFFF] hover:bg-[#F4F4F5] text-[#222222] active:scale-95"
+                        }`}
+                      >
+                        {isSavingEmail ? (
+                          <Loader2 size={13} className="animate-spin" />
+                        ) : emailSuccess ? (
+                          <CheckCircle2 size={13} className="text-emerald-500" />
+                        ) : null}
+                        <span>
+                          {isSavingEmail
+                            ? isThai
+                              ? "กำลังส่งคำขอ..."
+                              : "Updating..."
+                            : emailSuccess
+                            ? isThai
+                              ? "ส่งคำขอสำเร็จ!"
+                              : "Confirmation Sent!"
+                            : isThai
+                            ? "บันทึกและส่งคำขอยืนยันอีเมล"
+                            : "Update Email Address"}
+                        </span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* ------------------------------------------------------------- */}
+                {/* 2. CHANGE PASSWORD SECTION                                    */}
+                {/* ------------------------------------------------------------- */}
+                <div className="w-full flex flex-col gap-4 pt-5 border-t border-[#444444]/30">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-bold uppercase tracking-wider ${isLight ? "text-[#222222]" : "text-[#FFFFFF]"}`}>
+                      {isThai ? "เปลี่ยนรหัสผ่าน (Change Password)" : "Change Password"}
+                    </span>
+                  </div>
+
+                  <form onSubmit={handleTabChangePassword} className="w-full flex flex-col gap-3">
+                    {passwordError && (
+                      <div className="p-3 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2 animate-in fade-in duration-150">
+                        <AlertCircle size={14} className="shrink-0" />
+                        <span>{passwordError}</span>
+                      </div>
+                    )}
+
+                    {/* 3 Password Fields: 1. Current Password -> 2. New Password -> 3. Confirm New Password */}
+                    <div className="flex flex-col gap-3">
+                      {/* Field 1: Current Password */}
+                      <div className="flex flex-col gap-1">
+                        <label className={`text-xs font-semibold ${isLight ? "text-[#222222]" : "text-[#E4E4E7]"}`}>
+                          {isThai ? "รหัสผ่านเดิม (ปัจจุบัน) *" : "Current Password *"}
+                        </label>
+                        <div className="relative flex items-center">
+                          <input
+                            type={showCurrentPassword ? "text" : "password"}
+                            value={currentPassword}
+                            onChange={(e) => {
+                              setCurrentPassword(e.target.value);
+                              if (passwordError) setPasswordError(null);
+                            }}
+                            placeholder={isThai ? "ระบุรหัสผ่านปัจจุบันของคุณเพื่อยืนยันตัวตน" : "Enter your current password"}
+                            className={`w-full p-2.5 pr-10 h-[38px] rounded-lg border text-xs outline-none transition-all ${
+                              isLight
+                                ? "bg-white border-[#E5E5E5] text-[#222222] focus:border-[#222222] focus:ring-1 focus:ring-[#222222]"
+                                : "bg-[#282828] border-[#444444] text-[#FFFFFF] focus:border-white focus:ring-1 focus:ring-white"
+                            }`}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                            className={`absolute right-2.5 p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer ${
+                              isLight ? "text-[#666666]" : "text-[#A1A1AA]"
+                            }`}
+                          >
+                            {showCurrentPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Fields 2 & 3: New Password & Confirm New Password */}
+                      <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {/* New Password */}
+                        <div className="flex flex-col gap-1">
+                          <label className={`text-xs font-semibold ${isLight ? "text-[#222222]" : "text-[#E4E4E7]"}`}>
+                            {isThai ? "รหัสผ่านใหม่ (อย่างน้อย 8 ตัวอักษร) *" : "New Password (At least 8 chars) *"}
+                          </label>
+                          <div className="relative flex items-center">
+                            <input
+                              type={showNewPassword ? "text" : "password"}
+                              value={newPassword}
+                              onChange={(e) => {
+                                setNewPassword(e.target.value);
+                                if (passwordError) setPasswordError(null);
+                              }}
+                              placeholder={isThai ? "กำหนดรหัสผ่านใหม่อย่างน้อย 8 ตัวอักษร" : "Enter new password (min. 8 characters)"}
+                              className={`w-full p-2.5 pr-10 h-[38px] rounded-lg border text-xs outline-none transition-all ${
+                                isLight
+                                  ? "bg-white border-[#E5E5E5] text-[#222222] focus:border-[#222222] focus:ring-1 focus:ring-[#222222]"
+                                  : "bg-[#282828] border-[#444444] text-[#FFFFFF] focus:border-white focus:ring-1 focus:ring-white"
+                              }`}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowNewPassword(!showNewPassword)}
+                              className={`absolute right-2.5 p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer ${
+                                isLight ? "text-[#666666]" : "text-[#A1A1AA]"
+                              }`}
+                            >
+                              {showNewPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Confirm New Password */}
+                        <div className="flex flex-col gap-1">
+                          <label className={`text-xs font-semibold ${isLight ? "text-[#222222]" : "text-[#E4E4E7]"}`}>
+                            {isThai ? "ยืนยันรหัสผ่านใหม่อีกครั้ง *" : "Confirm New Password *"}
+                          </label>
+                          <div className="relative flex items-center">
+                            <input
+                              type={showConfirmNewPassword ? "text" : "password"}
+                              value={confirmNewPassword}
+                              onChange={(e) => {
+                                setConfirmNewPassword(e.target.value);
+                                if (passwordError) setPasswordError(null);
+                              }}
+                              placeholder={isThai ? "พิมพ์รหัสผ่านใหม่อีกครั้งเพื่อยืนยัน" : "Re-enter new password"}
+                              className={`w-full p-2.5 pr-10 h-[38px] rounded-lg border text-xs outline-none transition-all ${
+                                isLight
+                                  ? "bg-white border-[#E5E5E5] text-[#222222] focus:border-[#222222] focus:ring-1 focus:ring-[#222222]"
+                                  : "bg-[#282828] border-[#444444] text-[#FFFFFF] focus:border-white focus:ring-1 focus:ring-white"
+                              }`}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
+                              className={`absolute right-2.5 p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer ${
+                                isLight ? "text-[#666666]" : "text-[#A1A1AA]"
+                              }`}
+                            >
+                              {showConfirmNewPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Password Strength Meter & Single Status Label (หลอดรวมเหมือนใน Register) */}
+                    <div className="w-full flex flex-col gap-1.5 pt-1">
+                      <div className="flex items-center justify-between">
+                        <span className={`text-[11.5px] font-medium ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
+                          {isThai ? "ระดับความปลอดภัยของรหัสผ่าน" : "Password Strength"}
+                        </span>
+                        {newPassword ? (
+                          <span
+                            className={`text-[10.5px] font-bold tracking-wider uppercase transition-all duration-300 ${
+                              confirmNewPassword && newPassword !== confirmNewPassword
+                                ? "text-rose-500 font-semibold"
+                                : passwordStrength.textClass
+                            }`}
+                          >
+                            {confirmNewPassword && newPassword !== confirmNewPassword
+                              ? isThai
+                                ? "รหัสผ่านไม่ตรงกัน"
+                                : "Passwords do not match"
+                              : confirmNewPassword && newPassword === confirmNewPassword
+                              ? `${passwordStrength.label} • ${isThai ? "ตรงกัน" : "Match"}`
+                              : passwordStrength.label}
+                          </span>
+                        ) : (
+                          <span className={`text-[10.5px] ${isLight ? "text-zinc-400" : "text-zinc-500"}`}>
+                            {isThai ? "อย่างน้อย 8 ตัวอักษร" : "Min. 8 characters"}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* หลอดรวม 4 ขีดเหมือนใน Register */}
+                      <div className="flex gap-1.5 h-[3.5px]">
+                        {[1, 2, 3, 4].map((level) => (
+                          <div
+                            key={level}
+                            className={`h-full flex-1 rounded-full transition-all duration-300 ${
+                              newPassword && passwordStrength.score >= level
+                                ? confirmNewPassword && newPassword !== confirmNewPassword
+                                  ? "bg-rose-500"
+                                  : passwordStrength.color
+                                : isLight
+                                ? "bg-slate-200"
+                                : "bg-[#444444]"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-1">
+                      <button
+                        type="submit"
+                        disabled={isSavingPassword || !currentPassword.trim() || newPassword.length < 8 || newPassword !== confirmNewPassword}
+                        className={`px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all shadow-sm cursor-pointer ${
+                          isSavingPassword || !currentPassword.trim() || newPassword.length < 8 || newPassword !== confirmNewPassword
+                            ? "opacity-50 cursor-not-allowed bg-zinc-300 dark:bg-[#444444] text-zinc-500 dark:text-zinc-400"
+                            : isLight
+                            ? "bg-[#222222] hover:bg-black text-white active:scale-95"
+                            : "bg-[#FFFFFF] hover:bg-[#F4F4F5] text-[#222222] active:scale-95"
+                        }`}
+                      >
+                        {isSavingPassword ? (
+                          <Loader2 size={13} className="animate-spin" />
+                        ) : passwordSuccess ? (
+                          <CheckCircle2 size={13} className="text-emerald-500" />
+                        ) : null}
+                        <span>
+                          {isSavingPassword
+                            ? isThai
+                              ? "กำลังอัปเดตรหัสผ่าน..."
+                              : "Updating..."
+                            : passwordSuccess
+                            ? isThai
+                              ? "เปลี่ยนรหัสผ่านสำเร็จ!"
+                              : "Password Changed!"
+                            : isThai
+                            ? "อัปเดตรหัสผ่านใหม่"
+                            : "Update Password"}
+                        </span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* ------------------------------------------------------------- */}
+                {/* 3. 6-DIGIT PIN SECURITY & RECOVERY                            */}
+                {/* ------------------------------------------------------------- */}
+                <div className="w-full flex flex-col gap-3 pt-5 border-t border-[#444444]/30">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-bold uppercase tracking-wider ${isLight ? "text-[#222222]" : "text-[#FFFFFF]"}`}>
+                      {isThai ? "ระบบความปลอดภัยเพิ่มเติม (Additional Security)" : "Additional Security"}
+                    </span>
+                  </div>
+
+                  <div
+                    className={`w-full p-4 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+                      isLight ? "bg-[#F8FAFC] border-[#E2E8F0]" : "bg-[#282828] border-[#444444]"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`p-2 rounded-lg transition-colors ${
+                          !(profile.pin_code || profile.is_pin_enabled)
+                            ? isLight
+                              ? "bg-amber-500/10 border border-amber-500/50 text-amber-600 shadow-xs"
+                              : "bg-amber-500/10 border border-amber-500/50 text-amber-400"
+                            : isLight
+                            ? "bg-white border border-transparent text-zinc-700 shadow-xs"
+                            : "bg-[#333333] border border-transparent text-zinc-200"
+                        }`}
+                      >
+                        <Fingerprint size={20} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className={`text-xs font-bold ${isLight ? "text-[#222222]" : "text-white"}`}>
+                            {isThai ? "รหัส PIN 6 หลัก (Quick 6-Digit PIN)" : "Quick 6-Digit PIN"}
+                          </h4>
+                          {(profile.pin_code || profile.is_pin_enabled) && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">
+                              {isThai ? "ตั้งค่าแล้ว" : "Configured"}
+                            </span>
+                          )}
+                        </div>
+                        <p className={`text-[11.5px] mt-0.5 ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
+                          {isThai
+                            ? "ใช้สำหรับการเข้าถึงโมดูลสำคัญและการยืนยันตัวตนอย่างรวดเร็วในองค์กร"
+                            : "Used for quick authorization and sensitive actions verification"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowPinSetupModal(true)}
+                      className={`px-4 py-2 text-xs font-semibold rounded-xl border transition-all cursor-pointer shrink-0 ${
+                        isLight
+                          ? "border-[#E5E5E5] bg-white text-[#222222] hover:bg-slate-50 active:scale-95"
+                          : "border-[#555555] bg-[#333333] text-white hover:bg-[#3d3d3d] active:scale-95"
+                      }`}
+                    >
+                      {profile.pin_code || profile.is_pin_enabled
+                        ? isThai
+                          ? "เปลี่ยนรหัส PIN"
+                          : "Change PIN"
+                        : isThai
+                        ? "ตั้งค่ารหัส PIN ทันที"
+                        : "Setup PIN"}
+                    </button>
+                  </div>
+
+                  {!(profile.pin_code || profile.is_pin_enabled) && (
+                    <p className="w-full text-xs text-amber-500 font-medium">
+                      {isThai ? "ยังไม่ได้ตั้งค่า" : "Not Set"}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
@@ -3279,30 +4128,58 @@ export default function SettingsView({
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowExitConfirmModal(true)}
-                className={`p-1.5 rounded-lg transition-colors cursor-pointer shrink-0 ${
-                  isLight ? "text-slate-400 hover:text-[#222222] hover:bg-slate-100" : "text-[#E4E4E7] hover:text-[#FFFFFF] hover:bg-[#444444]"
-                }`}
-                title={isThai ? "ปิด / ออกจากแบบฟอร์ม" : "Close"}
-              >
-                <X size={20} />
-              </button>
+              <div className="flex items-center gap-3 shrink-0">
+                {/* DEV_TESTPUSHFILL_START - Text button for test fill (DELETE ME EASILY WHEN DONE) */}
+                <button
+                  type="button"
+                  onClick={handleTestPushFill}
+                  className="text-xs text-amber-500 hover:text-amber-400 underline cursor-pointer p-1 font-mono"
+                  title="Auto-fill test data"
+                >
+                  testpushfill
+                </button>
+                {/* DEV_TESTPUSHFILL_END */}
+
+                <button
+                  type="button"
+                  onClick={() => setShowExitConfirmModal(true)}
+                  className={`p-1.5 rounded-lg transition-colors cursor-pointer shrink-0 ${
+                    isLight ? "text-slate-400 hover:text-[#222222] hover:bg-slate-100" : "text-[#E4E4E7] hover:text-[#FFFFFF] hover:bg-[#444444]"
+                  }`}
+                  title={isThai ? "ปิด / ออกจากแบบฟอร์ม" : "Close"}
+                >
+                  <X size={20} />
+                </button>
+              </div>
             </div>
 
             {regStep === "fill" ? (
               /* ================================================================= */
               /* STEP 1: FORM INPUTS                                              */
               /* ================================================================= */
-              <form onSubmit={handleValidateAndProceedToReview} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <form onSubmit={handleValidateAndProceedToReview} className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
+                {/* Scroll-to-bottom Down Arrow Button (hides when at bottom) */}
+                {!isFormAtBottom && (
+                  <button
+                    type="button"
+                    onClick={() => regFormScrollRef.current?.scrollTo({ top: regFormScrollRef.current.scrollHeight, behavior: "smooth" })}
+                    className={`absolute bottom-20 right-5 sm:right-7 p-2.5 rounded-full shadow-lg border transition-all hover:scale-110 active:scale-95 cursor-pointer z-20 flex items-center justify-center animate-in fade-in duration-200 ${
+                      isLight
+                        ? "bg-white/95 hover:bg-white border-[#E4E4E7] text-[#222222] shadow-slate-400/30"
+                        : "bg-[#282828]/95 hover:bg-[#333333] border-[#555555] text-white shadow-black/50"
+                    }`}
+                    title={isThai ? "เลื่อนลงไปล่างสุด" : "Scroll to bottom"}
+                  >
+                    <ChevronDown size={18} />
+                  </button>
+                )}
+
                 {/* Scrollable Form Body (Scrollbar strictly contained inside between header and footer) */}
-                <div className="flex-1 overflow-y-auto min-h-0 p-5 sm:p-6 pb-36 space-y-4">
+                <div ref={regFormScrollRef} onScroll={handleFormScroll} className="flex-1 overflow-y-auto min-h-0 p-5 sm:p-6 pb-36 space-y-4">
                   {modalError && (
-                    <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
-                      <AlertCircle size={15} className="shrink-0" />
-                      <span>{modalError}</span>
-                    </div>
+                    <p className="text-xs text-rose-500 font-medium py-1 select-none">
+                      {modalError}
+                    </p>
                   )}
 
                   {/* Section: ข้อมูลชื่อและบัญชีผู้ใช้ (Name & Account) */}
@@ -3882,42 +4759,66 @@ export default function SettingsView({
 
                 {/* Modal Actions (Fixed at bottom) */}
                 <div
-                  className={`flex items-center justify-end gap-2.5 p-4 sm:px-6 border-t shrink-0 ${
+                  className={`flex items-center justify-between gap-2.5 p-4 sm:px-6 border-t shrink-0 ${
                     isLight ? "border-[#E4E4E7] bg-[#FAFAFA]" : "border-[#444444]/60 bg-[#303030]"
                   }`}
                 >
-                  <button
-                    type="button"
-                    onClick={() => setShowExitConfirmModal(true)}
-                    className={`px-4 py-2.5 text-xs font-semibold rounded-xl transition-colors cursor-pointer ${
-                      isLight ? "text-slate-500 hover:text-[#222222] hover:bg-slate-200/50" : "text-[#E4E4E7] hover:text-[#FFFFFF] hover:bg-[#444444]"
-                    }`}
-                  >
-                    {isThai ? "ยกเลิก" : "Cancel"}
-                  </button>
-                  <button
-                    type="submit"
-                    className={`px-6 py-2.5 text-xs font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all ${
-                      isLight ? "bg-[#222222] text-white hover:bg-black" : "bg-[#FFFFFF] text-[#222222] hover:bg-[#F4F4F5]"
-                    }`}
-                  >
-                    <span>{isThai ? "ตรวจสอบข้อมูลและยอมรับเงื่อนไข" : "Review & Continue"}</span>
-                    <ArrowLeft size={14} className="rotate-180" />
-                  </button>
+                  <div className="flex-1 min-w-0 pr-2">
+                    {modalError && (
+                      <p className="text-xs text-rose-500 font-medium truncate select-none">
+                        {modalError}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setShowExitConfirmModal(true)}
+                      className={`px-4 py-2.5 text-xs font-semibold rounded-xl transition-colors cursor-pointer ${
+                        isLight ? "text-slate-500 hover:text-[#222222] hover:bg-slate-200/50" : "text-[#E4E4E7] hover:text-[#FFFFFF] hover:bg-[#444444]"
+                      }`}
+                    >
+                      {isThai ? "ยกเลิก" : "Cancel"}
+                    </button>
+                    <button
+                      type="submit"
+                      className={`px-6 py-2.5 text-xs font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all ${
+                        isLight ? "bg-[#222222] text-white hover:bg-black" : "bg-[#FFFFFF] text-[#222222] hover:bg-[#F4F4F5]"
+                      }`}
+                    >
+                      <span>{isThai ? "ตรวจสอบข้อมูลและยอมรับเงื่อนไข" : "Review & Continue"}</span>
+                      <ArrowLeft size={14} className="rotate-180" />
+                    </button>
+                  </div>
                 </div>
               </form>
             ) : (
               /* ================================================================= */
               /* STEP 2: REVIEW SUMMARY & TERMS OF SERVICE AGREEMENT               */
               /* ================================================================= */
-              <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
+                {/* Scroll-to-bottom Down Arrow Button (hides when at bottom) */}
+                {!isReviewAtBottom && (
+                  <button
+                    type="button"
+                    onClick={() => reviewScrollRef.current?.scrollTo({ top: reviewScrollRef.current.scrollHeight, behavior: "smooth" })}
+                    className={`absolute bottom-20 right-5 sm:right-7 p-2.5 rounded-full shadow-lg border transition-all hover:scale-110 active:scale-95 cursor-pointer z-20 flex items-center justify-center animate-in fade-in duration-200 ${
+                      isLight
+                        ? "bg-white/95 hover:bg-white border-[#E4E4E7] text-[#222222] shadow-slate-400/30"
+                        : "bg-[#282828]/95 hover:bg-[#333333] border-[#555555] text-white shadow-black/50"
+                    }`}
+                    title={isThai ? "เลื่อนลงไปล่างสุด" : "Scroll to bottom"}
+                  >
+                    <ChevronDown size={18} />
+                  </button>
+                )}
+
                 {/* Scrollable Review Body */}
-                <div className="flex-1 overflow-y-auto min-h-0 p-5 sm:p-6 pb-20 space-y-4">
+                <div ref={reviewScrollRef} onScroll={handleReviewScroll} className="flex-1 overflow-y-auto min-h-0 p-5 sm:p-6 pb-20 space-y-4">
                   {modalError && (
-                    <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
-                      <AlertCircle size={15} className="shrink-0" />
-                      <span>{modalError}</span>
-                    </div>
+                    <p className="text-xs text-rose-500 font-medium py-1 select-none">
+                      {modalError}
+                    </p>
                   )}
 
                   {/* Info Notice Banner */}
@@ -4363,41 +5264,56 @@ export default function SettingsView({
 
                   {/* Terms of Service & Privacy Agreement Box */}
                   <div className="flex flex-col gap-2 pt-2">
-                    <span className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${isLight ? "text-[#222222]" : "text-white"}`}>
-                      <FileText size={13} />
-                      <span>{isThai ? "ข้อตกลงและนโยบายความเป็นส่วนตัว (Terms & Privacy)" : "Terms & Privacy Policy"}</span>
-                    </span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${isLight ? "text-[#222222]" : "text-white"}`}>
+                        <FileText size={13} />
+                        <span>{isThai ? "ข้อตกลงและนโยบายความเป็นส่วนตัว" : "Terms & Privacy Policy"}</span>
+                      </span>
+
+                      <a
+                        href="/terms"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`text-xs flex items-center gap-1 font-medium transition-colors hover:underline cursor-pointer ${
+                          isLight ? "text-zinc-600 hover:text-black" : "text-zinc-400 hover:text-white"
+                        }`}
+                        title={isThai ? "เปิดอ่านฉบับเต็มในแท็บใหม่" : "Open full terms in new tab"}
+                      >
+                        <span>{isThai ? "อ่านฉบับเต็ม" : "Read Full Terms"}</span>
+                        <ArrowUpRight size={13} />
+                      </a>
+                    </div>
 
                     <div
-                      className={`p-4 rounded-xl border max-h-[140px] overflow-y-auto text-xs leading-relaxed space-y-2.5 ${
+                      className={`p-5 rounded-xl border min-h-[180px] max-h-[260px] overflow-y-auto text-xs leading-relaxed space-y-3.5 ${
                         isLight ? "bg-white border-[#E4E4E7] text-[#444444]" : "bg-[#1E1E1E] border-[#3E3E3E] text-[#D4D4D8]"
                       }`}
                     >
                       <div>
-                        <span className={`font-bold block ${isLight ? "text-[#222222]" : "text-white"}`}>
-                          {isThai ? "1. การคุ้มครองข้อมูลส่วนบุคคล (PDPA Protection)" : "1. Data Protection & PDPA"}
+                        <span className={`font-bold block text-[13px] ${isLight ? "text-[#222222]" : "text-white"}`}>
+                          {isThai ? "1. การคุ้มครองข้อมูลส่วนบุคคล" : "1. Data Protection & PDPA"}
                         </span>
-                        <p className="mt-0.5">
+                        <p className="mt-1">
                           {isThai
                             ? "ข้อมูลส่วนบุคคลทั้งหมดที่ท่านระบุจะถูกจัดเก็บ เข้ารหัส และประมวลผลอย่างปลอดภัยตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล เพื่อการบริหารงานบุคคลและสัญญาจ้างงาน"
                             : "All personal information provided is stored, encrypted, and processed in accordance with privacy laws for employment and clearance purposes."}
                         </p>
                       </div>
                       <div>
-                        <span className={`font-bold block ${isLight ? "text-[#222222]" : "text-white"}`}>
-                          {isThai ? "2. การรับรองความถูกต้องของข้อมูล (Data Authenticity)" : "2. Truthfulness & Authenticity"}
+                        <span className={`font-bold block text-[13px] ${isLight ? "text-[#222222]" : "text-white"}`}>
+                          {isThai ? "2. การรับรองความถูกต้องของข้อมูล" : "2. Truthfulness & Authenticity"}
                         </span>
-                        <p className="mt-0.5">
+                        <p className="mt-1">
                           {isThai
                             ? "ท่านรับรองว่าข้อมูลทั้งหมดที่ระบุไว้ข้างต้นเป็นความจริง ถูกต้อง และสมบูรณ์ทุกประการ"
                             : "You certify that all information submitted is true, complete, and accurate."}
                         </p>
                       </div>
                       <div>
-                        <span className={`font-bold block ${isLight ? "text-[#222222]" : "text-white"}`}>
-                          {isThai ? "3. การรักษาความปลอดภัยบัญชีและรหัส PIN (Security Policy)" : "3. Account & PIN Security"}
+                        <span className={`font-bold block text-[13px] ${isLight ? "text-[#222222]" : "text-white"}`}>
+                          {isThai ? "3. การรักษาความปลอดภัยบัญชีและรหัส PIN" : "3. Account & PIN Security"}
                         </span>
-                        <p className="mt-0.5">
+                        <p className="mt-1">
                           {isThai
                             ? "บัญชีผู้ใช้และรหัส PIN 6 หลักที่ท่านจะกำหนดในขั้นตอนถัดไปเป็นสิทธิ์เฉพาะบุคคล ห้ามส่งต่อหรือเปิดเผยแก่บุคคลอื่น"
                             : "Your account credentials and the 6-digit PIN created in the next step are strictly personal and non-transferable."}
@@ -4409,14 +5325,8 @@ export default function SettingsView({
                     <button
                       type="button"
                       onClick={() => setIsTermsAgreed(!isTermsAgreed)}
-                      className={`w-full p-3.5 rounded-xl border flex items-start gap-3 text-left cursor-pointer select-none transition-all mt-1 ${
-                        isTermsAgreed
-                          ? isLight
-                            ? "bg-[#2EC4B6]/10 border-[#2EC4B6]/30 text-[#222222]"
-                            : "bg-[#2EC4B6]/15 border-[#2EC4B6]/30 text-white"
-                          : isLight
-                          ? "bg-white border-[#E4E4E7] text-[#444444] hover:border-slate-400"
-                          : "bg-[#282828] border-[#444444] text-[#D4D4D8] hover:border-[#666666]"
+                      className={`w-full py-1.5 px-0.5 flex items-start gap-3 text-left cursor-pointer select-none transition-opacity mt-1 hover:opacity-90 ${
+                        isLight ? "text-[#333333]" : "text-[#E4E4E7]"
                       }`}
                     >
                       <div
@@ -4457,9 +5367,17 @@ export default function SettingsView({
                     isLight ? "border-[#E4E4E7] bg-[#FAFAFA]" : "border-[#444444]/60 bg-[#303030]"
                   }`}
                 >
-                  <button
-                    type="button"
-                    onClick={() => setRegStep("fill")}
+                  <div className="flex-1 min-w-0 pr-2">
+                    {modalError && (
+                      <p className="text-xs text-rose-500 font-medium truncate select-none">
+                        {modalError}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setRegStep("fill")}
                     className={`px-4 py-2.5 text-xs font-semibold rounded-xl border flex items-center gap-1.5 transition-colors cursor-pointer ${
                       isLight
                         ? "border-[#E5E5E5] bg-white text-[#222222] hover:bg-slate-100"
@@ -4495,7 +5413,99 @@ export default function SettingsView({
                   </button>
                 </div>
               </div>
+            </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* POPUP MODAL: ASK TO CREATE PIN (สอบถามการสร้างรหัส PIN หรือกดข้าม)            */}
+      {/* ========================================================================= */}
+      {showPinPromptModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
+          <div
+            className={`w-full max-w-[400px] rounded-[24px] border p-6 sm:p-7 shadow-2xl flex flex-col items-center gap-5 text-center relative animate-in zoom-in-95 duration-150 ${
+              isLight ? "bg-[#FAFAFA] border-[#E4E4E7]" : "bg-[#242424] border-[#383838]"
+            }`}
+          >
+            {/* Close / Skip button in top right */}
+            <button
+              type="button"
+              onClick={() => {
+                setShowPinPromptModal(false);
+                notify.info(isThai ? "ข้ามการตั้งรหัส PIN" : "PIN Setup Skipped", {
+                  message: isThai
+                    ? "คุณสามารถตั้งรหัส PIN ได้ตลอดเวลาในแท็บความปลอดภัย"
+                    : "You can set up your PIN anytime in Security settings.",
+                  duration: 4000,
+                });
+              }}
+              className={`absolute top-4 right-4 p-2 rounded-full transition-colors cursor-pointer ${
+                isLight ? "text-zinc-400 hover:text-black hover:bg-zinc-100" : "text-zinc-400 hover:text-white hover:bg-white/10"
+              }`}
+              title={isThai ? "ข้าม" : "Skip"}
+            >
+              <X size={16} />
+            </button>
+
+            {/* Icon Graphic */}
+            <div
+              className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm ${
+                isLight ? "bg-[#222222] text-white" : "bg-white text-[#222222]"
+              }`}
+            >
+              <KeyRound size={26} />
+            </div>
+
+            {/* Header Titles */}
+            <div className="flex flex-col gap-1.5">
+              <h4 className={`text-lg sm:text-[19px] font-bold tracking-tight ${isLight ? "text-black" : "text-white"}`}>
+                {isThai ? "ต้องการสร้างรหัส PIN หรือไม่?" : "Set Up a 6-Digit PIN?"}
+              </h4>
+              <p className={`text-xs leading-relaxed max-w-xs mx-auto ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>
+                {isThai
+                  ? "รหัส PIN 6 หลักช่วยให้คุณเข้าสู่ระบบได้อย่างสะดวก รวดเร็ว และปลอดภัยยิ่งขึ้น (สามารถตั้งค่าภายหลังได้)"
+                  : "A 6-digit PIN enables faster and more secure sign-in. You can also configure this later."}
+              </p>
+            </div>
+
+            {/* Action Buttons: Skip and Create */}
+            <div className="w-full flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPinPromptModal(false);
+                  notify.info(isThai ? "ข้ามการตั้งรหัส PIN" : "PIN Setup Skipped", {
+                    message: isThai
+                      ? "คุณสามารถตั้งรหัส PIN ได้ตลอดเวลาในแท็บความปลอดภัย"
+                      : "You can set up your PIN anytime in Security settings.",
+                    duration: 4000,
+                  });
+                }}
+                className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold border transition-all active:scale-95 cursor-pointer ${
+                  isLight
+                    ? "border-zinc-300 hover:bg-zinc-100 text-zinc-700"
+                    : "border-zinc-700 hover:bg-zinc-800 text-zinc-300"
+                }`}
+              >
+                {isThai ? "ข้าม" : "Skip"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPinPromptModal(false);
+                  setPinDigits(["", "", "", "", "", ""]);
+                  setConfirmPinDigits(["", "", "", "", "", ""]);
+                  setPinStep("enter");
+                  setShowPinSetupModal(true);
+                }}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold bg-[#222222] dark:bg-[#FFFFFF] text-white dark:text-[#222222] hover:opacity-90 transition-all active:scale-95 shadow-md cursor-pointer"
+              >
+                {isThai ? "สร้างรหัส PIN" : "Create PIN"}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -4510,6 +5520,21 @@ export default function SettingsView({
               isLight ? "bg-[#FAFAFA] border-[#E4E4E7]" : "bg-[#282828] border-[#3F3F3F]"
             }`}
           >
+            {/* DEV_TESTPUSHFILL_START - Test fill PIN 123456 (DELETE ME EASILY WHEN DONE) */}
+            <button
+              type="button"
+              onClick={() => {
+                setPinDigits(["1", "2", "3", "4", "5", "6"]);
+                setConfirmPinDigits(["1", "2", "3", "4", "5", "6"]);
+                setPinStep("confirm");
+              }}
+              className="absolute top-4 left-4 text-xs text-amber-500 hover:text-amber-400 underline cursor-pointer p-1 font-mono"
+              title="Auto-fill PIN 123456"
+            >
+              testpushfill
+            </button>
+            {/* DEV_TESTPUSHFILL_END */}
+
             {/* Close Button */}
             <button
               type="button"
@@ -4792,7 +5817,22 @@ export default function SettingsView({
               )}
 
               <div className="flex flex-col gap-1">
-                <label className={`text-xs font-semibold ${isLight ? "text-slate-600" : "text-[#E4E4E7]"}`}>{isThai ? "รหัสผ่านใหม่" : "New Password"}</label>
+                <label className={`text-xs font-semibold ${isLight ? "text-slate-600" : "text-[#E4E4E7]"}`}>{isThai ? "รหัสผ่านปัจจุบัน (เดิม) *" : "Current Password *"}</label>
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder={isThai ? "ระบุรหัสผ่านปัจจุบันของคุณ" : "Enter your current password"}
+                  className={`p-2.5 rounded-lg border text-xs outline-none ${
+                    isLight
+                      ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222]"
+                      : "bg-[#282828] border-[#444444] text-[#FFFFFF]"
+                  }`}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className={`text-xs font-semibold ${isLight ? "text-slate-600" : "text-[#E4E4E7]"}`}>{isThai ? "รหัสผ่านใหม่ (อย่างน้อย 8 ตัวอักษร) *" : "New Password (At least 8 characters) *"}</label>
                 <input
                   type="password"
                   value={newPassword}
@@ -4807,7 +5847,7 @@ export default function SettingsView({
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className={`text-xs font-semibold ${isLight ? "text-slate-600" : "text-[#E4E4E7]"}`}>{isThai ? "ยืนยันรหัสผ่านใหม่" : "Confirm New Password"}</label>
+                <label className={`text-xs font-semibold ${isLight ? "text-slate-600" : "text-[#E4E4E7]"}`}>{isThai ? "ยืนยันรหัสผ่านใหม่อีกครั้ง *" : "Confirm New Password *"}</label>
                 <input
                   type="password"
                   value={confirmNewPassword}
@@ -4824,7 +5864,12 @@ export default function SettingsView({
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#444444]/30">
                 <button
                   type="button"
-                  onClick={() => setShowPasswordModal(false)}
+                  onClick={() => {
+                    setShowPasswordModal(false);
+                    setCurrentPassword("");
+                    setNewPassword("");
+                    setConfirmNewPassword("");
+                  }}
                   className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
                     isLight ? "text-slate-500 hover:text-[#222222]" : "text-[#E4E4E7] hover:text-[#FFFFFF]"
                   }`}
@@ -4833,7 +5878,7 @@ export default function SettingsView({
                 </button>
                 <button
                   type="submit"
-                  disabled={isSaving}
+                  disabled={isSaving || !currentPassword.trim() || newPassword.length < 8 || newPassword !== confirmNewPassword}
                   className={`px-5 py-2 text-xs font-semibold rounded-lg flex items-center gap-1.5 cursor-pointer ${
                     isLight ? "bg-[#222222] text-white" : "bg-[#FFFFFF] text-[#222222]"
                   }`}
@@ -4899,6 +5944,7 @@ export default function SettingsView({
                   setHasAttemptedSubmit(false);
                   setShowExitConfirmModal(false);
                   setShowSecondaryRegModal(false);
+                  setShowPinPromptModal(false);
                   setShowPinSetupModal(false);
                   notify.info(
                     isThai ? "ยกเลิกการกรอกข้อมูลแล้ว" : "Form Dismissed",
