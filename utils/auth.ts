@@ -400,6 +400,13 @@ export function checkProfileCompleteness(profile: Partial<EmployeeProfile> | nul
   isComplete: boolean;
   missingFields: string[];
 } {
+  // [BYPASS TEMPORARILY] ปิดการตรวจสอบ incomplete profile ชั่วคราวเพื่อให้เข้าใช้งานระบบได้ทันที
+  return {
+    isComplete: true,
+    missingFields: [],
+  };
+
+  /*
   let activeProfile = profile;
 
   // Fallback ตรวจสอบจาก LocalStorage Cache หาก profile ที่ส่งเข้ามายังว่างอยู่
@@ -473,4 +480,5 @@ export function checkProfileCompleteness(profile: Partial<EmployeeProfile> | nul
     isComplete: missing.length === 0,
     missingFields: missing,
   };
+  */
 }

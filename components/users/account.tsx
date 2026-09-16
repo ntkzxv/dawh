@@ -1364,17 +1364,19 @@ function MajorSubjectAutocomplete({
   );
 }
 
-export interface SettingsViewProps {
+export interface AccountViewProps {
   onNavigate?: (target: string) => void;
   onBack?: () => void;
   initialTab?: "profile" | "employment" | "security" | "admin";
 }
 
-export default function SettingsView({
+export type SettingsViewProps = AccountViewProps;
+
+export default function AccountView({
   onNavigate,
   onBack,
   initialTab = "profile",
-}: SettingsViewProps) {
+}: AccountViewProps) {
   const router = useRouter();
   const { navigateWithLoading } = useLoading();
   const { theme, toggleTheme } = useTheme();
@@ -1865,7 +1867,9 @@ export default function SettingsView({
   if (!profile.pin_code && !profile.is_pin_enabled)
     missingFields.push(isThai ? "รหัส PIN 6 หลัก" : "Quick PIN");
 
-  const isProfileIncomplete = missingFields.length > 0;
+  // [DISABLED TEMPORARILY] ปิดแจ้งเตือนและแบนเนอร์ incomplete profile ชั่วคราว
+  const isProfileIncomplete = false;
+  // const isProfileIncomplete = missingFields.length > 0;
 
   // Auto-open Secondary Registration modal if autoOpen or incomplete query param exists
   useEffect(() => {

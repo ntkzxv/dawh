@@ -314,7 +314,7 @@ export default function NavbarsubWarehouse({
 
                 {/* Side line indicator when currently on dashboard page */}
                 {!isMinimized && (
-                  <div className="flex items-center justify-center w-4 shrink-0 ml-auto">
+                  <div className="flex items-center justify-center w-4 shrink-0 ml-auto mr-[-3px]">
                     <span
                       className={`w-[2.5px] h-[13px] rounded-full shrink-0 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
                         isLight ? "bg-slate-900" : "bg-white"
@@ -400,7 +400,7 @@ export default function NavbarsubWarehouse({
 
               {/* Side Indicator: Shows vertical line 'l' ONLY when page is actually open and currently active */}
               {!isMinimized && (
-                <div className="flex items-center justify-center w-4 shrink-0">
+                <div className="flex items-center justify-center w-4 shrink-0 mr-[-3px]">
                   <span
                     className={`w-[2.5px] h-[13px] rounded-full shrink-0 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
                       isLight ? "bg-slate-900" : "bg-white"

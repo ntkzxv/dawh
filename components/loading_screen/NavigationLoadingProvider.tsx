@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { AnimatePresence } from "framer-motion";
 import LoadingScreen from "./LoadingScreen";
 
 interface LoadingContextType {
@@ -127,14 +128,17 @@ export function NavigationLoadingProvider({
       }}
     >
       {children}
-      {isLoading && (
-        <LoadingScreen
-          fullscreen
-          variant="default"
-          message={message}
-          description={description}
-        />
-      )}
+      <AnimatePresence mode="wait">
+        {isLoading && (
+          <LoadingScreen
+            key="dawh-navigation-loading-screen"
+            fullscreen
+            variant="default"
+            message={message}
+            description={description}
+          />
+        )}
+      </AnimatePresence>
     </LoadingContext.Provider>
   );
 }

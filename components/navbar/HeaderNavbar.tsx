@@ -11,6 +11,8 @@ import {
   Settings,
   LogOut,
   Languages,
+  User,
+  MoreVertical,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
@@ -147,7 +149,9 @@ export default function HeaderNavbar({
     }
   }, []);
 
-  // Check if active user has Admin / DevOps privileges to open Control Panel
+  // Check if active user has Admin / DevOps privileges (ปิด role check ชั่วคราวเพื่อให้เข้าถึงได้ทุกคน)
+  const isAdmin = true;
+  /*
   const isAdmin =
     profile.role?.toLowerCase() === "devops" ||
     profile.role?.toLowerCase() === "super_admin" ||
@@ -156,6 +160,7 @@ export default function HeaderNavbar({
     profile.role?.toLowerCase().includes("devops") ||
     profile.role?.toLowerCase().includes("administrator") ||
     profile.role?.toLowerCase().includes("admin");
+  */
 
   // Display calculations (Supporting Nicknames and usernames when full name is empty)
   const validFullName =
@@ -234,6 +239,8 @@ export default function HeaderNavbar({
   const { isComplete, missingFields } = checkProfileCompleteness(profile);
 
   const handleGuardedNavigate = (target: string, fallbackPath?: string) => {
+    // [DISABLED TEMPORARILY] ปิดการบล็อก incomplete profile ชั่วคราวเพื่อให้เข้าถึงทุกโมดูลได้อิสระ
+    /*
     if (!isComplete && target !== "settings" && target !== "account" && target !== "auth" && target !== "workspace" && target !== "portal") {
       setShowGuardModal(true);
       notify.warning(
@@ -247,6 +254,7 @@ export default function HeaderNavbar({
       );
       return;
     }
+    */
 
     if (fallbackPath) {
       navigateWithLoading(
@@ -388,41 +396,64 @@ export default function HeaderNavbar({
                   : "bg-[#282828] border-[#444444] shadow-2xl text-white"
               }`}
             >
-              {/* Account Info Header inside Dropdown */}
-              <div className="px-3 py-3 rounded-xl mb-2 flex items-center gap-3">
+              {/* Account Info Header inside Dropdown (Clickable to /account) */}
+              <div
+                onClick={() => {
+                  if (pathname !== "/account" && pathname !== "/settings") {
+                    setIsDropdownOpen(false);
+                    handleGuardedNavigate("account", "/account");
+                  }
+                }}
+                className="group px-3 py-3 rounded-xl mb-2 flex items-center justify-between gap-3 cursor-pointer select-none"
+                role="button"
+                tabIndex={0}
+              >
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div
+                    className={`flex items-center justify-center w-10 h-10 rounded-full shrink-0 border overflow-hidden ${
+                      isLight
+                        ? "bg-white border-slate-300 text-[#222222]"
+                        : "bg-[#2C2C2C] border-[#444444] text-[#FFFFFF]"
+                    }`}
+                  >
+                    {mounted && profile.avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={profile.avatar_url}
+                        alt={fullName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="font-bold text-sm" suppressHydrationWarning>
+                        {mounted ? initials : ""}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className={`font-bold text-[13px] truncate ${isLight ? "text-[#222222]" : "text-[#FFFFFF]"}`} suppressHydrationWarning>
+                      {mounted ? fullName : ""}
+                    </span>
+                    {mounted && departmentDisplay ? (
+                      <span className={`text-[11px] truncate ${isLight ? "text-[#666666]" : "text-[#E4E4E7]"}`} suppressHydrationWarning>
+                        {departmentDisplay}
+                      </span>
+                    ) : mounted && profile.email ? (
+                      <span className="text-[11px] text-[#A1A1AA] truncate" suppressHydrationWarning>
+                        {profile.email}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+
+                {/* Vertical 3-Dots Action Icon */}
                 <div
-                  className={`flex items-center justify-center w-10 h-10 rounded-full shrink-0 border overflow-hidden ${
+                  className={`flex items-center justify-center shrink-0 transition-colors ${
                     isLight
-                      ? "bg-white border-slate-300 text-[#222222]"
-                      : "bg-[#2C2C2C] border-[#444444] text-[#FFFFFF]"
+                      ? "text-zinc-400 group-hover:text-black"
+                      : "text-zinc-500 group-hover:text-white"
                   }`}
                 >
-                  {mounted && profile.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={profile.avatar_url}
-                      alt={fullName}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="font-bold text-sm" suppressHydrationWarning>
-                      {mounted ? initials : ""}
-                    </span>
-                  )}
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <span className={`font-bold text-[13px] truncate ${isLight ? "text-[#222222]" : "text-[#FFFFFF]"}`} suppressHydrationWarning>
-                    {mounted ? fullName : ""}
-                  </span>
-                  {mounted && departmentDisplay ? (
-                    <span className={`text-[11px] truncate ${isLight ? "text-[#666666]" : "text-[#E4E4E7]"}`} suppressHydrationWarning>
-                      {departmentDisplay}
-                    </span>
-                  ) : mounted && profile.email ? (
-                    <span className="text-[11px] text-[#A1A1AA] truncate" suppressHydrationWarning>
-                      {profile.email}
-                    </span>
-                  ) : null}
+                  <MoreVertical size={16} />
                 </div>
               </div>
 
@@ -443,27 +474,21 @@ export default function HeaderNavbar({
                       setIsDropdownOpen(false);
                       handleGuardedNavigate("account", "/account");
                     }}
-                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-[12px] font-semibold transition-all text-left cursor-pointer shadow-sm ${
+                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[12px] font-semibold transition-all text-left cursor-pointer ${
                       isLight
-                        ? "bg-slate-100/80 hover:bg-slate-200/90 border-slate-200 text-[#222222]"
-                        : "bg-[#333333] hover:bg-[#3D3D3D] border-[#484848] text-[#FFFFFF]"
+                        ? "text-slate-800 hover:bg-[#F4F4F5] hover:text-slate-950"
+                        : "text-[#F4F4F5] hover:bg-white/10 hover:text-[#FFFFFF]"
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <Settings
-                        size={15}
-                        className={`shrink-0 ${
-                          isLight ? "text-[#222222]" : "text-[#FFFFFF]"
-                        }`}
-                      />
-                      <span className="truncate">
-                        {isThai ? "จัดการบัญชีและโปรไฟล์" : "Account Settings"}
-                      </span>
-                    </div>
-                    <ChevronRight
-                      size={13}
-                      className={`shrink-0 ${isLight ? "text-[#666666]" : "text-[#E4E4E7]"}`}
+                    <User
+                      size={15}
+                      className={`shrink-0 ${
+                        isLight ? "text-[#222222]" : "text-[#FFFFFF]"
+                      }`}
                     />
+                    <span className="truncate">
+                      {isThai ? "ตั้งค่าโปรไฟล์" : "Profile Settings"}
+                    </span>
                   </button>
                 )}
 
@@ -581,7 +606,7 @@ export default function HeaderNavbar({
                       isLight ? "text-[#222222]" : "text-[#FFFFFF]"
                     }`}
                   />
-                  <span className="truncate">{isThai ? "ตั้งค่าโปรไฟล์" : "Profile Settings"}</span>
+                  <span className="truncate">{isThai ? "ตั้งค่า" : "Settings"}</span>
                 </button>
 
                 {/* Log Out */}

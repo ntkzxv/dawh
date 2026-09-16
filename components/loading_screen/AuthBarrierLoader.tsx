@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { AnimatePresence } from "framer-motion";
 import LoadingScreen from "./LoadingScreen";
+import { useLoading } from "./NavigationLoadingProvider";
 
 export interface AuthBarrierLoaderProps {
   /** Whether the auth verification / background task is active */
@@ -27,10 +28,15 @@ export default function AuthBarrierLoader({
   className = "",
   onExited,
 }: AuthBarrierLoaderProps) {
+  const { isLoading: isNavLoading } = useLoading();
   const [prevLoading, setPrevLoading] = useState(isLoading);
   const [isFinished, setIsFinished] = useState(!isLoading);
   const startTimeRef = useRef<number>(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // If the global NavigationLoadingProvider is already covering the screen,
+  // we do not render a duplicate AuthBarrierLoader overlay to prevent overlapping.
+  const isBypassedByNav = isNavLoading;
 
   // Sync state during render if isLoading toggles (React pattern: adjusting state when prop changes)
   if (isLoading !== prevLoading) {
@@ -61,7 +67,7 @@ export default function AuthBarrierLoader({
     };
   }, [isLoading, minDisplayTime, onExited]);
 
-  const shouldRender = isLoading || !isFinished;
+  const shouldRender = !isBypassedByNav && (isLoading || !isFinished);
 
   return (
     <AnimatePresence mode="wait">

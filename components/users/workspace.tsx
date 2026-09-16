@@ -8,10 +8,12 @@ import {
   Cpu,
   Lock,
   ArrowRight,
+  Users,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/context/ThemeContext";
 import { checkProfileCompleteness, fetchAndStoreUserProfile } from "@/utils/auth";
+import { supabase } from "@/utils/supabase";
 import { useLoading } from "@/components/loading_screen";
 import { HeaderNavbar, MobileNavbar } from "@/components/navbar";
 import { ProfileGuardModal } from "@/components/auth";
@@ -19,6 +21,21 @@ import { EmployeeProfile } from "@/types/user";
 import { useAppLanguage } from "@/utils/language";
 import { getDawhLogo } from "@/config/brand";
 import { useNotification } from "@/context/NotificationContext";
+import {
+  DynamicWorkspaceLayout,
+  WorkspacePlanType,
+  PrimaryModuleId,
+} from "./DynamicWorkspaceLayout";
+
+export interface WorkspaceLayoutConfig {
+  plan: WorkspacePlanType;
+  selectedModules: PrimaryModuleId[];
+}
+
+export const DEFAULT_WORKSPACE_CONFIG: WorkspaceLayoutConfig = {
+  plan: "plan2",
+  selectedModules: ["warehouse", "datacenter"],
+};
 
 export interface WorkspaceViewProps {
   onNavigate?: (route: string) => void;
@@ -56,20 +73,38 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
   const isThai = activeLang === "th";
 
   const [profile, setProfile] = useState<Partial<EmployeeProfile>>({});
+  const [isLoading, setIsLoading] = useState(true);
   const [, setIsProfileComplete] = useState(true);
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [showGuardModal, setShowGuardModal] = useState(false);
+  const [layoutConfig, setLayoutConfig] = useState<WorkspaceLayoutConfig>(DEFAULT_WORKSPACE_CONFIG);
+
+  // Load layout plan selection from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("dawh_workspace_layout_config");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.plan && Array.isArray(parsed.selectedModules)) {
+          setLayoutConfig(parsed);
+        }
+      }
+    } catch {
+      // Non-blocking fallback
+    }
+  }, []);
 
   // Fetch real profile from Supabase Database on mount
   useEffect(() => {
+    let cachedProfile: Partial<EmployeeProfile> | null = null;
     // 1. Instant Cache Check
     try {
       const cached = localStorage.getItem("dawh_user_profile");
       if (cached) {
-        const employeeProfile = JSON.parse(cached);
-        if (employeeProfile) {
-          setProfile(employeeProfile);
-          const { isComplete, missingFields: missing } = checkProfileCompleteness(employeeProfile);
+        cachedProfile = JSON.parse(cached);
+        if (cachedProfile) {
+          setProfile(cachedProfile);
+          const { isComplete, missingFields: missing } = checkProfileCompleteness(cachedProfile);
           setIsProfileComplete(isComplete);
           setMissingFields(missing);
         }
@@ -80,7 +115,11 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
 
     const fetchUserProfile = async () => {
       try {
-        const userId = typeof window !== "undefined" ? localStorage.getItem("current_user_id") : null;
+        let userId = typeof window !== "undefined" ? localStorage.getItem("current_user_id") : null;
+        if (!userId) {
+          const { data: { session } } = await supabase.auth.getSession();
+          userId = session?.user?.id || null;
+        }
         if (userId) {
           const employeeProfile = await fetchAndStoreUserProfile(userId, null, 1);
           if (employeeProfile) {
@@ -92,6 +131,8 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
         }
       } catch (err) {
         console.error("Error loading user profile:", err);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -99,8 +140,20 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
   }, []);
 
   const handleOpenAccount = () => {
-    if (onNavigate) onNavigate("account");
-    else navigateWithLoading("/account");
+    if (onNavigate) onNavigate("settings");
+    else navigateWithLoading("/settings");
+  };
+
+  const handleDynamicNavigate = (route: string) => {
+    if (onNavigate) {
+      onNavigate(route.replace("/", ""));
+    } else {
+      navigateWithLoading(
+        route,
+        isThai ? "กำลังเปิดพื้นที่ทำงาน..." : "Opening workspace...",
+        isThai ? "กำลังเชื่อมต่อระบบและโหลดข้อมูล..." : "Connecting to workspace modules..."
+      );
+    }
   };
 
   const handleCardClick = (card: WorkspaceCardItem) => {
@@ -220,39 +273,52 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
         }
         whileTap={!isLocked ? { scale: 0.99 } : undefined}
         onClick={() => handleCardClick(card)}
-        className={`group box-border flex flex-1 flex-col items-start p-[28px] gap-[20px] rounded-[12px] border transition-all duration-200 select-none min-h-[233px] w-full lg:w-[662px] ${
+        className={`group box-border flex flex-1 flex-col items-start p-[32px] gap-[24px] rounded-[14px] border transition-all duration-200 select-none min-h-[270px] w-full lg:w-[662px] ${
           isLocked
             ? "cursor-not-allowed opacity-50"
             : "cursor-pointer"
         } ${
           isLight
-            ? "bg-white/95 border-[#E2E8F0] shadow-[0px_4px_12px_rgba(0,0,0,0.06)] hover:border-[#0D99FF]/40 hover:shadow-[0px_8px_20px_rgba(0,0,0,0.12)]"
-            : "bg-[#383838] border-[#444444] shadow-[0px_4px_12px_rgba(0,0,0,0.101961)] hover:border-[#555555] hover:shadow-[0px_8px_24px_rgba(0,0,0,0.28)]"
+            ? "bg-white/95 border-[#E2E8F0] shadow-[0px_4px_12px_rgba(0,0,0,0.06)] hover:border-slate-400 hover:shadow-[0px_8px_20px_rgba(0,0,0,0.12)]"
+            : "bg-[#383838] border-[#444444] shadow-[0px_4px_12px_rgba(0,0,0,0.101961)] hover:border-[#666666] hover:shadow-[0px_8px_24px_rgba(0,0,0,0.28)]"
         }`}
       >
-        {/* card-top-row */}
-        <div className="flex flex-row justify-between items-center p-0 w-full h-[48px] self-stretch">
-          {/* icon-wrapper */}
-          <div
-            className={`box-border flex flex-row justify-center items-center p-0 w-[48px] h-[48px] rounded-[10px] border transition-colors ${
-              isLight
-                ? "bg-[#F1F5F9] border-[#E2E8F0]"
-                : "bg-[#222222] border-[#444444]"
-            }`}
-          >
-            <IconComponent
-              size={24}
-              stroke="#0D99FF"
-              strokeWidth={2}
-              className="shrink-0"
-            />
+        {/* card-top-row: Icon + Title on the left, Status Pill on the right */}
+        <div className="flex flex-row justify-between items-center p-0 w-full min-h-[48px] self-stretch gap-3">
+          {/* Left: Icon & Title Header */}
+          <div className="flex flex-row items-center gap-3.5 min-w-0 flex-1">
+            {/* icon-wrapper */}
+            <div
+              className={`box-border flex flex-row justify-center items-center p-0 w-[48px] h-[48px] rounded-[10px] border transition-colors shrink-0 ${
+                isLight
+                  ? "bg-[#F1F5F9] border-[#E2E8F0] text-slate-900"
+                  : "bg-[#222222] border-[#444444] text-white"
+              }`}
+            >
+              <IconComponent
+                size={22}
+                stroke="currentColor"
+                strokeWidth={2}
+                className="shrink-0"
+              />
+            </div>
+
+            {/* Title (moved next to icon & increased size) */}
+            <h2
+              className={`font-bold text-[20px] sm:text-[21px] leading-[26px] tracking-tight truncate ${
+                isLight ? "text-[#0F172A]" : "text-[#FFFFFF]"
+              }`}
+              style={{ fontFamily: "var(--font-outfit), sans-serif" }}
+            >
+              {isThai ? card.titleTh : card.title}
+            </h2>
           </div>
 
           {/* status-pill */}
           <div
             className={`box-border flex flex-row items-center justify-center px-[10px] py-[4px] gap-[6px] h-[22px] ${
               card.pillWidth
-            } min-w-fit rounded-[100px] bg-transparent border-[1.5px] transition-colors ${
+            } min-w-fit rounded-[100px] bg-transparent border-[1.5px] transition-colors shrink-0 ${
               isLight
                 ? "border-[#E2E8F0]"
                 : "border-[#444444]"
@@ -275,21 +341,10 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
           </div>
         </div>
 
-        {/* card-mid-text */}
-        <div className="flex flex-col items-start p-0 gap-[8px] w-full self-stretch">
-          {/* Title */}
-          <h2
-            className={`font-bold text-[18px] leading-[23px] tracking-tight ${
-              isLight ? "text-[#0F172A]" : "text-[#FFFFFF]"
-            }`}
-            style={{ fontFamily: "var(--font-outfit), sans-serif" }}
-          >
-            {isThai ? card.titleTh : card.title}
-          </h2>
-
-          {/* Description */}
+        {/* card-mid-text: Description */}
+        <div className="flex flex-col items-start p-0 w-full self-stretch flex-1">
           <p
-            className={`font-normal text-[13px] leading-[150%] ${
+            className={`font-normal text-[13.5px] leading-[155%] ${
               isLight ? "text-[#64748B]" : "text-[#999999]"
             }`}
             style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
@@ -298,35 +353,37 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
           </p>
         </div>
 
-        {/* Action Button */}
-        <button
-          type="button"
-          tabIndex={isLocked ? -1 : 0}
-          className={`box-border flex flex-row justify-center items-center px-[16px] py-[10px] gap-[8px] h-[38px] ${
-            card.buttonWidth
-          } min-w-fit rounded-[8px] border transition-all duration-200 mt-auto whitespace-nowrap ${
-            isLocked
-              ? "cursor-not-allowed"
-              : isLight
-              ? "bg-[#F8FAFC] border-[#E2E8F0] text-[#64748B] group-hover:bg-[#0D99FF] group-hover:text-white group-hover:border-[#0D99FF]"
-              : "bg-[#383838] border-[#444444] text-[#999999] group-hover:bg-[#444444] group-hover:text-white group-hover:border-[#666666]"
-          }`}
-          style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
-        >
-          <ButtonIconComponent
-            size={16}
-            className={`shrink-0 transition-colors ${
+        {/* Action Button (Aligned to the right) */}
+        <div className="w-full flex justify-end items-center mt-auto pt-2">
+          <button
+            type="button"
+            tabIndex={isLocked ? -1 : 0}
+            className={`box-border flex flex-row justify-center items-center px-[16px] py-[10px] gap-[8px] h-[38px] ${
+              card.buttonWidth
+            } min-w-fit rounded-[8px] border transition-all duration-200 whitespace-nowrap ${
               isLocked
-                ? "text-[#999999]"
+                ? "cursor-not-allowed"
                 : isLight
-                ? "text-[#64748B] group-hover:text-white"
-                : "text-[#999999] group-hover:text-white"
+                ? "bg-[#F8FAFC] border-[#E2E8F0] text-[#64748B] group-hover:bg-slate-900 group-hover:text-white group-hover:border-slate-900"
+                : "bg-[#383838] border-[#444444] text-[#999999] group-hover:bg-[#4A4A4A] group-hover:text-white group-hover:border-[#666666]"
             }`}
-          />
-          <span className="font-semibold text-[14px] leading-[18px] whitespace-nowrap">
-            {isThai ? card.buttonTextTh : card.buttonText}
-          </span>
-        </button>
+            style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
+          >
+            <ButtonIconComponent
+              size={16}
+              className={`shrink-0 transition-colors ${
+                isLocked
+                  ? "text-[#999999]"
+                  : isLight
+                  ? "text-[#64748B] group-hover:text-white"
+                  : "text-[#999999] group-hover:text-white"
+              }`}
+            />
+            <span className="font-semibold text-[14px] leading-[18px] whitespace-nowrap">
+              {isThai ? card.buttonTextTh : card.buttonText}
+            </span>
+          </button>
+        </div>
       </motion.div>
     );
   };
@@ -416,7 +473,7 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -16 }}
           transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
-          className="relative z-10 w-full max-w-[1440px] mx-auto flex flex-col items-start px-6 sm:px-12 py-10 sm:py-16 gap-10 flex-1 self-stretch"
+          className="relative z-10 w-full max-w-[1344px] mx-auto flex flex-col justify-center items-start px-4 sm:px-8 py-8 sm:py-10 gap-6 sm:gap-7 flex-1 self-stretch"
         >
           {/* hub-title-block */}
           <motion.div
@@ -424,11 +481,11 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.4, delay: 0.05, ease: [0.4, 0, 0.2, 1] }}
-            className="flex flex-col items-start p-0 gap-2 max-w-[507px]"
+            className="flex flex-col items-start p-0 gap-1.5 max-w-[507px]"
           >
             {/* Select Workspace */}
             <h1
-              className={`font-bold text-[32px] leading-[40px] tracking-tight ${
+              className={`font-bold text-[30px] sm:text-[32px] leading-[38px] tracking-tight ${
                 isLight ? "text-[#0F172A]" : "text-[#FFFFFF]"
               }`}
               style={{ fontFamily: "var(--font-outfit), sans-serif" }}
@@ -438,7 +495,7 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
 
             {/* Subtitle */}
             <p
-              className={`font-normal text-[16px] leading-[21px] ${
+              className={`font-normal text-[15px] sm:text-[16px] leading-[22px] ${
                 isLight ? "text-[#64748B]" : "text-[#999999]"
               }`}
               style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
@@ -449,23 +506,21 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
             </p>
           </motion.div>
 
-          {/* workspace-grid */}
+          {/* workspace dynamic layout */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.4, delay: 0.1 }}
-            className="w-full max-w-[1344px] flex flex-col items-start p-0 gap-[20px] self-stretch"
+            className="w-full flex flex-col items-start p-0 self-stretch"
           >
-            {/* grid-row-1 */}
-            <div className="w-full flex flex-col lg:flex-row items-stretch lg:items-start p-0 gap-[20px] self-stretch">
-              {cardsRow1.map((card, idx) => renderCard(card, idx))}
-            </div>
-
-            {/* grid-row-2 */}
-            <div className="w-full flex flex-col lg:flex-row items-stretch lg:items-start p-0 gap-[20px] self-stretch">
-              {cardsRow2.map((card, idx) => renderCard(card, idx + 2))}
-            </div>
+            <DynamicWorkspaceLayout
+              plan={layoutConfig.plan}
+              selectedModules={layoutConfig.selectedModules}
+              onNavigate={handleDynamicNavigate}
+              isLight={isLight}
+              isThai={isThai}
+            />
           </motion.div>
         </motion.main>
 

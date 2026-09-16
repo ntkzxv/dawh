@@ -2490,13 +2490,16 @@ export function UserAuthView({
       )}
 
       {/* FULLSCREEN PIN LOGIN LOADING SCREEN */}
-      {isPinAuthenticating && (
-        <LoadingScreen
-          show={true}
-          message={lang === "TH" ? "กำลังเข้าสู่ระบบ..." : "Signing in..."}
-          description={lang === "TH" ? "กำลังยืนยันความถูกต้องของรหัส PIN องค์กร" : "Verifying security PIN credentials..."}
-        />
-      )}
+      <AnimatePresence mode="wait">
+        {isPinAuthenticating && (
+          <LoadingScreen
+            key="dawh-pin-login-loading-screen"
+            show={true}
+            message={lang === "TH" ? "กำลังเข้าสู่ระบบ..." : "Signing in..."}
+            description={lang === "TH" ? "กำลังยืนยันความถูกต้องของรหัส PIN องค์กร" : "Verifying security PIN credentials..."}
+          />
+        )}
+      </AnimatePresence>
 
       {/* ERROR MODAL */}
       {errorModal.isOpen && (
