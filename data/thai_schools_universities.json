@@ -1,0 +1,3826 @@
+[
+  {
+    "id": "cu",
+    "name_th": "จุฬาลงกรณ์มหาวิทยาลัย",
+    "name_en": "Chulalongkorn University",
+    "category": "ในกำกับรัฐ",
+    "abbr_th": "จุฬาฯ",
+    "abbr_en": "CU"
+  },
+  {
+    "id": "ku",
+    "name_th": "มหาวิทยาลัยเกษตรศาสตร์",
+    "name_en": "Kasetsart University",
+    "category": "ในกำกับรัฐ",
+    "abbr_th": "มก.",
+    "abbr_en": "KU"
+  },
+  {
+    "id": "tu",
+    "name_th": "มหาวิทยาลัยธรรมศาสตร์",
+    "name_en": "Thammasat University",
+    "category": "ในกำกับรัฐ",
+    "abbr_th": "มธ.",
+    "abbr_en": "TU"
+  },
+  {
+    "id": "mu",
+    "name_th": "มหาวิทยาลัยมหิดล",
+    "name_en": "Mahidol University",
+    "category": "ในกำกับรัฐ",
+    "abbr_th": "มม.",
+    "abbr_en": "MU"
+  },
+  {
+    "id": "cmu",
+    "name_th": "มหาวิทยาลัยเชียงใหม่",
+    "name_en": "Chiang Mai University",
+    "category": "ในกำกับรัฐ",
+    "abbr_th": "มช.",
+    "abbr_en": "CMU"
+  },
+  {
+    "id": "kmitl",
+    "name_th": "สถาบันเทคโนโลยีพระจอมเกล้าเจ้าคุณทหารลาดกระบัง",
+    "name_en": "King Mongkut's Institute of Technology Ladkrabang",
+    "category": "ในกำกับรัฐ",
+    "abbr_th": "สจล.",
+    "abbr_en": "KMITL"
+  },
+  {
+    "id": "kmutt",
+    "name_th": "มหาวิทยาลัยเทคโนโลยีพระจอมเกล้าธนบุรี",
+    "name_en": "King Mongkut's University of Technology Thonburi",
+    "category": "ในกำกับรัฐ",
+    "abbr_th": "มจธ.",
+    "abbr_en": "KMUTT"
+  },
+  {
+    "id": "kmutnb",
+    "name_th": "มหาวิทยาลัยเทคโนโลยีพระจอมเกล้าพระนครเหนือ",
+    "name_en": "King Mongkut's University of Technology North Bangkok",
+    "category": "ในกำกับรัฐ",
+    "abbr_th": "มจพ.",
+    "abbr_en": "KMUTNB"
+  },
+  {
+    "id": "kku",
+    "name_th": "มหาวิทยาลัยขอนแก่น",
+    "name_en": "Khon Kaen University",
+    "category": "ในกำกับรัฐ",
+    "abbr_th": "มข.",
+    "abbr_en": "KKU"
+  },
+  {
+    "id": "psu",
+    "name_th": "มหาวิทยาลัยสงขลานครินทร์",
+    "name_en": "Prince of Songkla University",
+    "category": "ในกำกับรัฐ",
+    "abbr_th": "มอ.",
+    "abbr_en": "PSU"
+  },
+  {
+    "id": "swu",
+    "name_th": "มหาวิทยาลัยศรีนครินทรวิโรฒ",
+    "name_en": "Srinakharinwirot University",
+    "category": "ในกำกับรัฐ",
+    "abbr_th": "มศว",
+    "abbr_en": "SWU"
+  },
+  {
+    "id": "buu",
+    "name_th": "มหาวิทยาลัยบูรพา",
+    "name_en": "Burapha University",
+    "category": "ในกำกับรัฐ",
+    "abbr_th": "มบ.",
+    "abbr_en": "BUU"
+  },
+  {
+    "id": "nu",
+    "name_th": "มหาวิทยาลัยนเรศวร",
+    "name_en": "Naresuan University",
+    "category": "รัฐบาล",
+    "abbr_th": "มน.",
+    "abbr_en": "NU"
+  },
+  {
+    "id": "su",
+    "name_th": "มหาวิทยาลัยศิลปากร",
+    "name_en": "Silpakorn University",
+    "category": "ในกำกับรัฐ",
+    "abbr_th": "มศก.",
+    "abbr_en": "SU"
+  },
+  {
+    "id": "mfu",
+    "name_th": "มหาวิทยาลัยแม่ฟ้าหลวง",
+    "name_en": "Mae Fah Luang University",
+    "category": "ในกำกับรัฐ",
+    "abbr_th": "มฟล.",
+    "abbr_en": "MFU"
+  },
+  {
+    "id": "mju",
+    "name_th": "มหาวิทยาลัยแม่โจ้",
+    "name_en": "Maejo University",
+    "category": "ในกำกับรัฐ",
+    "abbr_th": "มมจ.",
+    "abbr_en": "MJU"
+  },
+  {
+    "id": "sut",
+    "name_th": "มหาวิทยาลัยเทคโนโลยีสุรนารี",
+    "name_en": "Suranaree University of Technology",
+    "category": "ในกำกับรัฐ",
+    "abbr_th": "มทส.",
+    "abbr_en": "SUT"
+  },
+  {
+    "id": "up",
+    "name_th": "มหาวิทยาลัยพะเยา",
+    "name_en": "University of Phayao",
+    "category": "ในกำกับรัฐ",
+    "abbr_th": "มพ.",
+    "abbr_en": "UP"
+  },
+  {
+    "id": "ubu",
+    "name_th": "มหาวิทยาลัยอุบลราชธานี",
+    "name_en": "Ubon Ratchathani University",
+    "category": "รัฐบาล",
+    "abbr_th": "มอ.",
+    "abbr_en": "UBU"
+  },
+  {
+    "id": "msu",
+    "name_th": "มหาวิทยาลัยมหาสารคาม",
+    "name_en": "Mahasarakham University",
+    "category": "รัฐบาล",
+    "abbr_th": "มมส.",
+    "abbr_en": "MSU"
+  },
+  {
+    "id": "tsu",
+    "name_th": "มหาวิทยาลัยทักษิณ",
+    "name_en": "Thaksin University",
+    "category": "ในกำกับรัฐ",
+    "abbr_th": "มท.",
+    "abbr_en": "TSU"
+  },
+  {
+    "id": "ru",
+    "name_th": "มหาวิทยาลัยรามคำแหง",
+    "name_en": "Ramkhamhaeng University",
+    "category": "รัฐบาล",
+    "abbr_th": "มร.",
+    "abbr_en": "RU"
+  },
+  {
+    "id": "stou",
+    "name_th": "มหาวิทยาลัยสุโขทัยธรรมาธิราช",
+    "name_en": "Sukhothai Thammathirat Open University",
+    "category": "รัฐบาล",
+    "abbr_th": "มสธ.",
+    "abbr_en": "STOU"
+  },
+  {
+    "id": "nida",
+    "name_th": "สถาบันบัณฑิตพัฒนบริหารศาสตร์ (นิด้า)",
+    "name_en": "National Institute of Development Administration (NIDA)",
+    "category": "ในกำกับรัฐ",
+    "abbr_th": "นิด้า",
+    "abbr_en": "NIDA"
+  },
+  {
+    "id": "nvu",
+    "name_th": "มหาวิทยาลัยนวมินทราธิราช",
+    "name_en": "Navamindradhiraj University",
+    "category": "ในกำกับรัฐ",
+    "abbr_th": "นมร.",
+    "abbr_en": "NMU"
+  },
+  {
+    "id": "pnru_uni",
+    "name_th": "มหาวิทยาลัยนราธิวาสราชนครินทร์",
+    "name_en": "Princess of Naradhiwas University",
+    "category": "รัฐบาล",
+    "abbr_th": "มนร.",
+    "abbr_en": "PNU"
+  },
+  {
+    "id": "kpu",
+    "name_th": "มหาวิทยาลัยกาฬสินธุ์",
+    "name_en": "Kalasin University",
+    "category": "รัฐบาล",
+    "abbr_th": "มกส.",
+    "abbr_en": "KSU"
+  },
+  {
+    "id": "npu",
+    "name_th": "มหาวิทยาลัยนครพนม",
+    "name_en": "Nakhon Phanom University",
+    "category": "รัฐบาล",
+    "abbr_th": "มนพ.",
+    "abbr_en": "NPU"
+  },
+  {
+    "id": "bu",
+    "name_th": "มหาวิทยาลัยกรุงเทพ",
+    "name_en": "Bangkok University",
+    "category": "เอกชน",
+    "abbr_th": "มกท.",
+    "abbr_en": "BU"
+  },
+  {
+    "id": "utcc",
+    "name_th": "มหาวิทยาลัยหอการค้าไทย",
+    "name_en": "University of the Thai Chamber of Commerce",
+    "category": "เอกชน",
+    "abbr_th": "มกค.",
+    "abbr_en": "UTCC"
+  },
+  {
+    "id": "au",
+    "name_th": "มหาวิทยาลัยอัสสัมชัญ (เอแบค)",
+    "name_en": "Assumption University (ABAC)",
+    "category": "เอกชน",
+    "abbr_th": "เอแบค",
+    "abbr_en": "AU"
+  },
+  {
+    "id": "rsu",
+    "name_th": "มหาวิทยาลัยรังสิต",
+    "name_en": "Rangsit University",
+    "category": "เอกชน",
+    "abbr_th": "มรภ.",
+    "abbr_en": "RSU"
+  },
+  {
+    "id": "spu",
+    "name_th": "มหาวิทยาลัยศรีปทุม",
+    "name_en": "Sripatum University",
+    "category": "เอกชน",
+    "abbr_th": "มศป.",
+    "abbr_en": "SPU"
+  },
+  {
+    "id": "dpu",
+    "name_th": "มหาวิทยาลัยธุรกิจบัณฑิตย์",
+    "name_en": "Dhurakij Pundit University",
+    "category": "เอกชน",
+    "abbr_th": "มธบ.",
+    "abbr_en": "DPU"
+  },
+  {
+    "id": "pim",
+    "name_th": "สถาบันการจัดการปัญญาภิวัฒน์",
+    "name_en": "Panyapiwat Institute of Management",
+    "category": "เอกชน",
+    "abbr_th": "พีไอเอ็ม",
+    "abbr_en": "PIM"
+  },
+  {
+    "id": "siam",
+    "name_th": "มหาวิทยาลัยสยาม",
+    "name_en": "Siam University",
+    "category": "เอกชน",
+    "abbr_th": "มส.",
+    "abbr_en": "SU"
+  },
+  {
+    "id": "kbu",
+    "name_th": "มหาวิทยาลัยเกษมบัณฑิต",
+    "name_en": "Kasem Bundit University",
+    "category": "เอกชน",
+    "abbr_th": "มกบ.",
+    "abbr_en": "KBU"
+  },
+  {
+    "id": "hcu",
+    "name_th": "มหาวิทยาลัยหัวเฉียวเฉลิมพระเกียรติ",
+    "name_en": "Huachiew Chalermprakiet University",
+    "category": "เอกชน",
+    "abbr_th": "มฉก.",
+    "abbr_en": "HCU"
+  },
+  {
+    "id": "payap",
+    "name_th": "มหาวิทยาลัยพายัพ",
+    "name_en": "Payap University",
+    "category": "เอกชน",
+    "abbr_th": "มพย.",
+    "abbr_en": "PYU"
+  },
+  {
+    "id": "hu",
+    "name_th": "มหาวิทยาลัยหาดใหญ่",
+    "name_en": "Hatyai University",
+    "category": "เอกชน",
+    "abbr_th": "มหย.",
+    "abbr_en": "HU"
+  },
+  {
+    "id": "tni",
+    "name_th": "สถาบันเทคโนโลยีไทย-ญี่ปุ่น",
+    "name_en": "Thai-Nichi Institute of Technology",
+    "category": "เอกชน",
+    "abbr_th": "สทญ.",
+    "abbr_en": "TNI"
+  },
+  {
+    "id": "sau",
+    "name_th": "มหาวิทยาลัยเอเชียอาคเนย์",
+    "name_en": "South-East Asia University",
+    "category": "เอกชน",
+    "abbr_th": "มอา.",
+    "abbr_en": "SAU"
+  },
+  {
+    "id": "ctu",
+    "name_th": "มหาวิทยาลัยกรุงเทพธนบุรี",
+    "name_en": "Bangkok Thonburi University",
+    "category": "เอกชน",
+    "abbr_th": "มกธ.",
+    "abbr_en": "BTU"
+  },
+  {
+    "id": "ptu",
+    "name_th": "มหาวิทยาลัยปทุมธานี",
+    "name_en": "Pathumthani University",
+    "category": "เอกชน",
+    "abbr_th": "มปท.",
+    "abbr_en": "PTU"
+  },
+  {
+    "id": "westerNu",
+    "name_th": "มหาวิทยาลัยเวสเทิร์น",
+    "name_en": "Western University",
+    "category": "เอกชน",
+    "abbr_th": "มวม.",
+    "abbr_en": "WTU"
+  },
+  {
+    "id": "feu",
+    "name_th": "มหาวิทยาลัยฟาร์อีสเทอร์น",
+    "name_en": "The Far Eastern University",
+    "category": "เอกชน",
+    "abbr_th": "มฟอ.",
+    "abbr_en": "FEU"
+  },
+  {
+    "id": "pyu_phayao",
+    "name_th": "วิทยาลัยเชียงราย",
+    "name_en": "Chiangrai College",
+    "category": "เอกชน",
+    "abbr_th": "วชร.",
+    "abbr_en": "CRC"
+  },
+  {
+    "id": "neu",
+    "name_th": "มหาวิทยาลัยภาคตะวันออกเฉียงเหนือ",
+    "name_en": "North Eastern University",
+    "category": "เอกชน",
+    "abbr_th": "มภน.",
+    "abbr_en": "NEU"
+  },
+  {
+    "id": "vu",
+    "name_th": "มหาวิทยาลัยวงษ์ชวลิตกุล",
+    "name_en": "Vongchavalitkul University",
+    "category": "เอกชน",
+    "abbr_th": "มวศ.",
+    "abbr_en": "VU"
+  },
+  {
+    "id": "ftu",
+    "name_th": "มหาวิทยาลัยฟาฏอนี",
+    "name_en": "Fatoni University",
+    "category": "เอกชน",
+    "abbr_th": "มฟน.",
+    "abbr_en": "FTU"
+  },
+  {
+    "id": "ttu",
+    "name_th": "มหาวิทยาลัยตาปี",
+    "name_en": "Tapi University",
+    "category": "เอกชน",
+    "abbr_th": "มตป.",
+    "abbr_en": "TPU"
+  },
+  {
+    "id": "ssru",
+    "name_th": "มหาวิทยาลัยราชภัฏสวนสุนันทา",
+    "name_en": "Suan Sunandha Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.สส.",
+    "abbr_en": "SSRU"
+  },
+  {
+    "id": "bsru",
+    "name_th": "มหาวิทยาลัยราชภัฏบ้านสมเด็จเจ้าพระยา",
+    "name_en": "Bansomdejchaopraya Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.บส.",
+    "abbr_en": "BSRU"
+  },
+  {
+    "id": "cru",
+    "name_th": "มหาวิทยาลัยราชภัฏจันทรเกษม",
+    "name_en": "Chandrakasem Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.จก.",
+    "abbr_en": "CRU"
+  },
+  {
+    "id": "pnru",
+    "name_th": "มหาวิทยาลัยราชภัฏพระนคร",
+    "name_en": "Phranakhon Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.พน.",
+    "abbr_en": "PNRU"
+  },
+  {
+    "id": "dru",
+    "name_th": "มหาวิทยาลัยราชภัฏธนบุรี",
+    "name_en": "Dhonburi Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.ธบ.",
+    "abbr_en": "DRU"
+  },
+  {
+    "id": "vru",
+    "name_th": "มหาวิทยาลัยราชภัฏวไลยอลงกรณ์ ในพระบรมราชูปถัมภ์",
+    "name_en": "Valaya Alongkorn Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.วอ.",
+    "abbr_en": "VRU"
+  },
+  {
+    "id": "aru",
+    "name_th": "มหาวิทยาลัยราชภัฏพระนครศรีอยุธยา",
+    "name_en": "Phranakhon Si Ayutthaya Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.อย.",
+    "abbr_en": "ARU"
+  },
+  {
+    "id": "tpru",
+    "name_th": "มหาวิทยาลัยราชภัฏเทพสตรี",
+    "name_en": "Thepsatri Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.ทส.",
+    "abbr_en": "TRU"
+  },
+  {
+    "id": "rbru",
+    "name_th": "มหาวิทยาลัยราชภัฏรำไพพรรณี",
+    "name_en": "Rambhai Barni Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.รภ.",
+    "abbr_en": "RBRU"
+  },
+  {
+    "id": "rru",
+    "name_th": "มหาวิทยาลัยราชภัฏราชนครินทร์",
+    "name_en": "Rajabhat Rajanagarindra University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.รร.",
+    "abbr_en": "RRU"
+  },
+  {
+    "id": "kru",
+    "name_th": "มหาวิทยาลัยราชภัฏกาญจนบุรี",
+    "name_en": "Kanchanaburi Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.กจ.",
+    "abbr_en": "KRU"
+  },
+  {
+    "id": "mcru",
+    "name_th": "มหาวิทยาลัยราชภัฏหมู่บ้านจอมบึง",
+    "name_en": "Muban Chombueng Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.มจบ.",
+    "abbr_en": "MCRU"
+  },
+  {
+    "id": "pbru",
+    "name_th": "มหาวิทยาลัยราชภัฏเพชรบุรี",
+    "name_en": "Phetchaburi Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.พบ.",
+    "abbr_en": "PBRU"
+  },
+  {
+    "id": "npru",
+    "name_th": "มหาวิทยาลัยราชภัฏนครปฐม",
+    "name_en": "Nakhon Pathom Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.นป.",
+    "abbr_en": "NPRU"
+  },
+  {
+    "id": "cmru",
+    "name_th": "มหาวิทยาลัยราชภัฏเชียงใหม่",
+    "name_en": "Chiang Mai Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.ชม.",
+    "abbr_en": "CMRU"
+  },
+  {
+    "id": "crru",
+    "name_th": "มหาวิทยาลัยราชภัฏเชียงราย",
+    "name_en": "Chiang Rai Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.ชร.",
+    "abbr_en": "CRRU"
+  },
+  {
+    "id": "lpru",
+    "name_th": "มหาวิทยาลัยราชภัฏลำปาง",
+    "name_en": "Lampang Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.ลป.",
+    "abbr_en": "LPRU"
+  },
+  {
+    "id": "utru",
+    "name_th": "มหาวิทยาลัยราชภัฏอุตรดิตถ์",
+    "name_en": "Uttaradit Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.อต.",
+    "abbr_en": "URU"
+  },
+  {
+    "id": "psru",
+    "name_th": "มหาวิทยาลัยราชภัฏพิบูลสงคราม",
+    "name_en": "Pibulsongkram Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.พส.",
+    "abbr_en": "PSRU"
+  },
+  {
+    "id": "kpru",
+    "name_th": "มหาวิทยาลัยราชภัฏกำแพงเพชร",
+    "name_en": "Kamphaeng Phet Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.กพ.",
+    "abbr_en": "KPRU"
+  },
+  {
+    "id": "nsru",
+    "name_th": "มหาวิทยาลัยราชภัฏนครสวรรค์",
+    "name_en": "Nakhon Sawan Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.นว.",
+    "abbr_en": "NSRU"
+  },
+  {
+    "id": "pcru",
+    "name_th": "มหาวิทยาลัยราชภัฏเพชรบูรณ์",
+    "name_en": "Phetchabun Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.พช.",
+    "abbr_en": "PCRU"
+  },
+  {
+    "id": "nrru",
+    "name_th": "มหาวิทยาลัยราชภัฏนครราชสีมา",
+    "name_en": "Nakhon Ratchasima Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.นม.",
+    "abbr_en": "NRRU"
+  },
+  {
+    "id": "brru",
+    "name_th": "มหาวิทยาลัยราชภัฏบุรีรัมย์",
+    "name_en": "Buriram Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.บร.",
+    "abbr_en": "BRU"
+  },
+  {
+    "id": "srru",
+    "name_th": "มหาวิทยาลัยราชภัฏสุรินทร์",
+    "name_en": "Surindra Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.สร.",
+    "abbr_en": "SRRU"
+  },
+  {
+    "id": "ubru",
+    "name_th": "มหาวิทยาลัยราชภัฏอุบลราชธานี",
+    "name_en": "Ubon Ratchathani Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.อบ.",
+    "abbr_en": "UBRU"
+  },
+  {
+    "id": "ssru_ss",
+    "name_th": "มหาวิทยาลัยราชภัฏศรีสะเกษ",
+    "name_en": "Sisaket Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.ศก.",
+    "abbr_en": "SSKRU"
+  },
+  {
+    "id": "reru",
+    "name_th": "มหาวิทยาลัยราชภัฏร้อยเอ็ด",
+    "name_en": "Roi Et Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.รอ.",
+    "abbr_en": "RERU"
+  },
+  {
+    "id": "rmu",
+    "name_th": "มหาวิทยาลัยราชภัฏมหาสารคาม",
+    "name_en": "Rajabhat Maha Sarakham University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.มค.",
+    "abbr_en": "RMU"
+  },
+  {
+    "id": "udru",
+    "name_th": "มหาวิทยาลัยราชภัฏอุดรธานี",
+    "name_en": "Udon Thani Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.อด.",
+    "abbr_en": "UDRU"
+  },
+  {
+    "id": "snru",
+    "name_th": "มหาวิทยาลัยราชภัฏสกลนคร",
+    "name_en": "Sakon Nakhon Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.สน.",
+    "abbr_en": "SNRU"
+  },
+  {
+    "id": "lru",
+    "name_th": "มหาวิทยาลัยราชภัฏเลย",
+    "name_en": "Loei Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.ลย.",
+    "abbr_en": "LRU"
+  },
+  {
+    "id": "cpru",
+    "name_th": "มหาวิทยาลัยราชภัฏชัยภูมิ",
+    "name_en": "Chaiyaphum Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.ชย.",
+    "abbr_en": "CPRU"
+  },
+  {
+    "id": "nstru",
+    "name_th": "มหาวิทยาลัยราชภัฏนครศรีธรรมราช",
+    "name_en": "Nakhon Si Thammarat Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.นศ.",
+    "abbr_en": "NSTRU"
+  },
+  {
+    "id": "sru",
+    "name_th": "มหาวิทยาลัยราชภัฏสุราษฎร์ธานี",
+    "name_en": "Surat Thani Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.สฎ.",
+    "abbr_en": "SRU"
+  },
+  {
+    "id": "pkru",
+    "name_th": "มหาวิทยาลัยราชภัฏภูเก็ต",
+    "name_en": "Phuket Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.ภก.",
+    "abbr_en": "PKRU"
+  },
+  {
+    "id": "skru",
+    "name_th": "มหาวิทยาลัยราชภัฏสงขลา",
+    "name_en": "Songkhla Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.สข.",
+    "abbr_en": "SKRU"
+  },
+  {
+    "id": "yru",
+    "name_th": "มหาวิทยาลัยราชภัฏยะลา",
+    "name_en": "Yala Rajabhat University",
+    "category": "ราชภัฏ",
+    "abbr_th": "มรภ.ยล.",
+    "abbr_en": "YRU"
+  },
+  {
+    "id": "rmutt",
+    "name_th": "มหาวิทยาลัยเทคโนโลยีราชมงคลธัญบุรี",
+    "name_en": "Rajamangala University of Technology Thanyaburi",
+    "category": "ราชมงคล",
+    "abbr_th": "มทร.ธัญบุรี",
+    "abbr_en": "RMUTT"
+  },
+  {
+    "id": "rmutk",
+    "name_th": "มหาวิทยาลัยเทคโนโลยีราชมงคลกรุงเทพ",
+    "name_en": "Rajamangala University of Technology Krungthep",
+    "category": "ราชมงคล",
+    "abbr_th": "มทร.กรุงเทพ",
+    "abbr_en": "RMUTK"
+  },
+  {
+    "id": "rmutp",
+    "name_th": "มหาวิทยาลัยเทคโนโลยีราชมงคลพระนคร",
+    "name_en": "Rajamangala University of Technology Phra Nakhon",
+    "category": "ราชมงคล",
+    "abbr_th": "มทร.พระนคร",
+    "abbr_en": "RMUTP"
+  },
+  {
+    "id": "rmutr",
+    "name_th": "มหาวิทยาลัยเทคโนโลยีราชมงคลรัตนโกสินทร์",
+    "name_en": "Rajamangala University of Technology Rattanakosin",
+    "category": "ราชมงคล",
+    "abbr_th": "มทร.รัตนโกสินทร์",
+    "abbr_en": "RMUTR"
+  },
+  {
+    "id": "rmutl",
+    "name_th": "มหาวิทยาลัยเทคโนโลยีราชมงคลล้านนา",
+    "name_en": "Rajamangala University of Technology Lanna",
+    "category": "ราชมงคล",
+    "abbr_th": "มทร.ล้านนา",
+    "abbr_en": "RMUTL"
+  },
+  {
+    "id": "rmuti",
+    "name_th": "มหาวิทยาลัยเทคโนโลยีราชมงคลอีสาน",
+    "name_en": "Rajamangala University of Technology Isan",
+    "category": "ราชมงคล",
+    "abbr_th": "มทร.อีสาน",
+    "abbr_en": "RMUTI"
+  },
+  {
+    "id": "rmutsb",
+    "name_th": "มหาวิทยาลัยเทคโนโลยีราชมงคลสุวรรณภูมิ",
+    "name_en": "Rajamangala University of Technology Suvarnabhumi",
+    "category": "ราชมงคล",
+    "abbr_th": "มทร.สุวรรณภูมิ",
+    "abbr_en": "RMUTSB"
+  },
+  {
+    "id": "rmuts",
+    "name_th": "มหาวิทยาลัยเทคโนโลยีราชมงคลศรีวิชัย",
+    "name_en": "Rajamangala University of Technology Srivijaya",
+    "category": "ราชมงคล",
+    "abbr_th": "มทร.ศรีวิชัย",
+    "abbr_en": "RUTSV"
+  },
+  {
+    "id": "rmutto",
+    "name_th": "มหาวิทยาลัยเทคโนโลยีราชมงคลตะวันออก",
+    "name_en": "Rajamangala University of Technology Tawan-ok",
+    "category": "ราชมงคล",
+    "abbr_th": "มทร.ตะวันออก",
+    "abbr_en": "RMUTTO"
+  },
+  {
+    "id": "ait",
+    "name_th": "สถาบันเทคโนโลยีแห่งเอเชีย",
+    "name_en": "Asian Institute of Technology",
+    "category": "นานาชาติ/ต่างประเทศ",
+    "abbr_th": "เอไอที",
+    "abbr_en": "AIT"
+  },
+  {
+    "id": "stamford",
+    "name_th": "มหาวิทยาลัยนานาชาติแสตมฟอร์ด",
+    "name_en": "Stamford International University",
+    "category": "นานาชาติ/ต่างประเทศ",
+    "abbr_th": "แสตมฟอร์ด",
+    "abbr_en": "STIU"
+  },
+  {
+    "id": "harbour",
+    "name_th": "มหาวิทยาลัยฮาร์เบอร์สเปซ",
+    "name_en": "Harbour.Space University Bangkok",
+    "category": "นานาชาติ/ต่างประเทศ",
+    "abbr_th": "ฮาร์เบอร์",
+    "abbr_en": "HSU"
+  },
+  {
+    "id": "foreign",
+    "name_th": "มหาวิทยาลัยต่างประเทศ",
+    "name_en": "International / Overseas University",
+    "category": "นานาชาติ/ต่างประเทศ",
+    "abbr_th": "ต่างประเทศ",
+    "abbr_en": "Overseas"
+  },
+  {
+    "id": "sch-triam",
+    "name_th": "โรงเรียนเตรียมอุดมศึกษา",
+    "name_en": "Triam Udom Suksa School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ต.อ.",
+    "abbr_en": "TU"
+  },
+  {
+    "id": "sch-sk",
+    "name_th": "โรงเรียนสวนกุหลาบวิทยาลัย",
+    "name_en": "Suankularb Wittayalai School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ส.ก.",
+    "abbr_en": "SK"
+  },
+  {
+    "id": "sch-skn",
+    "name_th": "โรงเรียนสวนกุหลาบวิทยาลัย นนทบุรี",
+    "name_en": "Suankularb Wittayalai Nonthaburi School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ส.ก.น.",
+    "abbr_en": "SKN"
+  },
+  {
+    "id": "sch-skr",
+    "name_th": "โรงเรียนสวนกุหลาบวิทยาลัย รังสิต",
+    "name_en": "Suankularb Wittayalai Rangsit School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ส.ก.ร.",
+    "abbr_en": "SKR"
+  },
+  {
+    "id": "sch-bcc",
+    "name_th": "โรงเรียนกรุงเทพคริสเตียนวิทยาลัย",
+    "name_en": "Bangkok Christian College",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ก.ท.",
+    "abbr_en": "BCC"
+  },
+  {
+    "id": "sch-ac",
+    "name_th": "โรงเรียนอัสสัมชัญ",
+    "name_en": "Assumption College",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "อ.ส.ช.",
+    "abbr_en": "AC"
+  },
+  {
+    "id": "sch-act",
+    "name_th": "โรงเรียนอัสสัมชัญธนบุรี",
+    "name_en": "Assumption College Thonburi",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "อ.ส.ธ.",
+    "abbr_en": "ACT"
+  },
+  {
+    "id": "sch-acs",
+    "name_th": "โรงเรียนอัสสัมชัญสมุทรปราการ",
+    "name_en": "Assumption College Samutprakarn",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "อ.ส.ส.",
+    "abbr_en": "ACS"
+  },
+  {
+    "id": "sch-sg",
+    "name_th": "โรงเรียนเซนต์คาเบรียล",
+    "name_en": "Saint Gabriel's College",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ซ.ค.",
+    "abbr_en": "SG"
+  },
+  {
+    "id": "sch-sj",
+    "name_th": "โรงเรียนเซนต์โยเซฟคอนเวนต์",
+    "name_en": "Saint Joseph Convent School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ซ.ย.",
+    "abbr_en": "SJC"
+  },
+  {
+    "id": "sch-ds",
+    "name_th": "โรงเรียนเทพศิรินทร์",
+    "name_en": "Debsirin School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ท.ศ.",
+    "abbr_en": "DS"
+  },
+  {
+    "id": "sch-bd",
+    "name_th": "โรงเรียนบดินทรเดชา (สิงห์ สิงหเสนี)",
+    "name_en": "Bodindecha (Sing Singhaseni) School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "บ.ด.",
+    "abbr_en": "BD"
+  },
+  {
+    "id": "sch-bd2",
+    "name_th": "โรงเรียนบดินทรเดชา (สิงห์ สิงหเสนี) ๒",
+    "name_en": "Bodindecha (Sing Singhaseni) 2 School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "บ.ด.๒",
+    "abbr_en": "BD2"
+  },
+  {
+    "id": "sch-ss",
+    "name_th": "โรงเรียนสามเสนวิทยาลัย",
+    "name_en": "Samsenwittayalai School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ส.ส.",
+    "abbr_en": "SS"
+  },
+  {
+    "id": "sch-sw",
+    "name_th": "โรงเรียนสตรีวิทยา",
+    "name_en": "Satriwithaya School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ส.ว.",
+    "abbr_en": "SW"
+  },
+  {
+    "id": "sch-sw2",
+    "name_th": "โรงเรียนสตรีวิทยา ๒",
+    "name_en": "Satriwitthaya 2 School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ส.ว.๒",
+    "abbr_en": "SW2"
+  },
+  {
+    "id": "sch-satit-cu",
+    "name_th": "โรงเรียนสาธิตจุฬาลงกรณ์มหาวิทยาลัย",
+    "name_en": "Chulalongkorn University Demonstration School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "สาธิตจุฬาฯ",
+    "abbr_en": "CUD"
+  },
+  {
+    "id": "sch-satit-patumwan",
+    "name_th": "โรงเรียนสาธิต มศว ปทุมวัน",
+    "name_en": "Patumwan Demonstration School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "สาธิตปทุมวัน",
+    "abbr_en": "PDS"
+  },
+  {
+    "id": "sch-satit-prasarnmit",
+    "name_th": "โรงเรียนสาธิต มศว ประสานมิตร",
+    "name_en": "Prasarnmit Demonstration School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "สาธิตประสานมิตร",
+    "abbr_en": "PSM"
+  },
+  {
+    "id": "sch-satit-kaset",
+    "name_th": "โรงเรียนสาธิตแห่งมหาวิทยาลัยเกษตรศาสตร์",
+    "name_en": "Kasetsart University Laboratory School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "สาธิตเกษตร",
+    "abbr_en": "KULS"
+  },
+  {
+    "id": "sch-mwis",
+    "name_th": "โรงเรียนมหิดลวิทยานุสรณ์",
+    "name_en": "Mahidol Wittayanusorn School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "MWIT",
+    "abbr_en": "MWITS"
+  },
+  {
+    "id": "sch-kvis",
+    "name_th": "โรงเรียนกำเนิดวิทย์ (KVIS)",
+    "name_en": "Kamnoetvidya Science Academy",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "กำเนิดวิทย์",
+    "abbr_en": "KVIS"
+  },
+  {
+    "id": "sch-horwang",
+    "name_th": "โรงเรียนหอวัง",
+    "name_en": "Horwang School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ห.ว.",
+    "abbr_en": "HW"
+  },
+  {
+    "id": "sch-yupparaj",
+    "name_th": "โรงเรียนยุพราชวิทยาลัย (เชียงใหม่)",
+    "name_en": "Yupparaj Wittayalai School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ย.ว.",
+    "abbr_en": "YRC"
+  },
+  {
+    "id": "sch-wattano",
+    "name_th": "โรงเรียนวัฒโนทัยพายัพ (เชียงใหม่)",
+    "name_en": "Wattano Payap Academy",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ว.พ.",
+    "abbr_en": "WPA"
+  },
+  {
+    "id": "sch-montfort",
+    "name_th": "โรงเรียนมงฟอร์ตวิทยาลัย (เชียงใหม่)",
+    "name_en": "Montfort College",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ม.ฟ.",
+    "abbr_en": "MC"
+  },
+  {
+    "id": "sch-prc",
+    "name_th": "โรงเรียนปรินส์รอยแยลส์วิทยาลัย (เชียงใหม่)",
+    "name_en": "The Prince Royal's College",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ป.ร.ค.",
+    "abbr_en": "PRC"
+  },
+  {
+    "id": "sch-samakkhi",
+    "name_th": "โรงเรียนสามัคคีวิทยาคม (เชียงราย)",
+    "name_en": "Samakkhi Witthayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ส.ว.ค.",
+    "abbr_en": "SWK"
+  },
+  {
+    "id": "sch-boonyawat",
+    "name_th": "โรงเรียนบุญวาทย์วิทยาลัย (ลำปาง)",
+    "name_en": "Bunyawat Witthayalai School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "บ.ว.",
+    "abbr_en": "BWW"
+  },
+  {
+    "id": "sch-lampangkan",
+    "name_th": "โรงเรียนลำปางกัลยาณี (ลำปาง)",
+    "name_en": "Lampang Kanlayanee School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ล.ก.",
+    "abbr_en": "LKG"
+  },
+  {
+    "id": "sch-phitsanulok",
+    "name_th": "โรงเรียนพิษณุโลกพิทยาคม",
+    "name_en": "Phitsanulok Pittayakom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "พ.พ.",
+    "abbr_en": "PP"
+  },
+  {
+    "id": "sch-chalermkwansatree",
+    "name_th": "โรงเรียนเฉลิมขวัญสตรี (พิษณุโลก)",
+    "name_en": "Chalermkwansatree School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ฉ.ข.",
+    "abbr_en": "CKS"
+  },
+  {
+    "id": "sch-kkwt",
+    "name_th": "โรงเรียนขอนแก่นวิทยายน",
+    "name_en": "Khon Kaen Wittayayon School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ข.ก.",
+    "abbr_en": "KKW"
+  },
+  {
+    "id": "sch-kannakorn",
+    "name_th": "โรงเรียนแก่นนครวิทยาลัย",
+    "name_en": "Kaennakhon Wittayalai School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ก.น.ว.",
+    "abbr_en": "KNW"
+  },
+  {
+    "id": "sch-satit-kku",
+    "name_th": "โรงเรียนสาธิตมหาวิทยาลัยขอนแก่น",
+    "name_en": "Khon Kaen University Demonstration School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "สาธิต มข.",
+    "abbr_en": "DSKKU"
+  },
+  {
+    "id": "sch-ratchasima",
+    "name_th": "โรงเรียนราชสีมาวิทยาลัย",
+    "name_en": "Ratchasima Wittayalai School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ร.ส.",
+    "abbr_en": "RS"
+  },
+  {
+    "id": "sch-suranari",
+    "name_th": "โรงเรียนสุรนารีวิทยา",
+    "name_en": "Suranaree Wittaya School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ส.น.",
+    "abbr_en": "SRN"
+  },
+  {
+    "id": "sch-udonpit",
+    "name_th": "โรงเรียนอุดรพิทยานุกูล",
+    "name_en": "Udon Pittayanukoon School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "อ.พ.",
+    "abbr_en": "UP"
+  },
+  {
+    "id": "sch-satree-udon",
+    "name_th": "โรงเรียนสตรีราชินูทิศ (อุดรธานี)",
+    "name_en": "Satrirachinuthit School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ร.น.",
+    "abbr_en": "SRN"
+  },
+  {
+    "id": "sch-benchama-ubon",
+    "name_th": "โรงเรียนเบ็ญจะมะมหาราช (อุบลราชธานี)",
+    "name_en": "Benchama Maharat School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "บ.ม.",
+    "abbr_en": "BM"
+  },
+  {
+    "id": "sch-narinukul",
+    "name_th": "โรงเรียนนารีนุกูล (อุบลราชธานี)",
+    "name_en": "Narinukun School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "น.น.",
+    "abbr_en": "NN"
+  },
+  {
+    "id": "sch-buriram-pittayakhom",
+    "name_th": "โรงเรียนบุรีรัมย์พิทยาคม",
+    "name_en": "Buriram Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "บ.พ.",
+    "abbr_en": "BRP"
+  },
+  {
+    "id": "sch-surawittayakhan",
+    "name_th": "โรงเรียนสุรวิทยาคาร (สุรินทร์)",
+    "name_en": "Surawittayakhan School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ส.ว.ค.",
+    "abbr_en": "SWK"
+  },
+  {
+    "id": "sch-roiet-wit",
+    "name_th": "โรงเรียนร้อยเอ็ดวิทยาลัย",
+    "name_en": "Roi-Et Wittayalai School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ร.ว.",
+    "abbr_en": "REW"
+  },
+  {
+    "id": "sch-satree-roiet",
+    "name_th": "โรงเรียนสตรีศึกษา (ร้อยเอ็ด)",
+    "name_en": "Satreesuksa School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ส.ศ.",
+    "abbr_en": "ST"
+  },
+  {
+    "id": "sch-sarakham-pit",
+    "name_th": "โรงเรียนสารคามพิทยาคม",
+    "name_en": "Sarakhampittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ส.พ.ค.",
+    "abbr_en": "SKP"
+  },
+  {
+    "id": "sch-hatyaiwit",
+    "name_th": "โรงเรียนหาดใหญ่วิทยาลัย (ญ.ว.)",
+    "name_en": "Hatyaiwittayalai School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ญ.ว.",
+    "abbr_en": "HYW"
+  },
+  {
+    "id": "sch-hatyaiwitsombun",
+    "name_th": "โรงเรียนหาดใหญ่วิทยาลัยสมบูรณ์กุลกันยา (ญ.ส.)",
+    "name_en": "Hatyaiwittayalaisomboonkulkanya School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ญ.ส.",
+    "abbr_en": "HYS"
+  },
+  {
+    "id": "sch-psuwit",
+    "name_th": "โรงเรียน มอ.วิทยานุสรณ์ (หาดใหญ่)",
+    "name_en": "PSU Wittayanusorn School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ม.อ.ว.",
+    "abbr_en": "PSUW"
+  },
+  {
+    "id": "sch-maha-vachiravudh",
+    "name_th": "โรงเรียนมหาวชิราวุธ (สงขลา)",
+    "name_en": "Mahavachiravudh Songkhla School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ม.ว.",
+    "abbr_en": "MV"
+  },
+  {
+    "id": "sch-phuketwit",
+    "name_th": "โรงเรียนภูเก็ตวิทยาลัย",
+    "name_en": "Phuket Wittayalai School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ภ.ว.",
+    "abbr_en": "PKW"
+  },
+  {
+    "id": "sch-satree-phuket",
+    "name_th": "โรงเรียนสตรีภูเก็ต",
+    "name_en": "Satree Phuket School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ส.ภ.",
+    "abbr_en": "SP"
+  },
+  {
+    "id": "sch-benchama-nakhon",
+    "name_th": "โรงเรียนเบญจมราชูทิศ (นครศรีธรรมราช)",
+    "name_en": "Benjamarachutit School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "บ.ญ.",
+    "abbr_en": "BJ"
+  },
+  {
+    "id": "sch-kanlayanee-si",
+    "name_th": "โรงเรียนกัลยาณีศรีธรรมราช",
+    "name_en": "Kanlayaneesi Thammarat School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ก.ณ.",
+    "abbr_en": "KNS"
+  },
+  {
+    "id": "sch-suratpit",
+    "name_th": "โรงเรียนสุราษฎร์พิทยา",
+    "name_en": "Suratpittaya School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ส.ฎ.พ.",
+    "abbr_en": "SP"
+  },
+  {
+    "id": "sch-suratpitthayalai",
+    "name_th": "โรงเรียนสุราษฎร์ธานี",
+    "name_en": "Suratthani School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ส.ธ.",
+    "abbr_en": "ST"
+  },
+  {
+    "id": "sch-wichienmatu",
+    "name_th": "โรงเรียนวิเชียรมาตุ (ตรัง)",
+    "name_en": "Wichienmatu School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ว.ม.",
+    "abbr_en": "WCM"
+  },
+  {
+    "id": "sch-ayutthaya-wit",
+    "name_th": "โรงเรียนอยุธยาวิทยาลัย",
+    "name_en": "Ayutthaya Wittayalai School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "อ.ย.ว.",
+    "abbr_en": "AYW"
+  },
+  {
+    "id": "sch-chonrad",
+    "name_th": "โรงเรียนชลราษฎรอำรุง (ชลชาย)",
+    "name_en": "Chonradsadornumrung School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ช.ร.อ.",
+    "abbr_en": "CR"
+  },
+  {
+    "id": "sch-chongun",
+    "name_th": "โรงเรียนชลกันยานุกูล (ชลหญิง)",
+    "name_en": "Chonkanyanukoon School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ช.ก.",
+    "abbr_en": "CK"
+  },
+  {
+    "id": "sch-rayongwit",
+    "name_th": "โรงเรียนระยองวิทยาคม",
+    "name_en": "Rayongwittayakom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ร.ย.ว.",
+    "abbr_en": "RYW"
+  },
+  {
+    "id": "sch-benchama-chachoengsao",
+    "name_th": "โรงเรียนเบญจมราชรังสฤษฎิ์ (ฉะเชิงเทรา)",
+    "name_en": "Benchamaracharungsarit School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "บ.ร.ร.",
+    "abbr_en": "BRR"
+  },
+  {
+    "id": "sch-sarawit",
+    "name_th": "โรงเรียนสระบุรีวิทยาคม",
+    "name_en": "Saraburiwittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ส.บ.ว.",
+    "abbr_en": "SBW"
+  },
+  {
+    "id": "sch-kannasooth",
+    "name_th": "โรงเรียนกรรณสูตศึกษาลัย (สุพรรณบุรี)",
+    "name_en": "Kannasootsuksalai School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "ก.ส.",
+    "abbr_en": "KNS"
+  },
+  {
+    "id": "sch-benchama-ratchaburi",
+    "name_en": "Benjamarachutit Ratchaburi School",
+    "name_th": "โรงเรียนเบญจมราชูทิศ ราชบุรี",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "บ.ช.",
+    "abbr_en": "BJR"
+  },
+  {
+    "id": "sch-other",
+    "name_th": "โรงเรียน/สถาบันอื่นๆ (ระบุเอง)",
+    "name_en": "Other School / Institution",
+    "category": "อื่นๆ",
+    "abbr_th": "อื่นๆ",
+    "abbr_en": "Other"
+  },
+  {
+    "id": "voc_1",
+    "name_th": "วิทยาลัยเทคนิคกรุงเทพ",
+    "name_en": "Bangkok Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "วท.กท.",
+    "abbr_en": "BTC"
+  },
+  {
+    "id": "voc_2",
+    "name_th": "วิทยาลัยพณิชยการเชตุพน",
+    "name_en": "Chetuphon Commercial College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "พ.ช.",
+    "abbr_en": "CCC"
+  },
+  {
+    "id": "voc_3",
+    "name_th": "วิทยาลัยพณิชยการธนบุรี",
+    "name_en": "Thonburi Commercial College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "พ.ธ.",
+    "abbr_en": "TCC"
+  },
+  {
+    "id": "voc_4",
+    "name_th": "วิทยาลัยเทคนิคดุสิต",
+    "name_en": "Dusit Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "วท.ดส.",
+    "abbr_en": "DTC"
+  },
+  {
+    "id": "voc_5",
+    "name_th": "วิทยาลัยเทคนิคเชียงใหม่",
+    "name_en": "Chiang Mai Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "วท.ชม.",
+    "abbr_en": "CMTC"
+  },
+  {
+    "id": "voc_6",
+    "name_th": "วิทยาลัยเทคนิคขอนแก่น",
+    "name_en": "Khon Kaen Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "วท.ขก.",
+    "abbr_en": "KKTC"
+  },
+  {
+    "id": "voc_7",
+    "name_th": "วิทยาลัยเทคนิคนครราชสีมา",
+    "name_en": "Nakhon Ratchasima Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "วท.นม.",
+    "abbr_en": "NRTC"
+  },
+  {
+    "id": "voc_8",
+    "name_th": "วิทยาลัยเทคนิคหาดใหญ่",
+    "name_en": "Hatyai Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "วท.หญ.",
+    "abbr_en": "HYTC"
+  },
+  {
+    "id": "voc_9",
+    "name_th": "วิทยาลัยเทคนิคชลบุรี",
+    "name_en": "Chonburi Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "วท.ชบ.",
+    "abbr_en": "CBTC"
+  },
+  {
+    "id": "voc_10",
+    "name_th": "วิทยาลัยอาชีวศึกษาเชียงใหม่",
+    "name_en": "Chiang Mai Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "วอศ.ชม.",
+    "abbr_en": "CMVC"
+  },
+  {
+    "id": "voc_11",
+    "name_th": "วิทยาลัยอาชีวศึกษานครราชสีมา",
+    "name_en": "Nakhon Ratchasima Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "วอศ.นม.",
+    "abbr_en": "NVC"
+  },
+  {
+    "id": "voc_12",
+    "name_th": "วิทยาลัยอาชีวศึกษาขอนแก่น",
+    "name_en": "Khon Kaen Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "วอศ.ขก.",
+    "abbr_en": "KKVC"
+  },
+  {
+    "id": "voc_13",
+    "name_th": "วิทยาลัยอาชีวศึกษาสุราษฎร์ธานี",
+    "name_en": "Surat Thani Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "วอศ.สฎ.",
+    "abbr_en": "SRVC"
+  },
+  {
+    "id": "sch_til9yjkds",
+    "name_th": "โรงเรียนกรุงเทพมหานครพิทยาคม",
+    "name_en": "Bangkok Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_1myy6h57d",
+    "name_th": "โรงเรียนสตรีกรุงเทพมหานคร",
+    "name_en": "Satri Bangkok School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_e4xhoo2gq",
+    "name_th": "วิทยาลัยเทคนิคกรุงเทพมหานคร",
+    "name_en": "Bangkok Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_atikygre8",
+    "name_th": "วิทยาลัยอาชีวศึกษากรุงเทพมหานคร",
+    "name_en": "Bangkok Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_vfppu84bz",
+    "name_th": "โรงเรียนสมุทรปราการพิทยาคม",
+    "name_en": "Samut Prakan Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_u4nmir0g5",
+    "name_th": "โรงเรียนสตรีสมุทรปราการ",
+    "name_en": "Satri Samut Prakan School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_qhu9kmrhy",
+    "name_th": "วิทยาลัยเทคนิคสมุทรปราการ",
+    "name_en": "Samut Prakan Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_45gn8qpo5",
+    "name_th": "วิทยาลัยอาชีวศึกษาสมุทรปราการ",
+    "name_en": "Samut Prakan Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_tw6x5z8g9",
+    "name_th": "โรงเรียนนนทบุรีพิทยาคม",
+    "name_en": "Nonthaburi Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_frdwbaasx",
+    "name_th": "โรงเรียนสตรีนนทบุรี",
+    "name_en": "Satri Nonthaburi School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_s67ej74lc",
+    "name_th": "วิทยาลัยเทคนิคนนทบุรี",
+    "name_en": "Nonthaburi Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_k24r97mo1",
+    "name_th": "วิทยาลัยอาชีวศึกษานนทบุรี",
+    "name_en": "Nonthaburi Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_p265rx3dy",
+    "name_th": "โรงเรียนปทุมธานีพิทยาคม",
+    "name_en": "Pathum Thani Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_s3r89cj24",
+    "name_th": "โรงเรียนสตรีปทุมธานี",
+    "name_en": "Satri Pathum Thani School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_y6y754ccu",
+    "name_th": "วิทยาลัยเทคนิคปทุมธานี",
+    "name_en": "Pathum Thani Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_a5tob4l9t",
+    "name_th": "วิทยาลัยอาชีวศึกษาปทุมธานี",
+    "name_en": "Pathum Thani Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_rfb45znwq",
+    "name_th": "โรงเรียนพระนครศรีอยุธยาพิทยาคม",
+    "name_en": "Phra Nakhon Si Ayutthaya Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_917bee7sv",
+    "name_th": "โรงเรียนสตรีพระนครศรีอยุธยา",
+    "name_en": "Satri Phra Nakhon Si Ayutthaya School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_ts58beqsr",
+    "name_th": "วิทยาลัยเทคนิคพระนครศรีอยุธยา",
+    "name_en": "Phra Nakhon Si Ayutthaya Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_znbgnd07b",
+    "name_th": "วิทยาลัยอาชีวศึกษาพระนครศรีอยุธยา",
+    "name_en": "Phra Nakhon Si Ayutthaya Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_2pe9zliss",
+    "name_th": "โรงเรียนอ่างทองพิทยาคม",
+    "name_en": "Ang Thong Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_txq3e33kv",
+    "name_th": "โรงเรียนสตรีอ่างทอง",
+    "name_en": "Satri Ang Thong School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_7wy1slii3",
+    "name_th": "วิทยาลัยเทคนิคอ่างทอง",
+    "name_en": "Ang Thong Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_f8xlcja7p",
+    "name_th": "วิทยาลัยอาชีวศึกษาอ่างทอง",
+    "name_en": "Ang Thong Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_d4u14hw0h",
+    "name_th": "โรงเรียนลพบุรีพิทยาคม",
+    "name_en": "Lopburi Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_3j1nix1ag",
+    "name_th": "โรงเรียนสตรีลพบุรี",
+    "name_en": "Satri Lopburi School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_wlro2kseb",
+    "name_th": "วิทยาลัยเทคนิคลพบุรี",
+    "name_en": "Lopburi Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_3r8u165fg",
+    "name_th": "วิทยาลัยอาชีวศึกษาลพบุรี",
+    "name_en": "Lopburi Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_lswkzikfl",
+    "name_th": "โรงเรียนสิงห์บุรีพิทยาคม",
+    "name_en": "Sing Buri Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_bki9lwbek",
+    "name_th": "โรงเรียนสตรีสิงห์บุรี",
+    "name_en": "Satri Sing Buri School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_z6ygx4vr4",
+    "name_th": "วิทยาลัยเทคนิคสิงห์บุรี",
+    "name_en": "Sing Buri Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_5z0sm4ek2",
+    "name_th": "วิทยาลัยอาชีวศึกษาสิงห์บุรี",
+    "name_en": "Sing Buri Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_iqz0hqtqe",
+    "name_th": "โรงเรียนชัยนาทพิทยาคม",
+    "name_en": "Chai Nat Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_6bsytsmpo",
+    "name_th": "โรงเรียนสตรีชัยนาท",
+    "name_en": "Satri Chai Nat School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_5d8yz6sjb",
+    "name_th": "วิทยาลัยเทคนิคชัยนาท",
+    "name_en": "Chai Nat Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_b17twjp1b",
+    "name_th": "วิทยาลัยอาชีวศึกษาชัยนาท",
+    "name_en": "Chai Nat Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_vuybypp8k",
+    "name_th": "โรงเรียนสระบุรีพิทยาคม",
+    "name_en": "Saraburi Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_azcebthj7",
+    "name_th": "โรงเรียนสตรีสระบุรี",
+    "name_en": "Satri Saraburi School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_hspzey0p4",
+    "name_th": "วิทยาลัยเทคนิคสระบุรี",
+    "name_en": "Saraburi Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_sy15fwncl",
+    "name_th": "วิทยาลัยอาชีวศึกษาสระบุรี",
+    "name_en": "Saraburi Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_1gbk4ytah",
+    "name_th": "โรงเรียนชลบุรีพิทยาคม",
+    "name_en": "Chon Buri Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_hbocasesr",
+    "name_th": "โรงเรียนสตรีชลบุรี",
+    "name_en": "Satri Chon Buri School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_k2dyb9sca",
+    "name_th": "วิทยาลัยอาชีวศึกษาชลบุรี",
+    "name_en": "Chon Buri Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_6smmypk5g",
+    "name_th": "โรงเรียนระยองพิทยาคม",
+    "name_en": "Rayong Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_ax3cqhxfc",
+    "name_th": "โรงเรียนสตรีระยอง",
+    "name_en": "Satri Rayong School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_f5yrirkm2",
+    "name_th": "วิทยาลัยเทคนิคระยอง",
+    "name_en": "Rayong Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_wcvh3kn4p",
+    "name_th": "วิทยาลัยอาชีวศึกษาระยอง",
+    "name_en": "Rayong Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_ofekai7w5",
+    "name_th": "โรงเรียนจันทบุรีพิทยาคม",
+    "name_en": "Chanthaburi Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_s8rmfqx3g",
+    "name_th": "โรงเรียนสตรีจันทบุรี",
+    "name_en": "Satri Chanthaburi School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_bxpdydq99",
+    "name_th": "วิทยาลัยเทคนิคจันทบุรี",
+    "name_en": "Chanthaburi Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_g30v1h9qe",
+    "name_th": "วิทยาลัยอาชีวศึกษาจันทบุรี",
+    "name_en": "Chanthaburi Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_fkqpkdwet",
+    "name_th": "โรงเรียนตราดพิทยาคม",
+    "name_en": "Trat Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_s5z9zgusc",
+    "name_th": "โรงเรียนสตรีตราด",
+    "name_en": "Satri Trat School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_lxvwcgmnh",
+    "name_th": "วิทยาลัยเทคนิคตราด",
+    "name_en": "Trat Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_rijsq6vbo",
+    "name_th": "วิทยาลัยอาชีวศึกษาตราด",
+    "name_en": "Trat Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_a6l04ivgj",
+    "name_th": "โรงเรียนฉะเชิงเทราพิทยาคม",
+    "name_en": "Chachoengsao Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_4fogdm1i8",
+    "name_th": "โรงเรียนสตรีฉะเชิงเทรา",
+    "name_en": "Satri Chachoengsao School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_nwrkzoz5i",
+    "name_th": "วิทยาลัยเทคนิคฉะเชิงเทรา",
+    "name_en": "Chachoengsao Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_ut1vsitpz",
+    "name_th": "วิทยาลัยอาชีวศึกษาฉะเชิงเทรา",
+    "name_en": "Chachoengsao Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_4u11e9ecy",
+    "name_th": "โรงเรียนปราจีนบุรีพิทยาคม",
+    "name_en": "Prachin Buri Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_l9bi2rcfm",
+    "name_th": "โรงเรียนสตรีปราจีนบุรี",
+    "name_en": "Satri Prachin Buri School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_189im0vv5",
+    "name_th": "วิทยาลัยเทคนิคปราจีนบุรี",
+    "name_en": "Prachin Buri Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_hopehs9kd",
+    "name_th": "วิทยาลัยอาชีวศึกษาปราจีนบุรี",
+    "name_en": "Prachin Buri Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_v7wm0xojq",
+    "name_th": "โรงเรียนนครนายกพิทยาคม",
+    "name_en": "Nakhon Nayok Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_hg67w6k73",
+    "name_th": "โรงเรียนสตรีนครนายก",
+    "name_en": "Satri Nakhon Nayok School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_sj3a0j4ol",
+    "name_th": "วิทยาลัยเทคนิคนครนายก",
+    "name_en": "Nakhon Nayok Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_m99fouvsf",
+    "name_th": "วิทยาลัยอาชีวศึกษานครนายก",
+    "name_en": "Nakhon Nayok Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_yun3p5xpz",
+    "name_th": "โรงเรียนสระแก้วพิทยาคม",
+    "name_en": "Sa Kaeo Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_ncjsl0er9",
+    "name_th": "โรงเรียนสตรีสระแก้ว",
+    "name_en": "Satri Sa Kaeo School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_axk9ra15b",
+    "name_th": "วิทยาลัยเทคนิคสระแก้ว",
+    "name_en": "Sa Kaeo Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_i1uloomdq",
+    "name_th": "วิทยาลัยอาชีวศึกษาสระแก้ว",
+    "name_en": "Sa Kaeo Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_keysnbemo",
+    "name_th": "โรงเรียนนครราชสีมาพิทยาคม",
+    "name_en": "Nakhon Ratchasima Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_56wkyp35p",
+    "name_th": "โรงเรียนสตรีนครราชสีมา",
+    "name_en": "Satri Nakhon Ratchasima School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_szku64zrd",
+    "name_th": "โรงเรียนสตรีบุรีรัมย์",
+    "name_en": "Satri Buri Ram School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_erqvtht95",
+    "name_th": "วิทยาลัยเทคนิคบุรีรัมย์",
+    "name_en": "Buri Ram Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_tsfsk3wae",
+    "name_th": "วิทยาลัยอาชีวศึกษาบุรีรัมย์",
+    "name_en": "Buri Ram Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_xsgbfsjy7",
+    "name_th": "โรงเรียนสุรินทร์พิทยาคม",
+    "name_en": "Surin Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_544gia1h1",
+    "name_th": "โรงเรียนสตรีสุรินทร์",
+    "name_en": "Satri Surin School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_8qgl9me03",
+    "name_th": "วิทยาลัยเทคนิคสุรินทร์",
+    "name_en": "Surin Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_8i7aym1qw",
+    "name_th": "วิทยาลัยอาชีวศึกษาสุรินทร์",
+    "name_en": "Surin Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_pg39ipp76",
+    "name_th": "โรงเรียนศรีสะเกษพิทยาคม",
+    "name_en": "Si Sa Ket Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_u6jaea6e4",
+    "name_th": "โรงเรียนสตรีศรีสะเกษ",
+    "name_en": "Satri Si Sa Ket School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_ou6ske7tw",
+    "name_th": "วิทยาลัยเทคนิคศรีสะเกษ",
+    "name_en": "Si Sa Ket Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_defdap7ah",
+    "name_th": "วิทยาลัยอาชีวศึกษาศรีสะเกษ",
+    "name_en": "Si Sa Ket Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_wrj7416cf",
+    "name_th": "โรงเรียนอุบลราชธานีพิทยาคม",
+    "name_en": "Ubon Ratchathani Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_fx8pajivf",
+    "name_th": "โรงเรียนสตรีอุบลราชธานี",
+    "name_en": "Satri Ubon Ratchathani School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_8vxpwixaq",
+    "name_th": "วิทยาลัยเทคนิคอุบลราชธานี",
+    "name_en": "Ubon Ratchathani Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_kj1a7sbqt",
+    "name_th": "วิทยาลัยอาชีวศึกษาอุบลราชธานี",
+    "name_en": "Ubon Ratchathani Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_62fqo9680",
+    "name_th": "โรงเรียนยโสธรพิทยาคม",
+    "name_en": "Yasothon Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_zx9a0nru8",
+    "name_th": "โรงเรียนสตรียโสธร",
+    "name_en": "Satri Yasothon School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_i84j53kb4",
+    "name_th": "วิทยาลัยเทคนิคยโสธร",
+    "name_en": "Yasothon Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_isizhui2t",
+    "name_th": "วิทยาลัยอาชีวศึกษายโสธร",
+    "name_en": "Yasothon Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_1d7abp2to",
+    "name_th": "โรงเรียนชัยภูมิพิทยาคม",
+    "name_en": "Chaiyaphum Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_kuq3kjjz6",
+    "name_th": "โรงเรียนสตรีชัยภูมิ",
+    "name_en": "Satri Chaiyaphum School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_hjq87d16w",
+    "name_th": "วิทยาลัยเทคนิคชัยภูมิ",
+    "name_en": "Chaiyaphum Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_vkq8drkh9",
+    "name_th": "วิทยาลัยอาชีวศึกษาชัยภูมิ",
+    "name_en": "Chaiyaphum Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_r7qylq97q",
+    "name_th": "โรงเรียนอำนาจเจริญพิทยาคม",
+    "name_en": "Amnat Charoen Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_nvlrnej24",
+    "name_th": "โรงเรียนสตรีอำนาจเจริญ",
+    "name_en": "Satri Amnat Charoen School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_55l0bq11g",
+    "name_th": "วิทยาลัยเทคนิคอำนาจเจริญ",
+    "name_en": "Amnat Charoen Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_qh4ov8ut6",
+    "name_th": "วิทยาลัยอาชีวศึกษาอำนาจเจริญ",
+    "name_en": "Amnat Charoen Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_y3u4vxmai",
+    "name_th": "โรงเรียนบึงกาฬพิทยาคม",
+    "name_en": "Bueng Kan Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_3e88w4iky",
+    "name_th": "โรงเรียนสตรีบึงกาฬ",
+    "name_en": "Satri Bueng Kan School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_8efpwf8ik",
+    "name_th": "วิทยาลัยเทคนิคบึงกาฬ",
+    "name_en": "Bueng Kan Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_56wvhvz07",
+    "name_th": "วิทยาลัยอาชีวศึกษาบึงกาฬ",
+    "name_en": "Bueng Kan Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_bwb272pv4",
+    "name_th": "โรงเรียนหนองบัวลำภูพิทยาคม",
+    "name_en": "Nong Bua Lam Phu Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_diatlnyy0",
+    "name_th": "โรงเรียนสตรีหนองบัวลำภู",
+    "name_en": "Satri Nong Bua Lam Phu School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_vdz4av9o5",
+    "name_th": "วิทยาลัยเทคนิคหนองบัวลำภู",
+    "name_en": "Nong Bua Lam Phu Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_mrsw201w1",
+    "name_th": "วิทยาลัยอาชีวศึกษาหนองบัวลำภู",
+    "name_en": "Nong Bua Lam Phu Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_kxqexy34h",
+    "name_th": "โรงเรียนขอนแก่นพิทยาคม",
+    "name_en": "Khon Kaen Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_820lsl34f",
+    "name_th": "โรงเรียนสตรีขอนแก่น",
+    "name_en": "Satri Khon Kaen School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_v2ht05qrg",
+    "name_th": "โรงเรียนอุดรธานีพิทยาคม",
+    "name_en": "Udon Thani Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_an6vw1xlp",
+    "name_th": "โรงเรียนสตรีอุดรธานี",
+    "name_en": "Satri Udon Thani School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_o30me2wln",
+    "name_th": "วิทยาลัยเทคนิคอุดรธานี",
+    "name_en": "Udon Thani Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_knef9zk23",
+    "name_th": "วิทยาลัยอาชีวศึกษาอุดรธานี",
+    "name_en": "Udon Thani Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_c3zo6pru2",
+    "name_th": "โรงเรียนเลยพิทยาคม",
+    "name_en": "Loei Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_idblpynfv",
+    "name_th": "โรงเรียนสตรีเลย",
+    "name_en": "Satri Loei School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_tn6led79j",
+    "name_th": "วิทยาลัยเทคนิคเลย",
+    "name_en": "Loei Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_tnca9jlej",
+    "name_th": "วิทยาลัยอาชีวศึกษาเลย",
+    "name_en": "Loei Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_8eeqp4x4j",
+    "name_th": "โรงเรียนหนองคายพิทยาคม",
+    "name_en": "Nong Khai Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_70wffgbn6",
+    "name_th": "โรงเรียนสตรีหนองคาย",
+    "name_en": "Satri Nong Khai School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_tozkpckh3",
+    "name_th": "วิทยาลัยเทคนิคหนองคาย",
+    "name_en": "Nong Khai Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_4qlv2x6wg",
+    "name_th": "วิทยาลัยอาชีวศึกษาหนองคาย",
+    "name_en": "Nong Khai Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_unbgfwz4d",
+    "name_th": "โรงเรียนมหาสารคามพิทยาคม",
+    "name_en": "Maha Sarakham Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_p01denflv",
+    "name_th": "โรงเรียนสตรีมหาสารคาม",
+    "name_en": "Satri Maha Sarakham School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_2k03pr5bi",
+    "name_th": "วิทยาลัยเทคนิคมหาสารคาม",
+    "name_en": "Maha Sarakham Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_vhg8hwap9",
+    "name_th": "วิทยาลัยอาชีวศึกษามหาสารคาม",
+    "name_en": "Maha Sarakham Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_vbixx97b5",
+    "name_th": "โรงเรียนร้อยเอ็ดพิทยาคม",
+    "name_en": "Roi Et Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_zmqp66r75",
+    "name_th": "โรงเรียนสตรีร้อยเอ็ด",
+    "name_en": "Satri Roi Et School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_verw8kzi2",
+    "name_th": "วิทยาลัยเทคนิคร้อยเอ็ด",
+    "name_en": "Roi Et Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_735pdovze",
+    "name_th": "วิทยาลัยอาชีวศึกษาร้อยเอ็ด",
+    "name_en": "Roi Et Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_kj7us9yef",
+    "name_th": "โรงเรียนกาฬสินธุ์พิทยาคม",
+    "name_en": "Kalasin Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_78n51qse4",
+    "name_th": "โรงเรียนสตรีกาฬสินธุ์",
+    "name_en": "Satri Kalasin School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_mbqlfxz69",
+    "name_th": "วิทยาลัยเทคนิคกาฬสินธุ์",
+    "name_en": "Kalasin Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_zbt0bljwb",
+    "name_th": "วิทยาลัยอาชีวศึกษากาฬสินธุ์",
+    "name_en": "Kalasin Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_jy9dgx5u2",
+    "name_th": "โรงเรียนสกลนครพิทยาคม",
+    "name_en": "Sakon Nakhon Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_3hj0sbmol",
+    "name_th": "โรงเรียนสตรีสกลนคร",
+    "name_en": "Satri Sakon Nakhon School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_anv3yctnj",
+    "name_th": "วิทยาลัยเทคนิคสกลนคร",
+    "name_en": "Sakon Nakhon Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_8fqn69ap4",
+    "name_th": "วิทยาลัยอาชีวศึกษาสกลนคร",
+    "name_en": "Sakon Nakhon Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_nyoy6dwdy",
+    "name_th": "โรงเรียนนครพนมพิทยาคม",
+    "name_en": "Nakhon Phanom Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_tvhcbquoc",
+    "name_th": "โรงเรียนสตรีนครพนม",
+    "name_en": "Satri Nakhon Phanom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_k0c1v1stw",
+    "name_th": "วิทยาลัยเทคนิคนครพนม",
+    "name_en": "Nakhon Phanom Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_ppm4lj0l0",
+    "name_th": "วิทยาลัยอาชีวศึกษานครพนม",
+    "name_en": "Nakhon Phanom Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_1avin3lv6",
+    "name_th": "โรงเรียนมุกดาหารพิทยาคม",
+    "name_en": "Mukdahan Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_r99d80m2f",
+    "name_th": "โรงเรียนสตรีมุกดาหาร",
+    "name_en": "Satri Mukdahan School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_xyoca1kz5",
+    "name_th": "วิทยาลัยเทคนิคมุกดาหาร",
+    "name_en": "Mukdahan Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_24fg70m75",
+    "name_th": "วิทยาลัยอาชีวศึกษามุกดาหาร",
+    "name_en": "Mukdahan Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_glccpl5vl",
+    "name_th": "โรงเรียนเชียงใหม่พิทยาคม",
+    "name_en": "Chiang Mai Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_0luj94wex",
+    "name_th": "โรงเรียนสตรีเชียงใหม่",
+    "name_en": "Satri Chiang Mai School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_qdb5e9q4m",
+    "name_th": "โรงเรียนลำพูนพิทยาคม",
+    "name_en": "Lamphun Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_5fhurvc9m",
+    "name_th": "โรงเรียนสตรีลำพูน",
+    "name_en": "Satri Lamphun School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_qyeg4f61r",
+    "name_th": "วิทยาลัยเทคนิคลำพูน",
+    "name_en": "Lamphun Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_0sj3bg95m",
+    "name_th": "วิทยาลัยอาชีวศึกษาลำพูน",
+    "name_en": "Lamphun Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_69g0quxjs",
+    "name_th": "โรงเรียนลำปางพิทยาคม",
+    "name_en": "Lampang Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_1g6f1hkg8",
+    "name_th": "โรงเรียนสตรีลำปาง",
+    "name_en": "Satri Lampang School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_1nf8na6j2",
+    "name_th": "วิทยาลัยเทคนิคลำปาง",
+    "name_en": "Lampang Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_girqqeuty",
+    "name_th": "วิทยาลัยอาชีวศึกษาลำปาง",
+    "name_en": "Lampang Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_01hkiaqlk",
+    "name_th": "โรงเรียนอุตรดิตถ์พิทยาคม",
+    "name_en": "Uttaradit Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_afvww81zw",
+    "name_th": "โรงเรียนสตรีอุตรดิตถ์",
+    "name_en": "Satri Uttaradit School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_wv7n25e6u",
+    "name_th": "วิทยาลัยเทคนิคอุตรดิตถ์",
+    "name_en": "Uttaradit Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_tqdurjh84",
+    "name_th": "วิทยาลัยอาชีวศึกษาอุตรดิตถ์",
+    "name_en": "Uttaradit Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_up2yqqydr",
+    "name_th": "โรงเรียนแพร่พิทยาคม",
+    "name_en": "Phrae Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_hgkda99xn",
+    "name_th": "โรงเรียนสตรีแพร่",
+    "name_en": "Satri Phrae School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_q98snpydu",
+    "name_th": "วิทยาลัยเทคนิคแพร่",
+    "name_en": "Phrae Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_6wclmulzh",
+    "name_th": "วิทยาลัยอาชีวศึกษาแพร่",
+    "name_en": "Phrae Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_3x9fvruup",
+    "name_th": "โรงเรียนน่านพิทยาคม",
+    "name_en": "Nan Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_11gise7eu",
+    "name_th": "โรงเรียนสตรีน่าน",
+    "name_en": "Satri Nan School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_60n07vjzx",
+    "name_th": "วิทยาลัยเทคนิคน่าน",
+    "name_en": "Nan Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_zbn6rmug4",
+    "name_th": "วิทยาลัยอาชีวศึกษาน่าน",
+    "name_en": "Nan Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_8tkubj1tv",
+    "name_th": "โรงเรียนพะเยาพิทยาคม",
+    "name_en": "Phayao Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_dcqz3hd4l",
+    "name_th": "โรงเรียนสตรีพะเยา",
+    "name_en": "Satri Phayao School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_2ex72jfip",
+    "name_th": "วิทยาลัยเทคนิคพะเยา",
+    "name_en": "Phayao Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_vmoga312c",
+    "name_th": "วิทยาลัยอาชีวศึกษาพะเยา",
+    "name_en": "Phayao Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_0ne1um180",
+    "name_th": "โรงเรียนเชียงรายพิทยาคม",
+    "name_en": "Chiang Rai Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_7qysr4wzt",
+    "name_th": "โรงเรียนสตรีเชียงราย",
+    "name_en": "Satri Chiang Rai School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_i5bgmoamt",
+    "name_th": "วิทยาลัยเทคนิคเชียงราย",
+    "name_en": "Chiang Rai Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_z72ze7la7",
+    "name_th": "วิทยาลัยอาชีวศึกษาเชียงราย",
+    "name_en": "Chiang Rai Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_yly1qkdnn",
+    "name_th": "โรงเรียนแม่ฮ่องสอนพิทยาคม",
+    "name_en": "Mae Hong Son Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_c1dgzuofd",
+    "name_th": "โรงเรียนสตรีแม่ฮ่องสอน",
+    "name_en": "Satri Mae Hong Son School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_ib0642bho",
+    "name_th": "วิทยาลัยเทคนิคแม่ฮ่องสอน",
+    "name_en": "Mae Hong Son Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_d04a84e2h",
+    "name_th": "วิทยาลัยอาชีวศึกษาแม่ฮ่องสอน",
+    "name_en": "Mae Hong Son Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_s9wha8z48",
+    "name_th": "โรงเรียนนครสวรรค์พิทยาคม",
+    "name_en": "Nakhon Sawan Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_h2qvlpepn",
+    "name_th": "โรงเรียนสตรีนครสวรรค์",
+    "name_en": "Satri Nakhon Sawan School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_ly2j3qlwm",
+    "name_th": "วิทยาลัยเทคนิคนครสวรรค์",
+    "name_en": "Nakhon Sawan Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_pqtnoph4t",
+    "name_th": "วิทยาลัยอาชีวศึกษานครสวรรค์",
+    "name_en": "Nakhon Sawan Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_lr25ircel",
+    "name_th": "โรงเรียนอุทัยธานีพิทยาคม",
+    "name_en": "Uthai Thani Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_zbjrl90jd",
+    "name_th": "โรงเรียนสตรีอุทัยธานี",
+    "name_en": "Satri Uthai Thani School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_qvoe086xu",
+    "name_th": "วิทยาลัยเทคนิคอุทัยธานี",
+    "name_en": "Uthai Thani Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_gtwjmko2g",
+    "name_th": "วิทยาลัยอาชีวศึกษาอุทัยธานี",
+    "name_en": "Uthai Thani Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_u5d6adhvv",
+    "name_th": "โรงเรียนกำแพงเพชรพิทยาคม",
+    "name_en": "Kamphaeng Phet Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_bjw76n4gl",
+    "name_th": "โรงเรียนสตรีกำแพงเพชร",
+    "name_en": "Satri Kamphaeng Phet School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_ej2x6r091",
+    "name_th": "วิทยาลัยเทคนิคกำแพงเพชร",
+    "name_en": "Kamphaeng Phet Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_9d6ha3rrw",
+    "name_th": "วิทยาลัยอาชีวศึกษากำแพงเพชร",
+    "name_en": "Kamphaeng Phet Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_10zyipubv",
+    "name_th": "โรงเรียนตากพิทยาคม",
+    "name_en": "Tak Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_yrpkfsbmb",
+    "name_th": "โรงเรียนสตรีตาก",
+    "name_en": "Satri Tak School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_pnlnasr10",
+    "name_th": "วิทยาลัยเทคนิคตาก",
+    "name_en": "Tak Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_7xv05byts",
+    "name_th": "วิทยาลัยอาชีวศึกษาตาก",
+    "name_en": "Tak Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_9nd03fxui",
+    "name_th": "โรงเรียนสุโขทัยพิทยาคม",
+    "name_en": "Sukhothai Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_6947c224a",
+    "name_th": "โรงเรียนสตรีสุโขทัย",
+    "name_en": "Satri Sukhothai School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_8ta0twd8x",
+    "name_th": "วิทยาลัยเทคนิคสุโขทัย",
+    "name_en": "Sukhothai Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_2qey1y5fo",
+    "name_th": "วิทยาลัยอาชีวศึกษาสุโขทัย",
+    "name_en": "Sukhothai Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_m3q9jv6h3",
+    "name_th": "โรงเรียนสตรีพิษณุโลก",
+    "name_en": "Satri Phitsanulok School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_0k2iles8h",
+    "name_th": "วิทยาลัยเทคนิคพิษณุโลก",
+    "name_en": "Phitsanulok Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_3bcoblk3x",
+    "name_th": "วิทยาลัยอาชีวศึกษาพิษณุโลก",
+    "name_en": "Phitsanulok Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_8717u8o0p",
+    "name_th": "โรงเรียนพิจิตรพิทยาคม",
+    "name_en": "Phichit Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_p969a0tps",
+    "name_th": "โรงเรียนสตรีพิจิตร",
+    "name_en": "Satri Phichit School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_xmurtfqmj",
+    "name_th": "วิทยาลัยเทคนิคพิจิตร",
+    "name_en": "Phichit Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_smhk078s0",
+    "name_th": "วิทยาลัยอาชีวศึกษาพิจิตร",
+    "name_en": "Phichit Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_r3h6idyge",
+    "name_th": "โรงเรียนเพชรบูรณ์พิทยาคม",
+    "name_en": "Phetchabun Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_m6x9ry6x4",
+    "name_th": "โรงเรียนสตรีเพชรบูรณ์",
+    "name_en": "Satri Phetchabun School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_2cw4qansu",
+    "name_th": "วิทยาลัยเทคนิคเพชรบูรณ์",
+    "name_en": "Phetchabun Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_nba9g2oy1",
+    "name_th": "วิทยาลัยอาชีวศึกษาเพชรบูรณ์",
+    "name_en": "Phetchabun Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_pz93rho28",
+    "name_th": "โรงเรียนราชบุรีพิทยาคม",
+    "name_en": "Ratchaburi Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_6r7ue7c57",
+    "name_th": "โรงเรียนสตรีราชบุรี",
+    "name_en": "Satri Ratchaburi School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_mq8w3i2kf",
+    "name_th": "วิทยาลัยเทคนิคราชบุรี",
+    "name_en": "Ratchaburi Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_jrxf9uial",
+    "name_th": "วิทยาลัยอาชีวศึกษาราชบุรี",
+    "name_en": "Ratchaburi Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_6bpzwzn5z",
+    "name_th": "โรงเรียนกาญจนบุรีพิทยาคม",
+    "name_en": "Kanchanaburi Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_6lummp8p5",
+    "name_th": "โรงเรียนสตรีกาญจนบุรี",
+    "name_en": "Satri Kanchanaburi School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_t4b7ygd8r",
+    "name_th": "วิทยาลัยเทคนิคกาญจนบุรี",
+    "name_en": "Kanchanaburi Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_piud47rh6",
+    "name_th": "วิทยาลัยอาชีวศึกษากาญจนบุรี",
+    "name_en": "Kanchanaburi Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_kpnah9i7y",
+    "name_th": "โรงเรียนสุพรรณบุรีพิทยาคม",
+    "name_en": "Suphan Buri Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_33dlrdt42",
+    "name_th": "โรงเรียนสตรีสุพรรณบุรี",
+    "name_en": "Satri Suphan Buri School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_hzetyi0j4",
+    "name_th": "วิทยาลัยเทคนิคสุพรรณบุรี",
+    "name_en": "Suphan Buri Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_qfcljuacl",
+    "name_th": "วิทยาลัยอาชีวศึกษาสุพรรณบุรี",
+    "name_en": "Suphan Buri Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_ljsvu6df1",
+    "name_th": "โรงเรียนนครปฐมพิทยาคม",
+    "name_en": "Nakhon Pathom Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_b7sj4gv56",
+    "name_th": "โรงเรียนสตรีนครปฐม",
+    "name_en": "Satri Nakhon Pathom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_t2e2cf9c9",
+    "name_th": "วิทยาลัยเทคนิคนครปฐม",
+    "name_en": "Nakhon Pathom Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_zuvc79x03",
+    "name_th": "วิทยาลัยอาชีวศึกษานครปฐม",
+    "name_en": "Nakhon Pathom Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_i5cejubjj",
+    "name_th": "โรงเรียนสมุทรสาครพิทยาคม",
+    "name_en": "Samut Sakhon Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_hjucseeyk",
+    "name_th": "โรงเรียนสตรีสมุทรสาคร",
+    "name_en": "Satri Samut Sakhon School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_yc14xphr8",
+    "name_th": "วิทยาลัยเทคนิคสมุทรสาคร",
+    "name_en": "Samut Sakhon Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_aacsz5mt6",
+    "name_th": "วิทยาลัยอาชีวศึกษาสมุทรสาคร",
+    "name_en": "Samut Sakhon Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_p73nt5buu",
+    "name_th": "โรงเรียนสมุทรสงครามพิทยาคม",
+    "name_en": "Samut Songkhram Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_nx4edk4a4",
+    "name_th": "โรงเรียนสตรีสมุทรสงคราม",
+    "name_en": "Satri Samut Songkhram School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_ah924glw9",
+    "name_th": "วิทยาลัยเทคนิคสมุทรสงคราม",
+    "name_en": "Samut Songkhram Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_0kt4qmfvn",
+    "name_th": "วิทยาลัยอาชีวศึกษาสมุทรสงคราม",
+    "name_en": "Samut Songkhram Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_t910tgl0x",
+    "name_th": "โรงเรียนเพชรบุรีพิทยาคม",
+    "name_en": "Phetchaburi Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_nfpddd72i",
+    "name_th": "โรงเรียนสตรีเพชรบุรี",
+    "name_en": "Satri Phetchaburi School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_kdnnunwkv",
+    "name_th": "วิทยาลัยเทคนิคเพชรบุรี",
+    "name_en": "Phetchaburi Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_aczhdld2p",
+    "name_th": "วิทยาลัยอาชีวศึกษาเพชรบุรี",
+    "name_en": "Phetchaburi Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_ilaqw1g0v",
+    "name_th": "โรงเรียนประจวบคีรีขันธ์พิทยาคม",
+    "name_en": "Prachuap Khiri Khan Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_a0ig61o8i",
+    "name_th": "โรงเรียนสตรีประจวบคีรีขันธ์",
+    "name_en": "Satri Prachuap Khiri Khan School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_53ou4ph18",
+    "name_th": "วิทยาลัยเทคนิคประจวบคีรีขันธ์",
+    "name_en": "Prachuap Khiri Khan Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_4sjxkucrh",
+    "name_th": "วิทยาลัยอาชีวศึกษาประจวบคีรีขันธ์",
+    "name_en": "Prachuap Khiri Khan Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_qgmqy6vm7",
+    "name_th": "โรงเรียนนครศรีธรรมราชพิทยาคม",
+    "name_en": "Nakhon Si Thammarat Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_9y35wsjjv",
+    "name_th": "โรงเรียนสตรีนครศรีธรรมราช",
+    "name_en": "Satri Nakhon Si Thammarat School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_994l3i9uv",
+    "name_th": "วิทยาลัยเทคนิคนครศรีธรรมราช",
+    "name_en": "Nakhon Si Thammarat Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_zqk777zzy",
+    "name_th": "วิทยาลัยอาชีวศึกษานครศรีธรรมราช",
+    "name_en": "Nakhon Si Thammarat Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_85vlh24xx",
+    "name_th": "โรงเรียนกระบี่พิทยาคม",
+    "name_en": "Krabi Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_dgpvlsplo",
+    "name_th": "โรงเรียนสตรีกระบี่",
+    "name_en": "Satri Krabi School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_2sm22v8p2",
+    "name_th": "วิทยาลัยเทคนิคกระบี่",
+    "name_en": "Krabi Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_7s3ebq2gq",
+    "name_th": "วิทยาลัยอาชีวศึกษากระบี่",
+    "name_en": "Krabi Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_qe74asakf",
+    "name_th": "โรงเรียนพังงาพิทยาคม",
+    "name_en": "Phangnga Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_nh5ffncxd",
+    "name_th": "โรงเรียนสตรีพังงา",
+    "name_en": "Satri Phangnga School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_qdu1kasur",
+    "name_th": "วิทยาลัยเทคนิคพังงา",
+    "name_en": "Phangnga Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_h3ni8tamh",
+    "name_th": "วิทยาลัยอาชีวศึกษาพังงา",
+    "name_en": "Phangnga Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_duvw9ktw2",
+    "name_th": "โรงเรียนภูเก็ตพิทยาคม",
+    "name_en": "Phuket Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_u8xhl8aoc",
+    "name_th": "วิทยาลัยเทคนิคภูเก็ต",
+    "name_en": "Phuket Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_y0c278d0c",
+    "name_th": "วิทยาลัยอาชีวศึกษาภูเก็ต",
+    "name_en": "Phuket Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_nb0dp3asq",
+    "name_th": "โรงเรียนสุราษฎร์ธานีพิทยาคม",
+    "name_en": "Surat Thani Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_b6h0febh1",
+    "name_th": "โรงเรียนสตรีสุราษฎร์ธานี",
+    "name_en": "Satri Surat Thani School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_3idzmsktl",
+    "name_th": "วิทยาลัยเทคนิคสุราษฎร์ธานี",
+    "name_en": "Surat Thani Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_zk1dzeb8l",
+    "name_th": "โรงเรียนระนองพิทยาคม",
+    "name_en": "Ranong Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_q61kub7cx",
+    "name_th": "โรงเรียนสตรีระนอง",
+    "name_en": "Satri Ranong School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_ckivcbixy",
+    "name_th": "วิทยาลัยเทคนิคระนอง",
+    "name_en": "Ranong Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_gsd7dzy0s",
+    "name_th": "วิทยาลัยอาชีวศึกษาระนอง",
+    "name_en": "Ranong Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_c15qpdhoa",
+    "name_th": "โรงเรียนชุมพรพิทยาคม",
+    "name_en": "Chumphon Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_j4vrv7q72",
+    "name_th": "โรงเรียนสตรีชุมพร",
+    "name_en": "Satri Chumphon School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_n7jn85h4n",
+    "name_th": "วิทยาลัยเทคนิคชุมพร",
+    "name_en": "Chumphon Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_8qbq6jdlo",
+    "name_th": "วิทยาลัยอาชีวศึกษาชุมพร",
+    "name_en": "Chumphon Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_rnqc2jrtz",
+    "name_th": "โรงเรียนสงขลาพิทยาคม",
+    "name_en": "Songkhla Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_bi1ld0wc5",
+    "name_th": "โรงเรียนสตรีสงขลา",
+    "name_en": "Satri Songkhla School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_v5bndstsm",
+    "name_th": "วิทยาลัยเทคนิคสงขลา",
+    "name_en": "Songkhla Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_od1s8frrw",
+    "name_th": "วิทยาลัยอาชีวศึกษาสงขลา",
+    "name_en": "Songkhla Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_qcmxv98qc",
+    "name_th": "โรงเรียนสตูลพิทยาคม",
+    "name_en": "Satun Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_yxraw1xcm",
+    "name_th": "โรงเรียนสตรีสตูล",
+    "name_en": "Satri Satun School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_306aqouem",
+    "name_th": "วิทยาลัยเทคนิคสตูล",
+    "name_en": "Satun Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_10mtqcndw",
+    "name_th": "วิทยาลัยอาชีวศึกษาสตูล",
+    "name_en": "Satun Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_j2ad27clr",
+    "name_th": "โรงเรียนตรังพิทยาคม",
+    "name_en": "Trang Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_607jbi3g7",
+    "name_th": "โรงเรียนสตรีตรัง",
+    "name_en": "Satri Trang School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_rvmvkl42m",
+    "name_th": "วิทยาลัยเทคนิคตรัง",
+    "name_en": "Trang Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_egrpz80d1",
+    "name_th": "วิทยาลัยอาชีวศึกษาตรัง",
+    "name_en": "Trang Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_0mns3g4zl",
+    "name_th": "โรงเรียนพัทลุงพิทยาคม",
+    "name_en": "Phatthalung Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_8499o8zay",
+    "name_th": "โรงเรียนสตรีพัทลุง",
+    "name_en": "Satri Phatthalung School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_644brm2mm",
+    "name_th": "วิทยาลัยเทคนิคพัทลุง",
+    "name_en": "Phatthalung Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_1838gr333",
+    "name_th": "วิทยาลัยอาชีวศึกษาพัทลุง",
+    "name_en": "Phatthalung Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_btuskv2cb",
+    "name_th": "โรงเรียนปัตตานีพิทยาคม",
+    "name_en": "Pattani Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_bpskbu3pi",
+    "name_th": "โรงเรียนสตรีปัตตานี",
+    "name_en": "Satri Pattani School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_yhr9wo1wm",
+    "name_th": "วิทยาลัยเทคนิคปัตตานี",
+    "name_en": "Pattani Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_9xfpj6ipm",
+    "name_th": "วิทยาลัยอาชีวศึกษาปัตตานี",
+    "name_en": "Pattani Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_swjevs5og",
+    "name_th": "โรงเรียนยะลาพิทยาคม",
+    "name_en": "Yala Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_1v5tzle4f",
+    "name_th": "โรงเรียนสตรียะลา",
+    "name_en": "Satri Yala School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_m3kysqx7q",
+    "name_th": "วิทยาลัยเทคนิคยะลา",
+    "name_en": "Yala Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_nm57wue6u",
+    "name_th": "วิทยาลัยอาชีวศึกษายะลา",
+    "name_en": "Yala Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_buepl3na6",
+    "name_th": "โรงเรียนนราธิวาสพิทยาคม",
+    "name_en": "Narathiwat Pittayakhom School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_vlk55duer",
+    "name_th": "โรงเรียนสตรีนราธิวาส",
+    "name_en": "Satri Narathiwat School",
+    "category": "โรงเรียน/มัธยมศึกษา",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_45wvkk2g3",
+    "name_th": "วิทยาลัยเทคนิคนราธิวาส",
+    "name_en": "Narathiwat Technical College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  },
+  {
+    "id": "sch_ul10q7xwz",
+    "name_th": "วิทยาลัยอาชีวศึกษานราธิวาส",
+    "name_en": "Narathiwat Vocational College",
+    "category": "อาชีวศึกษา/วิทยาลัยเทคนิค",
+    "abbr_th": "",
+    "abbr_en": ""
+  }
+]

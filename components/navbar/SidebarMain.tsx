@@ -51,7 +51,7 @@ export default function NavbarMain({
   logoWhiteUrl = DEFAULT_LOGO_WHITE,
   logoDarkUrl = DEFAULT_LOGO_DARK,
   logoUrl,
-  hubPath = "/portal",
+  hubPath = "/workspace",
   settingsPath = "/settings",
   loginPath = "/auth/login",
   initialMinimized = false,
@@ -81,12 +81,30 @@ export default function NavbarMain({
   }, [pathname]);
 
   // Dynamic logo based on active theme and minimized state
-  const MINIMIZED_LOGO_LIGHT = "https://aifcrdoxzvkkoyemukag.supabase.co/storage/v1/object/sign/image/logo/dawh_black4x2048logo.png?token=eyJraWQiOiI4ODY5ZGQ3ZS0zZGFlLTRiNGUtYTk4MS1iMDZiZDE3MjdlMzIiLCJhbGciOiJIUzUxMiJ9.eyJ1cmwiOiJpbWFnZS9sb2dvL2Rhd2hfYmxhY2s0eDIwNDhsb2dvLnBuZyIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODc4NzgwNTIsImV4cCI6MTgxOTQxNDA1Mn0.mxYm7LTG-oFslXLhR44IH0JV__R6U2uvp-vTvikVJpcMk0nNUCZilWPLvVSp_XLHQP8vru2b9N8SPYSY_qLkvA";
-  const MINIMIZED_LOGO_DARK = "https://aifcrdoxzvkkoyemukag.supabase.co/storage/v1/object/sign/image/logo/dawh_light2048logo.png?token=eyJraWQiOiI4ODY5ZGQ3ZS0zZGFlLTRiNGUtYTk4MS1iMDZiZDE3MjdlMzIiLCJhbGciOiJIUzUxMiJ9.eyJ1cmwiOiJpbWFnZS9sb2dvL2Rhd2hfbGlnaHQyMDQ4bG9nby5wbmciLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg3ODc4MDkwLCJleHAiOjE4MTk0MTQwOTB9.snX3XF6HEYgVZfixln7CeB-fft8bk5AsWnwPDw1T-By2vnVVnlJDR90J3-_1MbFTfhWO9x1Eye-T0inMMUNG7w";
-
   const currentLogo = isMinimized
-    ? (isLight ? MINIMIZED_LOGO_LIGHT : MINIMIZED_LOGO_DARK)
+    ? (isLight ? "/assets/dawh_black4x2048logo.png" : "/assets/dawh_light1024logo.png")
     : (logoUrl || (isLight ? logoWhiteUrl : logoDarkUrl));
+
+  // Sync with localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("dawh_sidebar_minimized");
+      if (saved !== null) {
+        const parsed = JSON.parse(saved);
+        setIsMinimized(parsed);
+        onMinimizedChange?.(parsed);
+      }
+    } catch {
+      // Non-blocking
+    }
+  }, []);
+
+  // Sync when parent changes initialMinimized
+  useEffect(() => {
+    if (initialMinimized !== undefined) {
+      setIsMinimized(initialMinimized);
+    }
+  }, [initialMinimized]);
 
   useEffect(() => {
     let isMounted = true;
@@ -237,6 +255,11 @@ export default function NavbarMain({
     const nextState = !isMinimized;
     setIsMinimized(nextState);
     setIsAccountOpen(false);
+    try {
+      localStorage.setItem("dawh_sidebar_minimized", JSON.stringify(nextState));
+    } catch {
+      // Non-blocking
+    }
     onMinimizedChange?.(nextState);
   };
 
@@ -268,7 +291,7 @@ export default function NavbarMain({
   return (
     <>
       <aside
-        className={`hidden md:flex sticky top-0 h-dvh flex-col transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] z-40 shrink-0 ${
+        className={`hidden md:flex sticky top-0 h-dvh flex-col transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] z-40 shrink-0 ${
           isMinimized ? "w-20 overflow-visible" : "w-64 overflow-hidden"
         } ${
           isLight
@@ -276,67 +299,73 @@ export default function NavbarMain({
             : "bg-[#222222] text-[#FFFFFF] border-r border-[#444444]"
         }`}
       >
-      {/* Mobile Top Safe Area Inset */}
-      <div className="pt-safe" />
+        {/* Mobile Top Safe Area Inset */}
+        <div className="pt-safe" />
 
-      {/* ======================================================== */}
-      {/* 📌 [จุดที่ 1] LOGO AREA - Enlarged +1/3 in Expanded Mode */}
-      {/* ======================================================== */}
-      <div className="flex flex-col items-center justify-center w-full overflow-hidden shrink-0 h-[96px] px-2.5 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]">
-        <div
-          className={`relative flex items-center justify-center transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-            isMinimized ? "w-8 h-8" : "w-full h-[69px]"
-          }`}
-        >
-          {currentLogo ? (
-            <Image
-              src={currentLogo}
-              alt="Logo"
-              fill
-              priority
-              sizes="(max-width: 768px) 32px, 220px"
-              className="object-contain transition-opacity duration-200"
-              onError={(e) => {
-                const target = e.currentTarget;
-                target.style.display = "none";
-              }}
-            />
-          ) : (
-            <div className="flex items-center gap-2.5">
-              <div
-                className={`flex items-center justify-center rounded-xl font-bold shadow-sm shrink-0 ${
-                  isMinimized ? "h-7 w-7" : "h-9 w-9"
-                } ${
-                  isLight
-                    ? "bg-slate-900 text-[#FFFFFF]"
-                    : "bg-[#FFFFFF] text-slate-950"
+        {/* ======================================================== */}
+        {/* 📌 [จุดที่ 1] LOGO AREA - Enlarged +1/3 in Expanded Mode */}
+        {/* ======================================================== */}
+        <div className="flex flex-col items-center justify-center w-full overflow-hidden shrink-0 h-[88px] px-2.5 transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]">
+          <div
+            className={`relative flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+              isMinimized ? "w-10 h-10" : "w-full h-[58px]"
+            }`}
+          >
+            {currentLogo ? (
+              <Image
+                src={currentLogo}
+                alt="Logo"
+                fill
+                priority
+                sizes="(max-width: 768px) 40px, 220px"
+                className={`object-contain transition-opacity duration-300 ${
+                  isMinimized ? "p-0.5" : "p-0"
                 }`}
-              >
-                <Layers className={isMinimized ? "h-4 w-4" : "h-5 w-5"} />
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  target.style.display = "none";
+                }}
+              />
+            ) : (
+              <div className="flex items-center gap-2.5">
+                <div
+                  className={`flex items-center justify-center rounded-xl font-bold shadow-sm shrink-0 transition-all duration-300 ${
+                    isMinimized ? "h-8 w-8" : "h-9 w-9"
+                  } ${
+                    isLight
+                      ? "bg-slate-900 text-[#FFFFFF]"
+                      : "bg-[#FFFFFF] text-slate-950"
+                  }`}
+                >
+                  <Layers className={isMinimized ? "h-4 w-4" : "h-5 w-5"} />
+                </div>
+                <span
+                  className={`font-extrabold text-2xl tracking-tight whitespace-nowrap overflow-hidden transition-all ease-out ${
+                    isLight ? "text-slate-900" : "text-[#FFFFFF]"
+                  } ${
+                    isMinimized
+                      ? "max-w-0 opacity-0 -translate-x-3 duration-200 pointer-events-none"
+                      : "max-w-[140px] opacity-100 translate-x-0 duration-350 delay-100"
+                  }`}
+                  style={{ fontFamily: "var(--font-outfit), sans-serif" }}
+                >
+                  dawh
+                </span>
               </div>
-              <span
-                className={`font-extrabold text-2xl tracking-tight whitespace-nowrap overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-                  isLight ? "text-slate-900" : "text-[#FFFFFF]"
-                } ${isMinimized ? "max-w-0 opacity-0" : "max-w-[140px] opacity-100"}`}
-                style={{ fontFamily: "var(--font-outfit), sans-serif" }}
-              >
-                dawh
-              </span>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
 
       {/* Smooth Divider below Logo */}
       <div
-        className={`mx-4 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] border-b mb-2 ${
+        className={`mx-4 transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] border-b mb-2 ${
           isLight ? "border-[#E4E4E7]" : "border-[#444444]"
         } ${isMinimized ? "opacity-60 scale-x-60" : "opacity-100 scale-x-100"}`}
       />
 
       {/* SUB NAVBAR AREA */}
       <div
-        className={`flex-1 px-3 w-full transition-all duration-500 no-scrollbar ${
+        className={`flex-1 px-3 w-full transition-all duration-700 no-scrollbar ${
           isMinimized ? "overflow-visible" : "overflow-y-auto overflow-x-hidden"
         }`}
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
@@ -346,7 +375,7 @@ export default function NavbarMain({
 
       {/* ACCOUNT & CONTROL AREA */}
       <div
-        className={`px-3 pt-5 pb-2.5 mt-auto w-full shrink-0 border-t space-y-2 transition-colors duration-500 ${
+        className={`px-3 pt-5 pb-2.5 mt-auto w-full shrink-0 border-t space-y-2 transition-colors duration-700 ${
           isLight
             ? "bg-[#FFFFFF] border-[#E4E4E7] shadow-sm"
             : "bg-[#1E1E1E] border-[#383838]"
@@ -354,7 +383,7 @@ export default function NavbarMain({
       >
         {/* Quick Controls: Hub & Minimize Buttons */}
         <div
-          className={`w-full flex items-center transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+          className={`w-full flex items-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
             isMinimized
               ? "flex-col gap-2 items-center"
               : "items-center gap-1.5 px-0.5"
@@ -370,7 +399,7 @@ export default function NavbarMain({
                 "กำลังโหลดโมดูลและสิทธิ์การใช้งาน..."
               )
             }
-            className={`flex items-center justify-center transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] group cursor-pointer overflow-hidden ${
+            className={`flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] group cursor-pointer overflow-hidden ${
               isLight
                 ? "bg-[#FFFFFF] border-[#E4E4E7] text-slate-800 hover:bg-[#F4F4F5] shadow-sm"
                 : "bg-[#383838] border-[#444444] text-[#FFFFFF] hover:bg-[#444444]"
@@ -383,7 +412,7 @@ export default function NavbarMain({
           >
             {/* Icon: Centered & Hover Rotation */}
             <div
-              className={`shrink-0 flex items-center justify-center overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+              className={`shrink-0 flex items-center justify-center overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
                 isMinimized ? "w-8 h-8" : "w-4.5 h-4.5"
               }`}
             >
@@ -395,12 +424,12 @@ export default function NavbarMain({
               />
             </div>
 
-            {/* Text: Centered, Fast Fade Out on Minimize */}
+            {/* Text: Centered, Smooth Fade Out on Minimize */}
             <div
               className={`flex items-center justify-center overflow-hidden transition-all duration-300 ease-out ${
                 isMinimized
-                  ? "max-w-0 opacity-0 -translate-x-3 duration-100 pointer-events-none"
-                  : "max-w-[140px] opacity-100 translate-x-0 duration-300"
+                  ? "max-w-0 opacity-0 -translate-x-3 duration-200 pointer-events-none"
+                  : "max-w-[140px] opacity-100 translate-x-0 duration-350 delay-100"
               }`}
             >
               <span className="text-[12px] font-semibold leading-none tracking-wide truncate whitespace-nowrap text-center">
@@ -413,7 +442,7 @@ export default function NavbarMain({
           <button
             type="button"
             onClick={handleToggleMinimize}
-            className={`flex items-center justify-center rounded-xl border transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] active:scale-75 cursor-pointer shrink-0 ${
+            className={`flex items-center justify-center rounded-xl border transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] active:scale-75 cursor-pointer shrink-0 ${
               isLight
                 ? "border-[#E4E4E7] bg-[#FFFFFF] text-[#2C2C2C] hover:bg-[#F4F4F5] shadow-sm"
                 : "border-[#444444] bg-[#383838] text-[#E4E4E7] hover:border-white/30 hover:text-[#FFFFFF]"
@@ -422,7 +451,7 @@ export default function NavbarMain({
           >
             <ChevronLeft
               size={17}
-              className={`transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+              className={`transition-transform duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
                 isMinimized ? "rotate-180" : ""
               }`}
             />
@@ -430,10 +459,10 @@ export default function NavbarMain({
         </div>
 
         {/* User Profile Card & Expandable Controls */}
-        <div className="w-full space-y-2">
+        <div className="w-full flex flex-col">
           {/* Smooth Account Divider */}
           <div
-            className={`mx-auto border-t transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+            className={`mx-auto border-t transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
               isLight ? "border-[#E4E4E7]" : "border-[#444444]"
             } ${isMinimized ? "w-6 opacity-100 mb-2 scale-x-100" : "w-0 opacity-0 mb-0 scale-x-0"}`}
           />
@@ -444,7 +473,7 @@ export default function NavbarMain({
             onClick={() =>
               isMinimized ? handleToggleMinimize() : setIsAccountOpen(!isAccountOpen)
             }
-            className={`flex items-center transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden cursor-pointer ${
+            className={`flex items-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden cursor-pointer ${
               isLight
                 ? "bg-[#FFFFFF] border-[#E4E4E7] text-[#222222] hover:bg-[#F4F4F5] shadow-sm"
                 : "bg-[#383838] border-[#444444] text-[#FFFFFF] hover:bg-[#444444]"
@@ -455,7 +484,7 @@ export default function NavbarMain({
             }`}
           >
             <div
-              className={`shrink-0 flex items-center justify-center overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] rounded-full border ${
+              className={`shrink-0 flex items-center justify-center overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] rounded-full border ${
                 isMinimized ? "w-8 h-8" : "w-9 h-9"
               } ${
                 isLight
@@ -477,10 +506,10 @@ export default function NavbarMain({
             </div>
 
             <div
-              className={`min-w-0 flex-1 text-left flex flex-col justify-center overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+              className={`min-w-0 flex-1 text-left flex flex-col justify-center overflow-hidden transition-all ease-out ${
                 isMinimized
-                  ? "max-w-0 opacity-0 -translate-x-4 pointer-events-none"
-                  : "max-w-[140px] opacity-100 translate-x-0"
+                  ? "max-w-0 opacity-0 -translate-x-4 duration-200 pointer-events-none"
+                  : "max-w-[140px] opacity-100 translate-x-0 duration-350 delay-100"
               }`}
             >
               <p
@@ -503,7 +532,7 @@ export default function NavbarMain({
 
             <ChevronUp
               size={15}
-              className={`shrink-0 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+              className={`shrink-0 transition-transform duration-350 ease-[cubic-bezier(0.4,0,0.2,1)] ${
                 isLight ? "text-[#383838]" : "text-[#E4E4E7]"
               } ${
                 isMinimized
@@ -517,17 +546,31 @@ export default function NavbarMain({
           <AnimatePresence>
             {!isMinimized && isAccountOpen && (
               <motion.div
-                initial={{ opacity: 0, height: 0, y: -12 }}
-                animate={{ opacity: 1, height: "auto", y: 0 }}
-                exit={{ opacity: 0, height: 0, y: -12 }}
-                transition={{
-                  duration: 0.22,
-                  ease: [0.16, 1, 0.3, 1],
+                initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                animate={{
+                  opacity: 1,
+                  height: "auto",
+                  marginTop: 6,
+                  transition: {
+                    height: { duration: 0.35, ease: [0.4, 0, 0.2, 1] },
+                    marginTop: { duration: 0.35, ease: [0.4, 0, 0.2, 1] },
+                    opacity: { duration: 0.25, ease: "easeOut", delay: 0.05 },
+                  },
                 }}
-                className="overflow-hidden mt-1.5 origin-top"
+                exit={{
+                  opacity: 0,
+                  height: 0,
+                  marginTop: 0,
+                  transition: {
+                    height: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
+                    marginTop: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
+                    opacity: { duration: 0.2, ease: "easeIn" },
+                  },
+                }}
+                className="overflow-hidden"
               >
                 <div
-                  className={`overflow-hidden space-y-0.5 rounded-2xl p-1 border shadow-lg ${
+                  className={`overflow-hidden space-y-0.5 rounded-2xl p-1 border shadow-lg transition-colors duration-300 ${
                     isLight
                       ? "bg-[#FFFFFF] border-[#E4E4E7] shadow-slate-200/80"
                       : "bg-[#282828] border-[#444444]"

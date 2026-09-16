@@ -2,37 +2,53 @@
 
 import React, { useEffect, useState } from "react";
 import {
-  UserCircle,
-  ShieldCheck,
-  CheckCircle2,
-  Sparkles,
-  ArrowRight,
-  Code2,
+  Database,
+  Box,
+  FileText,
   Cpu,
-  Layers,
-  Clock,
-  KeyRound,
-  Building2,
   Lock,
+  ArrowRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/context/ThemeContext";
-import { supabase } from "@/utils/supabase";
 import { checkProfileCompleteness, fetchAndStoreUserProfile } from "@/utils/auth";
 import { useLoading } from "@/components/loading_screen";
 import { HeaderNavbar, MobileNavbar } from "@/components/navbar";
 import { ProfileGuardModal } from "@/components/auth";
 import { EmployeeProfile } from "@/types/user";
 import { useAppLanguage } from "@/utils/language";
+import { getDawhLogo } from "@/config/brand";
+import { useNotification } from "@/context/NotificationContext";
 
 export interface WorkspaceViewProps {
   onNavigate?: (route: string) => void;
   lang?: "en" | "th";
 }
 
+interface WorkspaceCardItem {
+  id: string;
+  title: string;
+  titleTh: string;
+  description: string;
+  descriptionTh: string;
+  icon: React.ElementType;
+  statusText: string;
+  statusTextTh: string;
+  statusDotColor: string;
+  pillWidth: string;
+  buttonText: string;
+  buttonTextTh: string;
+  buttonWidth: string;
+  buttonIcon: React.ElementType;
+  isLocked?: boolean;
+  isMaintenance?: boolean;
+  route?: string;
+}
+
 export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
   const { theme } = useTheme();
   const { navigateWithLoading } = useLoading();
+  const { notify } = useNotification();
   const isLight = theme === "light";
 
   const appLang = useAppLanguage();
@@ -40,27 +56,9 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
   const isThai = activeLang === "th";
 
   const [profile, setProfile] = useState<Partial<EmployeeProfile>>({});
-  const [isProfileComplete, setIsProfileComplete] = useState(true);
+  const [, setIsProfileComplete] = useState(true);
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [showGuardModal, setShowGuardModal] = useState(false);
-  const [currentTime, setCurrentTime] = useState("");
-
-  // Clock
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      setCurrentTime(
-        now.toLocaleTimeString(isThai ? "th-TH" : "en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        })
-      );
-    };
-    updateTime();
-    const timer = setInterval(updateTime, 1000);
-    return () => clearInterval(timer);
-  }, [isThai]);
 
   // Fetch real profile from Supabase Database on mount
   useEffect(() => {
@@ -100,284 +98,402 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
     fetchUserProfile();
   }, []);
 
-  const displayName = profile.first_name_th
-    ? `${profile.prefix || ""} ${profile.first_name_th} ${profile.last_name_th || ""}`.trim()
-    : profile.first_name
-    ? `${profile.first_name} ${profile.last_name || ""}`.trim()
-    : profile.username || (isThai ? "ผู้ใช้งานระบบ" : "Authorized User");
-
-  const roleDisplay = (profile.role || "staff").toUpperCase();
-  const departmentDisplay = profile.department || (isThai ? "ฝ่ายปฏิบัติการทั่วไป" : "General Operations");
-  const staffCodeDisplay = profile.staff_code || (profile.id ? `EMP-${profile.id.slice(0, 4).toUpperCase()}` : "EMP-1001");
-
   const handleOpenAccount = () => {
     if (onNavigate) onNavigate("account");
     else navigateWithLoading("/account");
   };
 
-  return (
-    <div
-      className={`relative min-h-dvh w-full flex flex-col justify-between overflow-x-hidden ${
-        isLight
-          ? "bg-[#F8FAFC] text-[#222222]"
-          : "bg-[#1E1E1E] text-white"
-      } transition-colors duration-300 font-sans`}
-    >
-      {/* Top Navigation Headers */}
-      <HeaderNavbar showAccount={true} showLogo={true} />
-      <MobileNavbar />
+  const handleCardClick = (card: WorkspaceCardItem) => {
+    if (card.route) {
+      if (onNavigate) {
+        onNavigate(card.route.replace("/", ""));
+      } else {
+        navigateWithLoading(
+          card.route,
+          isThai ? `กำลังเปิดระบบ ${card.titleTh}...` : `Opening ${card.title}...`,
+          isThai ? "กำลังเชื่อมต่อระบบและโหลดข้อมูล..." : "Connecting to workspace modules..."
+        );
+      }
+    }
+  };
 
-      {/* Main Content Hub */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 flex flex-col justify-center">
-        {/* Hero Greeting Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-8 md:mb-12"
+  // 4 Cards configuration strictly following Figma specification
+  const cardsRow1: WorkspaceCardItem[] = [
+    {
+      id: "workspace-card-0",
+      title: "HP Datacenter",
+      titleTh: "HP Datacenter",
+      description: "Manage Hire-Purchase contracts, ledger controls, overdue recoveries, and customer profiles.",
+      descriptionTh: "จัดการสัญญาเช่าซื้อ, บัญชีแยกประเภท, ติดตามหนี้ค้างชำระ และข้อมูลประวัติลูกค้า",
+      icon: Database,
+      statusText: "Active",
+      statusTextTh: "Active",
+      statusDotColor: "#2EC4B6",
+      pillWidth: "w-[66px]",
+      buttonText: "Enter Workspace",
+      buttonTextTh: "Enter Workspace",
+      buttonWidth: "w-[171px]",
+      buttonIcon: ArrowRight,
+      route: "/datacenter",
+    },
+    {
+      id: "workspace-card-1",
+      title: "Warehouse ERP",
+      titleTh: "Warehouse ERP",
+      description: "Stock items tracking, real-time SKU movements, stock allocation, and dispatch optimization.",
+      descriptionTh: "ติดตามสินค้าคงคลัง, ความเคลื่อนไหว SKU แบบเรียลไทม์, จัดสรรสต็อก และเพิ่มประสิทธิภาพการจัดส่ง",
+      icon: Box,
+      statusText: "Active",
+      statusTextTh: "Active",
+      statusDotColor: "#2EC4B6",
+      pillWidth: "w-[66px]",
+      buttonText: "Enter Workspace",
+      buttonTextTh: "Enter Workspace",
+      buttonWidth: "w-[171px]",
+      buttonIcon: ArrowRight,
+      route: "/warehouse",
+    },
+  ];
+
+  const cardsRow2: WorkspaceCardItem[] = [
+    {
+      id: "workspace-card-2",
+      title: "Reports & Auditing",
+      titleTh: "Reports & Auditing",
+      description: "Generate monthly statements, performance statistics, system audit logs, and risk reports.",
+      descriptionTh: "สร้างใบแจ้งยอดรายเดือน, สถิติประสิทธิภาพ, บันทึกการตรวจสอบระบบ และรายงานความเสี่ยง",
+      icon: FileText,
+      statusText: "Maintenance",
+      statusTextTh: "Maintenance",
+      statusDotColor: "#FF9F1C",
+      pillWidth: "w-[101px]",
+      buttonText: "Enter Workspace",
+      buttonTextTh: "Enter Workspace",
+      buttonWidth: "w-[171px]",
+      buttonIcon: ArrowRight,
+      isMaintenance: true,
+      route: "/reports",
+    },
+    {
+      id: "workspace-card-3",
+      title: "Integration Services",
+      titleTh: "Integration Services",
+      description: "API keys, external payment gateways mapping, CRM syncing, and ERP connections.",
+      descriptionTh: "คีย์ API, การแมปเกตเวย์การชำระเงินภายนอก, การซิงค์ CRM และการเชื่อมต่อระบบ ERP",
+      icon: Cpu,
+      statusText: "Locked",
+      statusTextTh: "Locked",
+      statusDotColor: "#999999",
+      pillWidth: "w-[71px]",
+      buttonText: "Locked Module",
+      buttonTextTh: "Locked Module",
+      buttonWidth: "w-[158px]",
+      buttonIcon: Lock,
+      isLocked: true,
+      route: "/integration",
+    },
+  ];
+
+  const renderCard = (card: WorkspaceCardItem, index: number) => {
+    const IconComponent = card.icon;
+    const ButtonIconComponent = card.buttonIcon;
+    const isLocked = card.isLocked;
+
+    return (
+      <motion.div
+        key={card.id}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: isLocked ? 0.5 : 1, y: 0 }}
+        exit={{ opacity: 0, y: -12, transition: { duration: 0.2 } }}
+        transition={{
+          duration: 0.45,
+          delay: 0.06 + index * 0.07,
+          ease: [0.4, 0, 0.2, 1],
+        }}
+        whileHover={
+          !isLocked
+            ? {
+                y: -3,
+                transition: { duration: 0.2, ease: "easeOut" },
+              }
+            : undefined
+        }
+        whileTap={!isLocked ? { scale: 0.99 } : undefined}
+        onClick={() => handleCardClick(card)}
+        className={`group box-border flex flex-1 flex-col items-start p-[28px] gap-[20px] rounded-[12px] border transition-all duration-200 select-none min-h-[233px] w-full lg:w-[662px] ${
+          isLocked
+            ? "cursor-not-allowed opacity-50"
+            : "cursor-pointer"
+        } ${
+          isLight
+            ? "bg-white/95 border-[#E2E8F0] shadow-[0px_4px_12px_rgba(0,0,0,0.06)] hover:border-[#0D99FF]/40 hover:shadow-[0px_8px_20px_rgba(0,0,0,0.12)]"
+            : "bg-[#383838] border-[#444444] shadow-[0px_4px_12px_rgba(0,0,0,0.101961)] hover:border-[#555555] hover:shadow-[0px_8px_24px_rgba(0,0,0,0.28)]"
+        }`}
+      >
+        {/* card-top-row */}
+        <div className="flex flex-row justify-between items-center p-0 w-full h-[48px] self-stretch">
+          {/* icon-wrapper */}
+          <div
+            className={`box-border flex flex-row justify-center items-center p-0 w-[48px] h-[48px] rounded-[10px] border transition-colors ${
+              isLight
+                ? "bg-[#F1F5F9] border-[#E2E8F0]"
+                : "bg-[#222222] border-[#444444]"
+            }`}
+          >
+            <IconComponent
+              size={24}
+              stroke="#0D99FF"
+              strokeWidth={2}
+              className="shrink-0"
+            />
+          </div>
+
+          {/* status-pill */}
+          <div
+            className={`box-border flex flex-row items-center justify-center px-[10px] py-[4px] gap-[6px] h-[22px] ${
+              card.pillWidth
+            } min-w-fit rounded-[100px] bg-transparent border-[1.5px] transition-colors ${
+              isLight
+                ? "border-[#E2E8F0]"
+                : "border-[#444444]"
+            }`}
+          >
+            {/* status-dot */}
+            <span
+              className="w-[6px] h-[6px] rounded-full shrink-0"
+              style={{ backgroundColor: card.statusDotColor }}
+            />
+            {/* text */}
+            <span
+              className={`font-semibold text-[11px] leading-[14px] whitespace-nowrap ${
+                isLight ? "text-[#1E293B]" : "text-[#FFFFFF]"
+              }`}
+              style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
+            >
+              {isThai ? card.statusTextTh : card.statusText}
+            </span>
+          </div>
+        </div>
+
+        {/* card-mid-text */}
+        <div className="flex flex-col items-start p-0 gap-[8px] w-full self-stretch">
+          {/* Title */}
+          <h2
+            className={`font-bold text-[18px] leading-[23px] tracking-tight ${
+              isLight ? "text-[#0F172A]" : "text-[#FFFFFF]"
+            }`}
+            style={{ fontFamily: "var(--font-outfit), sans-serif" }}
+          >
+            {isThai ? card.titleTh : card.title}
+          </h2>
+
+          {/* Description */}
+          <p
+            className={`font-normal text-[13px] leading-[150%] ${
+              isLight ? "text-[#64748B]" : "text-[#999999]"
+            }`}
+            style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
+          >
+            {isThai ? card.descriptionTh : card.description}
+          </p>
+        </div>
+
+        {/* Action Button */}
+        <button
+          type="button"
+          tabIndex={isLocked ? -1 : 0}
+          className={`box-border flex flex-row justify-center items-center px-[16px] py-[10px] gap-[8px] h-[38px] ${
+            card.buttonWidth
+          } min-w-fit rounded-[8px] border transition-all duration-200 mt-auto whitespace-nowrap ${
+            isLocked
+              ? "cursor-not-allowed"
+              : isLight
+              ? "bg-[#F8FAFC] border-[#E2E8F0] text-[#64748B] group-hover:bg-[#0D99FF] group-hover:text-white group-hover:border-[#0D99FF]"
+              : "bg-[#383838] border-[#444444] text-[#999999] group-hover:bg-[#444444] group-hover:text-white group-hover:border-[#666666]"
+          }`}
+          style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
         >
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-zinc-200 dark:border-zinc-800">
-            <div>
-              <div className="flex items-center gap-2.5 mb-2">
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  {isThai ? "ระบบพร้อมใช้งาน" : "System Online"}
-                </span>
-                <span className="text-xs font-mono text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
-                  <Clock size={12} />
-                  {currentTime}
-                </span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight">
-                {isThai ? `สวัสดี, ${displayName}` : `Welcome back, ${displayName}`}
-              </h1>
-              <p className="mt-1 text-sm sm:text-base text-zinc-600 dark:text-zinc-400">
-                {isThai
-                  ? "ศูนย์ควบคุมระบบหลัก (DAWH Workspace) — สภาพแวดล้อมพร้อมสำหรับการพัฒนา"
-                  : "DAWH Enterprise Operations Hub — Workspace clean slate ready for operations."}
-              </p>
-            </div>
+          <ButtonIconComponent
+            size={16}
+            className={`shrink-0 transition-colors ${
+              isLocked
+                ? "text-[#999999]"
+                : isLight
+                ? "text-[#64748B] group-hover:text-white"
+                : "text-[#999999] group-hover:text-white"
+            }`}
+          />
+          <span className="font-semibold text-[14px] leading-[18px] whitespace-nowrap">
+            {isThai ? card.buttonTextTh : card.buttonText}
+          </span>
+        </button>
+      </motion.div>
+    );
+  };
 
-            {/* Quick Profile Summary Badge */}
-            <div className="flex items-center gap-3 p-3 rounded-2xl border bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border-zinc-200 dark:border-zinc-800 shrink-0">
-              <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center font-bold text-sm">
-                {profile.avatar_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={profile.avatar_url} alt="Avatar" className="w-full h-full rounded-xl object-cover" />
-                ) : (
-                  <UserCircle size={24} className="text-zinc-500" />
-                )}
-              </div>
-              <div className="text-left">
-                <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
-                  <span>{staffCodeDisplay}</span>
-                  <span className="px-1.5 py-0.2 rounded text-[10px] bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-mono">
-                    {roleDisplay}
-                  </span>
-                </div>
-                <div className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate max-w-[160px]">
-                  {departmentDisplay}
-                </div>
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key="workspace-view"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0, transition: { duration: 0.25 } }}
+        transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+        className={`relative min-h-dvh w-full flex flex-col justify-between overflow-x-hidden ${
+          isLight
+            ? "bg-[#F8FAFC] text-slate-900 selection:bg-[#222222] selection:text-white"
+            : "bg-[#222222] text-white selection:bg-white/25 selection:text-white"
+        } transition-colors duration-300 font-sans`}
+      >
+        {/* 1. TWO-TONE SPLIT BACKGROUND (Login Page Theme Background) */}
+        <div className="absolute inset-0 flex flex-col pointer-events-none z-0">
+          <div
+            className={`w-full h-[52%] relative overflow-hidden transition-colors duration-300 ${
+              isLight ? "bg-[#EEF2F6]" : "bg-[#1A1A1A]"
+            }`}
+          >
+            <div className="absolute inset-0 pointer-events-none select-none">
+              <div className="absolute -top-4 -left-24 sm:-left-36 md:-left-48 h-1/2 aspect-[1580/528] relative">
+                <div
+                  className="w-full h-full transition-colors duration-300"
+                  style={{
+                    backgroundColor: isLight ? "#FFFFFF" : "#282828",
+                    WebkitMaskImage: `url(${getDawhLogo(theme, "longNoSpace")})`,
+                    maskImage: `url(${getDawhLogo(theme, "longNoSpace")})`,
+                    WebkitMaskSize: "contain",
+                    maskSize: "contain",
+                    WebkitMaskRepeat: "no-repeat",
+                    maskRepeat: "no-repeat",
+                    WebkitMaskPosition: "center",
+                    maskPosition: "center",
+                    transform: "rotate(-180deg)",
+                  }}
+                />
+                <div
+                  className={`absolute top-[61.2%] h-[150vh] left-[76.2%] w-[7%] transition-colors duration-300 ${
+                    isLight ? "bg-[#FFFFFF]" : "bg-[#282828]"
+                  }`}
+                />
               </div>
             </div>
           </div>
+
+          <div
+            className={`w-full flex-1 relative overflow-hidden transition-colors duration-300 ${
+              isLight ? "bg-[#FFFFFF]" : "bg-[#282828]"
+            }`}
+          >
+            <div
+              className="absolute bottom-0 right-0 h-full w-full pointer-events-none select-none transition-colors duration-300"
+              style={{
+                backgroundColor: isLight ? "#EEF2F6" : "#1A1A1A",
+                WebkitMaskImage: `url(${getDawhLogo(theme, "longNoSpace")})`,
+                maskImage: `url(${getDawhLogo(theme, "longNoSpace")})`,
+                WebkitMaskSize: "contain",
+                maskSize: "contain",
+                WebkitMaskRepeat: "no-repeat",
+                maskRepeat: "no-repeat",
+                WebkitMaskPosition: "right bottom",
+                maskPosition: "right bottom",
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Top Navigation Headers */}
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+        >
+          <HeaderNavbar showAccount={true} showLogo={true} />
+          <MobileNavbar />
         </motion.div>
 
-        {/* 2 Core Feature Cards: Account & Architecture Status */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-          {/* Card 1: Account Management (Prominent Action) */}
+        {/* portal-content-body */}
+        <motion.main
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -16 }}
+          transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
+          className="relative z-10 w-full max-w-[1440px] mx-auto flex flex-col items-start px-6 sm:px-12 py-10 sm:py-16 gap-10 flex-1 self-stretch"
+        >
+          {/* hub-title-block */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="lg:col-span-5 flex flex-col justify-between p-6 sm:p-8 rounded-3xl border bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.4, delay: 0.05, ease: [0.4, 0, 0.2, 1] }}
+            className="flex flex-col items-start p-0 gap-2 max-w-[507px]"
           >
-            <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-blue-500/10 via-transparent to-transparent rounded-bl-full pointer-events-none" />
-
-            <div>
-              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-5">
-                <UserCircle size={26} />
-              </div>
-
-              <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
-                {isThai ? "การจัดการบัญชีผู้ใช้" : "Identity & Account"}
-              </span>
-              <h2 className="text-xl sm:text-2xl font-bold mt-1 mb-2">
-                {isThai ? "โปรไฟล์และการตั้งค่าบัญชี" : "Account & Security Profile"}
-              </h2>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed mb-6">
-                {isThai
-                  ? "จัดการข้อมูลพนักงาน, เลขบัตรประชาชน, ข้อมูลติดต่อฉุกเฉิน, สังกัดสาขา, และตั้งรหัส Quick PIN สำหรับเข้าใช้งานระบบอย่างปลอดภัย"
-                  : "Manage personal records, national ID, emergency contacts, branch association, and configure Quick PIN credentials."}
-              </p>
-
-              {/* Status List */}
-              <div className="space-y-2.5 mb-6 text-xs">
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-100 dark:border-zinc-800">
-                  <span className="text-zinc-600 dark:text-zinc-400 flex items-center gap-2">
-                    <ShieldCheck size={15} className="text-emerald-500" />
-                    {isThai ? "สถานะโปรไฟล์" : "Profile Completeness"}
-                  </span>
-                  <span className={`font-semibold ${isProfileComplete ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500"}`}>
-                    {isProfileComplete ? (isThai ? "สมบูรณ์ 100%" : "Complete") : (isThai ? "ต้องระบุข้อมูลเพิ่ม" : "Incomplete")}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-100 dark:border-zinc-800">
-                  <span className="text-zinc-600 dark:text-zinc-400 flex items-center gap-2">
-                    <KeyRound size={15} className="text-blue-500" />
-                    {isThai ? "รหัส Quick PIN 6 หลัก" : "Quick PIN Security"}
-                  </span>
-                  <span className="font-semibold text-zinc-800 dark:text-zinc-200">
-                    {profile.is_pin_enabled ? (isThai ? "เปิดใช้งานแล้ว" : "Enabled") : (isThai ? "ยังไม่ได้ตั้งค่า" : "Not configured")}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-100 dark:border-zinc-800">
-                  <span className="text-zinc-600 dark:text-zinc-400 flex items-center gap-2">
-                    <Building2 size={15} className="text-purple-500" />
-                    {isThai ? "สาขาที่สังกัด" : "Assigned Branch"}
-                  </span>
-                  <span className="font-semibold text-zinc-800 dark:text-zinc-200 truncate max-w-[140px]">
-                    {profile.branch_name || "Headquarter (HQ-01)"}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleOpenAccount}
-              className="w-full py-3 px-4 rounded-xl bg-zinc-900 hover:bg-black dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-zinc-900 font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-sm active:scale-[0.99] cursor-pointer"
+            {/* Select Workspace */}
+            <h1
+              className={`font-bold text-[32px] leading-[40px] tracking-tight ${
+                isLight ? "text-[#0F172A]" : "text-[#FFFFFF]"
+              }`}
+              style={{ fontFamily: "var(--font-outfit), sans-serif" }}
             >
-              <span>{isThai ? "เข้าสู่หน้าจัดการบัญชี" : "Open Account Settings"}</span>
-              <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-            </button>
+              {isThai ? "เลือกพื้นที่ทำงาน" : "Select Workspace"}
+            </h1>
+
+            {/* Subtitle */}
+            <p
+              className={`font-normal text-[16px] leading-[21px] ${
+                isLight ? "text-[#64748B]" : "text-[#999999]"
+              }`}
+              style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
+            >
+              {isThai
+                ? "เลือกโมดูลเฉพาะทางเพื่อเริ่มต้นการทำงานสำหรับ Horizon Logistics"
+                : "Choose a dedicated module to begin operations for Horizon Logistics."}
+            </p>
           </motion.div>
 
-          {/* Card 2: Restored Operational Ecosystem (Datacenter, Warehouse, Control Panel) */}
+          {/* workspace-grid */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="lg:col-span-7 flex flex-col justify-between p-6 sm:p-8 rounded-3xl border bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="w-full max-w-[1344px] flex flex-col items-start p-0 gap-[20px] self-stretch"
           >
-            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-blue-500/10 via-transparent to-transparent rounded-bl-full pointer-events-none" />
-
-            <div>
-              <div className="flex items-center justify-between gap-2 mb-5">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                  <Cpu size={26} />
-                </div>
-                <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  ALL SYSTEMS ONLINE
-                </span>
-              </div>
-
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                {isThai ? "ศูนย์รวมระบบปฏิบัติการหลัก" : "Enterprise Operations Hub"}
-              </span>
-              <h2 className="text-xl sm:text-2xl font-bold mt-1 mb-2">
-                {isThai ? "โมดูลระบบถูกกู้คืนพร้อมใช้งานอย่างสมบูรณ์" : "Core Systems & Modules Fully Restored"}
-              </h2>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed mb-6">
-                {isThai
-                  ? "ระบบดาต้าเซ็นเตอร์สัญญาเช่าซื้อ คลังสินค้าและสินค้าคงคลัง และแผงควบคุมระบบ ได้รับการกู้คืนพร้อมเชื่อมต่อกับระบบฐานข้อมูลและความปลอดภัยแล้ว"
-                  : "HP Datacenter Operations, Multi-Branch Warehouse ERP, and System Governance Control Panel are fully restored and connected."}
-              </p>
-
-              {/* 3 Operational Module Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-                {/* Module 1: HP Datacenter */}
-                <button
-                  type="button"
-                  onClick={() => navigateWithLoading("/datacenter", "กำลังเปิดระบบศูนย์ข้อมูล...", "กำลังเชื่อมต่อกับฐานข้อมูล Datacenter")}
-                  className="p-4 rounded-2xl border bg-zinc-50/70 hover:bg-zinc-100 dark:bg-zinc-800/40 dark:hover:bg-zinc-800/80 border-zinc-200/70 dark:border-zinc-700/60 text-left transition-all group/card cursor-pointer"
-                >
-                  <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-3">
-                    <Layers size={18} />
-                  </div>
-                  <h3 className="font-bold text-sm text-zinc-900 dark:text-white mb-1 flex items-center justify-between">
-                    <span>{isThai ? "ศูนย์ข้อมูล HP" : "Datacenter"}</span>
-                    <ArrowRight size={13} className="text-zinc-400 group-hover/card:translate-x-0.5 transition-transform" />
-                  </h3>
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-snug">
-                    {isThai ? "สัญญาเช่าซื้อ, ลูกค้า KYC, การเงิน และการติดตามหนี้" : "Hire-Purchase, CRM, Analytics & Risk"}
-                  </p>
-                </button>
-
-                {/* Module 2: Warehouse ERP */}
-                <button
-                  type="button"
-                  onClick={() => navigateWithLoading("/warehouse", "กำลังเปิดระบบคลังสินค้า...", "กำลังโหลดข้อมูลสินค้าและสต็อกคงคลัง")}
-                  className="p-4 rounded-2xl border bg-zinc-50/70 hover:bg-zinc-100 dark:bg-zinc-800/40 dark:hover:bg-zinc-800/80 border-zinc-200/70 dark:border-zinc-700/60 text-left transition-all group/card cursor-pointer"
-                >
-                  <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-3">
-                    <Building2 size={18} />
-                  </div>
-                  <h3 className="font-bold text-sm text-zinc-900 dark:text-white mb-1 flex items-center justify-between">
-                    <span>{isThai ? "คลังสินค้า ERP" : "Warehouse"}</span>
-                    <ArrowRight size={13} className="text-zinc-400 group-hover/card:translate-x-0.5 transition-transform" />
-                  </h3>
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-snug">
-                    {isThai ? "สต็อกสินค้าคงคลัง, ตรวจรับ, โอนย้าย และประวัติ" : "Stock, Inbound, Transfers & Suppliers"}
-                  </p>
-                </button>
-
-                {/* Module 3: Control Panel */}
-                <button
-                  type="button"
-                  onClick={() => navigateWithLoading("/controlpanel", "กำลังเปิดแผงควบคุมระบบ...", "กำลังตรวจสอบสิทธิ์ RBAC")}
-                  className="p-4 rounded-2xl border bg-zinc-50/70 hover:bg-zinc-100 dark:bg-zinc-800/40 dark:hover:bg-zinc-800/80 border-zinc-200/70 dark:border-zinc-700/60 text-left transition-all group/card cursor-pointer"
-                >
-                  <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-3">
-                    <Lock size={18} />
-                  </div>
-                  <h3 className="font-bold text-sm text-zinc-900 dark:text-white mb-1 flex items-center justify-between">
-                    <span>{isThai ? "แผงควบคุม" : "Control Panel"}</span>
-                    <ArrowRight size={13} className="text-zinc-400 group-hover/card:translate-x-0.5 transition-transform" />
-                  </h3>
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-snug">
-                    {isThai ? "จัดการสิทธิ์ RBAC, บทบาท และบันทึก Audit" : "RBAC Governance, Security & Logs"}
-                  </p>
-                </button>
-              </div>
+            {/* grid-row-1 */}
+            <div className="w-full flex flex-col lg:flex-row items-stretch lg:items-start p-0 gap-[20px] self-stretch">
+              {cardsRow1.map((card, idx) => renderCard(card, idx))}
             </div>
 
-            {/* Quick Status Bar */}
-            <div className="flex items-center justify-between pt-4 border-t border-zinc-100 dark:border-zinc-800 text-xs text-zinc-500 dark:text-zinc-400">
-              <span className="flex items-center gap-1.5 font-mono">
-                <ShieldCheck size={14} className="text-emerald-500" />
-                TLS 1.3 | RBAC Multi-Domain Protected
-              </span>
-              <span className="font-mono text-[11px]">
-                DAWH Platform v2.0
-              </span>
+            {/* grid-row-2 */}
+            <div className="w-full flex flex-col lg:flex-row items-stretch lg:items-start p-0 gap-[20px] self-stretch">
+              {cardsRow2.map((card, idx) => renderCard(card, idx + 2))}
             </div>
           </motion.div>
-        </div>
-      </main>
+        </motion.main>
 
-      {/* Clean Footer */}
-      <footer className="w-full border-t border-zinc-200 dark:border-zinc-800 py-6 px-4 text-center text-xs text-zinc-500 dark:text-zinc-400">
-        <p>
-          {isThai
-            ? "ระบบบริหารจัดการ dawh Platform © 2026. พร้อมสำหรับการพัฒนาและ Refactor โครงสร้างใหม่"
-            : "dawh Enterprise Platform © 2026. Clean architecture foundation ready for next-generation refactor."}
-        </p>
-      </footer>
+        {/* Clean Footer */}
+        <motion.footer
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.25 }}
+          className="relative z-10 w-full border-t border-zinc-200/40 dark:border-zinc-800/60 py-5 px-6 text-center text-xs text-zinc-500 dark:text-zinc-400"
+        >
+          <p style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}>
+            {isThai
+              ? "ระบบบริหารจัดการ dawh Platform © 2026. Horizon Logistics Operations Hub."
+              : "dawh Enterprise Platform © 2026. Horizon Logistics Operations Hub."}
+          </p>
+        </motion.footer>
 
-      {/* Profile Guard Modal if profile is incomplete */}
-      <ProfileGuardModal
-        isOpen={showGuardModal}
-        missingFields={missingFields}
-        onClose={() => setShowGuardModal(false)}
-        onGoToSettings={() => {
-          setShowGuardModal(false);
-          handleOpenAccount();
-        }}
-      />
-    </div>
+        {/* Profile Guard Modal if profile is incomplete */}
+        <ProfileGuardModal
+          isOpen={showGuardModal}
+          missingFields={missingFields}
+          onClose={() => setShowGuardModal(false)}
+          onGoToSettings={() => {
+            setShowGuardModal(false);
+            handleOpenAccount();
+          }}
+        />
+      </motion.div>
+    </AnimatePresence>
   );
 }

@@ -173,7 +173,7 @@ export default function MobileNavbar({
   const [isSubTabsFolded, setIsSubTabsFolded] = useState(false);
 
   // Determine active bottom nav route
-  const isHomeActive = pathname === "/portal" || pathname === "/";
+  const isHomeActive = pathname === "/workspace" || pathname === "/";
   const isAccountActive = pathname.startsWith("/account") || pathname.startsWith("/settings");
 
   const dynamicTabs: SubTabItem[] = useMemo(() => {
@@ -196,7 +196,7 @@ export default function MobileNavbar({
       >
         {/* Brand Logo Left (Official Horizontal Logo, No Boxes or Random Text) */}
         <div
-          onClick={() => router.push("/portal")}
+          onClick={() => router.push("/workspace")}
           className="flex items-center cursor-pointer hover:opacity-90 transition-opacity"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -305,10 +305,10 @@ export default function MobileNavbar({
           }`}
           style={{ boxSizing: "border-box" }}
         >
-          {/* Item 1: PORTAL */}
+          {/* Item 1: WORKSPACE */}
           <button
             type="button"
-            onClick={() => navigateWithLoading("/portal", isThai ? "กำลังเปิดศูนย์รวมระบบ..." : "Opening Portal...", isThai ? "กำลังโหลดระบบงาน..." : "Loading workspace...")}
+            onClick={() => navigateWithLoading("/workspace", isThai ? "กำลังเปิดศูนย์รวมระบบ..." : "Opening Workspace...", isThai ? "กำลังโหลดระบบงาน..." : "Loading workspace...")}
             className="flex-1 h-[64px] flex flex-col items-center justify-center gap-0.5 cursor-pointer group"
           >
             <div className="w-[20px] h-[28px] flex flex-col items-center justify-center">
@@ -323,7 +323,7 @@ export default function MobileNavbar({
               }`}
               style={{ fontFamily: "'JetBrains Mono', monospace" }}
             >
-              Portal
+              WORKSPACE
             </span>
           </button>
 
@@ -487,15 +487,15 @@ export default function MobileNavbar({
                   onClick={() => {
                     setIsAccountSheetOpen(false);
                     navigateWithLoading(
-                      "/portal",
-                      isThai ? "กำลังเปิดศูนย์รวมระบบ..." : "Opening Portal...",
+                      "/workspace",
+                      isThai ? "กำลังเปิดศูนย์รวมระบบ..." : "Opening Workspace...",
                       isThai ? "กำลังโหลดระบบงาน..." : "Loading workspace..."
                     );
                   }}
                   className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#333333] hover:bg-[#3E3E3E] text-white text-xs font-semibold border border-[#444444] transition-all cursor-pointer"
                 >
                   <Home size={14} />
-                  <span>{isThai ? "ศูนย์รวมระบบ" : "Workspace Portal"}</span>
+                  <span>{isThai ? "ศูนย์รวมระบบ" : "Workspace"}</span>
                 </button>
               </div>
 

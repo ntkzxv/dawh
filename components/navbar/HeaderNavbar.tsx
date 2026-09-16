@@ -52,12 +52,12 @@ export default function HeaderNavbar({
   const { notify } = useNotification();
   const isLight = theme === "light";
 
-  // Check if current page is Portal
-  const isPortalPage =
+  // Check if current page is Workspace
+  const isWorkspacePage =
     showLogo ||
-    pathname === "/portal" ||
+    pathname === "/workspace" ||
     pathname === "/" ||
-    pathname?.startsWith("/portal");
+    pathname?.startsWith("/workspace");
 
   // Dropdown Menu State
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -186,9 +186,9 @@ export default function HeaderNavbar({
         subtitle: subtitle || (isThai ? "จัดการและตรวจสอบข้อมูลประวัติในระบบองค์กร" : "Configure and update your employee profile"),
       };
     }
-    if (pathname?.startsWith("/portal")) {
+    if (pathname?.startsWith("/workspace")) {
       return {
-        title: title || (isThai ? "ศูนย์รวมระบบงาน DAWH" : "DAWH Ecosystem Hub"),
+        title: title || (isThai ? "ศูนย์รวมระบบงาน DAWH" : "DAWH Workspace Hub"),
         subtitle: subtitle || (isThai ? "ระบบปฏิบัติการองค์กรพร้อมสำหรับการพัฒนาโมดูล" : "Enterprise operations hub ready for refactor"),
       };
     }
@@ -220,7 +220,7 @@ export default function HeaderNavbar({
   const { isComplete, missingFields } = checkProfileCompleteness(profile);
 
   const handleGuardedNavigate = (target: string, fallbackPath?: string) => {
-    if (!isComplete && target !== "settings" && target !== "account" && target !== "auth" && target !== "portal") {
+    if (!isComplete && target !== "settings" && target !== "account" && target !== "auth" && target !== "workspace" && target !== "portal") {
       setShowGuardModal(true);
       notify.warning(
         isThai ? "ต้องกรอกข้อมูลให้ครบถ้วนก่อน" : "Incomplete Profile Information",
@@ -256,7 +256,7 @@ export default function HeaderNavbar({
       {/* Left: Brand Logo OR Page Title & Subtitle */}
       {showLogo ? (
         <div
-          onClick={() => handleGuardedNavigate("portal", "/portal")}
+          onClick={() => handleGuardedNavigate("workspace", "/workspace")}
           className="flex items-center gap-2.5 cursor-pointer hover:opacity-90 transition-opacity select-none"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -457,7 +457,7 @@ export default function HeaderNavbar({
                   type="button"
                   onClick={() => {
                     setIsDropdownOpen(false);
-                    handleGuardedNavigate("portal", "/portal");
+                    handleGuardedNavigate("workspace", "/workspace");
                   }}
                   className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[12px] font-semibold transition-all text-left cursor-pointer ${
                     isLight

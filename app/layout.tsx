@@ -40,10 +40,13 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-const ICON_URL = DAWH_LOGOS.square2048.light;
+const ICON_URL = "/assets/dawh_light1024logo.png";
 
 export const metadata: Metadata = {
-  title: "dawh",
+  title: {
+    default: "dawh | Workspace",
+    template: "dawh | %s",
+  },
   description:
     "dawh Enterprise Operations & Management Platform",
   icons: {
@@ -54,7 +57,7 @@ export const metadata: Metadata = {
         type: "image/png",
       },
       {
-        url: "/icon.png?v=2",
+        url: "/assets/dawh_light1024logo.png",
         sizes: "any",
         type: "image/png",
       },

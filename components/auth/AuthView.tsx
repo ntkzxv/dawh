@@ -332,7 +332,7 @@ export function UserAuthView({
       return;
     }
 
-    // หาก Middleware เพิ่ง Redirect มาที่หน้านี้เนื่องจากไม่มี Session Cookie (เช่น ?from=/portal)
+    // หาก Middleware เพิ่ง Redirect มาที่หน้านี้เนื่องจากไม่มี Session Cookie (เช่น ?from=/workspace)
     // ให้เคลียร์ LocalStorage เก่าทิ้งเพื่อป้องกันปัญหา Redirect Loop
     const fromPath = searchParams.get("from");
     if (fromPath) {
@@ -352,7 +352,7 @@ export function UserAuthView({
           !!(localStorage.getItem(AUTH_TOKEN_KEY) && localStorage.getItem(USER_ID_KEY));
 
         if (hasCookie && hasLocalToken) {
-          const targetUrl = searchParams.get("from") || "/portal";
+          const targetUrl = searchParams.get("from") || "/workspace";
           if (onAuthSuccess) onAuthSuccess();
           else if (onNavigate) onNavigate(targetUrl);
           else window.location.href = targetUrl;
@@ -361,7 +361,7 @@ export function UserAuthView({
 
         const { isAuthenticated } = await checkAuthSession();
         if (isAuthenticated && typeof document !== "undefined" && document.cookie.includes("dawh_auth_token=")) {
-          const targetUrl = searchParams.get("from") || "/portal";
+          const targetUrl = searchParams.get("from") || "/workspace";
           if (onAuthSuccess) onAuthSuccess();
           else if (onNavigate) onNavigate(targetUrl);
           else window.location.href = targetUrl;
@@ -432,7 +432,7 @@ export function UserAuthView({
           }
         );
 
-        const targetUrl = searchParams.get("from") || "/portal";
+        const targetUrl = searchParams.get("from") || "/workspace";
         setTimeout(() => {
           if (onAuthSuccess) onAuthSuccess();
           else if (onNavigate) onNavigate(targetUrl);
@@ -499,7 +499,7 @@ export function UserAuthView({
             }
           );
 
-          const targetUrl = searchParams.get("from") || "/portal";
+          const targetUrl = searchParams.get("from") || "/workspace";
           setTimeout(() => {
             if (onAuthSuccess) onAuthSuccess();
             else if (onNavigate) onNavigate(targetUrl);
@@ -874,14 +874,14 @@ export function UserAuthView({
         setIsModalSuccess(true);
         setIsRegistering(false);
 
-        // 3. Smooth auto-redirect to portal with loading screen after 1.2s of viewing the success screen
+        // 3. Smooth auto-redirect to workspace with loading screen after 1.2s of viewing the success screen
         setTimeout(() => {
           if (onAuthSuccess) {
             onAuthSuccess();
           } else if (onNavigate) {
-            onNavigate("portal");
+            onNavigate("workspace");
           } else {
-            window.location.href = "/portal";
+            window.location.href = "/workspace";
           }
         }, 1200);
       }
@@ -2472,8 +2472,8 @@ export function UserAuthView({
                 type="button"
                 onClick={() => {
                   if (onAuthSuccess) onAuthSuccess();
-                  else if (onNavigate) onNavigate("portal");
-                  else navigateWithLoading("/portal");
+                  else if (onNavigate) onNavigate("workspace");
+                  else navigateWithLoading("/workspace");
                 }}
                 className={`w-full h-[44px] mt-2 rounded-xl text-[13.5px] font-bold border transition-all duration-300 active:scale-95 shadow-md flex items-center justify-center gap-2 cursor-pointer animate-in fade-in zoom-in-95 duration-300 ${
                   isLight
@@ -2481,7 +2481,7 @@ export function UserAuthView({
                     : "bg-white border-white text-slate-950 hover:bg-white/90"
                 }`}
               >
-                <span>{lang === "TH" ? "ยืนยันและเข้าสู่ระบบ" : "Confirm & Enter Portal"}</span>
+                <span>{lang === "TH" ? "ยืนยันและเข้าสู่ระบบ" : "Confirm & Enter Workspace"}</span>
                 <ArrowRight size={15} />
               </button>
             )}
