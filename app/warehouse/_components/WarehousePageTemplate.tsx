@@ -97,10 +97,10 @@ export default function WarehousePageTemplate({
   const displayTitle = isThai ? (titleTh || titleEn) : (titleEn || titleTh);
 
   return (
-    <div className="w-full flex-1 flex flex-col">
+    <div className="w-full flex-1 flex flex-col h-full min-h-0 overflow-hidden">
       {/* Top Bar Header / Navbar */}
       <header
-        className={`h-[72px] px-6 sm:px-10 flex items-center border-b shrink-0 transition-colors ${
+        className={`h-[72px] px-6 sm:px-10 flex items-center border-b shrink-0 transition-colors z-10 ${
           isLight ? "bg-white border-[#E4E4E7]" : "bg-[#222222] border-[#444444]"
         }`}
       >
@@ -114,8 +114,8 @@ export default function WarehousePageTemplate({
         </h1>
       </header>
 
-      {/* Page Content Body */}
-      <div className="p-6 sm:p-10 space-y-8 max-w-7xl w-full mx-auto flex-1">
+      {/* Page Content Body (Scrollable below Navbar) */}
+      <div className="p-6 sm:p-10 space-y-8 max-w-7xl w-full mx-auto flex-1 overflow-y-auto min-h-0">
         {/* Section Banner */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>

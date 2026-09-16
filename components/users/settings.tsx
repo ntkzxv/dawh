@@ -987,9 +987,16 @@ function ThaiAddressSelector({
           <button
             type="button"
             onClick={onCopyFromCurrent}
-            className={`text-[10.5px] font-semibold flex items-center gap-1 cursor-pointer ${isLight ? "text-indigo-600 hover:text-indigo-800" : "text-indigo-400 hover:text-indigo-300"}`}
+            className={`text-[11px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer select-none ${
+              isLight
+                ? "text-zinc-600 hover:text-black hover:underline"
+                : "text-zinc-400 hover:text-white hover:underline"
+            }`}
           >
-            <Copy size={11} />
+            <Copy
+              size={12}
+              className={isLight ? "text-zinc-600" : "text-zinc-400"}
+            />
             <span>{isThai ? "ใช้ที่อยู่เดียวกับที่อยู่ปัจจุบัน" : "Same as Current Address"}</span>
           </button>
         )}
@@ -2172,6 +2179,9 @@ export default function SettingsView({
     setIsSaving(true);
     setModalError(null);
     try {
+      // Artificial UX smooth delay so the user sees the submission and loading animation clearly
+      await new Promise((resolve) => setTimeout(resolve, 800));
+
       const cleanFullName = `${regForm.first_name.trim()} ${regForm.last_name.trim()}`.trim();
       const cleanIdCard = regForm.id_card.trim().replace(/\D/g, "");
 
@@ -2786,7 +2796,7 @@ export default function SettingsView({
 
   return (
     <div
-      className={`min-h-screen w-full flex flex-col items-start transition-colors duration-300 ${
+      className={`h-screen w-full flex flex-col overflow-hidden transition-colors duration-300 ${
         isLight
           ? "bg-[#F8FAFC] text-[#222222]"
           : "bg-[#2C2C2C] text-[#FFFFFF] selection:bg-white/20"
@@ -2796,28 +2806,31 @@ export default function SettingsView({
       {/* ========================================================================= */}
       {/* 1. REUSABLE APP HEADER (HeaderNavbar with Official Brand Logo)           */}
       {/* ========================================================================= */}
-      <HeaderNavbar
-        showLogo={true}
-        showAccount={true}
-        title={isThai ? "การตั้งค่าบัญชีพนักงาน" : "Platform Settings"}
-        subtitle={
-          isThai
-            ? "จัดการและตรวจสอบข้อมูลประวัติในระบบองค์กร"
-            : "Configure and update your administrative profile"
-        }
-        onNavigate={onNavigate}
-        onBack={onBack}
-        lang={lang}
-        onLangChange={setAppLanguage}
-      />
+      <div className="shrink-0 w-full z-40">
+        <HeaderNavbar
+          showLogo={true}
+          showAccount={true}
+          title={isThai ? "การตั้งค่าบัญชีพนักงาน" : "Platform Settings"}
+          subtitle={
+            isThai
+              ? "จัดการและตรวจสอบข้อมูลประวัติในระบบองค์กร"
+              : "Configure and update your administrative profile"
+          }
+          onNavigate={onNavigate}
+          onBack={onBack}
+          lang={lang}
+          onLangChange={setAppLanguage}
+        />
 
-      {/* Mobile Navigation Header & Bottom Bar for Settings */}
-      <MobileNavbar />
+        {/* Mobile Navigation Header & Bottom Bar for Settings */}
+        <MobileNavbar />
+      </div>
 
       {/* ========================================================================= */}
       {/* 2. MAIN CONTENT BODY (1200px max-width, padding 32px, gap 24px)           */}
       {/* ========================================================================= */}
-      <main className="w-full max-w-[1200px] mx-auto p-4 sm:p-8 pb-[96px] md:pb-8 flex flex-col items-start gap-6">
+      <div className="flex-1 w-full overflow-y-auto min-h-0">
+        <main className="w-full max-w-[1200px] mx-auto p-4 sm:p-8 pb-[96px] md:pb-8 flex flex-col items-start gap-6">
 
         {/* ========================================================================= */}
         {/* ⭐ ADMIN CREDENTIAL RESET BANNER (Only shows when reset flag active, NO icons) */}
@@ -2905,7 +2918,7 @@ export default function SettingsView({
                   isLight ? "bg-[#222222] text-white" : "bg-white text-[#222222]"
                 }`}
               >
-                <UserCheck size={18} />
+                <User size={18} />
               </div>
               <div className="flex flex-col gap-0.5">
                 <h3 className="font-bold text-[15px] leading-tight">
@@ -3690,7 +3703,7 @@ export default function SettingsView({
                 <div className="w-full flex flex-col gap-4">
                   <div className="flex items-center gap-2">
                     <span className={`text-xs font-bold uppercase tracking-wider ${isLight ? "text-[#222222]" : "text-[#FFFFFF]"}`}>
-                      {isThai ? "เปลี่ยนอีเมลสำหรับเข้าสู่ระบบ (Change Account Email)" : "Change Account Email"}
+                      {isThai ? "เปลี่ยนอีเมลสำหรับเข้าสู่ระบบ" : "Change Account Email"}
                     </span>
                   </div>
 
@@ -3773,7 +3786,25 @@ export default function SettingsView({
                         : "Note: A confirmation link will be sent to the new email address. You must verify it before the change takes effect."}
                     </p>
 
-                    <div className="flex justify-end pt-1">
+                    <div className="flex items-center justify-end gap-2.5 pt-1">
+                      {(newEmail || confirmNewEmail || emailError) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewEmail("");
+                            setConfirmNewEmail("");
+                            setEmailError(null);
+                          }}
+                          className={`px-2.5 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer select-none ${
+                            isLight
+                              ? "text-zinc-500 hover:text-black hover:underline"
+                              : "text-zinc-400 hover:text-white hover:underline"
+                          }`}
+                        >
+                          {isThai ? "ยกเลิก" : "Cancel"}
+                        </button>
+                      )}
+
                       <button
                         type="submit"
                         disabled={isSavingEmail || !newEmail.trim()}
@@ -3814,7 +3845,7 @@ export default function SettingsView({
                 <div className="w-full flex flex-col gap-4 pt-5 border-t border-[#444444]/30">
                   <div className="flex items-center gap-2">
                     <span className={`text-xs font-bold uppercase tracking-wider ${isLight ? "text-[#222222]" : "text-[#FFFFFF]"}`}>
-                      {isThai ? "เปลี่ยนรหัสผ่าน (Change Password)" : "Change Password"}
+                      {isThai ? "เปลี่ยนรหัสผ่าน" : "Change Password"}
                     </span>
                   </div>
 
@@ -3831,7 +3862,7 @@ export default function SettingsView({
                       {/* Field 1: Current Password */}
                       <div className="flex flex-col gap-1">
                         <label className={`text-xs font-semibold ${isLight ? "text-[#222222]" : "text-[#E4E4E7]"}`}>
-                          {isThai ? "รหัสผ่านเดิม (ปัจจุบัน) *" : "Current Password *"}
+                          {isThai ? "รหัสผ่านปัจจุบัน *" : "Current Password *"}
                         </label>
                         <div className="relative flex items-center">
                           <input
@@ -3841,7 +3872,7 @@ export default function SettingsView({
                               setCurrentPassword(e.target.value);
                               if (passwordError) setPasswordError(null);
                             }}
-                            placeholder={isThai ? "ระบุรหัสผ่านปัจจุบันของคุณเพื่อยืนยันตัวตน" : "Enter your current password"}
+                            placeholder={isThai ? "พิมพ์รหัสผ่านปัจจุบันเพื่อยืนยันตัวตน" : "Enter your current password"}
                             className={`w-full p-2.5 pr-10 h-[38px] rounded-lg border text-xs outline-none transition-all ${
                               isLight
                                 ? "bg-white border-[#E5E5E5] text-[#222222] focus:border-[#222222] focus:ring-1 focus:ring-[#222222]"
@@ -3976,7 +4007,26 @@ export default function SettingsView({
                       </div>
                     </div>
 
-                    <div className="flex justify-end pt-1">
+                    <div className="flex items-center justify-end gap-2.5 pt-1">
+                      {(currentPassword || newPassword || confirmNewPassword || passwordError) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCurrentPassword("");
+                            setNewPassword("");
+                            setConfirmNewPassword("");
+                            setPasswordError(null);
+                          }}
+                          className={`px-2.5 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer select-none ${
+                            isLight
+                              ? "text-zinc-500 hover:text-black hover:underline"
+                              : "text-zinc-400 hover:text-white hover:underline"
+                          }`}
+                        >
+                          {isThai ? "ยกเลิก" : "Cancel"}
+                        </button>
+                      )}
+
                       <button
                         type="submit"
                         disabled={isSavingPassword || !currentPassword.trim() || newPassword.length < 8 || newPassword !== confirmNewPassword}
@@ -4017,7 +4067,7 @@ export default function SettingsView({
                 <div className="w-full flex flex-col gap-3 pt-5 border-t border-[#444444]/30">
                   <div className="flex items-center gap-2">
                     <span className={`text-xs font-bold uppercase tracking-wider ${isLight ? "text-[#222222]" : "text-[#FFFFFF]"}`}>
-                      {isThai ? "ระบบความปลอดภัยเพิ่มเติม (Additional Security)" : "Additional Security"}
+                      {isThai ? "ระบบความปลอดภัยเพิ่มเติม" : "Additional Security"}
                     </span>
                   </div>
 
@@ -4089,6 +4139,7 @@ export default function SettingsView({
           </div>
         )}
       </main>
+      </div>
 
       {/* ========================================================================= */}
       {/* 3. POPUP MODAL: SECONDARY REGISTRATION (กรอกข้อมูลโปรไฟล์รอบสอง)            */}
@@ -4108,7 +4159,7 @@ export default function SettingsView({
             >
               <div className="flex items-center gap-3">
                 <div className={`p-2.5 rounded-xl shrink-0 ${isLight ? "bg-[#222222] text-white" : "bg-white text-[#222222]"}`}>
-                  {regStep === "fill" ? <UserCheck size={18} /> : <FileText size={18} />}
+                  {regStep === "fill" ? <User size={18} /> : <FileText size={18} />}
                 </div>
                 <div>
                   <h4
@@ -5403,7 +5454,7 @@ export default function SettingsView({
                     {isSaving ? (
                       <Loader2 size={14} className="animate-spin" />
                     ) : saveSuccess ? (
-                      <CheckCircle2 size={14} className="text-[#2EC4B6]" />
+                      <Check size={15} strokeWidth={2.5} className="text-[#2EC4B6]" />
                     ) : null}
                     <span>
                       {saveSuccess
@@ -5501,7 +5552,11 @@ export default function SettingsView({
                   setPinStep("enter");
                   setShowPinSetupModal(true);
                 }}
-                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold bg-[#222222] dark:bg-[#FFFFFF] text-white dark:text-[#222222] hover:opacity-90 transition-all active:scale-95 shadow-md cursor-pointer"
+                className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold transition-all active:scale-95 shadow-md cursor-pointer ${
+                  isLight
+                    ? "bg-[#000000] hover:bg-[#222222] text-white"
+                    : "bg-[#FFFFFF] hover:bg-[#F4F4F5] text-[#18181B]"
+                }`}
               >
                 {isThai ? "สร้างรหัส PIN" : "Create PIN"}
               </button>

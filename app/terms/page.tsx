@@ -43,7 +43,7 @@ export default function TermsPage() {
 
   return (
     <div
-      className={`min-h-screen flex flex-col selection:bg-[#2EC4B6]/20 ${
+      className={`h-screen flex flex-col overflow-hidden selection:bg-[#2EC4B6]/20 ${
         isLight ? "bg-[#F8FAFC] text-[#222222]" : "bg-[#181818] text-[#FFFFFF]"
       }`}
       style={{
@@ -52,9 +52,9 @@ export default function TermsPage() {
           : "var(--font-outfit), sans-serif",
       }}
     >
-      {/* Top Sticky Header */}
+      {/* Top Header */}
       <header
-        className={`sticky top-0 z-40 w-full border-b backdrop-blur-md transition-colors ${
+        className={`shrink-0 z-40 w-full border-b backdrop-blur-md transition-colors ${
           isLight
             ? "bg-white/90 border-[#E2E8F0] shadow-xs"
             : "bg-[#222222]/90 border-[#383838]"
@@ -116,21 +116,22 @@ export default function TermsPage() {
             <button
               type="button"
               onClick={handleClose}
-              className={`h-[34px] flex items-center justify-center gap-1.5 px-3.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer shrink-0 ${
+              className={`h-[34px] inline-flex items-center justify-center gap-1.5 px-3.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer shrink-0 leading-none ${
                 isLight
                   ? "bg-[#222222] hover:bg-black text-white border-transparent shadow-sm"
                   : "bg-white hover:bg-zinc-100 text-[#222222] border-transparent shadow-sm"
               }`}
             >
-              <X size={14} />
-              <span>{isThai ? "ปิดหน้านี้" : "Close Window"}</span>
+              <X size={14} className="shrink-0" />
+              <span className="leading-none flex items-center">{isThai ? "ปิดหน้านี้" : "Close Window"}</span>
             </button>
           </div>
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 flex flex-col gap-8">
+      {/* Main Content Scroll Area */}
+      <div className="flex-1 w-full overflow-y-auto min-h-0">
+        <main className="max-w-4xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 flex flex-col gap-8">
         {/* Title Header Section (No Box, Divider with Right-Aligned Date) */}
         <div className="flex flex-col gap-2 pt-2">
           <div>
@@ -290,6 +291,7 @@ export default function TermsPage() {
           </p>
         </div>
       </main>
+      </div>
     </div>
   );
 }

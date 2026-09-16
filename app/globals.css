@@ -167,6 +167,19 @@ body {
   background: rgba(228, 228, 231, 0.45);
 }
 
+/* Theme Light: darker gray scrollbar thumb */
+html.light ::-webkit-scrollbar-thumb,
+body.light ::-webkit-scrollbar-thumb,
+:root.light ::-webkit-scrollbar-thumb {
+  background: rgba(85, 85, 90, 0.4);
+}
+
+html.light ::-webkit-scrollbar-thumb:hover,
+body.light ::-webkit-scrollbar-thumb:hover,
+:root.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(85, 85, 90, 0.65);
+}
+
 /* Hide scrollbars for app-like carousels/tabbars */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

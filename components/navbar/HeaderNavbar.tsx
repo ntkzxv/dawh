@@ -389,13 +389,7 @@ export default function HeaderNavbar({
               }`}
             >
               {/* Account Info Header inside Dropdown */}
-              <div
-                className={`px-3 py-3 rounded-xl border mb-2 flex items-center gap-3 ${
-                  isLight
-                    ? "bg-slate-50 border-slate-200"
-                    : "bg-[#202020] border-[#383838]"
-                }`}
-              >
+              <div className="px-3 py-3 rounded-xl mb-2 flex items-center gap-3">
                 <div
                   className={`flex items-center justify-center w-10 h-10 rounded-full shrink-0 border overflow-hidden ${
                     isLight
@@ -431,6 +425,13 @@ export default function HeaderNavbar({
                   ) : null}
                 </div>
               </div>
+
+              {/* Divider below Account Header */}
+              <div
+                className={`mx-1 mb-1.5 border-t ${
+                  isLight ? "border-slate-200" : "border-[#383838]"
+                }`}
+              />
 
               {/* Quick Actions List */}
               <div className="space-y-1">
