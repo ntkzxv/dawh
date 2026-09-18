@@ -1721,7 +1721,7 @@ export default function AccountView({
     setModalError(null);
     setHasAttemptedSubmit(false);
 
-    // Sync birth_date if not yet in form
+    // Sync birth_date if present
     const resolvedBirthDate =
       regForm.birth_date ||
       profile.birth_date ||
@@ -1729,6 +1729,17 @@ export default function AccountView({
     if (resolvedBirthDate && !regForm.birth_date) {
       setRegForm((prev) => ({ ...prev, birth_date: resolvedBirthDate }));
     }
+
+    // Auto-populate locked username from profile or email prefix if empty
+    const resolvedUsername =
+      regForm.username ||
+      profile.username ||
+      (profile.email ? profile.email.split("@")[0].replace(/[^a-zA-Z0-9._-]/g, "") : "") ||
+      "";
+    if (resolvedUsername && !regForm.username) {
+      setRegForm((prev) => ({ ...prev, username: resolvedUsername }));
+    }
+
 
     const currRel = regForm.religion || profile.religion || "";
     if (currRel) {
@@ -1843,8 +1854,8 @@ export default function AccountView({
   // Check if profile is incomplete (any missing key database fields)
   const missingFields: string[] = [];
   if (!profile.id_card) missingFields.push(isThai ? "เลขบัตรประชาชน" : "Citizen ID");
-  if (!profile.birth_date) missingFields.push(isThai ? "วันเกิด" : "Birth Date");
   if (!profile.phone) missingFields.push(isThai ? "เบอร์โทรศัพท์" : "Phone");
+
   if (!profile.current_address) missingFields.push(isThai ? "ที่อยู่ปัจจุบัน" : "Address");
   if (!profile.registered_address) missingFields.push(isThai ? "ที่อยู่ตามทะเบียนบ้าน" : "Registered Address");
   if (!profile.emergency_contact_phone && !profile.emergency_contact_name)
@@ -2091,13 +2102,14 @@ export default function AccountView({
       regFormScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
+    // birth_date is locked with a lock icon in the form, so do not block submission if empty
     const activeBirthDate = regForm.birth_date || profile.birth_date || (typeof window !== "undefined" ? localStorage.getItem("current_user_birth_date") || "" : "");
-    if (!activeBirthDate) {
-      const msg = isThai ? "ไม่พบข้อมูลวันเดือนปีเกิดในระบบ กรุณาระบุวันเดือนปีเกิด" : "Birth date not found.";
-      setModalError(msg);
-      regFormScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
+    const resolvedUsername =
+      (regForm.username.trim() ||
+        profile.username ||
+        profile.email?.split("@")[0]?.replace(/[^a-zA-Z0-9._-]/g, "") ||
+        "employee").toLowerCase();
+
     const activePhone = (regForm.phone || profile.phone || (typeof window !== "undefined" ? localStorage.getItem("current_user_phone") || "" : "")).trim();
     if (!activePhone) {
       const msg = isThai ? "กรุณาระบุเบอร์โทรศัพท์มือถือ" : "Please enter mobile phone number.";
@@ -2125,7 +2137,7 @@ export default function AccountView({
     }
 
     const requiredValues = [
-      regForm.username, regForm.prefix, regForm.nickname_th, regForm.nickname,
+      resolvedUsername, regForm.prefix, regForm.nickname_th, regForm.nickname,
       regForm.gender, regForm.blood_type, regForm.marital_status, regForm.nationality,
       regForm.religion, regForm.education_level, regForm.major_subject,
       regForm.university_th || regForm.university_name, regForm.university_en || regForm.university_name,
@@ -2148,6 +2160,7 @@ export default function AccountView({
     // Ensure state has reconciled fallback values before moving to review
     setRegForm((prev) => ({
       ...prev,
+      username: resolvedUsername,
       first_name: cleanFirstNameEn,
       last_name: cleanLastNameEn,
       birth_date: activeBirthDate,
@@ -2170,6 +2183,12 @@ export default function AccountView({
 
       const cleanFullName = `${regForm.first_name.trim()} ${regForm.last_name.trim()}`.trim();
       const cleanIdCard = regForm.id_card.trim().replace(/\D/g, "");
+      const cleanBirthDate = (regForm.birth_date || profile.birth_date || "").trim() || null;
+      const cleanUsername =
+        (regForm.username.trim() ||
+          profile.username ||
+          profile.email?.split("@")[0]?.replace(/[^a-zA-Z0-9._-]/g, "") ||
+          "employee").toLowerCase();
 
       const currentAddress = parseAddressString(regForm.current_address);
       const registeredAddress = parseAddressString(regForm.registered_address);
@@ -2179,10 +2198,11 @@ export default function AccountView({
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: regForm.username.trim(), prefix: regForm.prefix.trim(),
+          username: cleanUsername, prefix: regForm.prefix.trim(),
           first_name_th: regForm.first_name_th.trim(), last_name_th: regForm.last_name_th.trim(), nickname_th: regForm.nickname_th.trim(),
           first_name_en: regForm.first_name.trim(), last_name_en: regForm.last_name.trim(), nickname_en: regForm.nickname.trim(),
-          citizen_id: cleanIdCard, birth_date: regForm.birth_date, gender: regForm.gender, blood_type: regForm.blood_type,
+          citizen_id: cleanIdCard, birth_date: cleanBirthDate, gender: regForm.gender, blood_type: regForm.blood_type,
+
           marital_status: regForm.marital_status.trim(), nationality: regForm.nationality.trim(), religion: regForm.religion.trim(),
           education_level: regForm.education_level, major_subject: regForm.major_subject.trim(),
           university_name_th: regForm.university_th.trim() || regForm.university_name.trim(), university_name_en: regForm.university_en.trim() || regForm.university_name.trim(),
@@ -4156,8 +4176,9 @@ export default function AccountView({
                             type="text"
                             readOnly
                             disabled
-                            value={regForm.username}
+                            value={regForm.username || profile.username || (profile.email ? profile.email.split("@")[0] : "") || ""}
                             placeholder={isThai ? "ชื่อผู้ใช้" : "Username"}
+
                             className={`w-full p-2.5 pr-9 rounded-lg border text-xs font-mono font-medium outline-none cursor-not-allowed select-none transition-all ${
                               isLight
                                 ? "bg-[#F0F0F0] border-[#E5E5E5] text-[#555555]"

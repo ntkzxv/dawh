@@ -138,16 +138,7 @@ export async function uploadAvatarAndSyncDb(
       // Non-blocking
     }
 
-    // 5. Update Supabase Auth user metadata
-    try {
-      await supabase.auth.updateUser({
-        data: { avatar_url: publicUrl },
-      });
-    } catch {
-      // Non-blocking
-    }
-
-    // 6. Update localStorage cache
+    // 5. Update local profile cache
     if (typeof window !== "undefined") {
       try {
         const cached = localStorage.getItem("dawh_user_profile");

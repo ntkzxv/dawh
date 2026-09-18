@@ -680,11 +680,20 @@ export function UserAuthView({
         setIsModalSuccess(true);
         setIsRegistering(false);
 
-        // Email verification is required before the first sign-in.
+        // Email verification is disabled — user can access immediately
         setTimeout(() => {
-          if (onNavigate) onNavigate("/auth/login");
-          else window.location.href = "/auth/login";
+          if (data?.token) {
+
+            const targetUrl = "/workspace";
+            if (onAuthSuccess) onAuthSuccess();
+            else if (onNavigate) onNavigate(targetUrl);
+            else window.location.href = targetUrl;
+          } else {
+            if (onNavigate) onNavigate("/auth/login");
+            else window.location.href = "/auth/login";
+          }
         }, 1200);
+
       }
     } catch {
       const elapsed = Date.now() - startTime;

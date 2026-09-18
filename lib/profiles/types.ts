@@ -9,8 +9,9 @@ export type EmployeeProfileRecord = {
   last_name_en: string;
   nickname_en: string | null;
   citizen_id: string | null;
-  birth_date: string;
+  birth_date: string | null;
   gender: string | null;
+
   blood_type: string | null;
   marital_status: string | null;
   nationality: string | null;

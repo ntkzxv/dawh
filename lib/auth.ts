@@ -32,12 +32,12 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 8,
     maxPasswordLength: 128,
-    requireEmailVerification: true,
+    requireEmailVerification: false,
   },
   emailVerification: {
-    sendOnSignUp: true,
-    sendOnSignIn: true,
-    autoSignInAfterVerification: false,
+    sendOnSignUp: false,
+    sendOnSignIn: false,
+    autoSignInAfterVerification: true,
     sendVerificationEmail: ({ user, url }) =>
       sendVerificationEmail({ email: user.email, url }),
   },

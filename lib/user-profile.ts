@@ -59,9 +59,10 @@ export function checkProfileCompleteness(profile: Partial<EmployeeProfile> | nul
   const fields: Array<[keyof EmployeeProfile, string]> = [
     ["username", "username"], ["first_name_th", "first_name_th"], ["last_name_th", "last_name_th"],
     ["first_name", "first_name_en"], ["last_name", "last_name_en"], ["id_card", "citizen_id"],
-    ["birth_date", "birth_date"], ["phone", "phone"], ["current_address", "current_address"],
+    ["phone", "phone"], ["current_address", "current_address"],
     ["registered_address", "registered_address"], ["branch_name", "branch_name"], ["education_level", "education_level"],
   ];
+
   const missingFields = fields.filter(([key]) => !String(profile?.[key] ?? "").trim()).map(([, label]) => label);
   if (!profile?.profile_completed_at) missingFields.push("profile_completion");
   return { isComplete: missingFields.length === 0, missingFields };

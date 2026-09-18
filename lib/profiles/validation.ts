@@ -8,8 +8,8 @@ export class ProfileValidationError extends Error {
 }
 
 const requiredFields = [
-  "username", "prefix", "first_name_th", "last_name_th", "nickname_th",
-  "first_name_en", "last_name_en", "nickname_en", "citizen_id", "birth_date",
+  "prefix", "first_name_th", "last_name_th", "nickname_th",
+  "first_name_en", "last_name_en", "nickname_en", "citizen_id",
   "gender", "blood_type", "marital_status", "nationality", "religion",
   "education_level", "major_subject", "university_name_th", "university_name_en",
   "phone", "emergency_contact_name_th", "emergency_contact_name_en",
@@ -34,15 +34,17 @@ export function parseCompleteEmployeeProfile(body: unknown): CompleteEmployeePro
 
   const input = body as Record<string, unknown>;
   const required = (key: string) => readText(input, key, true) ?? "";
-  const missing = requiredFields.filter((key) => !required(key));
+  const missing: string[] = requiredFields.filter((key) => !required(key));
+
   const citizenId = required("citizen_id");
-  const username = required("username").toLowerCase();
-  const birthDate = required("birth_date");
+  const rawUsername = readText(input, "username", false) || "";
+  const username = (rawUsername || "employee").toLowerCase();
+  const birthDate = readText(input, "birth_date", false);
   const phone = required("phone");
 
-  if (!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(username)) missing.push("username");
+  if (rawUsername && !/^[a-z0-9][a-z0-9._-]{2,31}$/.test(username)) missing.push("username");
   if (!/^\d{13}$/.test(citizenId.replace(/\D/g, ""))) missing.push("citizen_id");
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) missing.push("birth_date");
+  if (birthDate && !/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) missing.push("birth_date");
   if (!/^\+?[0-9()\-\s]{8,20}$/.test(phone)) missing.push("phone");
 
   if (missing.length) throw new ProfileValidationError([...new Set(missing)]);
@@ -57,7 +59,8 @@ export function parseCompleteEmployeeProfile(body: unknown): CompleteEmployeePro
     last_name_en: required("last_name_en"),
     nickname_en: required("nickname_en"),
     citizen_id: citizenId.replace(/\D/g, ""),
-    birth_date: birthDate,
+    birth_date: birthDate || null,
+
     gender: required("gender"),
     blood_type: required("blood_type"),
     marital_status: required("marital_status"),

@@ -7,8 +7,13 @@ export const runtime = "nodejs";
 export async function PUT(request: Request) {
   try {
     const session = await requireSession();
-    const input = parseCompleteEmployeeProfile(await request.json());
+    const rawBody = (await request.json()) as Record<string, unknown>;
+    if (!rawBody.username && session.user.email) {
+      rawBody.username = session.user.email.split("@")[0].replace(/[^a-zA-Z0-9._-]/g, "") || "employee";
+    }
+    const input = parseCompleteEmployeeProfile(rawBody);
     const profile = await completeEmployeeProfile(session.user.id, input);
+
     return Response.json({ profile, isComplete: true });
   } catch (error) {
     if (error instanceof AuthenticationRequiredError) {
