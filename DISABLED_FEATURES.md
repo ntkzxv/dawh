@@ -30,67 +30,23 @@ const isAdmin = true;
 
 ---
 
-## 2. การปิดการตรวจสอบความสมบูรณ์ของโปรไฟล์ (Incomplete Profile Guards)
+## 2. การปิดการตรวจสอบความสมบูรณ์ของโปรไฟล์ (Incomplete Profile Guards) — [เปิดใช้งานและ Refactor รองรับ Auth ใหม่]
 
-### วัตถุประสงค์ที่ปิด:
-เพื่อไม่ให้ผู้ใช้ถูกบล็อกการเปิดหน้าต่าง ๆ เช่น โมดูลงาน (Datacenter, Warehouse ฯลฯ) รวมถึงไม่ให้มีป็อปอัปแจ้งเตือนสีเหลืองเตือนข้อมูลไม่ครบ และไม่แสดงแบนเนอร์แจ้งเตือนให้กรอกข้อมูลรอบสองในหน้าตั้งค่า
-
-### ไฟล์ที่เกี่ยวข้องและสิ่งที่แก้ไข:
-
-#### 2.1. [`utils/auth.ts`](file:///m:/project/dawh/utils/auth.ts#L399-L408)
-- **ฟังก์ชัน**: `checkProfileCompleteness(profile)`
-- **การเปลี่ยนแปลง**: กำหนดให้คืนค่า `isComplete: true` และ `missingFields: []` ทันทีเสมอ
-```tsx
-export function checkProfileCompleteness(profile: Partial<EmployeeProfile> | null | undefined): {
-  isComplete: boolean;
-  missingFields: string[];
-} {
-  // [BYPASS TEMPORARILY] ปิดการตรวจสอบ incomplete profile ชั่วคราวเพื่อให้เข้าใช้งานระบบได้ทันที
-  return {
-    isComplete: true,
-    missingFields: [],
-  };
-  ...
-}
-```
-
-#### 2.2. [`components/navbar/HeaderNavbar.tsx`](file:///m:/project/dawh/components/navbar/HeaderNavbar.tsx#L241-L255)
-- **ฟังก์ชัน**: `handleGuardedNavigate`
-- **การเปลี่ยนแปลง**: คอมเมนต์เงื่อนไขที่ตรวจ `!isComplete` ออก ทำให้สามารถคลิกเปิดหน้าโมดูลต่าง ๆ ในระบบได้ทันทีโดยไม่ติด `ProfileGuardModal` (Modal ที่เคยบล็อกไม่ให้ออกไปหน้าอื่นจนกว่าจะกรอกข้อมูลครบ)
-```tsx
-const handleGuardedNavigate = (target: string, fallbackPath?: string) => {
-  // [DISABLED TEMPORARILY] ปิดการบล็อก incomplete profile ชั่วคราวเพื่อให้เข้าถึงทุกโมดูลได้อิสระ
-  /*
-  if (!isComplete && target !== "settings" && target !== "account" && target !== "auth" && target !== "workspace" && target !== "portal") {
-    setShowGuardModal(true);
-    notify.warning(...);
-    return;
-  }
-  */
-  ...
-};
-```
-
-#### 2.3. [`components/users/account.tsx`](file:///m:/project/dawh/components/users/account.tsx#L1868)
-- **ตัวแปร**: `isProfileIncomplete`
-- **การเปลี่ยนแปลง**: กำหนดค่าเป็น `false` เพื่อ:
-  1. ไม่แสดงการแจ้งเตือนเตือนสีเหลืองมุมขวาล่าง (`Complete Profile Information / ข้อมูลประวัติยังไม่สมบูรณ์`)
-  2. ไม่แสดงแบนเนอร์สีขาวด้านบนในหน้า Account (`ข้อมูลโปรไฟล์ของคุณยังไม่ครบถ้วน (กรอกข้อมูลรอบสอง)`)
-```tsx
-// [DISABLED TEMPORARILY] ปิดแจ้งเตือนและแบนเนอร์ incomplete profile ชั่วคราว
-const isProfileIncomplete = false;
-// const isProfileIncomplete = missingFields.length > 0;
-```
+ระบบตรวจสอบความสมบูรณ์ของโปรไฟล์ได้รับการ Refactor ให้ทำงานร่วมกับ Better Auth และตาราง `public.employee_profiles` บน PostgreSQL อย่างสมบูรณ์:
+1. **เกณฑ์การตรวจสอบ (Completeness Rules)**:
+   - ตรวจสอบฟิลด์ประวัติพนักงานจริงตามสกีมาใหม่ (ชื่อ-นามสกุลทั้งไทยและอังกฤษ, บัตรประชาชน, เบอร์โทรศัพท์, ที่อยู่, สาขา, ระดับการศึกษา)
+   - ตรวจสอบ `profile_completed_at` หรือสถานะ `is_complete` จากฐานข้อมูล
+   - **ยกเลิก Quick PIN 6 หลัก** ออกจากการคำนวณความสมบูรณ์ เนื่องจากระบบ Auth ใหม่ไม่รองรับ PIN แล้ว
+2. **จุดควบคุม (Guards Enforced)**:
+   - **Workspace Cards**: เมื่อคลิกเข้าสู่โมดูลงาน (Warehouse ERP, HP Datacenter) หากโปรไฟล์ไม่สมบูรณ์จะแสดง `ProfileGuardModal` พร้อมแจ้งเตือน Toast นำทางไปยัง `/settings`
+   - **Header & Mobile Navbars**: ระงับการเปิดโมดูลงานหากข้อมูลไม่สมบูรณ์
+   - **Module Layout Guard**: ป้องกันการเข้าถึงโมดูลตรงผ่าน URL (เช่น `/warehouse`) หากโปรไฟล์ไม่สมบูรณ์จะถูก Redirect กลับมายัง `/workspace?incomplete=true` เพื่อเปิด Guard Modal แจ้งเตือน
 
 ---
 
-## 3. วิธีเปิดการทำงานกลับมา (How to Re-enable)
+## 3. สถานะฟังก์ชัน (Feature Status Summary)
 
-หากต้องการเปิดระบบตรวจสอบสิทธิ์และบล็อกโปรไฟล์ไม่สมบูรณ์กลับคืนมา:
-
-1. **เปิด Admin Role Check**:
-   - ใน `components/navbar/HeaderNavbar.tsx` ลบ `const isAdmin = true;` แล้วนำโค้ดที่คอมเมนต์ไว้กลับมา
-2. **เปิด Incomplete Profile Check**:
-   - ใน `utils/auth.ts` ลบ `return { isComplete: true, missingFields: [] };` และปลดบล็อกโค้ดในฟังก์ชัน `checkProfileCompleteness`
-   - ใน `components/navbar/HeaderNavbar.tsx` ปลดคอมเมนต์ใน `handleGuardedNavigate`
-   - ใน `components/users/account.tsx` เปลี่ยน `const isProfileIncomplete = false;` กลับเป็น `missingFields.length > 0;`
+| ฟังก์ชัน / Guard | สถานะปัจจุบัน | ไฟล์ที่ควบคุม |
+| :--- | :--- | :--- |
+| **Admin Role Check** | ปิดชั่วคราว (Bypassed) | [`components/navbar/HeaderNavbar.tsx`](file:///m:/project/dawh/components/navbar/HeaderNavbar.tsx) (`const isAdmin = true;`) |
+| **Incomplete Profile Guards** | **เปิดใช้งานปกติ (Active & Refactored for New Auth)** | [`lib/user-profile.ts`](file:///m:/project/dawh/lib/user-profile.ts), [`workspace.tsx`](file:///m:/project/dawh/components/users/workspace.tsx), [`HeaderNavbar.tsx`](file:///m:/project/dawh/components/navbar/HeaderNavbar.tsx), [`account.tsx`](file:///m:/project/dawh/components/users/account.tsx), [`WarehouseLayout.tsx`](file:///m:/project/dawh/app/warehouse/layout.tsx) |

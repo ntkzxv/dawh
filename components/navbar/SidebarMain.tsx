@@ -22,7 +22,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import { supabase } from "@/utils/supabase";
 import { getCurrentSession, signOut } from "@/lib/auth-client";
-import { clearUserProfileCache } from "@/lib/user-profile";
+import { clearUserProfileCache, fetchAndStoreUserProfile } from "@/lib/user-profile";
 import { useTheme } from "@/context/ThemeContext";
 import { DAWH_LOGOS } from "@/config/brand";
 import { useLoading } from "@/components/loading_screen";
@@ -158,49 +158,12 @@ export default function NavbarMain({
         const targetEmail = session?.user.email || undefined;
 
         if (targetId) {
-          const { data } = await supabase
-            .from("employees")
-            .select("role, full_name, username, first_name, last_name, nickname, nickname_th, avatar_url")
-            .eq("id", targetId)
-            .maybeSingle();
-
-          if (data && isMounted) {
-            setUserRole(data.role?.toLowerCase() || null);
-            setUserName(formatDisplayName(data.full_name, data.first_name, data.last_name, data.nickname_th, data.nickname));
-            setUserUsername(data.username || (data.nickname ? data.nickname.toLowerCase() : "user"));
-            setUserAvatar(data.avatar_url || null);
-            return;
-          }
-
-          // RPC fallback
-          try {
-            const { data: rpcEmp } = await supabase.rpc("rpc_get_employee_profile", {
-              p_id: targetId,
-            });
-            if (rpcEmp && isMounted) {
-              setUserRole(rpcEmp.role?.toLowerCase() || null);
-              setUserName(formatDisplayName(rpcEmp.full_name, rpcEmp.first_name, rpcEmp.last_name, rpcEmp.nickname_th, rpcEmp.nickname));
-              setUserUsername(rpcEmp.username || (rpcEmp.nickname ? rpcEmp.nickname.toLowerCase() : "user"));
-              setUserAvatar(rpcEmp.avatar_url || null);
-              return;
-            }
-          } catch {
-            // non-blocking
-          }
-        }
-
-        if (targetEmail) {
-          const { data } = await supabase
-            .from("employees")
-            .select("role, full_name, username, first_name, last_name, nickname, nickname_th, avatar_url")
-            .eq("email", targetEmail)
-            .maybeSingle();
-
-          if (data && isMounted) {
-            setUserRole(data.role?.toLowerCase() || null);
-            setUserName(formatDisplayName(data.full_name, data.first_name, data.last_name, data.nickname_th, data.nickname));
-            setUserUsername(data.username || (data.nickname ? data.nickname.toLowerCase() : "user"));
-            setUserAvatar(data.avatar_url || null);
+          const empProfile = await fetchAndStoreUserProfile(targetId, targetEmail);
+          if (empProfile && isMounted) {
+            setUserRole(empProfile.role?.toLowerCase() || null);
+            setUserName(formatDisplayName(empProfile.full_name, empProfile.first_name, empProfile.last_name, empProfile.nickname_th, empProfile.nickname));
+            setUserUsername(empProfile.username || (empProfile.nickname ? empProfile.nickname.toLowerCase() : "user"));
+            setUserAvatar(empProfile.avatar_url || null);
             return;
           }
         }
@@ -432,7 +395,7 @@ export default function NavbarMain({
                   : "max-w-[140px] opacity-100 translate-x-0 duration-350 delay-100"
               }`}
             >
-              <span className="text-[12px] font-semibold leading-none tracking-wide truncate whitespace-nowrap text-center">
+              <span className="text-[13.5px] font-semibold leading-none tracking-wide truncate whitespace-nowrap text-center">
                 {t.hub}
               </span>
             </div>
@@ -499,7 +462,7 @@ export default function NavbarMain({
                   alt="Profile"
                 />
               ) : (
-                <span className="text-xs uppercase font-bold" suppressHydrationWarning>
+                <span className="text-sm uppercase font-bold" suppressHydrationWarning>
                   {mounted ? userName.charAt(0) : ""}
                 </span>
               )}
@@ -513,7 +476,7 @@ export default function NavbarMain({
               }`}
             >
               <p
-                className={`text-[12.5px] font-bold truncate leading-none tracking-normal ${
+                className={`text-[13.5px] font-bold truncate leading-none tracking-normal ${
                   isLight ? "text-[#18181B]" : "text-[#FFFFFF]"
                 }`}
                 suppressHydrationWarning
@@ -521,7 +484,7 @@ export default function NavbarMain({
                 {mounted ? userName : ""}
               </p>
               <p
-                className={`text-[11px] font-medium tracking-wide truncate leading-none mt-1 ${
+                className={`text-[12px] font-medium tracking-wide truncate leading-none mt-1 ${
                   isLight ? "text-slate-500" : "text-[#A1A1AA]"
                 }`}
                 suppressHydrationWarning
@@ -531,7 +494,7 @@ export default function NavbarMain({
             </div>
 
             <ChevronUp
-              size={15}
+              size={16}
               className={`shrink-0 transition-transform duration-350 ease-[cubic-bezier(0.4,0,0.2,1)] ${
                 isLight ? "text-[#383838]" : "text-[#E4E4E7]"
               } ${
@@ -580,16 +543,16 @@ export default function NavbarMain({
                   <button
                     type="button"
                     onClick={toggleTheme}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[12px] font-medium transition-all text-left cursor-pointer ${
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium transition-all text-left cursor-pointer ${
                       isLight
                         ? "text-[#2C2C2C] hover:bg-[#F4F4F5] hover:text-[#222222]"
                         : "text-[#F4F4F5] hover:bg-white/10 hover:text-[#FFFFFF]"
                     }`}
                   >
                     {isLight ? (
-                      <Moon size={15} className="shrink-0 text-[#222222]" />
+                      <Moon size={16} className="shrink-0 text-[#222222]" />
                     ) : (
-                      <Sun size={15} className="shrink-0 text-[#FFFFFF]" />
+                      <Sun size={16} className="shrink-0 text-[#FFFFFF]" />
                     )}
                     <span className="truncate">
                       {isLight ? t.themeDark : t.themeLight}
@@ -600,14 +563,14 @@ export default function NavbarMain({
                   <button
                     type="button"
                     onClick={toggleLanguage}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[12px] font-medium transition-all text-left cursor-pointer ${
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium transition-all text-left cursor-pointer ${
                       isLight
                         ? "text-slate-800 hover:bg-[#F4F4F5] hover:text-slate-950"
                         : "text-[#F4F4F5] hover:bg-white/10 hover:text-[#FFFFFF]"
                     }`}
                   >
                     <Languages
-                      size={15}
+                      size={16}
                       className={`shrink-0 ${
                         isLight ? "text-[#222222]" : "text-[#FFFFFF]"
                       }`}
@@ -628,14 +591,14 @@ export default function NavbarMain({
                         "กำลังโหลดข้อมูลโปรไฟล์และความปลอดภัย..."
                       );
                     }}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[12px] font-medium transition-all text-left cursor-pointer ${
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium transition-all text-left cursor-pointer ${
                       isLight
                         ? "text-slate-800 hover:bg-[#F4F4F5] hover:text-slate-950"
                         : "text-[#F4F4F5] hover:text-[#FFFFFF] hover:bg-white/10"
                     }`}
                   >
                     <Settings
-                      size={15}
+                      size={16}
                       className={`shrink-0 ${
                         isLight ? "text-[#222222]" : "text-[#FFFFFF]"
                       }`}
@@ -652,9 +615,9 @@ export default function NavbarMain({
                       clearUserProfileCache();
                       router.push(loginPath);
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[12px] font-medium text-rose-500 hover:bg-rose-500/10 transition-all text-left cursor-pointer"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium text-rose-500 hover:bg-rose-500/10 transition-all text-left cursor-pointer"
                   >
-                    <LogOut size={15} className="shrink-0 text-rose-500" />
+                    <LogOut size={16} className="shrink-0 text-rose-500" />
                     <span className="truncate">{t.logout}</span>
                   </button>
                 </div>

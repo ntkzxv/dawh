@@ -3,7 +3,7 @@
 import React from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage } from "@/utils/language";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Box,
   CheckCircle2,
@@ -19,6 +19,8 @@ import {
   AlertTriangle,
   AlertCircle,
   Activity,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 export type WarehouseIconType =
@@ -80,7 +82,11 @@ export interface WarehousePageTemplateProps {
   icon?: React.ReactNode | React.ElementType;
   metrics?: WarehouseMetricItem[];
   children?: React.ReactNode;
+  fullBleed?: boolean;
 }
+
+// Keep track of whether user has already entered warehouse module in current session
+let hasEnteredWarehouseModule = false;
 
 export default function WarehousePageTemplate({
   titleEn,
@@ -90,6 +96,7 @@ export default function WarehousePageTemplate({
   icon,
   metrics,
   children,
+  fullBleed = false,
 }: WarehousePageTemplateProps) {
   const { theme } = useTheme();
   const isLight = theme === "light";
@@ -97,19 +104,32 @@ export default function WarehousePageTemplate({
   const isThai = appLang === "TH";
   const displayTitle = isThai ? (titleTh || titleEn) : (titleEn || titleTh);
 
+  // ตั้งค่าเริ่มต้นให้ซ่อนภาพรวมไว้เป็น Default
+  const [isMetricsVisible, setIsMetricsVisible] = React.useState(false);
+
+  // Animate topbar slide-in only on the first page load from outside warehouse
+  const [shouldAnimateTopbar] = React.useState(() => {
+    if (typeof window === "undefined") return true;
+    if (!hasEnteredWarehouseModule) {
+      hasEnteredWarehouseModule = true;
+      return true;
+    }
+    return false;
+  });
+
   return (
     <div className="w-full flex-1 flex flex-col h-full min-h-0 overflow-hidden">
-      {/* Top Bar Header / Navbar - Slide in from Top to Bottom */}
+      {/* Top Bar Header / Navbar - Slide in from Left to Right ONLY on initial entry */}
       <motion.header
-        initial={{ y: -24, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+        initial={shouldAnimateTopbar ? { x: -40, opacity: 0 } : false}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         className={`h-[72px] px-6 sm:px-10 flex items-center border-b shrink-0 transition-colors z-10 ${
           isLight ? "bg-white border-[#E4E4E7]" : "bg-[#222222] border-[#444444]"
         }`}
       >
         <h1
-          className={`text-[14px] font-bold tracking-tight ${
+          className={`text-[18px] sm:text-[19px] font-bold tracking-tight ${
             isLight ? "text-[#222222]" : "text-[#FFFFFF]"
           }`}
           style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
@@ -118,79 +138,100 @@ export default function WarehousePageTemplate({
         </h1>
       </motion.header>
 
-      {/* Page Content Body (Scrollable below Navbar) - Slide in from Top to Bottom */}
-      <motion.div
-        initial={{ y: -30, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.06, ease: [0.22, 1, 0.36, 1] }}
-        className="p-6 sm:p-10 space-y-8 max-w-7xl w-full mx-auto flex-1 overflow-y-auto min-h-0"
-      >
-        {/* Section Banner */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-[28px] sm:text-[32px] font-bold tracking-tight">
-              {titleEn}
-            </h1>
-            <p className="text-[14px] text-[#999999] mt-1">
-              {titleTh} • Real-time Stock Topology & Supply Chain
-            </p>
-          </div>
+      {/* Page Content Body (Scrollable below Navbar - Scrollbar hugs right edge of screen) */}
+      <div id="warehouse-page-scroll-container" className="flex-1 overflow-y-auto min-h-0 w-full">
+        <div
+          className={
+            fullBleed
+              ? "w-full h-full flex flex-col p-0"
+              : "p-6 sm:p-10 space-y-8 max-w-7xl w-full mx-auto"
+          }
+        >
 
-          <div className="flex items-center gap-2">
-            <span
-              className={`px-3 py-1.5 rounded-xl border text-[12px] font-semibold ${
-                isLight
-                  ? "bg-white border-slate-200 text-slate-700"
-                  : "bg-[#383838] border-[#444444] text-[#E4E4E7]"
-              }`}
-            >
-              Route: {routePath}
-            </span>
-          </div>
-        </div>
 
-        {/* Metrics Grid (if provided) */}
+        {/* Metrics Bar with Dividers (Collapsible) */}
         {metrics && metrics.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {metrics.map((metric, idx) => {
-              return (
-                <div
-                  key={idx}
-                  className={`rounded-2xl border p-5 flex flex-col justify-between gap-4 transition-all duration-300 ${
-                    isLight
-                      ? "bg-white border-[#E4E4E7] shadow-sm hover:shadow-md"
-                      : "bg-[#383838] border-[#444444] hover:border-white/30"
-                  }`}
+          <div className="w-full space-y-2">
+            <div className="flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setIsMetricsVisible(!isMetricsVisible)}
+                className={`flex items-center gap-1 text-[12px] font-medium transition-colors cursor-pointer select-none px-2 py-1 rounded-md ${
+                  isLight
+                    ? "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+                    : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
+                }`}
+              >
+                <span>
+                  {isMetricsVisible
+                    ? isThai
+                      ? "ซ่อนภาพรวม"
+                      : "Hide Summary"
+                    : isThai
+                    ? "แสดงภาพรวม"
+                    : "Show Summary"}
+                </span>
+                {isMetricsVisible ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
+            </div>
+
+            <AnimatePresence initial={false}>
+              {isMetricsVisible && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25, ease: "easeInOut" }}
+                  className="overflow-hidden"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[12px] font-medium text-[#999999]">
-                      {metric.title}
-                    </span>
-                    <div
-                      className="flex h-8 w-8 items-center justify-center rounded-lg"
-                      style={{
-                        backgroundColor: `${metric.color}20`,
-                        color: metric.color,
-                      }}
-                    >
-                      {metric.icon
-                        ? (React.isValidElement(metric.icon)
-                            ? metric.icon
-                            : React.createElement(metric.icon as React.ComponentType<{ size?: number }>, { size: 16 }))
-                        : renderWarehouseIconByName(metric.iconName, 16)}
-                    </div>
+                  <div
+                    className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x ${
+                      isLight ? "divide-[#E4E4E7]" : "divide-[#383838]"
+                    }`}
+                  >
+                    {metrics.map((metric, idx) => {
+                      return (
+                        <div
+                          key={idx}
+                          className="py-1.5 px-5 sm:px-6 flex flex-col justify-between gap-3 first:pl-0 last:pr-0"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span
+                              className={`text-[14px] font-semibold tracking-tight ${
+                                isLight ? "text-slate-700" : "text-zinc-200"
+                              }`}
+                            >
+                              {metric.title}
+                            </span>
+                            <div
+                              className="flex h-8 w-8 items-center justify-center rounded-lg"
+                              style={{
+                                backgroundColor: `${metric.color}20`,
+                                color: metric.color,
+                              }}
+                            >
+                              {metric.icon
+                                ? (React.isValidElement(metric.icon)
+                                    ? metric.icon
+                                    : React.createElement(metric.icon as React.ComponentType<{ size?: number }>, { size: 16 }))
+                                : renderWarehouseIconByName(metric.iconName, 16)}
+                            </div>
+                          </div>
+                          <div>
+                            <h3 className="text-[25px] font-bold leading-none">
+                              {metric.value}
+                            </h3>
+                            <p className="text-[11.5px] text-[#999999] mt-2 truncate">
+                              {metric.sub}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div>
-                    <h3 className="text-[26px] font-bold leading-none">
-                      {metric.value}
-                    </h3>
-                    <p className="text-[11.5px] text-[#999999] mt-2">
-                      {metric.sub}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
 
@@ -240,7 +281,8 @@ export default function WarehousePageTemplate({
             </div>
           </div>
         )}
-      </motion.div>
+        </div>
+      </div>
     </div>
   );
 }

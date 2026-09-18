@@ -13,48 +13,58 @@ const trustedOrigins = [
     .filter(Boolean),
 ];
 
-export const auth = betterAuth({
-  appName: "DAWH",
-  baseURL,
-  secret: process.env.BETTER_AUTH_SECRET,
-  trustedOrigins,
-  database: authPool,
-  advanced: {
-    cookiePrefix: "dawh",
-    defaultCookieAttributes: {
-      httpOnly: true,
-      path: "/",
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+const globalForBetterAuth = globalThis as typeof globalThis & {
+  dawhBetterAuth?: any;
+};
+
+export const auth =
+  globalForBetterAuth.dawhBetterAuth ??
+  betterAuth({
+    appName: "DAWH",
+    baseURL,
+    secret: process.env.BETTER_AUTH_SECRET,
+    trustedOrigins,
+    database: authPool,
+    advanced: {
+      cookiePrefix: "dawh",
+      defaultCookieAttributes: {
+        httpOnly: true,
+        path: "/",
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+      },
     },
-  },
-  emailAndPassword: {
-    enabled: true,
-    minPasswordLength: 8,
-    maxPasswordLength: 128,
-    requireEmailVerification: false,
-  },
-  emailVerification: {
-    sendOnSignUp: false,
-    sendOnSignIn: false,
-    autoSignInAfterVerification: true,
-    sendVerificationEmail: ({ user, url }) =>
-      sendVerificationEmail({ email: user.email, url }),
-  },
-  user: {
-    changeEmail: {
+    emailAndPassword: {
       enabled: true,
+      minPasswordLength: 8,
+      maxPasswordLength: 128,
+      requireEmailVerification: false,
     },
-  },
-  session: {
-    expiresIn: oneDay * 7,
-    updateAge: oneDay,
-    cookieCache: { enabled: false },
-  },
-  rateLimit: {
-    enabled: true,
-    storage: "database",
-    window: 60,
-    max: 100,
-  },
-});
+    emailVerification: {
+      sendOnSignUp: false,
+      sendOnSignIn: false,
+      autoSignInAfterVerification: true,
+      sendVerificationEmail: ({ user, url }) =>
+        sendVerificationEmail({ email: user.email, url }),
+    },
+    user: {
+      changeEmail: {
+        enabled: true,
+      },
+    },
+    session: {
+      expiresIn: oneDay * 7,
+      updateAge: oneDay,
+      cookieCache: { enabled: false },
+    },
+    rateLimit: {
+      enabled: true,
+      storage: "database",
+      window: 60,
+      max: 100,
+    },
+  });
+
+if (process.env.NODE_ENV !== "production") {
+  globalForBetterAuth.dawhBetterAuth = auth;
+}

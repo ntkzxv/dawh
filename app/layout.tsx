@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Outfit, Prompt } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/context/ThemeContext";
-import { NavigationLoadingProvider } from "@/components/loading_screen";
+import { LoadingProvider, AuthLoadingProvider } from "@/components/loading_screen";
 import { NotificationProvider } from "@/context/NotificationContext";
 import { DAWH_LOGOS } from "@/config/brand";
 
@@ -31,7 +31,7 @@ const prompt = Prompt({
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#FFFFFF" },
-    { media: "(prefers-color-scheme: dark)", color: "#2C2C2C" },
+    { media: "(prefers-color-scheme: dark)", color: "#181818" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -89,6 +89,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} ${prompt.variable} h-full antialiased`}
     >
       <head>
@@ -97,12 +98,14 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href={ICON_URL} />
         <title>dawh</title>
       </head>
-      <body className="min-h-full flex flex-col bg-[#2C2C2C] text-white antialiased transition-colors duration-300">
+      <body className="min-h-full flex flex-col bg-[#181818] text-white antialiased transition-colors duration-300">
         <ThemeProvider>
           <NotificationProvider>
-            <NavigationLoadingProvider>
-              {children}
-            </NavigationLoadingProvider>
+            <AuthLoadingProvider>
+              <LoadingProvider>
+                {children}
+              </LoadingProvider>
+            </AuthLoadingProvider>
           </NotificationProvider>
         </ThemeProvider>
       </body>

@@ -79,6 +79,7 @@ export default function HeaderNavbar({
 
   // Profile & Mounted State
   const [profile, setProfile] = useState<Partial<EmployeeProfile>>({});
+  const [isProfileLoaded, setIsProfileLoaded] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   // Close Dropdown on Outside Click
@@ -101,7 +102,18 @@ export default function HeaderNavbar({
       const cached = localStorage.getItem("dawh_user_profile");
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (parsed) setProfile(parsed);
+        if (parsed && (parsed.full_name || parsed.first_name || parsed.first_name_th || parsed.username || parsed.email)) {
+          setProfile(parsed);
+          setIsProfileLoaded(true);
+        }
+      }
+      const cachedSession = localStorage.getItem("dawh_session_user");
+      if (cachedSession) {
+        const parsedSession = JSON.parse(cachedSession);
+        if (parsedSession) {
+          setProfile((prev) => ({ ...parsedSession, ...prev }));
+          setIsProfileLoaded(true);
+        }
       }
     } catch {
       // Non-blocking
@@ -117,7 +129,39 @@ export default function HeaderNavbar({
           const fetched = await fetchAndStoreUserProfile(targetId, targetEmail);
           if (fetched) {
             setProfile(fetched);
+            setIsProfileLoaded(true);
+            try {
+              localStorage.setItem("dawh_session_user", JSON.stringify({
+                id: fetched.id,
+                email: fetched.email,
+                full_name: fetched.full_name || [fetched.first_name, fetched.last_name].filter(Boolean).join(" ") || undefined,
+                first_name: fetched.first_name || undefined,
+                last_name: fetched.last_name || undefined,
+                username: fetched.username || undefined,
+              }));
+            } catch {
+              // Non-blocking
+            }
             return;
+          }
+
+          // Fallback: ถ้ายังไม่มีข้อมูลใน employee_profiles ให้ดึง name และ email จาก Better Auth Session มาแสดงผล
+          if (session?.user) {
+            const sessionProfile: Partial<EmployeeProfile> = {
+              id: session.user.id,
+              email: session.user.email,
+              full_name: session.user.name || undefined,
+              first_name: session.user.name?.split(" ")[0] || undefined,
+              last_name: session.user.name?.split(" ").slice(1).join(" ") || undefined,
+              username: session.user.email?.split("@")[0] || undefined,
+            };
+            setProfile((prev) => ({ ...prev, ...sessionProfile }));
+            setIsProfileLoaded(true);
+            try {
+              localStorage.setItem("dawh_session_user", JSON.stringify(sessionProfile));
+            } catch {
+              // Non-blocking
+            }
           }
         }
       } catch (err) {
@@ -173,14 +217,14 @@ export default function HeaderNavbar({
     profile.username ||
     (profile.email ? profile.email.split("@")[0] : "") ||
     (typeof window !== "undefined" ? localStorage.getItem("current_user_email")?.split("@")[0] : "") ||
-    "Administrator";
+    "";
 
   const initials = (
     profile.nickname_th?.charAt(0) ||
     profile.nickname?.charAt(0) ||
     profile.first_name?.charAt(0) ||
     profile.username?.charAt(0) ||
-    (fullName !== "—" ? fullName.charAt(0) : "U")
+    (fullName ? fullName.charAt(0) : "U")
   ).toUpperCase();
 
   const departmentDisplay =
@@ -228,22 +272,19 @@ export default function HeaderNavbar({
   const { isComplete, missingFields } = checkProfileCompleteness(profile);
 
   const handleGuardedNavigate = (target: string, fallbackPath?: string) => {
-    // [DISABLED TEMPORARILY] ปิดการบล็อก incomplete profile ชั่วคราวเพื่อให้เข้าถึงทุกโมดูลได้อิสระ
-    /*
     if (!isComplete && target !== "settings" && target !== "account" && target !== "auth" && target !== "workspace" && target !== "portal") {
       setShowGuardModal(true);
       notify.warning(
         isThai ? "ต้องกรอกข้อมูลให้ครบถ้วนก่อน" : "Incomplete Profile Information",
         {
           message: isThai
-            ? "กรุณากรอกข้อมูลส่วนตัวและตั้งรหัส PIN ในหน้าตั้งค่าก่อนเข้าใช้งานส่วนอื่นๆ"
-            : "Please complete your employee profile and PIN setup in Settings.",
+            ? "กรุณากรอกข้อมูลส่วนตัวในหน้าตั้งค่าก่อนเข้าใช้งานส่วนอื่นๆ"
+            : "Please complete your employee profile in Settings before accessing system modules.",
           duration: 5000,
         }
       );
       return;
     }
-    */
 
     if (fallbackPath) {
       navigateWithLoading(
@@ -281,8 +322,8 @@ export default function HeaderNavbar({
       ) : (
         <div className="flex flex-col items-start gap-[2px]">
           <h1
-            className={`font-bold text-[20px] leading-[25px] ${
-              isLight ? "text-[#222222]" : "text-[#FFFFFF]"
+            className={`font-bold text-[18px] sm:text-[20px] leading-[26px] tracking-tight ${
+              isLight ? "text-[#18181B]" : "text-[#FFFFFF]"
             }`}
             style={{ fontFamily: "var(--font-outfit), sans-serif" }}
           >
@@ -290,7 +331,7 @@ export default function HeaderNavbar({
           </h1>
           {Boolean(displaySubtitle) && (
             <p
-              className={`font-normal text-[12px] leading-[16px] ${
+              className={`font-normal text-[13.5px] leading-[18px] ${
                 isLight ? "text-[#666666]" : "text-[#E4E4E7]"
               }`}
             >
@@ -324,31 +365,37 @@ export default function HeaderNavbar({
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={profile.avatar_url}
-                alt={fullName}
+                alt={fullName || "User"}
                 className="w-full h-full object-cover"
               />
-            ) : (
+            ) : mounted && (isProfileLoaded || fullName) ? (
               <span className="font-bold text-[14px]" suppressHydrationWarning>
-                {mounted ? initials : ""}
+                {initials || "U"}
               </span>
+            ) : (
+              <div className={`w-full h-full rounded-full animate-pulse ${isLight ? "bg-slate-200" : "bg-[#383838]"}`} />
             )}
           </div>
 
           {/* User Details */}
-          <div className="hidden md:flex flex-col items-start text-left leading-tight">
-            <span
-              className={`font-semibold text-[13.5px] leading-[18px] max-w-[140px] truncate ${
-                isLight ? "text-[#222222]" : "text-[#FFFFFF]"
-              }`}
-              style={{ fontFamily: "var(--font-outfit), sans-serif" }}
-              suppressHydrationWarning
-            >
-              {mounted ? fullName : ""}
-            </span>
-            {mounted && departmentDisplay && (
+          <div className="hidden md:flex flex-col items-start text-left leading-tight min-w-[70px]">
+            {mounted && (isProfileLoaded || fullName) ? (
+              <span
+                className={`font-semibold text-[14.5px] leading-[18px] max-w-[140px] truncate ${
+                  isLight ? "text-[#222222]" : "text-[#FFFFFF]"
+                }`}
+                style={{ fontFamily: "var(--font-outfit), sans-serif" }}
+                suppressHydrationWarning
+              >
+                {fullName || (profile.email ? profile.email.split("@")[0] : "User")}
+              </span>
+            ) : (
+              <div className={`h-[16px] w-[84px] rounded-md animate-pulse my-[1px] ${isLight ? "bg-slate-200" : "bg-[#383838]"}`} />
+            )}
+            {mounted && departmentDisplay ? (
               <div className="flex items-center gap-1.5 mt-[1px]">
                 <span
-                  className={`font-medium text-[11px] leading-[14px] truncate max-w-[140px] ${
+                  className={`font-medium text-[12px] leading-[15px] truncate max-w-[140px] ${
                     isLight ? "text-[#666666]" : "text-[#E4E4E7]"
                   }`}
                   suppressHydrationWarning
@@ -356,7 +403,18 @@ export default function HeaderNavbar({
                   {departmentDisplay}
                 </span>
               </div>
-            )}
+            ) : mounted && (isProfileLoaded || fullName) && profile.email ? (
+              <span
+                className={`font-normal text-[11px] leading-[14px] truncate max-w-[140px] ${
+                  isLight ? "text-[#888888]" : "text-[#A1A1AA]"
+                }`}
+                suppressHydrationWarning
+              >
+                {profile.email}
+              </span>
+            ) : !isProfileLoaded && !fullName ? (
+              <div className={`h-[12px] w-[56px] rounded-md animate-pulse mt-[2px] ${isLight ? "bg-slate-200" : "bg-[#383838]"}`} />
+            ) : null}
           </div>
 
           {/* Chevron Indicator */}
@@ -409,27 +467,35 @@ export default function HeaderNavbar({
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={profile.avatar_url}
-                        alt={fullName}
+                        alt={fullName || "User"}
                         className="w-full h-full object-cover"
                       />
-                    ) : (
+                    ) : mounted && (isProfileLoaded || fullName) ? (
                       <span className="font-bold text-sm" suppressHydrationWarning>
-                        {mounted ? initials : ""}
+                        {initials || "U"}
                       </span>
+                    ) : (
+                      <div className={`w-full h-full rounded-full animate-pulse ${isLight ? "bg-slate-200" : "bg-[#383838]"}`} />
                     )}
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className={`font-bold text-[13px] truncate ${isLight ? "text-[#222222]" : "text-[#FFFFFF]"}`} suppressHydrationWarning>
-                      {mounted ? fullName : ""}
-                    </span>
+                    {mounted && (isProfileLoaded || fullName) ? (
+                      <span className={`font-bold text-[13px] truncate ${isLight ? "text-[#222222]" : "text-[#FFFFFF]"}`} suppressHydrationWarning>
+                        {fullName || (profile.email ? profile.email.split("@")[0] : "User")}
+                      </span>
+                    ) : (
+                      <div className={`h-[14px] w-[90px] rounded-md animate-pulse my-0.5 ${isLight ? "bg-slate-200" : "bg-[#383838]"}`} />
+                    )}
                     {mounted && departmentDisplay ? (
                       <span className={`text-[11px] truncate ${isLight ? "text-[#666666]" : "text-[#E4E4E7]"}`} suppressHydrationWarning>
                         {departmentDisplay}
                       </span>
-                    ) : mounted && profile.email ? (
+                    ) : mounted && (isProfileLoaded || fullName) && profile.email ? (
                       <span className="text-[11px] text-[#A1A1AA] truncate" suppressHydrationWarning>
                         {profile.email}
                       </span>
+                    ) : !isProfileLoaded && !fullName ? (
+                      <div className={`h-[11px] w-[60px] rounded-md animate-pulse mt-0.5 ${isLight ? "bg-slate-200" : "bg-[#383838]"}`} />
                     ) : null}
                   </div>
                 </div>

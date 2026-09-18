@@ -57,6 +57,7 @@ export interface EmployeeProfile {
   terms_version?: string | null;
   terms_accepted_at?: string | null;
   profile_completed_at?: string | null;
+  is_complete?: boolean;
 }
 
 /**

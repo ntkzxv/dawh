@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { AnimatePresence } from "framer-motion";
 import LoadingScreen from "./LoadingScreen";
-import { useLoading } from "./NavigationLoadingProvider";
+import { useLoading } from "./LoadingProvider";
 
 export interface AuthBarrierLoaderProps {
   /** Whether the auth verification / background task is active */

@@ -85,8 +85,8 @@ export function ProfileGuardModal({
             }}
           >
             {isThai
-              ? "คุณยังไม่ได้กรอกข้อมูลประวัติพนักงานและตั้งรหัส PIN 6 หลักในระบบ กรุณากรอกข้อมูลส่วนตัวในหน้าตั้งค่าให้เรียบร้อยก่อน จึงจะสามารถเข้าใช้งานระบบงานอื่นๆ ได้"
-              : "You have not completed your employee profile records and 6-digit PIN setup. Please complete your profile in Settings before accessing system modules."}
+              ? "คุณยังไม่ได้กรอกข้อมูลประวัติพนักงานในระบบ กรุณากรอกข้อมูลส่วนตัวในหน้าตั้งค่าให้เรียบร้อยก่อน จึงจะสามารถเข้าใช้งานระบบงานอื่นๆ ได้"
+              : "You have not completed your employee profile records. Please complete your profile in Settings before accessing system modules."}
           </p>
         </div>
 

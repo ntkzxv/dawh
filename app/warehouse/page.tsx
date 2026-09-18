@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import WarehousePageTemplate from "./_components/WarehousePageTemplate";
 
 export const metadata: Metadata = {

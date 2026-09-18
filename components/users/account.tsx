@@ -1861,12 +1861,9 @@ export default function AccountView({
   if (!profile.emergency_contact_phone && !profile.emergency_contact_name)
     missingFields.push(isThai ? "ผู้ติดต่อฉุกเฉิน" : "Emergency Contact");
   if (!profile.education_level) missingFields.push(isThai ? "วุฒิการศึกษา" : "Education");
-  if (!profile.pin_code && !profile.is_pin_enabled)
-    missingFields.push(isThai ? "รหัส PIN 6 หลัก" : "Quick PIN");
 
-  // [DISABLED TEMPORARILY] ปิดแจ้งเตือนและแบนเนอร์ incomplete profile ชั่วคราว
-  const isProfileIncomplete = false;
-  // const isProfileIncomplete = missingFields.length > 0;
+  // [ENABLED] ตรวจสอบข้อมูลไม่สมบูรณ์เพื่อแสดงแบนเนอร์และการแจ้งเตือน (ตัด Quick PIN ออกเนื่องจากระบบ Auth ใหม่ไม่ใช้งาน PIN)
+  const isProfileIncomplete = missingFields.length > 0 || (!profile.profile_completed_at && profile.is_complete !== true);
 
   // Auto-open Secondary Registration modal if autoOpen or incomplete query param exists
   useEffect(() => {

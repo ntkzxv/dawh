@@ -113,7 +113,18 @@ export function DynamicWorkspaceLayout({
       return;
     }
 
+    const pureThaiName = module.titleTh.split(" (")[0];
+
     if (status === "maintenance") {
+      notify.warning(
+        isThai ? "ระบบปิดปรับปรุงชั่วคราว" : "Scheduled Maintenance",
+        {
+          message: isThai
+            ? `${pureThaiName} อยู่ระหว่างปิดปรับปรุงชั่วคราวเพื่ออัปเกรดระบบ`
+            : `${module.title} is currently under maintenance.`,
+          duration: 4000,
+        }
+      );
       const target = `/maintenance?module=${module.id}`;
       if (onNavigate) {
         onNavigate(target);
@@ -123,29 +134,17 @@ export function DynamicWorkspaceLayout({
       return;
     }
 
-    // Active - remember as most recent module and navigate
+    // Active - remember as most recent module and navigate directly without notice
     try {
       localStorage.setItem("dawh_recent_module", module.id);
     } catch {
       // ignore
     }
 
-    // Active notification per user request (no quotes, no parentheses)
-    const pureThaiName = module.titleTh.split(" (")[0];
-    notify.info(
-      isThai ? `ท่านกำลังเข้าสู่ ${pureThaiName} แล้ว` : `Entering ${module.title}...`,
-      {
-        message: isThai
-          ? "กำลังเชื่อมต่อระบบและโหลดข้อมูล..."
-          : "Connecting to workspace modules...",
-        duration: 3000,
-      }
-    );
-
     if (onNavigate) {
       onNavigate(module.route);
     } else {
-      window.location.href = module.route;
+      router.push(module.route);
     }
   };
 

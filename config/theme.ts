@@ -51,7 +51,7 @@ export interface ColorTokens {
 export const customTheme: Record<ThemeMode, ColorTokens> = {
   dark: {
     // Surfaces & Backgrounds
-    canvas: "#2C2C2C",
+    canvas: "#181818",
     sidebar: "#222222",
     cards: "#383838",
     cardsHover: "#404040",

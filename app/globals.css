@@ -4,13 +4,13 @@
 
 :root {
   /* Canvas, Sidebar, Cards, Accent, Border */
-  --canvas: #2C2C2C;
+  --canvas: #181818;
   --sidebar: #222222;
   --cards: #383838;
   --accent: #FFFFFF;
   --border: #444444;
 
-  --background: #2C2C2C;
+  --background: #181818;
   --foreground: #FFFFFF;
   --card: #383838;
   --card-foreground: #FFFFFF;

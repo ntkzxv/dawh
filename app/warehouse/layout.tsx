@@ -1,8 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { NavbarMain, NavbarsubWarehouse } from "@/components/navbar";
 import { useTheme } from "@/context/ThemeContext";
+import { getCurrentSession } from "@/lib/auth-client";
+import { checkProfileCompleteness, fetchAndStoreUserProfile } from "@/lib/user-profile";
 import { motion } from "framer-motion";
 
 export default function WarehouseLayout({
@@ -10,10 +13,49 @@ export default function WarehouseLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [isMinimized, setIsMinimized] = useState(false);
   const [sidebarAnimated, setSidebarAnimated] = useState(false);
+
+  // Incomplete Profile Guard: Block direct access to warehouse module if profile is incomplete
+  useEffect(() => {
+    let isMounted = true;
+    async function verifyAccess() {
+      try {
+        const session = await getCurrentSession();
+        if (!session?.user) {
+          router.replace("/auth/login?from=/warehouse");
+          return;
+        }
+
+        let profile = null;
+        try {
+          const cached = localStorage.getItem("dawh_user_profile");
+          if (cached) profile = JSON.parse(cached);
+        } catch {
+          // Non-blocking
+        }
+
+        if (!profile) {
+          profile = await fetchAndStoreUserProfile(session.user.id, session.user.email);
+        }
+
+        const { isComplete } = checkProfileCompleteness(profile);
+        if (!isComplete && isMounted) {
+          router.replace("/workspace?incomplete=true");
+        }
+      } catch (err) {
+        console.error("Layout guard verification error:", err);
+      }
+    }
+
+    verifyAccess();
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
 
   useEffect(() => {
     try {

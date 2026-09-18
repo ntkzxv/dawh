@@ -77,7 +77,7 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
 
   const [profile, setProfile] = useState<Partial<EmployeeProfile>>({});
   const [isLoading, setIsLoading] = useState(true);
-  const [, setIsProfileComplete] = useState(true);
+  const [isProfileComplete, setIsProfileComplete] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [showGuardModal, setShowGuardModal] = useState(false);
   const [layoutConfig, setLayoutConfig] = useState<WorkspaceLayoutConfig>(DEFAULT_WORKSPACE_CONFIG);
@@ -112,7 +112,7 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
     }
   }, []);
 
-  // Fetch real profile from Supabase Database on mount
+  // Fetch real profile from Supabase Database on mount & listen to profile updates
   useEffect(() => {
     let cachedProfile: Partial<EmployeeProfile> | null = null;
     // 1. Instant Cache Check
@@ -126,9 +126,28 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
           setIsProfileComplete(isComplete);
           setMissingFields(missing);
         }
+      } else {
+        setIsProfileComplete(false);
       }
     } catch {
       // Non-blocking
+    }
+
+    // Check for ?incomplete=true query param
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("incomplete") === "true") {
+        setShowGuardModal(true);
+        notify.warning(
+          isThai ? "ต้องกรอกข้อมูลให้ครบถ้วนก่อน" : "Incomplete Profile Information",
+          {
+            message: isThai
+              ? "กรุณากรอกข้อมูลส่วนตัวในหน้าตั้งค่าก่อนเข้าใช้งานโมดูลงาน"
+              : "Please complete your employee profile in Settings before accessing system modules.",
+            duration: 5000,
+          }
+        );
+      }
     }
 
     const fetchUserProfile = async () => {
@@ -142,10 +161,14 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
             const { isComplete, missingFields: missing } = checkProfileCompleteness(employeeProfile);
             setIsProfileComplete(isComplete);
             setMissingFields(missing);
-            if (!isComplete) router.replace("/account?modal=register");
           } else {
-            router.replace("/account?modal=register");
+            // User is authenticated via Better Auth, but has not completed employee profile yet
+            setProfile({});
+            setIsProfileComplete(false);
+            setMissingFields(["profile_completion"]);
           }
+        } else {
+          setIsProfileComplete(false);
         }
       } catch (err) {
         console.error("Error loading user profile:", err);
@@ -155,7 +178,27 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
     };
 
     fetchUserProfile();
-  }, [router]);
+
+    const handleProfileUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent<Partial<EmployeeProfile>>;
+      if (customEvent.detail) {
+        setProfile((prev) => {
+          const merged = { ...prev, ...customEvent.detail };
+          const { isComplete, missingFields: missing } = checkProfileCompleteness(merged);
+          setIsProfileComplete(isComplete);
+          setMissingFields(missing);
+          return merged;
+        });
+      }
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("dawh_profile_updated", handleProfileUpdated);
+      return () => {
+        window.removeEventListener("dawh_profile_updated", handleProfileUpdated);
+      };
+    }
+  }, [router, isThai, notify]);
 
   const handleOpenAccount = () => {
     if (onNavigate) onNavigate("settings");
@@ -163,6 +206,21 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
   };
 
   const handleDynamicNavigate = (route: string) => {
+    // If profile is incomplete and user tries to access a module (not settings/account), block and show guard modal
+    if (!isProfileComplete && !route.startsWith("/settings") && !route.startsWith("/account")) {
+      setShowGuardModal(true);
+      notify.warning(
+        isThai ? "ต้องกรอกข้อมูลให้ครบถ้วนก่อน" : "Incomplete Profile Information",
+        {
+          message: isThai
+            ? "กรุณากรอกข้อมูลส่วนตัวในหน้าตั้งค่าก่อนเข้าใช้งานโมดูลงาน"
+            : "Please complete your employee profile in Settings before accessing system modules.",
+          duration: 5000,
+        }
+      );
+      return;
+    }
+
     if (route.startsWith("/maintenance")) {
       router.push(route);
       return;
@@ -170,38 +228,30 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
     if (onNavigate) {
       onNavigate(route.replace("/", ""));
     } else {
-      // Find module title if available
-      let titleDisplay = "Workspace";
-      if (route.includes("warehouse")) {
-        titleDisplay = isThai ? "จัดการคลังสินค้า" : "Warehouse ERP";
-      } else if (route.includes("datacenter")) {
-        titleDisplay = isThai ? "สัญญาเช่าซื้อ" : "HP Datacenter";
-      } else if (route.includes("employee")) {
-        titleDisplay = isThai ? "จัดการพนักงาน" : "Employee Management";
-      } else if (route.includes("reports")) {
-        titleDisplay = isThai ? "รายงานและตรวจสอบ" : "Reports & Auditing";
-      }
-
-      navigateWithLoading(
-        route,
-        isThai ? `ท่านกำลังเข้าสู่ ${titleDisplay} แล้ว` : `Entering ${titleDisplay}...`,
-        isThai ? "กำลังเชื่อมต่อระบบและโหลดข้อมูล..." : "Connecting to workspace modules..."
-      );
+      navigateWithLoading(route);
     }
   };
 
   const handleCardClick = (card: WorkspaceCardItem) => {
     if (card.route) {
+      if (!isProfileComplete && !card.route.startsWith("/settings") && !card.route.startsWith("/account")) {
+        setShowGuardModal(true);
+        notify.warning(
+          isThai ? "ต้องกรอกข้อมูลให้ครบถ้วนก่อน" : "Incomplete Profile Information",
+          {
+            message: isThai
+              ? "กรุณากรอกข้อมูลส่วนตัวในหน้าตั้งค่าก่อนเข้าใช้งานโมดูลงาน"
+              : "Please complete your employee profile in Settings before accessing system modules.",
+            duration: 5000,
+          }
+        );
+        return;
+      }
+
       if (onNavigate) {
         onNavigate(card.route.replace("/", ""));
       } else {
-        const pureThaiName = card.titleTh.split(" (")[0];
-        const titleDisplay = isThai ? pureThaiName : card.title;
-        navigateWithLoading(
-          card.route,
-          isThai ? `ท่านกำลังเข้าสู่ ${titleDisplay} แล้ว` : `Entering ${titleDisplay}...`,
-          isThai ? "กำลังเชื่อมต่อระบบและโหลดข้อมูล..." : "Connecting to workspace modules..."
-        );
+        navigateWithLoading(card.route);
       }
     }
   };

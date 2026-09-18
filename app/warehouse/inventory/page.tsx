@@ -1,5 +1,6 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import WarehousePageTemplate from "../_components/WarehousePageTemplate";
+import WarehouseSplitLayoutView from "../_components/WarehouseSplitLayoutView";
 
 export const metadata: Metadata = {
   title: "Warehouse ERP",
@@ -10,9 +11,11 @@ export default function InventoryPage() {
   return (
     <WarehousePageTemplate
       titleEn="Product Master & SKU Catalog"
-      titleTh="ข้อมูลสินค้าหลัก (SKU Master)"
+      titleTh="ข้อมูลสินค้าหลัก"
       routePath="/warehouse/inventory"
-      iconName="layers"
-    />
+      fullBleed
+    >
+      <WarehouseSplitLayoutView />
+    </WarehousePageTemplate>
   );
 }

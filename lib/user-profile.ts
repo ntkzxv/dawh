@@ -29,6 +29,7 @@ export function toEmployeeProfile(profile: EmployeeProfileResponse): EmployeePro
     university_name: profile.university_name_th, created_at: profile.created_at, updated_at: profile.updated_at,
     terms_version: profile.terms_version, terms_accepted_at: profile.terms_accepted_at,
     profile_completed_at: profile.profile_completed_at,
+    is_complete: Boolean(profile.is_complete ?? profile.profile_completed_at),
   };
 }
 
@@ -36,11 +37,20 @@ export async function fetchAndStoreUserProfile(userId: string, email?: string | 
   if (typeof window === "undefined" || !userId) return null;
   void email;
   const response = await fetch("/api/profile/me", { credentials: "include", cache: "no-store" });
-  if (response.status === 401) return null;
+  if (response.status === 401) {
+    clearUserProfileCache();
+    return null;
+  }
   if (!response.ok) throw new Error("Unable to load employee profile.");
-  const payload = (await response.json()) as { profile: EmployeeProfileResponse | null };
-  if (!payload.profile) return null;
-  const profile = toEmployeeProfile(payload.profile);
+  const payload = (await response.json()) as { profile: EmployeeProfileResponse | null; isComplete?: boolean };
+  if (!payload.profile) {
+    localStorage.removeItem(PROFILE_CACHE_KEY);
+    return null;
+  }
+  const profile = toEmployeeProfile({
+    ...payload.profile,
+    is_complete: payload.isComplete ?? payload.profile.is_complete,
+  });
   localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile));
   return profile;
 }
@@ -55,15 +65,35 @@ export function clearUserProfileCache() {
   localStorage.removeItem("current_user_phone");
 }
 
-export function checkProfileCompleteness(profile: Partial<EmployeeProfile> | null | undefined) {
+export function checkProfileCompleteness(profile: Partial<EmployeeProfile> | null | undefined): {
+  isComplete: boolean;
+  missingFields: string[];
+} {
+  if (!profile || (!profile.id && !profile.username && !profile.email)) {
+    return { isComplete: false, missingFields: ["profile_completion"] };
+  }
+
   const fields: Array<[keyof EmployeeProfile, string]> = [
-    ["username", "username"], ["first_name_th", "first_name_th"], ["last_name_th", "last_name_th"],
-    ["first_name", "first_name_en"], ["last_name", "last_name_en"], ["id_card", "citizen_id"],
-    ["phone", "phone"], ["current_address", "current_address"],
-    ["registered_address", "registered_address"], ["branch_name", "branch_name"], ["education_level", "education_level"],
+    ["username", "username"],
+    ["first_name_th", "first_name_th"],
+    ["last_name_th", "last_name_th"],
+    ["first_name", "first_name_en"],
+    ["last_name", "last_name_en"],
+    ["id_card", "citizen_id"],
+    ["phone", "phone"],
+    ["current_address", "current_address"],
+    ["registered_address", "registered_address"],
+    ["branch_name", "branch_name"],
+    ["education_level", "education_level"],
   ];
 
-  const missingFields = fields.filter(([key]) => !String(profile?.[key] ?? "").trim()).map(([, label]) => label);
-  if (!profile?.profile_completed_at) missingFields.push("profile_completion");
+  const missingFields = fields
+    .filter(([key]) => !String(profile[key] ?? "").trim())
+    .map(([, label]) => label);
+
+  if (!profile.profile_completed_at && profile.is_complete !== true) {
+    missingFields.push("profile_completion");
+  }
+
   return { isComplete: missingFields.length === 0, missingFields };
 }

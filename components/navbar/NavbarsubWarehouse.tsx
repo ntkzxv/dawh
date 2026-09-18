@@ -14,6 +14,9 @@ import {
   ArrowDownLeft,
   Sparkles,
   History,
+  ChevronDown,
+  Truck,
+  Warehouse,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
@@ -56,15 +59,13 @@ export default function NavbarsubWarehouse({
   const isLight = theme === "light";
   const appLang = useAppLanguage();
 
-  const [activePopupGroup, setActivePopupGroup] = useState<MenuGroup | null>(null);
-  const [popupCoords, setPopupCoords] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
-  const popupRef = useRef<HTMLDivElement>(null);
-  const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
 
   const translations = {
     en: {
       dashboard: "Dashboard",
-      logistics: "Logistics & Stock",
+      warehouseTab: "Warehouse",
+      logisticsTab: "Logistics",
       intelSystem: "Intelligence",
       wallets: "Wallets",
       p_master: "Product Master",
@@ -79,7 +80,8 @@ export default function NavbarsubWarehouse({
     },
     th: {
       dashboard: "ภาพรวมคลังสินค้า",
-      logistics: "คลังสินค้าและโลจิสติกส์",
+      warehouseTab: "คลังสินค้า",
+      logisticsTab: "โลจิสติกส์",
       intelSystem: "ระบบวิเคราะห์อัจฉริยะ",
       wallets: "กระเป๋าบัญชี",
       p_master: "ข้อมูลสินค้าหลัก",
@@ -105,9 +107,9 @@ export default function NavbarsubWarehouse({
       path: "/warehouse",
     },
     {
-      id: "logistics",
-      title: t.logistics,
-      icon: Package,
+      id: "warehouse",
+      title: t.warehouseTab,
+      icon: Warehouse,
       children: [
         {
           label: t.p_master,
@@ -120,16 +122,6 @@ export default function NavbarsubWarehouse({
           icon: Boxes,
         },
         {
-          label: t.receiving,
-          path: "/warehouse/receive",
-          icon: ArrowDownLeft,
-        },
-        {
-          label: t.m_log,
-          path: "/warehouse/movements",
-          icon: History,
-        },
-        {
           label: t.b_warehouse,
           path: "/warehouse/branches",
           icon: Building2,
@@ -139,10 +131,27 @@ export default function NavbarsubWarehouse({
           path: "/warehouse/suppliers",
           icon: Users,
         },
+      ],
+    },
+    {
+      id: "logistics",
+      title: t.logisticsTab,
+      icon: Truck,
+      children: [
+        {
+          label: t.receiving,
+          path: "/warehouse/receive",
+          icon: ArrowDownLeft,
+        },
         {
           label: t.transfer,
           path: "/warehouse/transfer",
           icon: ArrowLeftRight,
+        },
+        {
+          label: t.m_log,
+          path: "/warehouse/movements",
+          icon: History,
         },
       ],
     },
@@ -166,12 +175,33 @@ export default function NavbarsubWarehouse({
     },
   ];
 
-  // Auto-close popup on navigation
+  // Track expanded groups for dropdown accordion
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    menuItems.forEach((group) => {
+      if (group.children?.some((child) => child.path === pathname)) {
+        initial[group.id] = true;
+      }
+    });
+    return initial;
+  });
+
+  const [activePopupGroup, setActivePopupGroup] = useState<MenuGroup | null>(null);
+  const [popupCoords, setPopupCoords] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const popupRef = useRef<HTMLDivElement>(null);
+  const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  // Auto-expand active group on route change
   useEffect(() => {
+    menuItems.forEach((group) => {
+      if (group.children?.some((child) => child.path === pathname)) {
+        setExpandedGroups((prev) => ({ ...prev, [group.id]: true }));
+      }
+    });
     setActivePopupGroup(null);
   }, [pathname]);
 
-  // Handle outside click, escape key, resize and scroll
+  // Handle outside click, escape key, resize and scroll for minimized flyout
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
       const target = e.target as Node;
@@ -217,24 +247,33 @@ export default function NavbarsubWarehouse({
   };
 
   const handleGroupToggle = (item: MenuGroup, e: React.MouseEvent<HTMLButtonElement>) => {
-    if (activePopupGroup?.id === item.id) {
-      setActivePopupGroup(null);
+    // If sidebar is minimized, open flyout dropdown
+    if (isMinimized) {
+      if (activePopupGroup?.id === item.id) {
+        setActivePopupGroup(null);
+        return;
+      }
+
+      const rect = e.currentTarget.getBoundingClientRect();
+      const popupEstimatedHeight = (item.children?.length ?? 5) * 40 + 20;
+      const windowHeight = typeof window !== "undefined" ? window.innerHeight : 800;
+
+      let top = rect.top;
+      if (top + popupEstimatedHeight > windowHeight - 16) {
+        top = Math.max(16, windowHeight - popupEstimatedHeight - 16);
+      }
+
+      const left = rect.right + 10;
+      setPopupCoords({ top, left });
+      setActivePopupGroup(item);
       return;
     }
 
-    const rect = e.currentTarget.getBoundingClientRect();
-    const popupEstimatedHeight = (item.children?.length ?? 5) * 40 + 20;
-    const windowHeight = typeof window !== "undefined" ? window.innerHeight : 800;
-
-    let top = rect.top;
-    if (top + popupEstimatedHeight > windowHeight - 16) {
-      top = Math.max(16, windowHeight - popupEstimatedHeight - 16);
-    }
-
-    const left = rect.right + 10;
-
-    setPopupCoords({ top, left });
-    setActivePopupGroup(item);
+    // Normal expanded sidebar: toggle accordion dropdown
+    setExpandedGroups((prev) => ({
+      ...prev,
+      [item.id]: !prev[item.id],
+    }));
   };
 
   return (
@@ -244,6 +283,7 @@ export default function NavbarsubWarehouse({
           const Icon = item.icon;
           const hasChildren = item.children && item.children.length > 0;
           const isChildActive = item.children?.some((child) => child.path === pathname);
+          const isExpanded = expandedGroups[item.id] ?? false;
           const isPopupOpen = activePopupGroup?.id === item.id;
           const isSelfActive = item.path === pathname;
 
@@ -270,7 +310,7 @@ export default function NavbarsubWarehouse({
                 title={isMinimized ? item.title : undefined}
               >
                 <Icon
-                  size={20}
+                  size={18}
                   className={`${
                     isSelfActive
                       ? isLight
@@ -286,8 +326,8 @@ export default function NavbarsubWarehouse({
                   className={`text-[13.5px] font-medium leading-tight text-left whitespace-nowrap overflow-hidden transition-all ease-out ${
                     isSelfActive
                       ? isLight
-                        ? "text-slate-950"
-                        : "text-[#FFFFFF]"
+                        ? "text-slate-950 font-semibold"
+                        : "text-[#FFFFFF] font-semibold"
                       : isLight
                       ? "text-slate-800"
                       : "text-[#E4E4E7] group-hover:text-[#FFFFFF]"
@@ -341,98 +381,191 @@ export default function NavbarsubWarehouse({
             );
           }
 
-          // Case 2: Parent Category Tab with Sub-items (Triggers Sub-Sidebar Dropdown Popup to the side)
+          // Case 2: Parent with Sub-items (Dropdown accordion in sidebar)
           return (
-            <button
-              key={item.id}
-              ref={(el) => {
-                buttonRefs.current[item.id] = el;
-              }}
-              type="button"
-              onClick={(e) => handleGroupToggle(item, e)}
-              className={`group relative rounded-xl border transition-colors duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] flex items-center justify-between overflow-hidden cursor-pointer outline-none focus:outline-none select-none ${
-                isMinimized
-                  ? "w-12 h-12 justify-center mx-auto px-0"
-                  : "w-full px-3.5 py-2.5 gap-3"
-              } ${
-                isPopupOpen
-                  ? isLight
-                    ? "bg-slate-200/90 text-slate-950 border-slate-300 shadow-inner"
-                    : "bg-[#383838] text-[#FFFFFF] border-[#555555]"
-                  : isChildActive
-                  ? isLight
-                    ? "bg-slate-100 text-slate-950 border-slate-200"
-                    : "bg-[#383838]/80 text-[#FFFFFF] border-[#444444]/60"
-                  : isLight
-                  ? "border-transparent text-slate-700 hover:bg-[#F4F4F5] hover:text-slate-950"
-                  : "border-transparent text-[#F4F4F5] hover:bg-[#383838]/60 hover:text-[#FFFFFF]"
-              }`}
-              title={isMinimized ? item.title : undefined}
-            >
-              <div className={`flex items-center ${isMinimized ? "justify-center" : "gap-3"} min-w-0`}>
-                <Icon
-                  size={20}
-                  className={`${
-                    isPopupOpen || isChildActive
-                      ? isLight ? "text-slate-950" : "text-[#FFFFFF]"
-                      : isLight
-                      ? "text-slate-700 group-hover:text-slate-950"
-                      : "text-[#E4E4E7] group-hover:text-[#FFFFFF]"
-                  } shrink-0 transition-colors duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]`}
-                />
+            <div key={item.id} className="w-full flex flex-col">
+              <button
+                ref={(el) => {
+                  buttonRefs.current[item.id] = el;
+                }}
+                type="button"
+                onClick={(e) => handleGroupToggle(item, e)}
+                className={`group relative rounded-xl border transition-colors duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] flex items-center justify-between overflow-hidden cursor-pointer outline-none focus:outline-none select-none ${
+                  isMinimized
+                    ? "w-12 h-12 justify-center mx-auto px-0"
+                    : "w-full px-3.5 py-2.5 gap-3"
+                } ${
+                  isPopupOpen
+                    ? isLight
+                      ? "bg-slate-200/90 text-slate-950 border-slate-300 shadow-inner"
+                      : "bg-[#383838] text-[#FFFFFF] border-[#555555]"
+                    : isChildActive
+                    ? isLight
+                      ? "bg-slate-100 text-slate-950 border-slate-200"
+                      : "bg-[#383838]/80 text-[#FFFFFF] border-[#444444]/60"
+                    : isLight
+                    ? "border-transparent text-slate-700 hover:bg-[#F4F4F5] hover:text-slate-950"
+                    : "border-transparent text-[#F4F4F5] hover:bg-[#383838]/60 hover:text-[#FFFFFF]"
+                }`}
+                title={isMinimized ? item.title : undefined}
+              >
+                <div className={`flex items-center ${isMinimized ? "justify-center" : "gap-3"} min-w-0`}>
+                  <Icon
+                    size={18}
+                    className={`${
+                      isPopupOpen || isChildActive
+                        ? isLight ? "text-slate-950" : "text-[#FFFFFF]"
+                        : isLight
+                        ? "text-slate-700 group-hover:text-slate-950"
+                        : "text-[#E4E4E7] group-hover:text-[#FFFFFF]"
+                    } shrink-0 transition-colors duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]`}
+                  />
 
-                <span
-                  className={`text-[13.5px] font-medium leading-tight text-left whitespace-nowrap overflow-hidden transition-all ease-out ${
-                    isPopupOpen || isChildActive
-                      ? isLight ? "text-slate-950" : "text-[#FFFFFF]"
-                      : isLight
-                      ? "text-slate-800"
-                      : "text-[#E4E4E7] group-hover:text-[#FFFFFF]"
-                  } ${
-                    isMinimized
-                      ? "max-w-0 opacity-0 -translate-x-3 duration-200 pointer-events-none"
-                      : "max-w-[150px] opacity-100 translate-x-0 duration-350 delay-100"
-                  }`}
-                >
-                  {item.title}
-                </span>
-              </div>
-
-              {/* Side Indicator: Shows vertical line 'l' ONLY when page is actually open and currently active */}
-              {!isMinimized && (
-                <div className="flex items-center justify-center w-4 shrink-0 mr-[-3px]">
                   <span
-                    className={`w-[2.5px] h-[13px] rounded-full shrink-0 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                    className={`text-[13.5px] font-medium leading-tight text-left whitespace-nowrap overflow-hidden transition-all ease-out ${
+                      isPopupOpen || isChildActive
+                        ? isLight ? "text-slate-950 font-semibold" : "text-[#FFFFFF] font-semibold"
+                        : isLight
+                        ? "text-slate-800"
+                        : "text-[#E4E4E7] group-hover:text-[#FFFFFF]"
+                    } ${
+                      isMinimized
+                        ? "max-w-0 opacity-0 -translate-x-3 duration-200 pointer-events-none"
+                        : "max-w-[150px] opacity-100 translate-x-0 duration-350 delay-100"
+                    }`}
+                  >
+                    {item.title}
+                  </span>
+                </div>
+
+                {/* Dropdown Chevron Arrow when expanded */}
+                {!isMinimized && (
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {item.badge && (
+                      <span
+                        className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full ${
+                          isLight
+                            ? "bg-slate-200 text-slate-900"
+                            : "bg-[#282828] text-[#E4E4E7] border border-[#444444]"
+                        }`}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                    <ChevronDown
+                      size={16}
+                      className={`shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                        isLight ? "text-slate-600" : "text-[#E4E4E7]"
+                      } ${isExpanded ? "rotate-180" : "rotate-0"}`}
+                    />
+                  </div>
+                )}
+
+                {/* Indicator when sidebar is minimized */}
+                {isMinimized && (
+                  <span
+                    className={`absolute bottom-1.5 left-1/2 -translate-x-1/2 w-3.5 h-[2.5px] rounded-full shrink-0 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
                       isLight ? "bg-slate-900" : "bg-white"
                     } ${
                       isChildActive
-                        ? "opacity-100 scale-y-100"
-                        : "opacity-0 scale-y-50 pointer-events-none"
+                        ? "opacity-100 scale-x-100"
+                        : "opacity-0 scale-x-50 pointer-events-none"
                     }`}
                   />
+                )}
+              </button>
+
+              {/* Accordion Sub-items with smooth expansion and tree line guide */}
+              {!isMinimized && (
+                <div
+                  className={`grid transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                    isExpanded
+                      ? "grid-rows-[1fr] opacity-100 mt-1 mb-1"
+                      : "grid-rows-[0fr] opacity-0 mt-0 mb-0 pointer-events-none"
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <div
+                      className={`ml-5 pl-3 border-l space-y-1 py-1 transition-colors ${
+                        isLight ? "border-slate-300" : "border-[#444444]"
+                      }`}
+                    >
+                      {item.children?.map((child) => {
+                        const isActive = pathname === child.path;
+                        const ChildIcon = child.icon;
+
+                        return (
+                          <button
+                            key={child.path}
+                            type="button"
+                            onClick={() => handleItemClick(child.path)}
+                            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left border transition-all duration-200 cursor-pointer outline-none focus:outline-none select-none ${
+                              isActive
+                                ? isLight
+                                  ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                                  : "bg-[#383838] text-white border-[#555555] shadow-sm"
+                                : isLight
+                                ? "border-transparent text-slate-600 hover:text-slate-950 hover:bg-slate-100 font-normal"
+                                : "border-transparent text-[#E4E4E7] hover:text-[#FFFFFF] hover:bg-white/5 font-normal"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              {ChildIcon && (
+                                <ChildIcon
+                                  size={16}
+                                  className={`shrink-0 transition-colors ${
+                                    isActive
+                                      ? "text-white"
+                                      : isLight
+                                      ? "text-slate-500"
+                                      : "text-zinc-400"
+                                  }`}
+                                />
+                              )}
+                              <span className="text-[13px] font-medium leading-tight truncate">
+                                {child.label}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                              {child.badge && (
+                                <span
+                                  className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full ${
+                                    isActive
+                                      ? "bg-white/20 text-white"
+                                      : isLight
+                                      ? "bg-slate-200 text-slate-800"
+                                      : "bg-[#383838] text-zinc-200 border border-[#555555]"
+                                  }`}
+                                >
+                                  {child.badge}
+                                </span>
+                              )}
+                              <span
+                                className={`w-[2px] h-[11px] rounded-full shrink-0 transition-all duration-300 ${
+                                  isActive
+                                    ? isLight
+                                      ? "bg-white opacity-100 scale-y-100"
+                                      : "bg-white opacity-100 scale-y-100"
+                                    : "opacity-0 scale-y-50 pointer-events-none"
+                                }`}
+                              />
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               )}
-
-              {/* Indicator when sidebar is minimized: positioned horizontally below the icon */}
-              {isMinimized && (
-                <span
-                  className={`absolute bottom-1.5 left-1/2 -translate-x-1/2 w-3.5 h-[2.5px] rounded-full shrink-0 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-                    isLight ? "bg-slate-900" : "bg-white"
-                  } ${
-                    isChildActive
-                      ? "opacity-100 scale-x-100"
-                      : "opacity-0 scale-x-50 pointer-events-none"
-                  }`}
-                />
-              )}
-            </button>
+            </div>
           );
         })}
       </nav>
 
-      {/* Floating Sub Sidebar (Flyout Dropdown Popup to the side - Only Sub-tabs) */}
+      {/* Floating Sub Sidebar (Flyout only active when sidebar is minimized) */}
       <AnimatePresence>
-        {activePopupGroup && (
+        {isMinimized && activePopupGroup && (
           <motion.div
             ref={popupRef}
             initial={{ opacity: 0, scale: 0.96, x: -6 }}
@@ -451,7 +584,6 @@ export default function NavbarsubWarehouse({
                 : "bg-[#252525]/95 border-[#444444] text-white shadow-[0_25px_60px_rgba(0,0,0,0.7)]"
             }`}
           >
-            {/* List of Submenu Items in Sub Sidebar (Header removed as requested) */}
             <div className="space-y-1 max-h-[380px] overflow-y-auto no-scrollbar py-0.5">
               {activePopupGroup.children?.map((child) => {
                 const isActive = pathname === child.path;
