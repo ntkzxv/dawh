@@ -53,11 +53,8 @@ export function AuthLoadingProvider({
   }, [router]);
 
   useEffect(() => {
-    // If not visiting root "/", dismiss auth loader immediately
-    if (pathname !== "/" && pathname !== "") {
-      setShowAuthLoader(false);
-      return;
-    }
+    // Only execute session gate if visiting root "/" or ""
+    if (!isRoot) return;
 
     let isDisposed = false;
     const startTime = Date.now();
@@ -114,7 +111,7 @@ export function AuthLoadingProvider({
       }
       clearTimeout(watchdog);
     };
-  }, [pathname, completeTransition]);
+  }, [isRoot, completeTransition]);
 
   // If the fill animation finishes and auth is already resolved, complete immediately
   const handleLogoFilled = useCallback(() => {
