@@ -53,16 +53,20 @@ export function NavigationLoadingProvider({
     }
   }, []);
 
-  // Dismiss loading screen immediately when pathname changes
+  // Track previous pathname to dismiss loading screen synchronously during render
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
+    if (isLoading) {
+      setIsLoading(false);
+    }
+  }
+
+  // Clear timers when pathname changes or on unmount
   useEffect(() => {
     clearAllTimers();
-    setIsLoading(false);
-  }, [pathname, clearAllTimers]);
-
-  // Clean up timers on unmount
-  useEffect(() => {
     return () => clearAllTimers();
-  }, [clearAllTimers]);
+  }, [pathname, clearAllTimers]);
 
   const stopLoading = useCallback(() => {
     clearAllTimers();
