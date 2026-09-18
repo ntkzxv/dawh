@@ -20,13 +20,10 @@ import {
   Globe,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/utils/supabase";
-import { saveAuthSession, checkAuthSession, AUTH_TOKEN_KEY, USER_ID_KEY } from "@/utils/auth";
+import { authClient, getCurrentSession } from "@/lib/auth-client";
 import { getDawhLogo } from "@/config/brand";
 import { useTheme } from "@/context/ThemeContext";
 import { useNotification } from "@/context/NotificationContext";
-import { DEFAULT_NEW_USER_ROLE } from "@/config/roles";
-import { authService, saveAccountMapping } from "@/services/authService";
 import { formatRelativeTime } from "@/types/user";
 import { useLoading, LoadingScreen } from "@/components/loading_screen";
 import { translations } from "@/translations";
@@ -130,6 +127,7 @@ export function UserAuthView({
   const [selectedRecentUser, setSelectedRecentUser] = useState<{
     id?: string;
     username: string;
+    email?: string;
     first_name?: string;
     last_name?: string;
     first_name_th?: string;
@@ -145,6 +143,7 @@ export function UserAuthView({
     Array<{
       id?: string;
       username: string;
+      email?: string;
       first_name?: string;
       last_name?: string;
       first_name_th?: string;
@@ -259,9 +258,6 @@ export function UserAuthView({
     last_login_at?: string;
   }) => {
     try {
-      if (acc.username && acc.email) {
-        saveAccountMapping(acc.username, acc.email);
-      }
       setRecentAccounts((prev) => {
         const withoutCurrent = prev.filter((p) => p.username?.toLowerCase() !== acc.username?.toLowerCase());
         const updated = [{ ...acc, last_login_at: new Date().toISOString() }, ...withoutCurrent].slice(0, 5);
@@ -332,40 +328,16 @@ export function UserAuthView({
       return;
     }
 
-    // หาก Middleware เพิ่ง Redirect มาที่หน้านี้เนื่องจากไม่มี Session Cookie (เช่น ?from=/workspace)
-    // ให้เคลียร์ LocalStorage เก่าทิ้งเพื่อป้องกันปัญหา Redirect Loop
     const fromPath = searchParams.get("from");
-    if (fromPath) {
-      if (typeof window !== "undefined") {
-        localStorage.removeItem(AUTH_TOKEN_KEY);
-        localStorage.removeItem(USER_ID_KEY);
-      }
-      return;
-    }
 
     const verifySession = async () => {
       try {
-        const hasCookie =
-          typeof document !== "undefined" && document.cookie.includes("dawh_auth_token=");
-        const hasLocalToken =
-          typeof window !== "undefined" &&
-          !!(localStorage.getItem(AUTH_TOKEN_KEY) && localStorage.getItem(USER_ID_KEY));
-
-        if (hasCookie && hasLocalToken) {
-          const targetUrl = searchParams.get("from") || "/workspace";
+        const session = await getCurrentSession();
+        if (session) {
+          const targetUrl = fromPath || "/workspace";
           if (onAuthSuccess) onAuthSuccess();
           else if (onNavigate) onNavigate(targetUrl);
           else window.location.href = targetUrl;
-          return;
-        }
-
-        const { isAuthenticated } = await checkAuthSession();
-        if (isAuthenticated && typeof document !== "undefined" && document.cookie.includes("dawh_auth_token=")) {
-          const targetUrl = searchParams.get("from") || "/workspace";
-          if (onAuthSuccess) onAuthSuccess();
-          else if (onNavigate) onNavigate(targetUrl);
-          else window.location.href = targetUrl;
-          return;
         }
       } catch {
         // Continue
@@ -392,34 +364,24 @@ export function UserAuthView({
     setIsLoading(true);
 
     try {
-      const data = await authService.signIn(email, password);
+      const { data, error } = await authClient.signIn.email({
+        email: email.trim(),
+        password,
+      });
+      if (error) throw new Error(error.message);
 
-      if (data && data.session && data.user) {
-        saveAuthSession(data.session);
-        const profile = data.profile;
-
+      if (data?.user) {
         saveRecentAccount({
-          id: profile?.id || data.user.id,
-          username: profile?.username || data.user.user_metadata?.username || (data.user.email?.split("@")[0] || email.split("@")[0] || "user"),
-          email: data.user.email || profile?.email || email,
-          first_name: profile?.first_name || data.user.user_metadata?.first_name || "",
-          last_name: profile?.last_name || data.user.user_metadata?.last_name || "",
-          first_name_th: profile?.first_name_th || data.user.user_metadata?.first_name_th || "",
-          last_name_th: profile?.last_name_th || data.user.user_metadata?.last_name_th || "",
-          role: profile?.role || data.user.user_metadata?.role || "Staff",
-          department: profile?.department || data.user.user_metadata?.department || "",
-          avatar_url: profile?.avatar_url || data.user.user_metadata?.avatar_url || "",
-          has_pin: !!(profile?.pin_code || profile?.is_pin_enabled || data.user.user_metadata?.pin_code),
+          id: data.user.id,
+          username: data.user.email.split("@")[0] || "user",
+          email: data.user.email,
+          first_name: data.user.name,
+          avatar_url: data.user.image || "",
+          has_pin: false,
           last_login_at: new Date().toISOString(),
         });
 
-        const displayName =
-          profile?.first_name_th ||
-          profile?.first_name ||
-          data.user.user_metadata?.first_name_th ||
-          data.user.user_metadata?.first_name ||
-          data.user.email?.split("@")[0] ||
-          "";
+        const displayName = data.user.name || data.user.email.split("@")[0] || "";
 
         notify.success(
           lang === "TH" ? "เข้าสู่ระบบสำเร็จ" : "Login Successful",
@@ -453,81 +415,21 @@ export function UserAuthView({
   };
 
   const executePinLogin = useCallback(
-    async (username: string, pinToVerify: string) => {
+    async (_username: string, _pinToVerify: string) => {
       if (isLoading) return;
-      setIsLoading(true);
-      setIsPinAuthenticating(true);
-      setErrorMessage(null);
-
-      try {
-        const res = await authService.loginWithPin(username.trim(), pinToVerify);
-        if (res && res.success) {
-          const user = res.user;
-          if (user) {
-            saveRecentAccount({
-              id: user.id,
-              username: user.username || username,
-              email: user.email || undefined,
-              first_name: user.first_name || undefined,
-              last_name: user.last_name || undefined,
-              first_name_th: user.first_name_th || undefined,
-              last_name_th: user.last_name_th || undefined,
-              role: user.role || undefined,
-              department: user.department || undefined,
-              avatar_url: user.avatar_url || undefined,
-              has_pin: true,
-              last_login_at: new Date().toISOString(),
-            });
-          } else if (selectedRecentUser) {
-            saveRecentAccount(selectedRecentUser);
-          }
-          const userDisplayName =
-            user?.first_name_th ||
-            user?.first_name ||
-            selectedRecentUser?.first_name_th ||
-            selectedRecentUser?.first_name ||
-            username;
-
-          notify.success(
-            lang === "TH" ? "เข้าสู่ระบบสำเร็จ" : "Login Successful",
-            {
-              message:
-                lang === "TH"
-                  ? `ยินดีต้อนรับคุณ ${userDisplayName} เข้าสู่ระบบเรียบร้อยแล้ว`
-                  : `Welcome back, ${userDisplayName}`,
-              duration: 3500,
-            }
-          );
-
-          const targetUrl = searchParams.get("from") || "/workspace";
-          setTimeout(() => {
-            if (onAuthSuccess) onAuthSuccess();
-            else if (onNavigate) onNavigate(targetUrl);
-            else window.location.href = targetUrl;
-          }, 350);
-        }
-      } catch (err: unknown) {
-        setIsPinAuthenticating(false);
-        const msg = err instanceof Error ? err.message : (lang === "TH" ? "รหัส PIN ไม่ถูกต้อง" : "Invalid PIN code");
-        setErrorMessage(msg);
-        try {
-          notify.error(lang === "TH" ? "การเข้าสู่ระบบล้มเหลว" : "Authentication Failed", {
-            message: msg,
-            duration: 4500,
-          });
-        } catch {}
-        setPinErrorShake(true);
-        setPinDigits(["", "", "", "", "", ""]);
-        setPinCode("");
-        setLastTypedPinIndex(null);
-        setTimeout(() => {
-          setPinErrorShake(false);
-        }, 600);
-      } finally {
-        setIsLoading(false);
-      }
+      const message =
+        lang === "TH"
+          ? "ระบบ Auth ใหม่รองรับการเข้าสู่ระบบด้วยอีเมลและรหัสผ่านเท่านั้น"
+          : "The new authentication system supports email and password only.";
+      setIsPinAuthenticating(false);
+      setErrorMessage(message);
+      notify.warning(lang === "TH" ? "ยกเลิก Quick PIN แล้ว" : "Quick PIN removed", {
+        message,
+        duration: 4500,
+      });
+      setSignInSubView("form");
     },
-    [isLoading, lang, notify, onAuthSuccess, onNavigate, router, selectedRecentUser]
+    [isLoading, lang, notify]
   );
 
   const handleKeypadDigitClick = useCallback(
@@ -672,26 +574,6 @@ export function UserAuthView({
       return;
     }
 
-    // 🔍 ตรวจสอบความซ้ำซ้อนของ Username ในฐานข้อมูลแบบ Realtime
-    setIsLoading(true);
-    try {
-      const userCheck = await authService.checkUsernameAvailable(username);
-      if (!userCheck.available) {
-        setErrors({ username: true });
-        setErrorMessage(
-          lang === "TH"
-            ? (userCheck.message || "ชื่อผู้ใช้นี้ถูกใช้งานแล้วในระบบ กรุณาเลือกชื่ออื่น")
-            : "This username is already in use. Please choose another."
-        );
-        setIsLoading(false);
-        return;
-      }
-    } catch {
-      // Non-blocking fallback
-    } finally {
-      setIsLoading(false);
-    }
-
     setErrors({});
     setErrorMessage(null);
     setAgreedInModal(false);
@@ -719,24 +601,13 @@ export function UserAuthView({
       const cleanLastName = lastName.trim();
       const cleanFullName = `${cleanFirstName} ${cleanLastName}`.trim();
       const cleanUsername = username.trim().toLowerCase();
-      const cleanBirthDate = birthDate ? birthDate : null;
       const cleanEmail = email.trim();
-      const cleanPhone = phone.trim();
 
-      const { data, error } = await supabase.auth.signUp({
+      const { data, error } = await authClient.signUp.email({
         email: cleanEmail,
         password,
-        options: {
-          data: {
-            username: cleanUsername,
-            first_name: cleanFirstName,
-            last_name: cleanLastName,
-            full_name: cleanFullName,
-            birth_date: cleanBirthDate,
-            phone: cleanPhone,
-            role: DEFAULT_NEW_USER_ROLE,
-          },
-        },
+        name: cleanFullName || cleanUsername,
+        callbackURL: "/auth/login",
       });
 
       if (error) {
@@ -750,21 +621,12 @@ export function UserAuthView({
         setIsRegistering(false);
         setIsModalSuccess(false);
 
-        const isDuplicateUsername =
-          error.message?.toLowerCase().includes("username") ||
-          error.message?.toLowerCase().includes("employees_username_key");
-
         const isAlreadyRegistered =
-          !isDuplicateUsername &&
           (error.message?.toLowerCase().includes("already registered") ||
             error.message?.toLowerCase().includes("user already exists") ||
             error.message?.toLowerCase().includes("email already in use"));
 
-        const errorTitle = isDuplicateUsername
-          ? lang === "TH"
-            ? "ชื่อผู้ใช้ (Username) นี้มีผู้ใช้งานแล้ว"
-            : "Username Already Taken"
-          : isAlreadyRegistered
+        const errorTitle = isAlreadyRegistered
           ? lang === "TH"
             ? "อีเมลนี้ถูกลงทะเบียนไว้แล้ว"
             : "User Already Registered"
@@ -772,15 +634,11 @@ export function UserAuthView({
           ? "ไม่สามารถลงทะเบียนได้"
           : "Registration Failed";
 
-        const errorDesc = isDuplicateUsername
-          ? lang === "TH"
-            ? `ชื่อผู้ใช้ "${cleanUsername}" ถูกใช้งานแล้ว กรุณากดกลับไปแก้ไขชื่อผู้ใช้ใหม่`
-            : `The username "${cleanUsername}" is already taken. Please choose another username.`
-          : isAlreadyRegistered
+        const errorDesc = isAlreadyRegistered
           ? lang === "TH"
             ? `อีเมล "${cleanEmail}" มีบัญชีพนักงานในระบบอยู่แล้ว กรุณาใช้อีเมลอื่น หรือกดเข้าสู่ระบบ`
             : `The email "${cleanEmail}" is already registered. Please use another corporate email or sign in.`
-          : error.message;
+          : error.message || t.networkError;
 
         setErrorModal({
           isOpen: true,
@@ -788,68 +646,19 @@ export function UserAuthView({
           message: errorDesc,
         });
       } else {
-        if (typeof window !== "undefined") {
-          try {
-            if (cleanBirthDate) localStorage.setItem("current_user_birth_date", cleanBirthDate);
-            if (cleanPhone) localStorage.setItem("current_user_phone", cleanPhone);
-          } catch {
-            // non-blocking
-          }
-        }
-
-        // 1. Ensure user has an active session immediately
-        let activeSession = data.session;
-        if (!activeSession) {
-          try {
-            const { data: signInData } = await supabase.auth.signInWithPassword({
-              email: cleanEmail,
-              password,
-            });
-            activeSession = signInData?.session || null;
-          } catch {
-            // Non-blocking fallback
-          }
-        }
-
-        if (activeSession) {
-          saveAuthSession(activeSession);
-        }
-
-        // 2. Ensure employee record exists in public.employees with staff_code
-        if (data.user) {
-          try {
-            const targetId = data.user.id;
-            const { data: existingEmp } = await supabase
-              .from("employees")
-              .select("id, staff_code")
-              .eq("id", targetId)
-              .maybeSingle();
-
-            if (!existingEmp) {
-              const randSuffix = Math.floor(Math.random() * 9000 + 1000);
-              const generatedStaffCode = `EMP-${randSuffix}`;
-
-              await supabase.from("employees").insert({
-                id: targetId,
-                username: cleanUsername,
-                staff_code: generatedStaffCode,
-                first_name: cleanFirstName,
-                last_name: cleanLastName,
-                birth_date: cleanBirthDate,
-                email: cleanEmail,
-                phone: cleanPhone,
-                role: DEFAULT_NEW_USER_ROLE,
-                department: "General Operations",
-                employment_status: "Active",
-                is_pin_enabled: false,
-                is_active: true,
-              });
-            }
-          } catch (err) {
-            console.error("Employee profile creation error:", err);
-          }
-        }
-
+        // Better Auth correctly withholds a session until email verification.
+        // Keep the non-sensitive registration fields only until this browser's first login,
+        // so the profile-completion form can prefill them.
+        sessionStorage.setItem(
+          "dawh_pending_profile",
+          JSON.stringify({
+            username: cleanUsername,
+            first_name: cleanFirstName,
+            last_name: cleanLastName,
+            birth_date: birthDate,
+            phone: phone.trim(),
+          })
+        );
         saveRecentAccount({
           id: data.user?.id,
           username: cleanUsername,
@@ -857,9 +666,6 @@ export function UserAuthView({
           first_name: cleanFirstName,
           last_name: cleanLastName,
           full_name: cleanFullName,
-          birth_date: cleanBirthDate || undefined,
-          phone: cleanPhone || undefined,
-          role: DEFAULT_NEW_USER_ROLE,
           has_pin: false,
           last_login_at: new Date().toISOString(),
         });
@@ -874,16 +680,20 @@ export function UserAuthView({
         setIsModalSuccess(true);
         setIsRegistering(false);
 
-        // 3. Smooth auto-redirect to workspace with loading screen after 1.2s of viewing the success screen
+        // Email verification is disabled — user can access immediately
         setTimeout(() => {
-          if (onAuthSuccess) {
-            onAuthSuccess();
-          } else if (onNavigate) {
-            onNavigate("workspace");
+          if (data?.token) {
+
+            const targetUrl = "/workspace";
+            if (onAuthSuccess) onAuthSuccess();
+            else if (onNavigate) onNavigate(targetUrl);
+            else window.location.href = targetUrl;
           } else {
-            window.location.href = "/workspace";
+            if (onNavigate) onNavigate("/auth/login");
+            else window.location.href = "/auth/login";
           }
         }, 1200);
+
       }
     } catch {
       const elapsed = Date.now() - startTime;
@@ -1390,12 +1200,9 @@ export function UserAuthView({
                                   whileHover={{ y: -1 }}
                                   whileTap={{ scale: 0.99 }}
                                   onClick={() => {
-                                    setSelectedRecentUser(acc);
-                                    setSignInSubView("pin");
-                                    setPinDigits(["", "", "", "", "", ""]);
-                                    setPinCode("");
+                                    setEmail(acc.email || "");
+                                    setSignInSubView("form");
                                     setErrorMessage(null);
-                                    setTimeout(() => pinInputRefs.current[0]?.focus(), 150);
                                   }}
                                   className={`p-3 sm:p-3.5 rounded-xl border flex items-center justify-between transition-all cursor-pointer group relative ${
                                     isLight

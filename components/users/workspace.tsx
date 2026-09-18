@@ -13,8 +13,8 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/context/ThemeContext";
-import { checkProfileCompleteness, fetchAndStoreUserProfile } from "@/utils/auth";
-import { supabase } from "@/utils/supabase";
+import { checkProfileCompleteness, fetchAndStoreUserProfile } from "@/lib/user-profile";
+import { getCurrentSession } from "@/lib/auth-client";
 import { useLoading } from "@/components/loading_screen";
 import { HeaderNavbar, MobileNavbar } from "@/components/navbar";
 import { ProfileGuardModal } from "@/components/auth";
@@ -133,18 +133,18 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
 
     const fetchUserProfile = async () => {
       try {
-        let userId = typeof window !== "undefined" ? localStorage.getItem("current_user_id") : null;
-        if (!userId) {
-          const { data: { session } } = await supabase.auth.getSession();
-          userId = session?.user?.id || null;
-        }
+        const session = await getCurrentSession();
+        const userId = session?.user.id || null;
         if (userId) {
-          const employeeProfile = await fetchAndStoreUserProfile(userId, null, 1);
+          const employeeProfile = await fetchAndStoreUserProfile(userId, null);
           if (employeeProfile) {
             setProfile(employeeProfile);
             const { isComplete, missingFields: missing } = checkProfileCompleteness(employeeProfile);
             setIsProfileComplete(isComplete);
             setMissingFields(missing);
+            if (!isComplete) router.replace("/account?modal=register");
+          } else {
+            router.replace("/account?modal=register");
           }
         }
       } catch (err) {
@@ -155,7 +155,7 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
     };
 
     fetchUserProfile();
-  }, []);
+  }, [router]);
 
   const handleOpenAccount = () => {
     if (onNavigate) onNavigate("settings");

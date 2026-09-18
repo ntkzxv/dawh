@@ -54,6 +54,9 @@ export interface EmployeeProfile {
   last_login_at?: string | null; // ⏱️ เวลาล็อกอินล่าสุดจริง
   created_at?: string;
   updated_at?: string;
+  terms_version?: string | null;
+  terms_accepted_at?: string | null;
+  profile_completed_at?: string | null;
 }
 
 /**
@@ -511,4 +514,3 @@ export function formatBranchName(branchName?: string | null, lang: "TH" | "EN" =
   }
   return branchName;
 }
-

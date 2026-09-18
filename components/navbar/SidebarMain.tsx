@@ -21,7 +21,8 @@ import {
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import { supabase } from "@/utils/supabase";
-import { clearAuthSession } from "@/utils/auth";
+import { getCurrentSession, signOut } from "@/lib/auth-client";
+import { clearUserProfileCache } from "@/lib/user-profile";
 import { useTheme } from "@/context/ThemeContext";
 import { DAWH_LOGOS } from "@/config/brand";
 import { useLoading } from "@/components/loading_screen";
@@ -152,9 +153,9 @@ export default function NavbarMain({
     const loadUserData = async () => {
       try {
         if (typeof window === "undefined") return;
-        const { data: { session } } = await supabase.auth.getSession();
-        let targetId = session?.user?.id || localStorage.getItem("current_user_id") || undefined;
-        let targetEmail = session?.user?.email || localStorage.getItem("current_user_email") || undefined;
+        const session = await getCurrentSession();
+        const targetId = session?.user.id || undefined;
+        const targetEmail = session?.user.email || undefined;
 
         if (targetId) {
           const { data } = await supabase
@@ -204,7 +205,7 @@ export default function NavbarMain({
           }
         }
 
-        // Check cached dawh_user_profile or session metadata
+        // Check the business profile cache before falling back to auth identity.
         const cached = localStorage.getItem("dawh_user_profile");
         if (cached && isMounted) {
           const parsed = JSON.parse(cached);
@@ -216,11 +217,10 @@ export default function NavbarMain({
         }
 
         if (session?.user && isMounted) {
-          const meta = session.user.user_metadata || {};
-          setUserName(formatDisplayName(meta.full_name, meta.first_name, meta.last_name, meta.nickname_th, meta.nickname));
-          setUserUsername(meta.username || session.user.email?.split("@")[0] || "user");
-          setUserAvatar(meta.avatar_url || null);
-          setUserRole(meta.role || null);
+          setUserName(session.user.name || session.user.email.split("@")[0]);
+          setUserUsername(session.user.email.split("@")[0] || "user");
+          setUserAvatar(session.user.image || null);
+          setUserRole(null);
           return;
         }
 
@@ -648,7 +648,8 @@ export default function NavbarMain({
                     type="button"
                     onClick={async () => {
                       setIsAccountOpen(false);
-                      await clearAuthSession();
+                      await signOut();
+                      clearUserProfileCache();
                       router.push(loginPath);
                     }}
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[12px] font-medium text-rose-500 hover:bg-rose-500/10 transition-all text-left cursor-pointer"
