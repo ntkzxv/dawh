@@ -16,8 +16,8 @@ import {
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
-import { supabase } from "@/utils/supabase";
-import { clearAuthSession, checkProfileCompleteness, fetchAndStoreUserProfile } from "@/utils/auth";
+import { getCurrentSession, signOut } from "@/lib/auth-client";
+import { clearUserProfileCache, checkProfileCompleteness, fetchAndStoreUserProfile } from "@/lib/user-profile";
 import { EmployeeProfile } from "@/types/user";
 import { useLoading } from "@/components/loading_screen";
 import { getDawhLogo } from "@/config/brand";
@@ -109,19 +109,12 @@ export default function HeaderNavbar({
 
     async function loadUserProfile() {
       try {
-        let targetId = typeof window !== "undefined" ? localStorage.getItem("current_user_id") || undefined : undefined;
-        let targetEmail = typeof window !== "undefined" ? localStorage.getItem("current_user_email") || undefined : undefined;
-
-        if (!targetId) {
-          const {
-            data: { session },
-          } = await supabase.auth.getSession();
-          targetId = session?.user?.id;
-          targetEmail = session?.user?.email;
-        }
+        const session = await getCurrentSession();
+        const targetId = session?.user.id;
+        const targetEmail = session?.user.email;
 
         if (targetId) {
-          const fetched = await fetchAndStoreUserProfile(targetId, targetEmail, 1);
+          const fetched = await fetchAndStoreUserProfile(targetId, targetEmail);
           if (fetched) {
             setProfile(fetched);
             return;
@@ -223,12 +216,8 @@ export default function HeaderNavbar({
   // Logout Handler
   const handleLogout = async () => {
     setIsDropdownOpen(false);
-    try {
-      await supabase.auth.signOut();
-    } catch {
-      // Non-blocking
-    }
-    await clearAuthSession();
+    await signOut();
+    clearUserProfileCache();
     if (typeof window !== "undefined") {
       window.location.href = "/auth/login";
     } else {

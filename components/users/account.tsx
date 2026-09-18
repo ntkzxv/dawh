@@ -50,9 +50,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
 import { useNotification } from "@/context/NotificationContext";
-import { supabase } from "@/utils/supabase";
-import { clearAuthSession, fetchAndStoreUserProfile } from "@/utils/auth";
-import { authService } from "@/services/authService";
+import { authClient, getCurrentSession, signOut } from "@/lib/auth-client";
+import { clearUserProfileCache, fetchAndStoreUserProfile, toEmployeeProfile } from "@/lib/user-profile";
 import {
   EmployeeProfile,
   Branch,
@@ -1540,26 +1539,7 @@ export default function AccountView({
   };
 
   // Corporate Branches List from DB with pre-seeded fallback
-  const [branchesList, setBranchesList] = useState<Branch[]>(DEFAULT_BRANCHES);
-
-  // Fetch branches from Supabase DB on mount
-  useEffect(() => {
-    async function fetchBranches() {
-      try {
-        const { data, error } = await supabase
-          .from("branches")
-          .select("*")
-          .eq("is_active", true)
-          .order("branch_code", { ascending: true });
-        if (!error && data && data.length > 0) {
-          setBranchesList(data as Branch[]);
-        }
-      } catch (err) {
-        console.warn("Using default branches list fallback:", err);
-      }
-    }
-    fetchBranches();
-  }, []);
+  const [branchesList] = useState<Branch[]>(DEFAULT_BRANCHES);
 
   // Secondary Registration Form State (Every single DB field)
   const [regForm, setRegForm] = useState({
@@ -1825,23 +1805,29 @@ export default function AccountView({
         setIsLoading(true);
       }
       try {
-        let targetId = typeof window !== "undefined" ? localStorage.getItem("current_user_id") || undefined : undefined;
-        let targetEmail = typeof window !== "undefined" ? localStorage.getItem("current_user_email") || undefined : undefined;
-
-        if (!targetId) {
-          const {
-            data: { session },
-          } = await supabase.auth.getSession();
-          targetId = session?.user?.id;
-          targetEmail = session?.user?.email;
-        }
+        const session = await getCurrentSession();
+        const targetId = session?.user.id;
+        const targetEmail = session?.user.email;
 
         if (targetId) {
-          const fetched = await fetchAndStoreUserProfile(targetId, targetEmail, 1);
+          const fetched = await fetchAndStoreUserProfile(targetId, targetEmail);
           if (fetched) {
             setProfile(fetched);
             syncFormFromProfile(fetched);
             return;
+          }
+          try {
+            const pending = JSON.parse(sessionStorage.getItem("dawh_pending_profile") || "{}") as Record<string, string>;
+            setRegForm((current) => ({
+              ...current,
+              username: pending.username || current.username,
+              first_name: pending.first_name || current.first_name,
+              last_name: pending.last_name || current.last_name,
+              birth_date: pending.birth_date || current.birth_date,
+              phone: pending.phone || current.phone,
+            }));
+          } catch {
+            // A missing pending registration is valid when login occurred on another device.
           }
         }
       } catch (err) {
@@ -1982,28 +1968,7 @@ export default function AccountView({
       reader.onload = async () => {
         const base64Url = reader.result as string;
 
-        // 1. Update DB employee record if profile.id exists
-        if (profile.id) {
-          try {
-            await supabase.from("employees").update({
-              avatar_url: base64Url,
-              updated_at: new Date().toISOString(),
-            }).eq("id", profile.id);
-          } catch (dbErr) {
-            console.warn("Could not update avatar in employees table:", dbErr);
-          }
-        }
-
-        // 2. Update Supabase Auth user metadata
-        try {
-          await supabase.auth.updateUser({
-            data: { avatar_url: base64Url },
-          });
-        } catch {
-          // Non-blocking
-        }
-
-        // 3. Update Local Storage for session sync
+        // employee_profiles intentionally has no avatar column; keep the preview local.
         if (typeof window !== "undefined") {
           try {
             const cachedProfile = localStorage.getItem("dawh_user_profile");
@@ -2044,12 +2009,8 @@ export default function AccountView({
 
   // Logout Handler
   const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch {
-      // Non-blocking
-    }
-    await clearAuthSession();
+    await signOut();
+    clearUserProfileCache();
     if (typeof window !== "undefined") {
       window.location.href = "/auth/login";
     } else {
@@ -2163,6 +2124,27 @@ export default function AccountView({
       return;
     }
 
+    const requiredValues = [
+      regForm.username, regForm.prefix, regForm.nickname_th, regForm.nickname,
+      regForm.gender, regForm.blood_type, regForm.marital_status, regForm.nationality,
+      regForm.religion, regForm.education_level, regForm.major_subject,
+      regForm.university_th || regForm.university_name, regForm.university_en || regForm.university_name,
+      regForm.emergency_contact_name_th, regForm.emergency_contact_name,
+      regForm.emergency_contact_relationship, regForm.emergency_contact_phone,
+    ];
+    const currentAddress = parseAddressString(regForm.current_address);
+    const registeredAddress = parseAddressString(regForm.registered_address);
+    const addressValues = [
+      currentAddress.houseNo, currentAddress.province_en, currentAddress.district_en, currentAddress.subdistrict_en, currentAddress.zipcode,
+      registeredAddress.houseNo, registeredAddress.province_en, registeredAddress.district_en, registeredAddress.subdistrict_en, registeredAddress.zipcode,
+    ];
+    if (requiredValues.some((value) => !value.trim()) || addressValues.some((value) => !value.trim())) {
+      const msg = isThai ? "กรุณากรอกข้อมูลที่มีเครื่องหมาย * ให้ครบถ้วน" : "Please complete every required field before continuing.";
+      setModalError(msg);
+      regFormScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
     // Ensure state has reconciled fallback values before moving to review
     setRegForm((prev) => ({
       ...prev,
@@ -2189,128 +2171,39 @@ export default function AccountView({
       const cleanFullName = `${regForm.first_name.trim()} ${regForm.last_name.trim()}`.trim();
       const cleanIdCard = regForm.id_card.trim().replace(/\D/g, "");
 
-      // 2. Prepare exact Database Schema Payload (matching public.employees)
-      const dbPayload: Record<string, unknown> = {
-        username: regForm.username.trim() || undefined,
-        prefix: regForm.prefix.trim() || null,
-        first_name_th: regForm.first_name_th.trim() || null,
-        last_name_th: regForm.last_name_th.trim() || null,
-        nickname_th: regForm.nickname_th.trim() || null,
-        first_name: regForm.first_name.trim() || null,
-        last_name: regForm.last_name.trim() || null,
-        nickname: regForm.nickname.trim() || null,
-        id_card: cleanIdCard || null,
-        birth_date: regForm.birth_date || profile.birth_date || null,
-        gender: regForm.gender || null,
-        blood_type: regForm.blood_type || null,
-        marital_status: regForm.marital_status.trim() || null,
-        nationality: regForm.nationality.trim() || null,
-        religion: regForm.religion.trim() || null,
-        phone: regForm.phone.trim() || null,
-        emergency_contact_name_th: regForm.emergency_contact_name_th.trim() || null,
-        emergency_contact_name: regForm.emergency_contact_name.trim() || null,
-        emergency_contact_relationship: regForm.emergency_contact_relationship || null,
-        emergency_contact_phone: regForm.emergency_contact_phone.trim() || null,
-        current_address: regForm.current_address.trim() || null,
-        registered_address: regForm.registered_address.trim() || null,
-        department: regForm.department.trim() || null,
-        education_level: regForm.education_level || null,
-        major_subject: regForm.major_subject.trim() || null,
-        university_th: regForm.university_th.trim() || null,
-        university_en: regForm.university_en.trim() || null,
-        university_name: regForm.university_name.trim() || regForm.university_th.trim() || null,
-        updated_at: new Date().toISOString(),
-      };
-
-      // Lookup branch_id & branch_name
-      if (regForm.branch_name.trim()) {
-        dbPayload.branch_name = regForm.branch_name.trim();
-        const matched = DEFAULT_BRANCHES.find((b) => b.branch_name === regForm.branch_name.trim());
-        if (matched?.id) {
-          dbPayload.branch_id = matched.id;
-        }
-        try {
-          const { data: branchData } = await supabase
-            .from("branches")
-            .select("id")
-            .ilike("branch_name", `%${regForm.branch_name.trim()}%`)
-            .limit(1)
-            .maybeSingle();
-          if (branchData?.id) {
-            dbPayload.branch_id = branchData.id;
-          }
-        } catch {
-          // Non-blocking if branches table is unavailable
-        }
-      }
-
-      if (profile.id) {
-        const currentPayload: Record<string, unknown> = { ...dbPayload };
-        let retries = 10;
-        while (retries > 0) {
-          const { error: updateErr } = await supabase
-            .from("employees")
-            .update(currentPayload)
-            .eq("id", profile.id);
-
-          if (!updateErr) break;
-
-          const errMsg = `${updateErr.message || ""} ${updateErr.details || ""} ${updateErr.hint || ""}`;
-          const match =
-            errMsg.match(/Could not find the '([^']+)' column/i) ||
-            errMsg.match(/column "?([^" ]+)"? of relation/i) ||
-            errMsg.match(/column "?([^" ]+)"? does not exist/i) ||
-            errMsg.match(/'([^']+)' column of 'employees'/i);
-
-            if (match && match[1] && match[1] in currentPayload) {
-            delete currentPayload[match[1]];
-            retries--;
-          } else {
-            // If complex update fails, try a safe minimal update with primary fields
-            try {
-              await supabase
-                .from("employees")
-                .update({
-                  first_name: regForm.first_name.trim() || undefined,
-                  last_name: regForm.last_name.trim() || undefined,
-                  phone: regForm.phone.trim() || undefined,
-                  updated_at: new Date().toISOString(),
-                })
-                .eq("id", profile.id);
-            } catch {
-              // Non-blocking fallback
-            }
-            break;
-          }
-        }
-      }
-
-      // Update auth user metadata for local session persistence
-      try {
-        await supabase.auth.updateUser({
-          data: {
-            full_name: cleanFullName,
-            first_name: regForm.first_name.trim(),
-            last_name: regForm.last_name.trim(),
-            nickname: regForm.nickname.trim(),
-            department: regForm.department.trim(),
-            branch_name: regForm.branch_name.trim(),
-          },
-        });
-      } catch {
-        // Non-blocking
-      }
+      const currentAddress = parseAddressString(regForm.current_address);
+      const registeredAddress = parseAddressString(regForm.registered_address);
+      const branch = branchesList.find((item) => item.id === regForm.branch_id || item.branch_name === regForm.branch_name) ?? DEFAULT_BRANCHES[0];
+      const response = await fetch("/api/profile/me/complete", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: regForm.username.trim(), prefix: regForm.prefix.trim(),
+          first_name_th: regForm.first_name_th.trim(), last_name_th: regForm.last_name_th.trim(), nickname_th: regForm.nickname_th.trim(),
+          first_name_en: regForm.first_name.trim(), last_name_en: regForm.last_name.trim(), nickname_en: regForm.nickname.trim(),
+          citizen_id: cleanIdCard, birth_date: regForm.birth_date, gender: regForm.gender, blood_type: regForm.blood_type,
+          marital_status: regForm.marital_status.trim(), nationality: regForm.nationality.trim(), religion: regForm.religion.trim(),
+          education_level: regForm.education_level, major_subject: regForm.major_subject.trim(),
+          university_name_th: regForm.university_th.trim() || regForm.university_name.trim(), university_name_en: regForm.university_en.trim() || regForm.university_name.trim(),
+          phone: regForm.phone.trim(), emergency_contact_name_th: regForm.emergency_contact_name_th.trim(), emergency_contact_name_en: regForm.emergency_contact_name.trim(),
+          emergency_contact_relationship: regForm.emergency_contact_relationship, emergency_contact_phone: regForm.emergency_contact_phone.trim(),
+          current_house_no: currentAddress.houseNo, current_village: currentAddress.moo, current_soi: currentAddress.soi,
+          current_province: currentAddress.province_en, current_district: currentAddress.district_en, current_subdistrict: currentAddress.subdistrict_en, current_postal_code: currentAddress.zipcode,
+          registered_house_no: registeredAddress.houseNo, registered_village: registeredAddress.moo, registered_soi: registeredAddress.soi,
+          registered_province: registeredAddress.province_en, registered_district: registeredAddress.district_en, registered_subdistrict: registeredAddress.subdistrict_en, registered_postal_code: registeredAddress.zipcode,
+          department: regForm.department.trim() || null, branch_name: branch.branch_name, branch_code: branch.branch_code, terms_version: "2026-09-19",
+        }),
+      });
+      const result = await response.json() as { error?: string; profile?: import("@/lib/profiles").EmployeeProfileResponse };
+      if (!response.ok || !result.profile) throw new Error(result.error || "Failed to save employee profile.");
 
       // Update local state and persistent cache
-      const updatedProfile: Partial<EmployeeProfile> = {
-        ...profile,
-        ...regForm,
-        full_name: cleanFullName,
-        branch_name: regForm.branch_name.trim() || profile.branch_name || "สำนักงานใหญ่ (Headquarters)",
-      };
+      const updatedProfile: Partial<EmployeeProfile> = { ...toEmployeeProfile(result.profile), full_name: cleanFullName };
       setProfile(updatedProfile);
       if (typeof window !== "undefined") {
         localStorage.setItem("dawh_user_profile", JSON.stringify(updatedProfile));
+        sessionStorage.removeItem("dawh_pending_profile");
         window.dispatchEvent(new CustomEvent("dawh_profile_updated", { detail: updatedProfile }));
       }
 
@@ -2319,8 +2212,8 @@ export default function AccountView({
         isThai ? "บันทึกข้อมูลโปรไฟล์เรียบร้อย" : "Profile Updated Successfully",
         {
           message: isThai
-            ? "ข้อมูลส่วนตัวของท่านได้รับการบันทึกแล้ว กรุณาตั้งรหัส PIN 6 หลักเพื่อความปลอดภัย"
-            : "Your employee profile has been saved. Please configure your 6-digit Quick PIN.",
+            ? "ข้อมูลส่วนตัวของท่านได้รับการบันทึกแล้ว"
+            : "Your employee profile has been saved.",
           duration: 4000,
         }
       );
@@ -2328,8 +2221,6 @@ export default function AccountView({
         setSaveSuccess(false);
         setShowSecondaryRegModal(false);
         setRegStep("fill");
-        // Prompt whether to create PIN or skip
-        setShowPinPromptModal(true);
       }, 700);
     } catch (err: unknown) {
       const errorMsg = (err instanceof Error ? err.message : null) || (isThai ? "เกิดข้อผิดพลาดในการบันทึกข้อมูล" : "Failed to update profile");
@@ -2441,64 +2332,14 @@ export default function AccountView({
       return;
     }
 
-    setIsSaving(true);
-    setModalError(null);
-
-    try {
-      if (profile.id) {
-        await authService.setupPin(profile.id, pinStr);
-      }
-
-      setProfile((prev) => ({
-        ...prev,
-        pin_code: pinStr,
-        is_pin_enabled: true,
-        needs_pin_reset: false,
-      }));
-
-      try {
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("dawh_needs_pin_reset");
-          const cached = localStorage.getItem("dawh_user_profile");
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            parsed.pin_code = pinStr;
-            parsed.is_pin_enabled = true;
-            parsed.needs_pin_reset = false;
-            localStorage.setItem("dawh_user_profile", JSON.stringify(parsed));
-          }
-        }
-      } catch {
-        // fallback
-      }
-
-      setSaveSuccess(true);
-      notify.success(
-        isThai ? "กรอกข้อมูลทั้งหมดสำเร็จ" : "Profile & PIN Setup Completed",
-        {
-          message: isThai
-            ? "บันทึกข้อมูลส่วนตัวและตั้งรหัส PIN 6 หลักเรียบร้อยแล้ว"
-            : "All employee information and 6-digit PIN have been saved successfully.",
-          duration: 4500,
-        }
-      );
-      setTimeout(() => {
-        setSaveSuccess(false);
-        setShowPinSetupModal(false);
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new Event("dawh_profile_updated"));
-        }
-      }, 1000);
-    } catch (err: unknown) {
-      const errorMsg = (err instanceof Error ? err.message : null) || (isThai ? "ไม่สามารถตั้งค่า PIN ได้" : "Failed to set PIN");
-      setModalError(errorMsg);
-      notify.error(isThai ? "เกิดข้อผิดพลาด" : "PIN Setup Error", {
-        message: errorMsg,
-        duration: 5000,
-      });
-    } finally {
-      setIsSaving(false);
-    }
+    const message = isThai
+      ? "ระบบ Auth ใหม่ไม่รองรับการเข้าสู่ระบบด้วย PIN"
+      : "Quick PIN is not supported by the new authentication system.";
+    setModalError(message);
+    notify.warning(isThai ? "ยกเลิก Quick PIN แล้ว" : "Quick PIN removed", {
+      message,
+      duration: 5000,
+    });
   };
 
   // Hardware keyboard listener when showPinSetupModal is open
@@ -2562,23 +2403,13 @@ export default function AccountView({
     setModalError(null);
 
     try {
-      // Verify current password first
-      const userEmail = profile.email || (await supabase.auth.getUser()).data.user?.email;
-      if (userEmail) {
-        const { error: verifyErr } = await supabase.auth.signInWithPassword({
-          email: userEmail,
-          password: currentPassword,
-        });
-        if (verifyErr) {
-          throw new Error(isThai ? "รหัสผ่านเดิมไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง" : "Current password is incorrect. Please try again.");
-        }
-      }
-
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
+      const { error } = await authClient.changePassword({
+        currentPassword,
+        newPassword,
+        revokeOtherSessions: true,
       });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
 
       setProfile((prev) => ({
         ...prev,
@@ -2649,36 +2480,12 @@ export default function AccountView({
     setEmailError(null);
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        email: newEmail,
+      const { error } = await authClient.changeEmail({
+        newEmail,
+        callbackURL: "/settings",
       });
 
-      if (error) throw error;
-
-      if (profile.id) {
-        try {
-          await supabase
-            .from("employees")
-            .update({ email: newEmail, updated_at: new Date().toISOString() })
-            .eq("id", profile.id);
-        } catch (dbErr) {
-          console.warn("Could not sync email to employees table:", dbErr);
-        }
-      }
-
-      setProfile((prev) => ({ ...prev, email: newEmail }));
-      try {
-        if (typeof window !== "undefined") {
-          const cached = localStorage.getItem("dawh_user_profile");
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            parsed.email = newEmail;
-            localStorage.setItem("dawh_user_profile", JSON.stringify(parsed));
-          }
-        }
-      } catch {
-        // ignore
-      }
+      if (error) throw new Error(error.message);
 
       setEmailSuccess(true);
       notify.success(
@@ -2732,24 +2539,13 @@ export default function AccountView({
     setPasswordError(null);
 
     try {
-      // 1. Verify current password with signInWithPassword
-      const userEmail = profile.email || (await supabase.auth.getUser()).data.user?.email;
-      if (userEmail) {
-        const { error: verifyErr } = await supabase.auth.signInWithPassword({
-          email: userEmail,
-          password: currentPassword,
-        });
-        if (verifyErr) {
-          throw new Error(isThai ? "รหัสผ่านเดิมไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง" : "Current password is incorrect. Please try again.");
-        }
-      }
-
-      // 2. Update to new password
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
+      const { error } = await authClient.changePassword({
+        currentPassword,
+        newPassword,
+        revokeOtherSessions: true,
       });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
 
       setProfile((prev) => ({
         ...prev,

@@ -22,8 +22,8 @@ import {
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage, setAppLanguage } from "@/utils/language";
-import { clearAuthSession, fetchAndStoreUserProfile } from "@/utils/auth";
-import { supabase } from "@/utils/supabase";
+import { clearUserProfileCache, fetchAndStoreUserProfile } from "@/lib/user-profile";
+import { getCurrentSession, signOut } from "@/lib/auth-client";
 import { useLoading } from "@/components/loading_screen";
 import { DAWH_LOGOS, getDawhLogo } from "@/config/brand";
 import { motion, AnimatePresence } from "framer-motion";
@@ -129,17 +129,12 @@ export default function MobileNavbar({
 
       const loadLiveProfile = async () => {
         try {
-          let targetId = localStorage.getItem("current_user_id") || undefined;
-          let targetEmail = localStorage.getItem("current_user_email") || undefined;
-
-          if (!targetId) {
-            const { data: { session } } = await supabase.auth.getSession();
-            targetId = session?.user?.id;
-            targetEmail = session?.user?.email;
-          }
+          const session = await getCurrentSession();
+          const targetId = session?.user.id;
+          const targetEmail = session?.user.email;
 
           if (targetId) {
-            const fetched = await fetchAndStoreUserProfile(targetId, targetEmail, 1);
+            const fetched = await fetchAndStoreUserProfile(targetId, targetEmail);
             if (fetched) {
               parseAndSetProfile(fetched);
             }
@@ -599,7 +594,8 @@ export default function MobileNavbar({
                 type="button"
                 onClick={async () => {
                   setIsAccountSheetOpen(false);
-                  await clearAuthSession();
+                  await signOut();
+                  clearUserProfileCache();
                   router.push("/auth/login");
                 }}
                 className="w-full h-[41px] border border-[#444444] rounded-[8px] flex items-center justify-center gap-2 text-white font-bold text-[13px] hover:bg-white/10 transition-all cursor-pointer mt-3 font-mono"
