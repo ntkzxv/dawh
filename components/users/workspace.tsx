@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Database,
   Box,
@@ -25,6 +26,7 @@ import {
   DynamicWorkspaceLayout,
   WorkspacePlanType,
   PrimaryModuleId,
+  ModuleStatus,
 } from "./DynamicWorkspaceLayout";
 
 export interface WorkspaceLayoutConfig {
@@ -63,6 +65,7 @@ interface WorkspaceCardItem {
 }
 
 export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
+  const router = useRouter();
   const { theme } = useTheme();
   const { navigateWithLoading } = useLoading();
   const { notify } = useNotification();
@@ -78,8 +81,15 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [showGuardModal, setShowGuardModal] = useState(false);
   const [layoutConfig, setLayoutConfig] = useState<WorkspaceLayoutConfig>(DEFAULT_WORKSPACE_CONFIG);
+  const [moduleStatuses, setModuleStatuses] = useState<Record<string, ModuleStatus>>({
+    warehouse: "active",
+    datacenter: "active",
+    employee: "active",
+    reports: "active",
+  });
+  const [recentModuleId, setRecentModuleId] = useState<string | null>(null);
 
-  // Load layout plan selection from localStorage
+  // Load layout plan selection, statuses, and recent module from localStorage
   useEffect(() => {
     try {
       const saved = localStorage.getItem("dawh_workspace_layout_config");
@@ -88,6 +98,14 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
         if (parsed.plan && Array.isArray(parsed.selectedModules)) {
           setLayoutConfig(parsed);
         }
+      }
+      const savedStatuses = localStorage.getItem("dawh_module_statuses");
+      if (savedStatuses) {
+        setModuleStatuses(JSON.parse(savedStatuses));
+      }
+      const savedRecent = localStorage.getItem("dawh_recent_module");
+      if (savedRecent) {
+        setRecentModuleId(savedRecent);
       }
     } catch {
       // Non-blocking fallback
@@ -145,12 +163,28 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
   };
 
   const handleDynamicNavigate = (route: string) => {
+    if (route.startsWith("/maintenance")) {
+      router.push(route);
+      return;
+    }
     if (onNavigate) {
       onNavigate(route.replace("/", ""));
     } else {
+      // Find module title if available
+      let titleDisplay = "Workspace";
+      if (route.includes("warehouse")) {
+        titleDisplay = isThai ? "จัดการคลังสินค้า" : "Warehouse ERP";
+      } else if (route.includes("datacenter")) {
+        titleDisplay = isThai ? "สัญญาเช่าซื้อ" : "HP Datacenter";
+      } else if (route.includes("employee")) {
+        titleDisplay = isThai ? "จัดการพนักงาน" : "Employee Management";
+      } else if (route.includes("reports")) {
+        titleDisplay = isThai ? "รายงานและตรวจสอบ" : "Reports & Auditing";
+      }
+
       navigateWithLoading(
         route,
-        isThai ? "กำลังเปิดพื้นที่ทำงาน..." : "Opening workspace...",
+        isThai ? `ท่านกำลังเข้าสู่ ${titleDisplay} แล้ว` : `Entering ${titleDisplay}...`,
         isThai ? "กำลังเชื่อมต่อระบบและโหลดข้อมูล..." : "Connecting to workspace modules..."
       );
     }
@@ -161,9 +195,11 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
       if (onNavigate) {
         onNavigate(card.route.replace("/", ""));
       } else {
+        const pureThaiName = card.titleTh.split(" (")[0];
+        const titleDisplay = isThai ? pureThaiName : card.title;
         navigateWithLoading(
           card.route,
-          isThai ? `กำลังเปิดระบบ ${card.titleTh}...` : `Opening ${card.title}...`,
+          isThai ? `ท่านกำลังเข้าสู่ ${titleDisplay} แล้ว` : `Entering ${titleDisplay}...`,
           isThai ? "กำลังเชื่อมต่อระบบและโหลดข้อมูล..." : "Connecting to workspace modules..."
         );
       }
@@ -175,16 +211,16 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
     {
       id: "workspace-card-0",
       title: "HP Datacenter",
-      titleTh: "HP Datacenter",
+      titleTh: "สัญญาเช่าซื้อ",
       description: "Manage Hire-Purchase contracts, ledger controls, overdue recoveries, and customer profiles.",
       descriptionTh: "จัดการสัญญาเช่าซื้อ, บัญชีแยกประเภท, ติดตามหนี้ค้างชำระ และข้อมูลประวัติลูกค้า",
       icon: Database,
       statusText: "Active",
-      statusTextTh: "Active",
-      statusDotColor: "#2EC4B6",
-      pillWidth: "w-[66px]",
+      statusTextTh: "เปิดใช้งาน",
+      statusDotColor: "#10B981",
+      pillWidth: "w-[80px]",
       buttonText: "Enter Workspace",
-      buttonTextTh: "Enter Workspace",
+      buttonTextTh: "เข้าสู่ระบบ",
       buttonWidth: "w-[171px]",
       buttonIcon: ArrowRight,
       route: "/datacenter",
@@ -192,16 +228,16 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
     {
       id: "workspace-card-1",
       title: "Warehouse ERP",
-      titleTh: "Warehouse ERP",
+      titleTh: "จัดการคลังสินค้า",
       description: "Stock items tracking, real-time SKU movements, stock allocation, and dispatch optimization.",
       descriptionTh: "ติดตามสินค้าคงคลัง, ความเคลื่อนไหว SKU แบบเรียลไทม์, จัดสรรสต็อก และเพิ่มประสิทธิภาพการจัดส่ง",
       icon: Box,
       statusText: "Active",
-      statusTextTh: "Active",
-      statusDotColor: "#2EC4B6",
-      pillWidth: "w-[66px]",
+      statusTextTh: "เปิดใช้งาน",
+      statusDotColor: "#10B981",
+      pillWidth: "w-[80px]",
       buttonText: "Enter Workspace",
-      buttonTextTh: "Enter Workspace",
+      buttonTextTh: "เข้าสู่ระบบ",
       buttonWidth: "w-[171px]",
       buttonIcon: ArrowRight,
       route: "/warehouse",
@@ -212,16 +248,16 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
     {
       id: "workspace-card-2",
       title: "Reports & Auditing",
-      titleTh: "Reports & Auditing",
+      titleTh: "รายงานและตรวจสอบ",
       description: "Generate monthly statements, performance statistics, system audit logs, and risk reports.",
       descriptionTh: "สร้างใบแจ้งยอดรายเดือน, สถิติประสิทธิภาพ, บันทึกการตรวจสอบระบบ และรายงานความเสี่ยง",
       icon: FileText,
       statusText: "Maintenance",
-      statusTextTh: "Maintenance",
-      statusDotColor: "#FF9F1C",
-      pillWidth: "w-[101px]",
+      statusTextTh: "ปิดปรับปรุง",
+      statusDotColor: "#F59E0B",
+      pillWidth: "w-[88px]",
       buttonText: "Enter Workspace",
-      buttonTextTh: "Enter Workspace",
+      buttonTextTh: "เข้าสู่ระบบ",
       buttonWidth: "w-[171px]",
       buttonIcon: ArrowRight,
       isMaintenance: true,
@@ -230,16 +266,16 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
     {
       id: "workspace-card-3",
       title: "Integration Services",
-      titleTh: "Integration Services",
+      titleTh: "บริการเชื่อมต่อ",
       description: "API keys, external payment gateways mapping, CRM syncing, and ERP connections.",
       descriptionTh: "คีย์ API, การแมปเกตเวย์การชำระเงินภายนอก, การซิงค์ CRM และการเชื่อมต่อระบบ ERP",
       icon: Cpu,
       statusText: "Locked",
-      statusTextTh: "Locked",
-      statusDotColor: "#999999",
-      pillWidth: "w-[71px]",
+      statusTextTh: "ปิดใช้งาน",
+      statusDotColor: "#EF4444",
+      pillWidth: "w-[80px]",
       buttonText: "Locked Module",
-      buttonTextTh: "Locked Module",
+      buttonTextTh: "ปิดใช้งาน",
       buttonWidth: "w-[158px]",
       buttonIcon: Lock,
       isLocked: true,
@@ -517,6 +553,8 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
             <DynamicWorkspaceLayout
               plan={layoutConfig.plan}
               selectedModules={layoutConfig.selectedModules}
+              moduleStatuses={moduleStatuses}
+              recentModuleId={recentModuleId}
               onNavigate={handleDynamicNavigate}
               isLight={isLight}
               isThai={isThai}

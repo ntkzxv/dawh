@@ -3,6 +3,6 @@
 import React from "react";
 import ControlPanelView from "@/components/controlpanel/ControlPanelView";
 
-export default function TestPage() {
+export default function ControlPanelPage() {
   return <ControlPanelView />;
 }

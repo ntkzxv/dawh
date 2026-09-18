@@ -515,6 +515,7 @@ export default function HeaderNavbar({
                 </button>
 
                 {/* Control Panel (DevOps / Admin Only) */}
+                {/* Control Panel / Test Bench (DevOps / Admin) */}
                 {isAdmin && pathname !== "/controlpanel" && (
                   <button
                     type="button"

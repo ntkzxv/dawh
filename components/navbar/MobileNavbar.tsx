@@ -499,6 +499,23 @@ export default function MobileNavbar({
                 </button>
               </div>
 
+              {/* Control Panel Access */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAccountSheetOpen(false);
+                  navigateWithLoading(
+                    "/controlpanel",
+                    isThai ? "กำลังเปิดแผงควบคุมระบบ..." : "Opening Control Panel...",
+                    isThai ? "กำลังโหลดเครื่องมือจัดการสถานะ..." : "Loading management tools..."
+                  );
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-[#282828] hover:bg-[#3E3E3E] text-white text-xs font-semibold border border-[#444444] transition-all cursor-pointer"
+              >
+                <Monitor size={14} />
+                <span>{isThai ? "แผงควบคุมระบบ" : "Control Panel"}</span>
+              </button>
+
               {/* System Preferences */}
               <div className="space-y-3 pt-1">
                 <span

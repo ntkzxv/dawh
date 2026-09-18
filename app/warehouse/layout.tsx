@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { NavbarMain, NavbarsubWarehouse } from "@/components/navbar";
 import { useTheme } from "@/context/ThemeContext";
+import { motion } from "framer-motion";
 
 export default function WarehouseLayout({
   children,
@@ -12,6 +13,7 @@ export default function WarehouseLayout({
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [isMinimized, setIsMinimized] = useState(false);
+  const [sidebarAnimated, setSidebarAnimated] = useState(false);
 
   useEffect(() => {
     try {
@@ -41,20 +43,41 @@ export default function WarehouseLayout({
           : "bg-[#2C2C2C] text-white selection:bg-white/25 selection:text-white"
       }`}
     >
-      {/* Sidebar with Warehouse Navigation */}
-      <NavbarMain
-        initialMinimized={isMinimized}
-        onMinimizedChange={handleMinimizedChange}
-        hubPath="/workspace"
-        settingsPath="/settings"
+      {/* Sidebar with Warehouse Navigation - Slide in from Left to Right */}
+      <motion.div
+        initial={{ x: -100, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        onAnimationComplete={() => setSidebarAnimated(true)}
+        style={{ transform: sidebarAnimated ? "none" : undefined }}
+        transition={{
+          duration: 0.55,
+          ease: [0.22, 1, 0.36, 1],
+        }}
+        className="shrink-0 flex h-screen sticky top-0 z-40"
       >
-        <NavbarsubWarehouse isMinimized={isMinimized} />
-      </NavbarMain>
+        <NavbarMain
+          initialMinimized={isMinimized}
+          onMinimizedChange={handleMinimizedChange}
+          hubPath="/workspace"
+          settingsPath="/settings"
+        >
+          <NavbarsubWarehouse isMinimized={isMinimized} />
+        </NavbarMain>
+      </motion.div>
 
-      {/* Main Content Viewport */}
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+      {/* Main Content Viewport - Slide in from Top to Bottom */}
+      <motion.div
+        initial={{ y: -45, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{
+          duration: 0.55,
+          delay: 0.08,
+          ease: [0.22, 1, 0.36, 1],
+        }}
+        className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden"
+      >
         {children}
-      </div>
+      </motion.div>
     </div>
   );
 }

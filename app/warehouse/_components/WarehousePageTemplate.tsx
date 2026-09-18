@@ -3,6 +3,7 @@
 import React from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage } from "@/utils/language";
+import { motion } from "framer-motion";
 import {
   Box,
   CheckCircle2,
@@ -98,8 +99,11 @@ export default function WarehousePageTemplate({
 
   return (
     <div className="w-full flex-1 flex flex-col h-full min-h-0 overflow-hidden">
-      {/* Top Bar Header / Navbar */}
-      <header
+      {/* Top Bar Header / Navbar - Slide in from Top to Bottom */}
+      <motion.header
+        initial={{ y: -24, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
         className={`h-[72px] px-6 sm:px-10 flex items-center border-b shrink-0 transition-colors z-10 ${
           isLight ? "bg-white border-[#E4E4E7]" : "bg-[#222222] border-[#444444]"
         }`}
@@ -112,10 +116,15 @@ export default function WarehousePageTemplate({
         >
           {displayTitle}
         </h1>
-      </header>
+      </motion.header>
 
-      {/* Page Content Body (Scrollable below Navbar) */}
-      <div className="p-6 sm:p-10 space-y-8 max-w-7xl w-full mx-auto flex-1 overflow-y-auto min-h-0">
+      {/* Page Content Body (Scrollable below Navbar) - Slide in from Top to Bottom */}
+      <motion.div
+        initial={{ y: -30, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.06, ease: [0.22, 1, 0.36, 1] }}
+        className="p-6 sm:p-10 space-y-8 max-w-7xl w-full mx-auto flex-1 overflow-y-auto min-h-0"
+      >
         {/* Section Banner */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -231,7 +240,7 @@ export default function WarehousePageTemplate({
             </div>
           </div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }

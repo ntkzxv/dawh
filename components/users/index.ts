@@ -10,5 +10,6 @@ export {
 export type {
   WorkspacePlanType,
   PrimaryModuleId,
+  ModuleStatus,
   DynamicWorkspaceLayoutProps,
 } from "./DynamicWorkspaceLayout";
