@@ -388,10 +388,10 @@ export default function NavbarMain({
         {/* Server Status Indicator */}
         {serverStatus && (
           <div
-            className={`w-full flex items-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+            className={`w-full flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
               isMinimized
-                ? "justify-center py-1.5"
-                : "px-2.5 py-1.5 rounded-xl border bg-[#F4F4F5]/60 dark:bg-[#282828]/60 border-[#E4E4E7] dark:border-[#383838] gap-2.5"
+                ? "py-1.5"
+                : "px-2.5 py-1.5 rounded-xl border bg-[#F4F4F5]/60 dark:bg-[#282828]/60 border-[#E4E4E7] dark:border-[#383838] gap-2 text-center"
             }`}
             title={
               serverStatus.sublabel
@@ -405,12 +405,12 @@ export default function NavbarMain({
               }`}
             />
             {!isMinimized && (
-              <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
-                <span className="text-[11.5px] font-bold leading-tight truncate text-emerald-600 dark:text-emerald-400">
+              <div className="flex flex-col items-center justify-center min-w-0 overflow-hidden text-center">
+                <span className="text-[11.5px] font-bold leading-tight truncate text-emerald-600 dark:text-emerald-400 text-center">
                   {serverStatus.label}
                 </span>
                 {serverStatus.sublabel && (
-                  <span className="text-[10px] text-zinc-500 dark:text-[#A1A1AA] leading-tight truncate mt-0.5">
+                  <span className="text-[10px] text-zinc-500 dark:text-[#A1A1AA] leading-tight truncate mt-0.5 text-center">
                     {serverStatus.sublabel}
                   </span>
                 )}
