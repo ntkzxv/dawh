@@ -5,7 +5,7 @@ const fields=["parentId","code","name","hierarchyType","locationType","maxVolume
 const hierarchy=new Set<HierarchyType>(["ZONE","AISLE","RACK","SHELF","BIN"]);
 const kinds=new Set<LocationType>(["RECEIVING","STORAGE","PICKING","PACKING","DISPATCH","QUARANTINE","DAMAGED","RETURN","CLAIM_HOLDING"]);
 const statuses=new Set<LocationStatus>(["ACTIVE","BLOCKED","MAINTENANCE"]);
-function nullableDecimal(body:Record<string,unknown>,key:string){const v=body[key];if(v===undefined||v===null||v==="")return null;if(typeof v!=="string"||!/^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(v)||Number(v)<=0)throw new ValidationError({[key]:"Use a positive decimal string or null."});return v;}
+function nullableDecimal(body:Record<string,unknown>,key:string){const v=body[key];if(v===undefined||v===null||v==="")return null;if(typeof v!=="string"||!/^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(v)||!/[1-9]/.test(v))throw new ValidationError({[key]:"Use a positive decimal string or null."});return v;}
 function code(body:Record<string,unknown>){const v=requiredText(body,"code").toUpperCase();if(!/^[A-Z0-9][A-Z0-9_-]{0,31}$/.test(v))throw new ValidationError({code:"Use 1-32 uppercase letters, numbers, underscores, or hyphens."});return v;}
 function hierarchyType(body:Record<string,unknown>){const v=requiredText(body,"hierarchyType").toUpperCase() as HierarchyType;if(!hierarchy.has(v))throw new ValidationError({hierarchyType:"Unsupported hierarchy type."});return v;}
 function locationType(body:Record<string,unknown>){const v=requiredText(body,"locationType").toUpperCase() as LocationType;if(!kinds.has(v))throw new ValidationError({locationType:"Unsupported location type."});return v;}
