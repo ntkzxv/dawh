@@ -389,29 +389,21 @@ export default function NavbarMain({
         {/* Server Status Indicator */}
         {serverStatus && (
           <div
-            className={`w-full transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-              isMinimized
-                ? "w-10 h-10 aspect-square mx-auto rounded-xl border flex items-center justify-center " +
-                  (isLight
-                    ? "bg-white border-[#E4E4E7] text-slate-600 shadow-sm"
-                    : "bg-[#383838] border-[#444444] text-[#D4D4D8] shadow-sm")
-                : "px-3 py-2 rounded-xl border flex items-center justify-center text-center transition-colors shadow-sm " +
-                  (isLight
-                    ? "bg-white border-[#E4E4E7]"
-                    : "bg-[#383838] border-[#444444]")
+            className={`w-full transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] flex items-center justify-center ${
+              isMinimized ? "py-1" : "py-1 px-1"
             }`}
             title={serverStatus.label || serverStatus.sublabel}
           >
             {isMinimized ? (
-              <Clock size={16} className={isLight ? "text-slate-600" : "text-[#D4D4D8]"} />
+              <Clock size={15} className={`shrink-0 ${isLight ? "text-slate-500" : "text-[#A1A1AA]"}`} />
             ) : (
-              <span
-                className={`text-[11.5px] font-medium leading-tight truncate text-center ${
-                  isLight ? "text-slate-600" : "text-[#D4D4D8]"
+              <p
+                className={`text-[11px] font-medium leading-tight truncate text-center ${
+                  isLight ? "text-slate-500" : "text-[#A1A1AA]"
                 }`}
               >
                 {serverStatus.label || serverStatus.sublabel}
-              </span>
+              </p>
             )}
           </div>
         )}
