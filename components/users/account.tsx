@@ -2969,6 +2969,22 @@ export default function AccountView({
               />
             )}
           </button>
+
+          <button
+            type="button"
+            onClick={() => router.push("/controlpanel")}
+            className={`relative px-6 py-3 h-[42px] text-[14px] leading-[18px] font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-2 ${
+              activeTab === "admin"
+                ? isLight
+                  ? "text-[#222222]"
+                  : "text-[#FFFFFF]"
+                : isLight
+                ? "text-[#666666] hover:text-[#222222]"
+                : "text-[#E4E4E7] hover:text-[#FFFFFF]"
+            }`}
+          >
+            <span>{isThai ? "แผงควบคุมระบบ (Admin)" : "Admin Control Panel"}</span>
+          </button>
         </div>
 
         {(activeTab === "profile" || activeTab === "employment" || activeTab === "security") && (

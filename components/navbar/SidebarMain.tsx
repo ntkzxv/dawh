@@ -595,6 +595,34 @@ export default function NavbarMain({
 
 
 
+                  {/* Control Panel */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAccountOpen(false);
+                      navigateWithLoading(
+                        "/controlpanel",
+                        activeLang === "th" ? "กำลังเปิดแผงควบคุมระบบ..." : "Opening Control Panel...",
+                        activeLang === "th" ? "กำลังโหลดเครื่องมือดูแลระบบ..." : "Loading management tools..."
+                      );
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium transition-all text-left cursor-pointer ${
+                      isLight
+                        ? "text-slate-800 hover:bg-[#F4F4F5] hover:text-slate-950"
+                        : "text-[#F4F4F5] hover:text-[#FFFFFF] hover:bg-white/10"
+                    }`}
+                  >
+                    <Monitor
+                      size={16}
+                      className={`shrink-0 ${
+                        isLight ? "text-[#222222]" : "text-[#FFFFFF]"
+                      }`}
+                    />
+                    <span className="truncate">
+                      {activeLang === "th" ? "แผงควบคุมระบบ" : "Control Panel"}
+                    </span>
+                  </button>
+
                   {/* Account Settings */}
                   <button
                     type="button"

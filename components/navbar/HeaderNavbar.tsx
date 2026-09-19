@@ -293,7 +293,15 @@ export default function HeaderNavbar({
   const { isComplete, missingFields } = checkProfileCompleteness(profile);
 
   const handleGuardedNavigate = (target: string, fallbackPath?: string) => {
-    if (!isComplete && target !== "settings" && target !== "account" && target !== "auth" && target !== "workspace" && target !== "portal") {
+    if (
+      !isComplete &&
+      target !== "settings" &&
+      target !== "account" &&
+      target !== "auth" &&
+      target !== "workspace" &&
+      target !== "portal" &&
+      target !== "controlpanel"
+    ) {
       setShowGuardModal(true);
       notify.warning(
         isThai ? "ต้องกรอกข้อมูลให้ครบถ้วนก่อน" : "Incomplete Profile Information",
@@ -308,11 +316,24 @@ export default function HeaderNavbar({
     }
 
     if (fallbackPath) {
-      navigateWithLoading(
-        fallbackPath,
-        isThai ? "กำลังเปิดศูนย์รวมโมดูล..." : "Opening Module Hub...",
-        isThai ? "กำลังโหลดโมดูลและสิทธิ์การใช้งาน..." : "Loading modules and permissions..."
-      );
+      const loadingTitle =
+        target === "controlpanel"
+          ? isThai
+            ? "กำลังเปิดแผงควบคุมระบบ..."
+            : "Opening Control Panel..."
+          : isThai
+          ? "กำลังเปิดศูนย์รวมโมดูล..."
+          : "Opening Module Hub...";
+      const loadingDesc =
+        target === "controlpanel"
+          ? isThai
+            ? "กำลังโหลดแผงควบคุมและสิทธิ์การดูแลระบบ..."
+            : "Loading control panel & admin privileges..."
+          : isThai
+          ? "กำลังโหลดโมดูลและสิทธิ์การใช้งาน..."
+          : "Loading modules and permissions...";
+
+      navigateWithLoading(fallbackPath, loadingTitle, loadingDesc);
     } else if (onNavigate) {
       onNavigate(target);
     }
@@ -590,9 +611,8 @@ export default function HeaderNavbar({
                   <span className="truncate">{isThai ? "ศูนย์รวมโมดูล" : "Module Hub"}</span>
                 </button>
 
-                {/* Control Panel (DevOps / Admin Only) */}
-                {/* Control Panel / Test Bench (DevOps / Admin) */}
-                {isAdmin && pathname !== "/controlpanel" && (
+                {/* Control Panel (Admin & Operations) */}
+                {pathname !== "/controlpanel" && (
                   <button
                     type="button"
                     onClick={() => {

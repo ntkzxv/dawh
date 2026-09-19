@@ -1,8 +1,15 @@
 "use client";
 
-import React from "react";
-import ControlPanelView from "@/components/controlpanel/ControlPanelView";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import AdminControlPanel from "@/components/controlpanel/AdminControlPanel";
 
 export default function TestPage() {
-  return <ControlPanelView />;
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace("/controlpanel");
+  }, [router]);
+
+  return <AdminControlPanel />;
 }
