@@ -64,7 +64,7 @@ export default function MobileNavbar({
     name: string;
     employeeCode: string;
     role: string;
-    branchCode: string;
+    department: string;
     avatarUrl: string | null;
     initials: string;
     isAdmin: boolean;
@@ -72,7 +72,7 @@ export default function MobileNavbar({
     name: "Authorized Staff",
     employeeCode: "EMP-2847",
     role: "Staff",
-    branchCode: "BKK-HQ",
+    department: "General Operations",
     avatarUrl: null,
     initials: "DA",
     isAdmin: false,
@@ -109,7 +109,7 @@ export default function MobileNavbar({
       name: fullName,
       employeeCode: p.employee_code || p.employee_id || "EMP-2847",
       role: roleFormatted,
-      branchCode: p.branch_code || p.branch_name || "BKK-HQ",
+      department: p.department || (isThai ? "ฝ่ายปฏิบัติการ" : "Operations"),
       avatarUrl: p.avatar_url || null,
       initials: initials || "DA",
       isAdmin: isAdminRole,
@@ -453,7 +453,7 @@ export default function MobileNavbar({
                     <span
                       className="px-1.5 py-0.5 border border-[#444444] rounded-[4px] text-[9px] font-bold text-[#AAAAAA] font-mono"
                     >
-                      {userProfile.branchCode}
+                      {userProfile.department}
                     </span>
                   </div>
                 </div>

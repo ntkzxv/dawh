@@ -67,6 +67,7 @@ import {
   formatPrefix,
   getPrefixDisplayLabel,
   normalizePrefix,
+  formatBirthDate,
 } from "@/types/user";
 import { useLoading } from "@/components/loading_screen";
 import { HeaderNavbar, MobileNavbar } from "@/components/navbar";
@@ -1951,7 +1952,7 @@ export default function AccountView({
   const emailText = profile.email || "—";
   const phoneText = profile.phone || "—";
   const idCardText = profile.id_card || "—";
-  const birthDateText = profile.birth_date || "—";
+  const birthDateText = formatBirthDate(profile.birth_date);
   const genderText = profile.gender || "—";
   const bloodTypeText = profile.blood_type || "—";
   const maritalText = profile.marital_status ? formatMaritalStatus(profile.marital_status, lang) : "—";
@@ -4339,7 +4340,7 @@ export default function AccountView({
                             type="text"
                             readOnly
                             disabled
-                            value={regForm.birth_date || profile.birth_date || "—"}
+                            value={formatBirthDate(regForm.birth_date || profile.birth_date)}
                             placeholder={isThai ? "วัน/เดือน/ปีเกิด" : "Birth Date"}
                             className={`w-full p-2.5 pr-9 rounded-lg border text-xs font-mono font-medium outline-none cursor-not-allowed select-none transition-all ${
                               isLight
@@ -4972,7 +4973,7 @@ export default function AccountView({
                           type="text"
                           readOnly
                           disabled
-                          value={regForm.birth_date || "—"}
+                          value={formatBirthDate(regForm.birth_date)}
                           className={`w-full p-2.5 rounded-lg border text-xs font-mono outline-none cursor-not-allowed select-none ${
                             isLight ? "bg-[#F4F4F5] border-[#E4E4E7] text-[#222222]" : "bg-[#222222] border-[#383838] text-[#FFFFFF]"
                           }`}

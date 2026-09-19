@@ -249,7 +249,6 @@ export default function HeaderNavbar({
 
   const departmentDisplay =
     profile.department ||
-    profile.branch_name ||
     (profile.role ? `Role: ${profile.role}` : "");
 
   // Dynamic Route-Aware Title & Subtitle Fallbacks

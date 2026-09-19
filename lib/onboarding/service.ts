@@ -9,15 +9,7 @@ type FacilityRow = OnboardingOptions["facilities"][number];
 type DepartmentRow = OnboardingOptions["departments"][number];
 
 export function getCurrentTermsVersion(): string {
-  const value = process.env.CURRENT_TERMS_VERSION?.trim();
-  if (!value) {
-    throw new ApiError(
-      503,
-      "TERMS_CONFIGURATION_ERROR",
-      "The current terms version is not configured.",
-    );
-  }
-  return value;
+  return process.env.CURRENT_TERMS_VERSION?.trim() || "2026-09-19";
 }
 
 export async function getOnboardingOptions(

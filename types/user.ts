@@ -515,3 +515,32 @@ export function formatBranchName(branchName?: string | null, lang: "TH" | "EN" =
   }
   return branchName;
 }
+
+/**
+ * 🎂 Central Date of Birth Formatter: converts ISO string (e.g. 2004-08-29T17:00:00.000Z or 2004-08-29)
+ * into standard DD/MM/YYYY (วว/ดด/ปปปป e.g. 29/08/2004)
+ */
+export function formatBirthDate(birthDate?: string | null): string {
+  if (!birthDate) return "—";
+  const raw = birthDate.trim();
+  if (!raw) return "—";
+
+  // Match YYYY-MM-DD at the beginning of string (handles both 2004-08-29 and 2004-08-29T17:00:00.000Z)
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const [, year, month, day] = match;
+    return `${day}/${month}/${year}`;
+  }
+
+  // Fallback using Date parser
+  const parsed = new Date(raw);
+  if (!Number.isNaN(parsed.getTime())) {
+    const day = String(parsed.getUTCDate()).padStart(2, "0");
+    const month = String(parsed.getUTCMonth() + 1).padStart(2, "0");
+    const year = String(parsed.getUTCFullYear());
+    return `${day}/${month}/${year}`;
+  }
+
+  return raw;
+}
+

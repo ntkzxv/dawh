@@ -1,6 +1,10 @@
 import "server-only";
 
-import { Pool } from "pg";
+import { Pool, types } from "pg";
+
+// Ensure DATE columns (PostgreSQL OID 1082) are returned as raw "YYYY-MM-DD" strings
+// instead of JavaScript Date objects that serialize into "YYYY-MM-DDT00:00:00.000Z"
+types.setTypeParser(1082, (str: string) => str);
 
 const globalForDatabase = globalThis as typeof globalThis & {
   dawhDatabasePool?: Pool;
