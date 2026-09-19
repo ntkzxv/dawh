@@ -40,12 +40,13 @@ export default function RoleManagementTab({
 
   // Sub-tabs: "roles" | "matrix" | "history"
   const [activeSubTab, setActiveSubTab] = useState<"roles" | "matrix" | "history">("roles");
-  const [selectedRole, setSelectedRole] = useState<CanonicalRole>(roles[0]);
+  const [selectedRoleId, setSelectedRoleId] = useState<string>("");
+  const selectedRole = roles.find((r) => r.id === selectedRoleId) || roles[0];
 
   // Modal States
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
-  const [assignUserId, setAssignUserId] = useState(users[0]?.id || "");
-  const [assignRoleId, setAssignRoleId] = useState(roles[0]?.id || "");
+  const [assignUserId, setAssignUserId] = useState("");
+  const [assignRoleId, setAssignRoleId] = useState("");
   const [validFrom, setValidFrom] = useState("");
   const [validUntil, setValidUntil] = useState("");
 
@@ -65,10 +66,12 @@ export default function RoleManagementTab({
 
   const handleAssignSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!assignUserId || !assignRoleId) return;
+    const finalUserId = assignUserId || users[0]?.id;
+    const finalRoleId = assignRoleId || roles[0]?.id;
+    if (!finalUserId || !finalRoleId) return;
     onAssignRole(
-      assignUserId,
-      assignRoleId,
+      finalUserId,
+      finalRoleId,
       validFrom ? new Date(validFrom).toISOString() : null,
       validUntil ? new Date(validUntil).toISOString() : null
     );
@@ -199,13 +202,13 @@ export default function RoleManagementTab({
           {/* Role List */}
           <div className="lg:col-span-1 flex flex-col gap-2">
             {roles.map((r) => {
-              const isSelected = selectedRole.id === r.id;
+              const isSelected = selectedRole ? selectedRole.id === r.id : false;
               const assignedCount = users.filter((u) => u.roles.some((ur) => ur.code === r.code)).length;
 
               return (
                 <div
                   key={r.id}
-                  onClick={() => setSelectedRole(r)}
+                  onClick={() => setSelectedRoleId(r.id)}
                   className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
                     isSelected
                       ? isLight
@@ -239,113 +242,123 @@ export default function RoleManagementTab({
           </div>
 
           {/* Role Details and User Assignments */}
-          <div
-            className={`lg:col-span-2 p-5 rounded-xl border flex flex-col gap-4 ${
-              isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
-            }`}
-          >
-            <div className="flex items-center justify-between border-b pb-3 border-[#444444]/30">
-              <div>
-                <h3 className="font-bold text-base flex items-center gap-2">
-                  <span>{selectedRole.name}</span>
-                  <span className="text-xs font-mono opacity-50">({selectedRole.code})</span>
-                </h3>
-                <p className="text-xs opacity-70 mt-1">{selectedRole.description}</p>
-              </div>
-            </div>
-
-            {/* Permissions list */}
-            <div>
-              <h4 className="font-bold text-xs mb-2">
-                {isThai ? "สิทธิ์การเข้าถึงในระบบ (Atomic Permissions):" : "Role Permissions Catalog:"}
-              </h4>
-              <div className="flex flex-wrap gap-1.5">
-                {selectedRole.permissions.map((p) => (
-                  <span
-                    key={p}
-                    className={`text-[11px] font-mono px-2 py-1 rounded-md border ${
-                      isLight
-                        ? "bg-zinc-100 border-zinc-200 text-zinc-800"
-                        : "bg-[#2C2C2C] border-[#555555] text-zinc-200"
-                    }`}
-                  >
-                    {p}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Currently Assigned Users */}
-            <div className="mt-2">
-              <h4 className="font-bold text-xs mb-2">
-                {isThai ? "ผู้ใช้งานที่ได้รับมอบหมายบทบาทนี้:" : "Active Role Holders:"}
-              </h4>
-              <div
-                className={`rounded-xl border overflow-hidden ${
-                  isLight ? "border-zinc-200" : "border-[#444444]"
-                }`}
-              >
-                {users.filter((u) => u.roles.some((r) => r.code === selectedRole.code)).length === 0 ? (
-                  <div className="p-4 text-center text-xs opacity-50 italic">
-                    {isThai ? "ยังไม่มีผู้ใช้งานได้รับบทบาทนี้" : "No active users assigned to this role."}
-                  </div>
-                ) : (
-                  users
-                    .filter((u) => u.roles.some((r) => r.code === selectedRole.code))
-                    .map((user) => {
-                      const assignment = user.roles.find((r) => r.code === selectedRole.code)!;
-                      return (
-                        <div
-                          key={user.id}
-                          className={`p-3 border-b last:border-0 flex items-center justify-between text-xs ${
-                            isLight
-                              ? "bg-zinc-50 border-zinc-200"
-                              : "bg-[#333333]/40 border-[#444444]"
-                          }`}
-                        >
-                          <div>
-                            <span className="font-semibold">{user.name}</span>
-                            <span className="opacity-60 ml-2 font-mono">({user.email})</span>
-                            <div className="text-[11px] opacity-50 mt-0.5">
-                              {assignment.validUntil
-                                ? `Valid until: ${new Date(assignment.validUntil).toLocaleDateString()}`
-                                : (isThai ? "ไม่ระบุวันหมดอายุ" : "Indefinite")}
-                            </div>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setRevokeTarget({
-                                user,
-                                roleAssignment: assignment,
-                              })
-                            }
-                            className="px-2.5 py-1 rounded text-red-500 hover:bg-red-500/10 font-bold transition-colors"
-                          >
-                            {isThai ? "เพิกถอน" : "Revoke"}
-                          </button>
-                        </div>
-                      );
-                    })
-                )}
-              </div>
-            </div>
-
-            {/* Read-Only Notice as specified in Backend Handoff */}
+          {selectedRole ? (
             <div
-              className={`p-3 rounded-lg border text-[11px] flex items-start gap-2 ${
-                isLight ? "bg-amber-50 border-amber-200 text-amber-900" : "bg-amber-900/20 border-amber-500/30 text-amber-300"
+              className={`lg:col-span-2 p-5 rounded-xl border flex flex-col gap-4 ${
+                isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
               }`}
             >
-              <Info size={14} className="shrink-0 mt-0.5" />
-              <span>
-                {isThai
-                  ? "หมายเหตุ: ระบบยังไม่มี API สำหรับสร้าง role ใหม่หรือแก้ไข permission matrix โดยตรง การแก้ไขสิทธิ์ต้องทำผ่านการอัปเดตระบบหลัก"
-                  : "Note: Backend does not currently support creating custom roles or altering the permission matrix from the Admin Panel directly."}
-              </span>
+              <div className="flex items-center justify-between border-b pb-3 border-[#444444]/30">
+                <div>
+                  <h3 className="font-bold text-base flex items-center gap-2">
+                    <span>{selectedRole.name}</span>
+                    <span className="text-xs font-mono opacity-50">({selectedRole.code})</span>
+                  </h3>
+                  <p className="text-xs opacity-70 mt-1">{selectedRole.description}</p>
+                </div>
+              </div>
+
+              {/* Permissions list */}
+              <div>
+                <h4 className="font-bold text-xs mb-2">
+                  {isThai ? "สิทธิ์การเข้าถึงในระบบ (Atomic Permissions):" : "Role Permissions Catalog:"}
+                </h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {(selectedRole.permissions || []).map((p) => (
+                    <span
+                      key={p}
+                      className={`text-[11px] font-mono px-2 py-1 rounded-md border ${
+                        isLight
+                          ? "bg-zinc-100 border-zinc-200 text-zinc-800"
+                          : "bg-[#2C2C2C] border-[#555555] text-zinc-200"
+                      }`}
+                    >
+                      {p}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Currently Assigned Users */}
+              <div className="mt-2">
+                <h4 className="font-bold text-xs mb-2">
+                  {isThai ? "ผู้ใช้งานที่ได้รับมอบหมายบทบาทนี้:" : "Active Role Holders:"}
+                </h4>
+                <div
+                  className={`rounded-xl border overflow-hidden ${
+                    isLight ? "border-zinc-200" : "border-[#444444]"
+                  }`}
+                >
+                  {users.filter((u) => u.roles.some((r) => r.code === selectedRole.code)).length === 0 ? (
+                    <div className="p-4 text-center text-xs opacity-50 italic">
+                      {isThai ? "ยังไม่มีผู้ใช้งานได้รับบทบาทนี้" : "No active users assigned to this role."}
+                    </div>
+                  ) : (
+                    users
+                      .filter((u) => u.roles.some((r) => r.code === selectedRole.code))
+                      .map((user) => {
+                        const assignment = user.roles.find((r) => r.code === selectedRole.code)!;
+                        return (
+                          <div
+                            key={user.id}
+                            className={`p-3 border-b last:border-0 flex items-center justify-between text-xs ${
+                              isLight
+                                ? "bg-zinc-50 border-zinc-200"
+                                : "bg-[#333333]/40 border-[#444444]"
+                            }`}
+                          >
+                            <div>
+                              <span className="font-semibold">{user.name}</span>
+                              <span className="opacity-60 ml-2 font-mono">({user.email})</span>
+                              <div className="text-[11px] opacity-50 mt-0.5">
+                                {assignment.validUntil
+                                  ? `Valid until: ${new Date(assignment.validUntil).toLocaleDateString()}`
+                                  : (isThai ? "ไม่ระบุวันหมดอายุ" : "Indefinite")}
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setRevokeTarget({
+                                  user,
+                                  roleAssignment: assignment,
+                                })
+                              }
+                              className="px-2.5 py-1 rounded text-red-500 hover:bg-red-500/10 font-bold transition-colors"
+                            >
+                              {isThai ? "เพิกถอน" : "Revoke"}
+                            </button>
+                          </div>
+                        );
+                      })
+                  )}
+                </div>
+              </div>
+
+              {/* Read-Only Notice as specified in Backend Handoff */}
+              <div
+                className={`p-3 rounded-lg border text-[11px] flex items-start gap-2 ${
+                  isLight ? "bg-amber-50 border-amber-200 text-amber-900" : "bg-amber-900/20 border-amber-500/30 text-amber-300"
+                }`}
+              >
+                <Info size={14} className="shrink-0 mt-0.5" />
+                <span>
+                  {isThai
+                    ? "หมายเหตุ: ระบบยังไม่มี API สำหรับสร้าง role ใหม่หรือแก้ไข permission matrix โดยตรง การแก้ไขสิทธิ์ต้องทำผ่านการอัปเดตระบบหลัก"
+                    : "Note: Backend does not currently support creating custom roles or altering the permission matrix from the Admin Panel directly."}
+                </span>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div
+              className={`lg:col-span-2 p-8 rounded-xl border flex flex-col items-center justify-center text-xs opacity-60 ${
+                isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
+              }`}
+            >
+              {isThai ? "ยังไม่มีข้อมูลบทบาทในระบบ" : "No roles available"}
+            </div>
+          )}
         </div>
       )}
 
@@ -529,7 +542,7 @@ export default function RoleManagementTab({
               <div className="flex flex-col gap-1.5">
                 <label className="font-semibold opacity-80">{isThai ? "เลือกผู้ใช้งาน" : "Select User"}</label>
                 <select
-                  value={assignUserId}
+                  value={assignUserId || users[0]?.id || ""}
                   onChange={(e) => setAssignUserId(e.target.value)}
                   className={`w-full px-3 py-2 rounded-lg border text-xs outline-none ${
                     isLight ? "bg-zinc-100 border-zinc-300" : "bg-[#333333] border-[#444444] text-white"
@@ -546,7 +559,7 @@ export default function RoleManagementTab({
               <div className="flex flex-col gap-1.5">
                 <label className="font-semibold opacity-80">{isThai ? "เลือกบทบาท" : "Select Role"}</label>
                 <select
-                  value={assignRoleId}
+                  value={assignRoleId || roles[0]?.id || ""}
                   onChange={(e) => setAssignRoleId(e.target.value)}
                   className={`w-full px-3 py-2 rounded-lg border text-xs outline-none ${
                     isLight ? "bg-zinc-100 border-zinc-300" : "bg-[#333333] border-[#444444] text-white"
