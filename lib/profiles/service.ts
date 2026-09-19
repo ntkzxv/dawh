@@ -1,7 +1,17 @@
 import "server-only";
 
+import type { Pool, PoolClient } from "pg";
+
+import type { AccessContext } from "@/lib/access/types";
+import { writeAuditLog } from "@/lib/audit/service";
 import { dbPool } from "@/lib/core/db/pool";
-import type { CompleteEmployeeProfileInput, EmployeeProfileResponse } from "@/lib/profiles/types";
+import { withTransaction } from "@/lib/core/db/transaction";
+import type { RequestContext } from "@/lib/core/http/context";
+import { NotFoundError } from "@/lib/core/http/errors";
+import { getCurrentTermsVersion } from "@/lib/onboarding/service";
+import type { AddressInput, CompleteEmployeeProfileInput, EmployeeProfileDto, EmployeeProfileResponse, UpdateEmployeeProfileInput } from "@/lib/profiles/types";
+
+type QueryExecutor = Pick<Pool | PoolClient, "query">;
 
 const columns = `
   p.user_id, p.username, p.prefix, p.first_name_th, p.last_name_th, p.nickname_th,
@@ -14,38 +24,209 @@ const columns = `
   p.current_district, p.current_subdistrict, p.current_postal_code,
   p.registered_house_no, p.registered_village, p.registered_soi, p.registered_province,
   p.registered_district, p.registered_subdistrict, p.registered_postal_code,
-  p.department, p.branch_name, p.branch_code, p.terms_version, p.terms_accepted_at,
-  p.profile_completed_at, p.created_at, p.updated_at, u.email,
-  (p.profile_completed_at IS NOT NULL) AS is_complete`;
+  p.department, p.branch_name, p.branch_code, p.facility_id::text, p.department_id::text,
+  p.terms_version, p.terms_accepted_at, p.profile_completed_at, p.created_at, p.updated_at,
+  u.email, (p.profile_completed_at IS NOT NULL AND p.facility_id IS NOT NULL) AS is_complete`;
 
-export async function getEmployeeProfile(userId: string): Promise<EmployeeProfileResponse | null> {
-  const result = await dbPool.query<EmployeeProfileResponse>(
-    `SELECT ${columns}
-     FROM public.employee_profiles p
-     JOIN public."user" u ON u.id = p.user_id
-     WHERE p.user_id = $1`,
+export async function getEmployeeProfile(userId: string, executor: QueryExecutor = dbPool): Promise<EmployeeProfileResponse | null> {
+  const result = await executor.query<EmployeeProfileResponse>(
+    `SELECT ${columns} FROM public.employee_profiles p
+     JOIN public."user" u ON u.id = p.user_id WHERE p.user_id = $1`,
     [userId]
   );
   return result.rows[0] ?? null;
 }
 
-export async function completeEmployeeProfile(
-  userId: string,
-  input: CompleteEmployeeProfileInput
-): Promise<EmployeeProfileResponse> {
-  const fieldNames = Object.keys(input) as (keyof CompleteEmployeeProfileInput)[];
-  const values = fieldNames.map((field) => input[field]);
-  const insertColumns = ["user_id", ...fieldNames].join(", ");
-  const placeholders = ["$1", ...fieldNames.map((_, index) => `$${index + 2}`)].join(", ");
-  const updates = fieldNames.map((field) => `${field} = EXCLUDED.${field}`).join(", ");
-  const result = await dbPool.query<EmployeeProfileResponse>(
-    `INSERT INTO public.employee_profiles (${insertColumns}, terms_accepted_at, profile_completed_at)
-     VALUES (${placeholders}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-     ON CONFLICT (user_id) DO UPDATE SET
-       ${updates}, terms_accepted_at = CURRENT_TIMESTAMP,
-       profile_completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-     RETURNING ${columns.replaceAll("p.", "employee_profiles.").replace("u.email,", "(SELECT email FROM public.\"user\" WHERE id = employee_profiles.user_id) AS email,")}`,
-    [userId, ...values]
+function address(profile: EmployeeProfileResponse, prefix: "current" | "registered"): AddressInput {
+  return {
+    houseNo: profile[`${prefix}_house_no`] ?? "",
+    village: profile[`${prefix}_village`],
+    soi: profile[`${prefix}_soi`],
+    province: profile[`${prefix}_province`] ?? "",
+    district: profile[`${prefix}_district`] ?? "",
+    subdistrict: profile[`${prefix}_subdistrict`] ?? "",
+    postalCode: profile[`${prefix}_postal_code`] ?? "",
+  };
+}
+
+export async function toEmployeeProfileDto(profile: EmployeeProfileResponse, executor: QueryExecutor = dbPool): Promise<EmployeeProfileDto> {
+  if (!profile.facility_id) throw new NotFoundError("Employee facility");
+  const result = await executor.query<{
+    facility_id: string; facility_code: string; facility_name: string;
+    department_id: string | null; department_code: string | null; department_name: string | null;
+  }>(
+    `SELECT f.id::text AS facility_id, f.code AS facility_code, f.name AS facility_name,
+            d.id::text AS department_id, d.code AS department_code, d.name AS department_name
+     FROM public.facilities f LEFT JOIN public.departments d ON d.id = $2::bigint
+     WHERE f.id = $1::bigint`,
+    [profile.facility_id, profile.department_id]
   );
-  return result.rows[0];
+  const related = result.rows[0];
+  if (!related) throw new NotFoundError("Employee facility");
+  return {
+    userId: profile.user_id, email: profile.email, username: profile.username,
+    prefix: profile.prefix ?? "", firstNameTh: profile.first_name_th ?? "",
+    lastNameTh: profile.last_name_th ?? "", nicknameTh: profile.nickname_th ?? "",
+    firstNameEn: profile.first_name_en, lastNameEn: profile.last_name_en,
+    nicknameEn: profile.nickname_en ?? "", citizenId: profile.citizen_id ?? "",
+    birthDate: profile.birth_date ?? "", gender: profile.gender ?? "",
+    bloodType: profile.blood_type ?? "", maritalStatus: profile.marital_status ?? "",
+    nationality: profile.nationality ?? "", religion: profile.religion ?? "",
+    educationLevel: profile.education_level ?? "", majorSubject: profile.major_subject ?? "",
+    universityNameTh: profile.university_name_th ?? "", universityNameEn: profile.university_name_en ?? "",
+    phone: profile.phone, emergencyContactNameTh: profile.emergency_contact_name_th ?? "",
+    emergencyContactNameEn: profile.emergency_contact_name_en,
+    emergencyContactRelationship: profile.emergency_contact_relationship ?? "",
+    emergencyContactPhone: profile.emergency_contact_phone ?? "",
+    currentAddress: address(profile, "current"), registeredAddress: address(profile, "registered"),
+    facilityId: related.facility_id, departmentId: related.department_id,
+    facility: { id: related.facility_id, code: related.facility_code, name: related.facility_name },
+    department: related.department_id && related.department_code && related.department_name
+      ? { id: related.department_id, code: related.department_code, name: related.department_name }
+      : null,
+    termsVersion: profile.terms_version ?? "", termsAcceptedAt: profile.terms_accepted_at ?? "",
+    profileCompletedAt: profile.profile_completed_at ?? "", createdAt: profile.created_at,
+    updatedAt: profile.updated_at, isComplete: profile.is_complete,
+  };
+}
+
+async function resolveAssignment(client: PoolClient, context: AccessContext, facilityId: string, departmentId: string | null) {
+  const facility = await client.query<{ id: string; code: string; name: string }>(
+    `SELECT id::text, code, name FROM public.facilities
+     WHERE id=$1::bigint AND organization_id=$2::bigint AND is_active=true`,
+    [facilityId, context.organization.id]
+  );
+  if (!facility.rows[0]) throw new NotFoundError("Facility");
+  const department = departmentId ? await client.query<{ id: string; code: string; name: string }>(
+    `SELECT id::text, code, name FROM public.departments
+     WHERE id=$1::bigint AND organization_id=$2::bigint AND is_active=true`,
+    [departmentId, context.organization.id]
+  ) : null;
+  if (departmentId && !department?.rows[0]) throw new NotFoundError("Department");
+  return { facility: facility.rows[0], department: department?.rows[0] ?? null };
+}
+
+export async function completeEmployeeProfile(
+  context: AccessContext,
+  requestContext: RequestContext,
+  input: CompleteEmployeeProfileInput
+): Promise<EmployeeProfileDto> {
+  return withTransaction(async (client) => {
+    const assignment = await resolveAssignment(client, context, input.facilityId, input.departmentId);
+    const termsVersion = getCurrentTermsVersion();
+    const values = [
+      context.user.id, input.username, input.prefix, input.firstNameTh, input.lastNameTh,
+      input.nicknameTh, input.firstNameEn, input.lastNameEn, input.nicknameEn, input.citizenId,
+      input.birthDate, input.gender, input.bloodType, input.maritalStatus, input.nationality,
+      input.religion, input.educationLevel, input.majorSubject, input.universityNameTh,
+      input.universityNameEn, input.phone, input.emergencyContactNameTh,
+      input.emergencyContactNameEn, input.emergencyContactRelationship,
+      input.emergencyContactPhone, input.currentAddress.houseNo, input.currentAddress.village,
+      input.currentAddress.soi, input.currentAddress.province, input.currentAddress.district,
+      input.currentAddress.subdistrict, input.currentAddress.postalCode,
+      input.registeredAddress.houseNo, input.registeredAddress.village,
+      input.registeredAddress.soi, input.registeredAddress.province,
+      input.registeredAddress.district, input.registeredAddress.subdistrict,
+      input.registeredAddress.postalCode, assignment.department?.name ?? null,
+      assignment.facility.name, assignment.facility.code, assignment.facility.id,
+      assignment.department?.id ?? null, termsVersion,
+    ];
+    const placeholders = values.map((_, index) => `$${index + 1}`).join(", ");
+    await client.query(
+      `INSERT INTO public.employee_profiles (
+        user_id,username,prefix,first_name_th,last_name_th,nickname_th,first_name_en,
+        last_name_en,nickname_en,citizen_id,birth_date,gender,blood_type,marital_status,
+        nationality,religion,education_level,major_subject,university_name_th,
+        university_name_en,phone,emergency_contact_name_th,emergency_contact_name_en,
+        emergency_contact_relationship,emergency_contact_phone,current_house_no,
+        current_village,current_soi,current_province,current_district,current_subdistrict,
+        current_postal_code,registered_house_no,registered_village,registered_soi,
+        registered_province,registered_district,registered_subdistrict,registered_postal_code,
+        department,branch_name,branch_code,facility_id,department_id,terms_version,
+        terms_accepted_at,profile_completed_at
+      ) VALUES (${placeholders},now(),now())
+      ON CONFLICT (user_id) DO UPDATE SET
+        username=EXCLUDED.username,prefix=EXCLUDED.prefix,first_name_th=EXCLUDED.first_name_th,
+        last_name_th=EXCLUDED.last_name_th,nickname_th=EXCLUDED.nickname_th,
+        first_name_en=EXCLUDED.first_name_en,last_name_en=EXCLUDED.last_name_en,
+        nickname_en=EXCLUDED.nickname_en,citizen_id=EXCLUDED.citizen_id,
+        birth_date=EXCLUDED.birth_date,gender=EXCLUDED.gender,blood_type=EXCLUDED.blood_type,
+        marital_status=EXCLUDED.marital_status,nationality=EXCLUDED.nationality,
+        religion=EXCLUDED.religion,education_level=EXCLUDED.education_level,
+        major_subject=EXCLUDED.major_subject,university_name_th=EXCLUDED.university_name_th,
+        university_name_en=EXCLUDED.university_name_en,phone=EXCLUDED.phone,
+        emergency_contact_name_th=EXCLUDED.emergency_contact_name_th,
+        emergency_contact_name_en=EXCLUDED.emergency_contact_name_en,
+        emergency_contact_relationship=EXCLUDED.emergency_contact_relationship,
+        emergency_contact_phone=EXCLUDED.emergency_contact_phone,
+        current_house_no=EXCLUDED.current_house_no,current_village=EXCLUDED.current_village,
+        current_soi=EXCLUDED.current_soi,current_province=EXCLUDED.current_province,
+        current_district=EXCLUDED.current_district,current_subdistrict=EXCLUDED.current_subdistrict,
+        current_postal_code=EXCLUDED.current_postal_code,
+        registered_house_no=EXCLUDED.registered_house_no,
+        registered_village=EXCLUDED.registered_village,registered_soi=EXCLUDED.registered_soi,
+        registered_province=EXCLUDED.registered_province,
+        registered_district=EXCLUDED.registered_district,
+        registered_subdistrict=EXCLUDED.registered_subdistrict,
+        registered_postal_code=EXCLUDED.registered_postal_code,department=EXCLUDED.department,
+        branch_name=EXCLUDED.branch_name,branch_code=EXCLUDED.branch_code,
+        facility_id=EXCLUDED.facility_id,department_id=EXCLUDED.department_id,
+        terms_version=EXCLUDED.terms_version,terms_accepted_at=now(),
+        profile_completed_at=now(),updated_at=now()`, values
+    );
+    await writeAuditLog(client, {
+      organizationId: context.organization.id, requestId: requestContext.requestId,
+      actorUserId: context.user.id, action: "profile.completed", entityType: "employee_profile",
+      newData: { targetUserId: context.user.id, facilityId: assignment.facility.id,
+        departmentId: assignment.department?.id ?? null, termsVersion },
+      ipAddress: requestContext.ipAddress, userAgent: requestContext.userAgent,
+    });
+    const profile = await getEmployeeProfile(context.user.id, client);
+    if (!profile) throw new NotFoundError("Employee profile");
+    return toEmployeeProfileDto(profile, client);
+  });
+}
+
+export async function updateEmployeeProfile(
+  context: AccessContext,
+  requestContext: RequestContext,
+  input: UpdateEmployeeProfileInput
+): Promise<EmployeeProfileDto> {
+  return withTransaction(async (client) => {
+    const previous = await getEmployeeProfile(context.user.id, client);
+    if (!previous?.is_complete) throw new NotFoundError("Completed employee profile");
+    await client.query(
+      `UPDATE public.employee_profiles SET prefix=$2,nickname_th=$3,nickname_en=$4,
+       nationality=$5,religion=$6,education_level=$7,major_subject=$8,
+       university_name_th=$9,university_name_en=$10,phone=$11,
+       emergency_contact_name_th=$12,emergency_contact_name_en=$13,
+       emergency_contact_relationship=$14,emergency_contact_phone=$15,
+       current_house_no=$16,current_village=$17,current_soi=$18,current_province=$19,
+       current_district=$20,current_subdistrict=$21,current_postal_code=$22,
+       registered_house_no=$23,registered_village=$24,registered_soi=$25,
+       registered_province=$26,registered_district=$27,registered_subdistrict=$28,
+       registered_postal_code=$29,updated_at=now() WHERE user_id=$1`,
+      [context.user.id,input.prefix,input.nicknameTh,input.nicknameEn,input.nationality,
+       input.religion,input.educationLevel,input.majorSubject,input.universityNameTh,
+       input.universityNameEn,input.phone,input.emergencyContactNameTh,
+       input.emergencyContactNameEn,input.emergencyContactRelationship,
+       input.emergencyContactPhone,input.currentAddress.houseNo,input.currentAddress.village,
+       input.currentAddress.soi,input.currentAddress.province,input.currentAddress.district,
+       input.currentAddress.subdistrict,input.currentAddress.postalCode,
+       input.registeredAddress.houseNo,input.registeredAddress.village,
+       input.registeredAddress.soi,input.registeredAddress.province,
+       input.registeredAddress.district,input.registeredAddress.subdistrict,
+       input.registeredAddress.postalCode]
+    );
+    await writeAuditLog(client, {
+      organizationId: context.organization.id, requestId: requestContext.requestId,
+      actorUserId: context.user.id, action: "profile.updated", entityType: "employee_profile",
+      oldData: { targetUserId: context.user.id, updatedAt: previous.updated_at },
+      newData: { targetUserId: context.user.id }, ipAddress: requestContext.ipAddress,
+      userAgent: requestContext.userAgent,
+    });
+    const profile = await getEmployeeProfile(context.user.id, client);
+    if (!profile) throw new NotFoundError("Employee profile");
+    return toEmployeeProfileDto(profile, client);
+  });
 }

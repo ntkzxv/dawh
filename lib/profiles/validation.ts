@@ -1,97 +1,139 @@
-import type { CompleteEmployeeProfileInput } from "@/lib/profiles/types";
+import { ValidationError } from "@/lib/core/http/errors";
+import {
+  optionalBigIntId,
+  optionalText,
+  rejectUnknownFields,
+  requiredBigIntId,
+  requiredBoolean,
+  requiredText,
+} from "@/lib/core/validation/fields";
+import type { AddressInput, CompleteEmployeeProfileInput, UpdateEmployeeProfileInput } from "@/lib/profiles/types";
 
-export class ProfileValidationError extends Error {
-  constructor(public readonly fields: string[]) {
-    super(`Missing or invalid profile fields: ${fields.join(", ")}`);
-    this.name = "ProfileValidationError";
-  }
-}
-
-const requiredFields = [
-  "prefix", "first_name_th", "last_name_th", "nickname_th",
-  "first_name_en", "last_name_en", "nickname_en", "citizen_id",
-  "gender", "blood_type", "marital_status", "nationality", "religion",
-  "education_level", "major_subject", "university_name_th", "university_name_en",
-  "phone", "emergency_contact_name_th", "emergency_contact_name_en",
-  "emergency_contact_relationship", "emergency_contact_phone", "current_house_no",
-  "current_province", "current_district", "current_subdistrict", "current_postal_code",
-  "registered_house_no", "registered_province", "registered_district",
-  "registered_subdistrict", "registered_postal_code", "branch_name", "branch_code",
-  "terms_version",
+const completeFields = [
+  "username", "prefix", "firstNameTh", "lastNameTh", "nicknameTh", "firstNameEn",
+  "lastNameEn", "nicknameEn", "citizenId", "birthDate", "gender", "bloodType",
+  "maritalStatus", "nationality", "religion", "educationLevel", "majorSubject",
+  "universityNameTh", "universityNameEn", "phone", "emergencyContactNameTh",
+  "emergencyContactNameEn", "emergencyContactRelationship", "emergencyContactPhone",
+  "currentAddress", "registeredAddress", "departmentId", "facilityId", "termsAccepted",
 ] as const;
 
-function readText(body: Record<string, unknown>, key: string, required = false) {
-  const value = body[key];
-  if (typeof value !== "string") return required ? "" : null;
-  const normalized = value.trim();
-  return normalized || (required ? "" : null);
+const updateFields = [
+  "prefix", "nicknameTh", "nicknameEn", "nationality", "religion", "educationLevel",
+  "majorSubject", "universityNameTh", "universityNameEn", "phone",
+  "emergencyContactNameTh", "emergencyContactNameEn", "emergencyContactRelationship",
+  "emergencyContactPhone", "currentAddress", "registeredAddress",
+] as const;
+
+const addressFields = ["houseNo", "village", "soi", "province", "district", "subdistrict", "postalCode"] as const;
+
+function parseAddress(value: unknown, key: string): AddressInput {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new ValidationError({ [key]: "Use an address object." });
+  }
+  const body = value as Record<string, unknown>;
+  rejectUnknownFields(body, addressFields);
+  const postalCode = requiredText(body, "postalCode");
+  if (!/^\d{5}$/.test(postalCode)) {
+    throw new ValidationError({ [`${key}.postalCode`]: "Use a 5-digit postal code." });
+  }
+  return {
+    houseNo: requiredText(body, "houseNo"),
+    village: optionalText(body, "village"),
+    soi: optionalText(body, "soi"),
+    province: requiredText(body, "province"),
+    district: requiredText(body, "district"),
+    subdistrict: requiredText(body, "subdistrict"),
+    postalCode,
+  };
 }
 
-export function parseCompleteEmployeeProfile(body: unknown): CompleteEmployeeProfileInput {
-  if (!body || typeof body !== "object" || Array.isArray(body)) {
-    throw new ProfileValidationError(["body"]);
+function validateUsername(value: string) {
+  const username = value.toLowerCase();
+  if (!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(username)) {
+    throw new ValidationError({ username: "Use 3-32 lowercase letters, digits, dots, underscores, or hyphens." });
   }
+  return username;
+}
 
-  const input = body as Record<string, unknown>;
-  const required = (key: string) => readText(input, key, true) ?? "";
-  const missing: string[] = requiredFields.filter((key) => !required(key));
+function validateCitizenId(value: string) {
+  const citizenId = value.replace(/\D/g, "");
+  if (!/^\d{13}$/.test(citizenId)) {
+    throw new ValidationError({ citizenId: "Use a valid 13-digit Thai citizen ID." });
+  }
+  const digits = citizenId.split("").map(Number);
+  const sum = digits.slice(0, 12).reduce((total, digit, index) => total + digit * (13 - index), 0);
+  if ((11 - (sum % 11)) % 10 !== digits[12]) {
+    throw new ValidationError({ citizenId: "The Thai citizen ID checksum is invalid." });
+  }
+  return citizenId;
+}
 
-  const citizenId = required("citizen_id");
-  const rawUsername = readText(input, "username", false) || "";
-  const username = (rawUsername || "employee").toLowerCase();
-  const birthDate = readText(input, "birth_date", false);
-  const phone = required("phone");
+function validateBirthDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw new ValidationError({ birthDate: "Use YYYY-MM-DD." });
+  }
+  const date = new Date(`${value}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+    throw new ValidationError({ birthDate: "Use a valid calendar date." });
+  }
+  if (date.getTime() > Date.now()) {
+    throw new ValidationError({ birthDate: "Birth date cannot be in the future." });
+  }
+  return value;
+}
 
-  if (rawUsername && !/^[a-z0-9][a-z0-9._-]{2,31}$/.test(username)) missing.push("username");
-  if (!/^\d{13}$/.test(citizenId.replace(/\D/g, ""))) missing.push("citizen_id");
-  if (birthDate && !/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) missing.push("birth_date");
-  if (!/^\+?[0-9()\-\s]{8,20}$/.test(phone)) missing.push("phone");
+function validatePhone(value: string, key: string) {
+  if (!/^\+?[0-9()\-\s]{8,20}$/.test(value)) {
+    throw new ValidationError({ [key]: "Use a valid phone number." });
+  }
+  return value;
+}
 
-  if (missing.length) throw new ProfileValidationError([...new Set(missing)]);
-
+function sharedFields(body: Record<string, unknown>): UpdateEmployeeProfileInput {
   return {
-    username,
-    prefix: required("prefix"),
-    first_name_th: required("first_name_th"),
-    last_name_th: required("last_name_th"),
-    nickname_th: required("nickname_th"),
-    first_name_en: required("first_name_en"),
-    last_name_en: required("last_name_en"),
-    nickname_en: required("nickname_en"),
-    citizen_id: citizenId.replace(/\D/g, ""),
-    birth_date: birthDate || null,
-
-    gender: required("gender"),
-    blood_type: required("blood_type"),
-    marital_status: required("marital_status"),
-    nationality: required("nationality"),
-    religion: required("religion"),
-    education_level: required("education_level"),
-    major_subject: required("major_subject"),
-    university_name_th: required("university_name_th"),
-    university_name_en: required("university_name_en"),
-    phone,
-    emergency_contact_name_th: required("emergency_contact_name_th"),
-    emergency_contact_name_en: required("emergency_contact_name_en"),
-    emergency_contact_relationship: required("emergency_contact_relationship"),
-    emergency_contact_phone: required("emergency_contact_phone"),
-    current_house_no: required("current_house_no"),
-    current_village: readText(input, "current_village"),
-    current_soi: readText(input, "current_soi"),
-    current_province: required("current_province"),
-    current_district: required("current_district"),
-    current_subdistrict: required("current_subdistrict"),
-    current_postal_code: required("current_postal_code"),
-    registered_house_no: required("registered_house_no"),
-    registered_village: readText(input, "registered_village"),
-    registered_soi: readText(input, "registered_soi"),
-    registered_province: required("registered_province"),
-    registered_district: required("registered_district"),
-    registered_subdistrict: required("registered_subdistrict"),
-    registered_postal_code: required("registered_postal_code"),
-    department: readText(input, "department"),
-    branch_name: required("branch_name"),
-    branch_code: required("branch_code"),
-    terms_version: required("terms_version"),
+    prefix: requiredText(body, "prefix"),
+    nicknameTh: requiredText(body, "nicknameTh"),
+    nicknameEn: requiredText(body, "nicknameEn"),
+    nationality: requiredText(body, "nationality"),
+    religion: requiredText(body, "religion"),
+    educationLevel: requiredText(body, "educationLevel"),
+    majorSubject: requiredText(body, "majorSubject"),
+    universityNameTh: requiredText(body, "universityNameTh"),
+    universityNameEn: requiredText(body, "universityNameEn"),
+    phone: validatePhone(requiredText(body, "phone"), "phone"),
+    emergencyContactNameTh: requiredText(body, "emergencyContactNameTh"),
+    emergencyContactNameEn: optionalText(body, "emergencyContactNameEn"),
+    emergencyContactRelationship: requiredText(body, "emergencyContactRelationship"),
+    emergencyContactPhone: validatePhone(requiredText(body, "emergencyContactPhone"), "emergencyContactPhone"),
+    currentAddress: parseAddress(body.currentAddress, "currentAddress"),
+    registeredAddress: parseAddress(body.registeredAddress, "registeredAddress"),
   };
+}
+
+export function parseCompleteEmployeeProfile(body: Record<string, unknown>): CompleteEmployeeProfileInput {
+  rejectUnknownFields(body, completeFields);
+  const termsAccepted = requiredBoolean(body, "termsAccepted");
+  if (!termsAccepted) throw new ValidationError({ termsAccepted: "Accept the current terms to continue." });
+  return {
+    ...sharedFields(body),
+    username: validateUsername(requiredText(body, "username")),
+    firstNameTh: requiredText(body, "firstNameTh"),
+    lastNameTh: requiredText(body, "lastNameTh"),
+    firstNameEn: requiredText(body, "firstNameEn"),
+    lastNameEn: requiredText(body, "lastNameEn"),
+    citizenId: validateCitizenId(requiredText(body, "citizenId")),
+    birthDate: validateBirthDate(requiredText(body, "birthDate")),
+    gender: requiredText(body, "gender"),
+    bloodType: requiredText(body, "bloodType"),
+    maritalStatus: requiredText(body, "maritalStatus"),
+    facilityId: requiredBigIntId(body, "facilityId"),
+    departmentId: optionalBigIntId(body, "departmentId"),
+    termsAccepted: true,
+  };
+}
+
+export function parseUpdateEmployeeProfile(body: Record<string, unknown>): UpdateEmployeeProfileInput {
+  rejectUnknownFields(body, updateFields);
+  return sharedFields(body);
 }

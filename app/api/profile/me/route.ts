@@ -1,18 +1,22 @@
-import { AuthenticationRequiredError, requireSession } from "@/lib/auth/session";
-import { getEmployeeProfile } from "@/lib/profiles/service";
+import { getAccessContext, ProfileIncompleteError } from "@/lib/access/service";
+import { parseJsonObject } from "@/lib/core/http/body";
+import { getRequestContext } from "@/lib/core/http/context";
+import { apiRoute } from "@/lib/core/http/handler";
+import { jsonOk } from "@/lib/core/http/response";
+import { toEmployeeProfileDto, updateEmployeeProfile } from "@/lib/profiles/service";
+import { parseUpdateEmployeeProfile } from "@/lib/profiles/validation";
 
 export const runtime = "nodejs";
 
-export async function GET() {
-  try {
-    const session = await requireSession();
-    const profile = await getEmployeeProfile(session.user.id);
-    return Response.json({ profile, isComplete: profile?.is_complete ?? false });
-  } catch (error) {
-    if (error instanceof AuthenticationRequiredError) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    console.error("Unable to read employee profile", error);
-    return Response.json({ error: "Unable to read employee profile" }, { status: 500 });
-  }
-}
+export const GET = apiRoute(async (request) => {
+  const context = await getAccessContext(request);
+  const profile = context.profile ? await toEmployeeProfileDto(context.profile) : null;
+  return jsonOk(request, { profile, profileComplete: profile?.isComplete ?? false });
+});
+
+export const PATCH = apiRoute(async (request) => {
+  const context = await getAccessContext(request);
+  if (!context.profile?.is_complete) throw new ProfileIncompleteError();
+  const input = parseUpdateEmployeeProfile(await parseJsonObject(request));
+  return jsonOk(request, await updateEmployeeProfile(context, getRequestContext(request), input));
+});

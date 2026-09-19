@@ -42,6 +42,8 @@ export type EmployeeProfileRecord = {
   department: string | null;
   branch_name: string | null;
   branch_code: string | null;
+  facility_id: string | null;
+  department_id: string | null;
   terms_version: string | null;
   terms_accepted_at: string | null;
   profile_completed_at: string | null;
@@ -49,12 +51,92 @@ export type EmployeeProfileRecord = {
   updated_at: string;
 };
 
-export type CompleteEmployeeProfileInput = Omit<
-  EmployeeProfileRecord,
-  "user_id" | "created_at" | "updated_at" | "terms_accepted_at" | "profile_completed_at"
->;
-
 export type EmployeeProfileResponse = EmployeeProfileRecord & {
   email: string;
   is_complete: boolean;
 };
+
+export type AddressInput = {
+  houseNo: string;
+  village: string | null;
+  soi: string | null;
+  province: string;
+  district: string;
+  subdistrict: string;
+  postalCode: string;
+};
+
+export type EmployeeProfileDto = {
+  userId: string;
+  email: string;
+  username: string;
+  prefix: string;
+  firstNameTh: string;
+  lastNameTh: string;
+  nicknameTh: string;
+  firstNameEn: string;
+  lastNameEn: string;
+  nicknameEn: string;
+  citizenId: string;
+  birthDate: string;
+  gender: string;
+  bloodType: string;
+  maritalStatus: string;
+  nationality: string;
+  religion: string;
+  educationLevel: string;
+  majorSubject: string;
+  universityNameTh: string;
+  universityNameEn: string;
+  phone: string;
+  emergencyContactNameTh: string;
+  emergencyContactNameEn: string | null;
+  emergencyContactRelationship: string;
+  emergencyContactPhone: string;
+  currentAddress: AddressInput;
+  registeredAddress: AddressInput;
+  facilityId: string;
+  departmentId: string | null;
+  facility: { id: string; code: string; name: string };
+  department: { id: string; code: string; name: string } | null;
+  termsVersion: string;
+  termsAcceptedAt: string;
+  profileCompletedAt: string;
+  createdAt: string;
+  updatedAt: string;
+  isComplete: boolean;
+};
+
+export type CompleteEmployeeProfileInput = Omit<
+  EmployeeProfileDto,
+  | "userId"
+  | "email"
+  | "facility"
+  | "department"
+  | "termsVersion"
+  | "termsAcceptedAt"
+  | "profileCompletedAt"
+  | "createdAt"
+  | "updatedAt"
+  | "isComplete"
+> & { termsAccepted: true };
+
+export type UpdateEmployeeProfileInput = Pick<
+  CompleteEmployeeProfileInput,
+  | "prefix"
+  | "nicknameTh"
+  | "nicknameEn"
+  | "nationality"
+  | "religion"
+  | "educationLevel"
+  | "majorSubject"
+  | "universityNameTh"
+  | "universityNameEn"
+  | "phone"
+  | "emergencyContactNameTh"
+  | "emergencyContactNameEn"
+  | "emergencyContactRelationship"
+  | "emergencyContactPhone"
+  | "currentAddress"
+  | "registeredAddress"
+>;
