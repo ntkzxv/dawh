@@ -18,6 +18,7 @@ import {
   Boxes,
   ArrowLeftRight,
   RotateCw,
+  Database,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
@@ -388,10 +389,16 @@ export default function NavbarMain({
         {/* Server Status Indicator */}
         {serverStatus && (
           <div
-            className={`w-full flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+            className={`w-full transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
               isMinimized
-                ? "py-1.5"
-                : "px-2.5 py-1.5 rounded-xl border bg-[#F4F4F5]/60 dark:bg-[#282828]/60 border-[#E4E4E7] dark:border-[#383838] gap-2 text-center"
+                ? "w-10 h-10 aspect-square mx-auto rounded-xl border flex items-center justify-center " +
+                  (isLight
+                    ? "bg-white border-[#E4E4E7] text-emerald-600 shadow-sm"
+                    : "bg-[#383838] border-[#444444] text-emerald-400 shadow-sm")
+                : "px-3 py-2 rounded-xl border flex items-center gap-2.5 transition-colors shadow-sm " +
+                  (isLight
+                    ? "bg-white border-[#E4E4E7]"
+                    : "bg-[#383838] border-[#444444]")
             }`}
             title={
               serverStatus.sublabel
@@ -399,22 +406,52 @@ export default function NavbarMain({
                 : serverStatus.label
             }
           >
-            <span
-              className={`inline-block w-2 h-2 rounded-full shrink-0 ${
-                serverStatus.connected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
-              }`}
-            />
-            {!isMinimized && (
-              <div className="flex flex-col items-center justify-center min-w-0 overflow-hidden text-center">
-                <span className="text-[11.5px] font-bold leading-tight truncate text-emerald-600 dark:text-emerald-400 text-center">
-                  {serverStatus.label}
-                </span>
-                {serverStatus.sublabel && (
-                  <span className="text-[10px] text-zinc-500 dark:text-[#A1A1AA] leading-tight truncate mt-0.5 text-center">
-                    {serverStatus.sublabel}
-                  </span>
-                )}
+            {isMinimized ? (
+              <div className="relative flex items-center justify-center">
+                <Database size={17} />
+                <span
+                  className={`absolute -top-1 -right-1 w-2 h-2 rounded-full border ${
+                    isLight ? "border-white" : "border-[#383838]"
+                  } ${
+                    serverStatus.connected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
+                  }`}
+                />
               </div>
+            ) : (
+              <>
+                <div
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                    isLight ? "bg-emerald-50 text-emerald-600" : "bg-emerald-950/40 text-emerald-400"
+                  }`}
+                >
+                  <Database size={15} />
+                </div>
+                <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${
+                        serverStatus.connected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
+                      }`}
+                    />
+                    <span
+                      className={`text-[11.5px] font-bold leading-tight truncate ${
+                        isLight ? "text-slate-900" : "text-[#FFFFFF]"
+                      }`}
+                    >
+                      {serverStatus.label}
+                    </span>
+                  </div>
+                  {serverStatus.sublabel && (
+                    <span
+                      className={`text-[10px] leading-tight truncate mt-0.5 ${
+                        isLight ? "text-zinc-500" : "text-[#A1A1AA]"
+                      }`}
+                    >
+                      {serverStatus.sublabel}
+                    </span>
+                  )}
+                </div>
+              </>
             )}
           </div>
         )}
