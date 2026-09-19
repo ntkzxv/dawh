@@ -395,7 +395,7 @@ export default function NavbarMain({
                   (isLight
                     ? "bg-white border-[#E4E4E7] text-emerald-600 shadow-sm"
                     : "bg-[#383838] border-[#444444] text-emerald-400 shadow-sm")
-                : "px-3 py-2 rounded-xl border flex items-center gap-2.5 transition-colors shadow-sm " +
+                : "px-3 py-2 rounded-xl border flex items-center justify-center transition-colors shadow-sm " +
                   (isLight
                     ? "bg-white border-[#E4E4E7]"
                     : "bg-[#383838] border-[#444444]")
@@ -413,7 +413,7 @@ export default function NavbarMain({
                 }`}
               />
             ) : (
-              <>
+              <div className="flex items-center gap-2.5 max-w-full">
                 <div className="flex items-center justify-center shrink-0">
                   <span
                     className={`w-2 h-2 rounded-full shrink-0 ${
@@ -421,7 +421,7 @@ export default function NavbarMain({
                     }`}
                   />
                 </div>
-                <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
+                <div className="flex flex-col min-w-0 text-left overflow-hidden">
                   <span
                     className={`text-[11.5px] font-bold leading-tight truncate ${
                       isLight ? "text-slate-900" : "text-[#FFFFFF]"
@@ -439,7 +439,7 @@ export default function NavbarMain({
                     </span>
                   )}
                 </div>
-              </>
+              </div>
             )}
           </div>
         )}
