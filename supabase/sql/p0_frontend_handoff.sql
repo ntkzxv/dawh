@@ -65,8 +65,14 @@ CREATE INDEX IF NOT EXISTS employee_profiles_department_id_idx
   ON public.employee_profiles (department_id);
 CREATE INDEX IF NOT EXISTS departments_organization_active_idx
   ON public.departments (organization_id, is_active, code);
+CREATE INDEX IF NOT EXISTS departments_created_by_idx
+  ON public.departments (created_by);
+CREATE INDEX IF NOT EXISTS departments_updated_by_idx
+  ON public.departments (updated_by);
 CREATE INDEX IF NOT EXISTS user_access_controls_status_idx
   ON public.user_access_controls (status);
+CREATE INDEX IF NOT EXISTS user_access_controls_changed_by_idx
+  ON public.user_access_controls (changed_by);
 
 UPDATE public.employee_profiles AS profile
 SET facility_id = facility.id
