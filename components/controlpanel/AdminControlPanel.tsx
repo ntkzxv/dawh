@@ -1085,11 +1085,6 @@ export default function AdminControlPanel() {
             showLogo={false}
             showAccount={true}
             title={isThai ? "แผงควบคุมระบบผู้ดูแล" : "Admin Control Panel"}
-            subtitle={
-              isThai
-                ? "ศูนย์ควบคุมสิทธิ์การเข้าถึง โครงสร้างคลัง สินค้า และการติดตามสต็อก"
-                : "Enterprise Identity, RBAC, Facility Topologies, Product Master & Stock Governance"
-            }
             lang={currentLang}
             onLangChange={setAppLanguage}
           />
