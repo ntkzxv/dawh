@@ -20,8 +20,8 @@ import {
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
-import { getCurrentSession, signOut } from "@/lib/auth-client";
-import { clearUserProfileCache, fetchAndStoreUserProfile, toEmployeeProfile } from "@/lib/user-profile";
+import { getCurrentSession, logout } from "@/lib/auth-client";
+import { fetchAndStoreUserProfile, toEmployeeProfile } from "@/lib/user-profile";
 import { getAppMe } from "@/lib/api/session";
 import { useTheme } from "@/context/ThemeContext";
 import { DAWH_LOGOS } from "@/config/brand";
@@ -654,9 +654,7 @@ export default function NavbarMain({
                     type="button"
                     onClick={async () => {
                       setIsAccountOpen(false);
-                      await signOut();
-                      clearUserProfileCache();
-                      router.push(loginPath);
+                      await logout();
                     }}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium text-rose-500 hover:bg-rose-500/10 transition-all text-left cursor-pointer"
                   >

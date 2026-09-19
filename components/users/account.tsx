@@ -50,8 +50,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
 import { useNotification } from "@/context/NotificationContext";
-import { authClient, getCurrentSession, signOut } from "@/lib/auth-client";
-import { clearUserProfileCache, fetchAndStoreUserProfile, toEmployeeProfile } from "@/lib/user-profile";
+import { authClient, getCurrentSession, logout } from "@/lib/auth-client";
+import { fetchAndStoreUserProfile, toEmployeeProfile } from "@/lib/user-profile";
 import { apiPut } from "@/lib/api/client";
 import { getOnboardingOptions } from "@/lib/api/onboarding";
 import { ApiRequestError } from "@/lib/api/client";
@@ -2042,13 +2042,7 @@ export default function AccountView({
 
   // Logout Handler
   const handleLogout = async () => {
-    await signOut();
-    clearUserProfileCache();
-    if (typeof window !== "undefined") {
-      window.location.href = "/auth/login";
-    } else {
-      router.replace("/auth/login");
-    }
+    await logout();
   };
 
   // DEV_TESTPUSHFILL_START - Temporary auto-fill test values (DELETE ME EASILY WHEN DONE)

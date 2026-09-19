@@ -14,10 +14,10 @@ import {
   User,
   MoreVertical,
 } from "lucide-react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
-import { getCurrentSession, signOut } from "@/lib/auth-client";
-import { clearUserProfileCache, checkProfileCompleteness, fetchAndStoreUserProfile, toEmployeeProfile } from "@/lib/user-profile";
+import { getCurrentSession, logout } from "@/lib/auth-client";
+import { checkProfileCompleteness, fetchAndStoreUserProfile, toEmployeeProfile } from "@/lib/user-profile";
 import { EmployeeProfile } from "@/types/user";
 import { useLoading } from "@/components/loading_screen";
 import { getDawhLogo } from "@/config/brand";
@@ -48,7 +48,6 @@ export default function HeaderNavbar({
   lang: controlledLang,
   onLangChange,
 }: HeaderNavbarProps) {
-  const router = useRouter();
   const pathname = usePathname();
   const { navigateWithLoading } = useLoading();
   const { theme, toggleTheme } = useTheme();
@@ -281,13 +280,7 @@ export default function HeaderNavbar({
   // Logout Handler
   const handleLogout = async () => {
     setIsDropdownOpen(false);
-    await signOut();
-    clearUserProfileCache();
-    if (typeof window !== "undefined") {
-      window.location.href = "/auth/login";
-    } else {
-      router.replace("/auth/login");
-    }
+    await logout();
   };
 
   const { isComplete, missingFields } = checkProfileCompleteness(profile);

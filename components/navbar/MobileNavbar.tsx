@@ -22,8 +22,8 @@ import {
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage, setAppLanguage } from "@/utils/language";
-import { clearUserProfileCache, fetchAndStoreUserProfile } from "@/lib/user-profile";
-import { getCurrentSession, signOut } from "@/lib/auth-client";
+import { fetchAndStoreUserProfile } from "@/lib/user-profile";
+import { getCurrentSession, logout } from "@/lib/auth-client";
 import { useLoading } from "@/components/loading_screen";
 import { DAWH_LOGOS, getDawhLogo } from "@/config/brand";
 import { motion, AnimatePresence } from "framer-motion";
@@ -594,9 +594,7 @@ export default function MobileNavbar({
                 type="button"
                 onClick={async () => {
                   setIsAccountSheetOpen(false);
-                  await signOut();
-                  clearUserProfileCache();
-                  router.push("/auth/login");
+                  await logout();
                 }}
                 className="w-full h-[41px] border border-[#444444] rounded-[8px] flex items-center justify-center gap-2 text-white font-bold text-[13px] hover:bg-white/10 transition-all cursor-pointer mt-3 font-mono"
               >
