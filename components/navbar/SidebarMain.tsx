@@ -18,7 +18,6 @@ import {
   Boxes,
   ArrowLeftRight,
   RotateCw,
-  Clock,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
@@ -386,25 +385,19 @@ export default function NavbarMain({
             : "bg-[#1E1E1E] border-[#383838]"
         }`}
       >
-        {/* Server Status Indicator */}
-        {serverStatus && (
+        {/* Server Status Indicator (Hidden when minimized) */}
+        {serverStatus && !isMinimized && (
           <div
-            className={`w-full transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] flex items-center justify-center ${
-              isMinimized ? "py-1" : "py-1 px-1"
-            }`}
+            className="w-full py-1 px-1 flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]"
             title={serverStatus.label || serverStatus.sublabel}
           >
-            {isMinimized ? (
-              <Clock size={15} className={`shrink-0 ${isLight ? "text-slate-500" : "text-[#A1A1AA]"}`} />
-            ) : (
-              <p
-                className={`text-[11px] font-medium leading-tight truncate text-center ${
-                  isLight ? "text-slate-500" : "text-[#A1A1AA]"
-                }`}
-              >
-                {serverStatus.label || serverStatus.sublabel}
-              </p>
-            )}
+            <p
+              className={`text-[11px] font-medium leading-tight truncate text-center ${
+                isLight ? "text-slate-500" : "text-[#A1A1AA]"
+              }`}
+            >
+              {serverStatus.label || serverStatus.sublabel}
+            </p>
           </div>
         )}
 
