@@ -1,73 +1,9 @@
-import "server-only";
-
-import { dbPool } from "@/lib/core/db/pool";
-import type { KeysetCursor } from "@/lib/core/http/pagination";
-import type { AccessContext } from "@/lib/access/types";
-import type { StockBalance } from "@/lib/stock/types";
-
-type StockBalanceRow = {
-  id: string;
-  facility_id: string;
-  facility_code: string;
-  location_id: string | null;
-  product_id: string;
-  sku: string;
-  product_name_th: string;
-  lot_id: string | null;
-  serial_id: string | null;
-  shipment_id: string | null;
-  stock_status: string;
-  quantity: string;
-  version: string;
-  updated_at: Date;
-};
-
-export async function listScopedStockBalances(
-  context: AccessContext,
-  page: { limit: number; cursor: KeysetCursor | null },
-  facilityId?: string
-): Promise<StockBalance[]> {
-  const scopedFacilityIds = context.facilityScopes.map((scope) => scope.facilityId);
-  if (scopedFacilityIds.length === 0) return [];
-
-  const result = await dbPool.query<StockBalanceRow>(
-    `SELECT b.id, b.facility_id, f.code AS facility_code, b.location_id, b.product_id,
-            p.sku, p.name_th AS product_name_th, b.lot_id, b.serial_id, b.shipment_id,
-            b.stock_status, b.quantity::text, b.version::text, b.updated_at
-     FROM public.stock_balances AS b
-     JOIN public.facilities AS f ON f.id = b.facility_id
-     JOIN public.products AS p ON p.id = b.product_id
-     WHERE b.facility_id = ANY($1::bigint[])
-       AND f.organization_id = $2
-       AND p.organization_id = $2
-       AND ($3::bigint IS NULL OR b.facility_id = $3::bigint)
-       AND ($4::timestamptz IS NULL OR (b.updated_at, b.id) < ($4::timestamptz, $5::bigint))
-     ORDER BY b.updated_at DESC, b.id DESC
-     LIMIT $6`,
-    [
-      scopedFacilityIds,
-      context.organization.id,
-      facilityId ?? null,
-      page.cursor?.timestamp ?? null,
-      page.cursor?.id ?? null,
-      page.limit + 1,
-    ]
-  );
-
-  return result.rows.map((row) => ({
-    id: row.id,
-    facilityId: row.facility_id,
-    facilityCode: row.facility_code,
-    locationId: row.location_id,
-    productId: row.product_id,
-    sku: row.sku,
-    productNameTh: row.product_name_th,
-    lotId: row.lot_id,
-    serialId: row.serial_id,
-    shipmentId: row.shipment_id,
-    stockStatus: row.stock_status,
-    quantity: row.quantity,
-    version: row.version,
-    updatedAt: row.updated_at.toISOString(),
-  }));
-}
+import "server-only";import { AuthorizationError,canAccessFacility,visibleFacilityIds } from "@/lib/access/service";import type { AccessContext } from "@/lib/access/types";import { dbPool } from "@/lib/core/db/pool";import type { NetworkStock,StockBalance,StockBalanceFilters,StockLedgerFilters,StockLedgerLine } from "@/lib/stock/types";
+type BalanceRow={id:string;facility_id:string;facility_code:string;facility_name:string;location_id:string|null;location_code:string|null;product_id:string;sku:string;product_name_th:string;product_name_en:string|null;category_id:string|null;category_code:string|null;category_name:string|null;brand_id:string|null;brand_code:string|null;brand_name:string|null;base_unit_id:string;base_unit_code:string;base_unit_name:string;lot_id:string|null;lot_number:string|null;expiry_date:string|null;serial_id:string|null;serial_number:string|null;shipment_id:string|null;stock_status:string;quantity:string;available_quantity:string;safety_quantity:string;available_to_transfer:string;version:string;updated_at:Date};
+function mapBalance(r:BalanceRow):StockBalance{return{id:r.id,facilityId:r.facility_id,facilityCode:r.facility_code,facilityName:r.facility_name,locationId:r.location_id,locationCode:r.location_code,productId:r.product_id,sku:r.sku,productNameTh:r.product_name_th,productNameEn:r.product_name_en,category:r.category_id&&r.category_code&&r.category_name?{id:r.category_id,code:r.category_code,name:r.category_name}:null,brand:r.brand_id&&r.brand_code&&r.brand_name?{id:r.brand_id,code:r.brand_code,name:r.brand_name}:null,baseUnit:{id:r.base_unit_id,code:r.base_unit_code,name:r.base_unit_name},lotId:r.lot_id,lotNumber:r.lot_number,expiryDate:r.expiry_date,serialId:r.serial_id,serialNumber:r.serial_number,shipmentId:r.shipment_id,stockStatus:r.stock_status,quantity:r.quantity,availableQuantity:r.available_quantity,safetyQuantity:r.safety_quantity,availableToTransfer:r.available_to_transfer,version:r.version,updatedAt:r.updated_at.toISOString()};}
+function scope(c:AccessContext,facilityId:string|null){if(facilityId&&!canAccessFacility(c,facilityId,"READ"))throw new AuthorizationError("FORBIDDEN_FACILITY_SCOPE");const ids=visibleFacilityIds(c);return{all:ids===null,ids:ids??[]};}
+export async function listScopedStockBalances(c:AccessContext,f:StockBalanceFilters):Promise<StockBalance[]>{const s=scope(c,f.facilityId);if(!s.all&&s.ids.length===0)return[];const r=await dbPool.query<BalanceRow>(`SELECT b.id,b.facility_id,f.code facility_code,f.name facility_name,b.location_id,l.code location_code,b.product_id,p.sku,p.name_th product_name_th,p.name_en product_name_en,p.category_id,c.code category_code,c.name category_name,p.brand_id,br.code brand_code,br.name brand_name,p.base_unit_id,u.code base_unit_code,u.name base_unit_name,b.lot_id,lot.lot_number,lot.expiry_date::text,b.serial_id,sn.serial_number,b.shipment_id,b.stock_status,b.quantity::text,CASE WHEN b.stock_status='AVAILABLE'THEN b.quantity ELSE 0 END::text available_quantity,COALESCE(ss.safety_quantity,0)::text safety_quantity,GREATEST(CASE WHEN b.stock_status='AVAILABLE'THEN b.quantity ELSE 0 END-COALESCE(ss.safety_quantity,0),0)::text available_to_transfer,b.version::text,b.updated_at FROM public.stock_balances b JOIN public.facilities f ON f.id=b.facility_id LEFT JOIN public.warehouse_locations l ON l.id=b.location_id JOIN public.products p ON p.id=b.product_id LEFT JOIN public.product_categories c ON c.id=p.category_id LEFT JOIN public.brands br ON br.id=p.brand_id JOIN public.units_of_measure u ON u.id=p.base_unit_id LEFT JOIN public.lots lot ON lot.id=b.lot_id LEFT JOIN public.serial_numbers sn ON sn.id=b.serial_id LEFT JOIN public.safety_stock_rules ss ON ss.facility_id=b.facility_id AND ss.product_id=b.product_id WHERE f.organization_id=$1 AND p.organization_id=$1 AND($2::boolean OR b.facility_id=ANY($3::bigint[]))AND($4::bigint IS NULL OR b.facility_id=$4)AND($5::bigint IS NULL OR b.location_id=$5)AND($6::bigint IS NULL OR b.product_id=$6)AND($7::text IS NULL OR b.stock_status=$7)AND($8::bigint IS NULL OR b.lot_id=$8)AND($9::bigint IS NULL OR b.serial_id=$9)AND($10::text IS NULL OR p.sku ILIKE '%'||$10||'%' ESCAPE '\\' OR p.name_th ILIKE '%'||$10||'%' ESCAPE '\\' OR p.name_en ILIKE '%'||$10||'%' ESCAPE '\\')AND($11::timestamptz IS NULL OR(b.updated_at,b.id)<($11,$12::bigint))ORDER BY b.updated_at DESC,b.id DESC LIMIT $13`,[c.organization.id,s.all,s.ids,f.facilityId,f.locationId,f.productId,f.stockStatus,f.lotId,f.serialId,f.search,f.page.cursor?.timestamp??null,f.page.cursor?.id??null,f.page.limit+1]);return r.rows.map(mapBalance);}
+type LedgerRow={id:string;transaction_id:string;transaction_no:string;transaction_type:string;reference_type:string;reference_id:string;line_no:number;facility_id:string;facility_code:string;location_id:string|null;location_code:string|null;product_id:string;sku:string;lot_id:string|null;lot_number:string|null;serial_id:string|null;serial_number:string|null;shipment_id:string|null;stock_status:string;quantity_before:string;quantity_delta:string;quantity_after:string;occurred_at:Date;posted_at:Date;posted_by:string};
+const mapLedger=(r:LedgerRow):StockLedgerLine=>({id:r.id,transactionId:r.transaction_id,transactionNo:r.transaction_no,transactionType:r.transaction_type,referenceType:r.reference_type,referenceId:r.reference_id,lineNo:r.line_no,facilityId:r.facility_id,facilityCode:r.facility_code,locationId:r.location_id,locationCode:r.location_code,productId:r.product_id,sku:r.sku,lotId:r.lot_id,lotNumber:r.lot_number,serialId:r.serial_id,serialNumber:r.serial_number,shipmentId:r.shipment_id,stockStatus:r.stock_status,quantityBefore:r.quantity_before,quantityDelta:r.quantity_delta,quantityAfter:r.quantity_after,occurredAt:r.occurred_at.toISOString(),postedAt:r.posted_at.toISOString(),postedBy:r.posted_by});
+export async function listStockLedger(c:AccessContext,f:StockLedgerFilters){const s=scope(c,f.facilityId);if(!s.all&&s.ids.length===0)return[];const r=await dbPool.query<LedgerRow>(`SELECT line.id,line.transaction_id,t.transaction_no,t.transaction_type,t.reference_type,t.reference_id,line.line_no,line.facility_id,fac.code facility_code,line.location_id,loc.code location_code,line.product_id,p.sku,line.lot_id,lot.lot_number,line.serial_id,sn.serial_number,line.shipment_id,line.stock_status,line.quantity_before::text,line.quantity_delta::text,line.quantity_after::text,t.occurred_at,line.posted_at,t.posted_by FROM public.inventory_transaction_lines line JOIN public.inventory_transactions t ON t.id=line.transaction_id JOIN public.facilities fac ON fac.id=line.facility_id LEFT JOIN public.warehouse_locations loc ON loc.id=line.location_id JOIN public.products p ON p.id=line.product_id LEFT JOIN public.lots lot ON lot.id=line.lot_id LEFT JOIN public.serial_numbers sn ON sn.id=line.serial_id WHERE t.organization_id=$1 AND fac.organization_id=$1 AND p.organization_id=$1 AND($2::boolean OR line.facility_id=ANY($3::bigint[]))AND($4::bigint IS NULL OR line.facility_id=$4)AND($5::bigint IS NULL OR line.product_id=$5)AND($6::bigint IS NULL OR line.location_id=$6)AND($7::text IS NULL OR t.transaction_type=$7)AND($8::text IS NULL OR t.reference_type=$8)AND($9::bigint IS NULL OR t.reference_id=$9)AND($10::timestamptz IS NULL OR line.posted_at>=$10)AND($11::timestamptz IS NULL OR line.posted_at<=$11)AND($12::timestamptz IS NULL OR(line.posted_at,line.id)<($12,$13::bigint))ORDER BY line.posted_at DESC,line.id DESC LIMIT $14`,[c.organization.id,s.all,s.ids,f.facilityId,f.productId,f.locationId,f.transactionType,f.referenceType,f.referenceId,f.postedFrom,f.postedTo,f.page.cursor?.timestamp??null,f.page.cursor?.id??null,f.page.limit+1]);return r.rows.map(mapLedger);}
+export async function listNetworkStock(c:AccessContext,facilityId:string|null,productId:string|null):Promise<NetworkStock[]>{const s=scope(c,facilityId);if(!s.all&&s.ids.length===0)return[];const r=await dbPool.query<{product_id:string;sku:string;name_th:string;name_en:string|null;facility_id:string;facility_code:string;facility_name:string;physical:string;available:string;safety:string;transferable:string;transit:string}>(`SELECT p.id product_id,p.sku,p.name_th,p.name_en,f.id facility_id,f.code facility_code,f.name facility_name,COALESCE(sum(b.quantity)FILTER(WHERE b.stock_status NOT IN('IN_TRANSIT','LOST')),0)::text physical,COALESCE(sum(b.quantity)FILTER(WHERE b.stock_status='AVAILABLE'),0)::text available,COALESCE(ss.safety_quantity,0)::text safety,GREATEST(COALESCE(sum(b.quantity)FILTER(WHERE b.stock_status='AVAILABLE'),0)-COALESCE(ss.safety_quantity,0),0)::text transferable,COALESCE(sum(b.quantity)FILTER(WHERE b.stock_status='IN_TRANSIT'),0)::text transit FROM public.stock_balances b JOIN public.facilities f ON f.id=b.facility_id JOIN public.products p ON p.id=b.product_id LEFT JOIN public.safety_stock_rules ss ON ss.facility_id=f.id AND ss.product_id=p.id WHERE f.organization_id=$1 AND p.organization_id=$1 AND($2::boolean OR f.id=ANY($3::bigint[]))AND($4::bigint IS NULL OR f.id=$4)AND($5::bigint IS NULL OR p.id=$5)GROUP BY p.id,p.sku,p.name_th,p.name_en,f.id,f.code,f.name,ss.safety_quantity ORDER BY p.sku,f.code`,[c.organization.id,s.all,s.ids,facilityId,productId]);return r.rows.map(x=>({productId:x.product_id,sku:x.sku,productNameTh:x.name_th,productNameEn:x.name_en,facilityId:x.facility_id,facilityCode:x.facility_code,facilityName:x.facility_name,physicalOnHand:x.physical,availableQuantity:x.available,safetyQuantity:x.safety,availableToTransfer:x.transferable,inTransitQuantity:x.transit}));}
