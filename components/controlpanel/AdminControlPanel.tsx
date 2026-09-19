@@ -1037,8 +1037,7 @@ export default function AdminControlPanel() {
           }}
           serverStatus={{
             connected: true,
-            label: isThai ? "เชื่อมต่อฐานข้อมูลระบบแล้ว" : "Live PostgreSQL Connected",
-            sublabel: lastSynced
+            label: lastSynced
               ? isThai
                 ? `ซิงค์ล่าสุดเวลา: ${lastSynced} น.`
                 : `Last synced at: ${lastSynced}`

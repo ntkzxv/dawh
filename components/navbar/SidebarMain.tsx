@@ -18,6 +18,7 @@ import {
   Boxes,
   ArrowLeftRight,
   RotateCw,
+  Clock,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
@@ -392,121 +393,25 @@ export default function NavbarMain({
               isMinimized
                 ? "w-10 h-10 aspect-square mx-auto rounded-xl border flex items-center justify-center " +
                   (isLight
-                    ? "bg-white border-[#E4E4E7] text-emerald-600 shadow-sm"
-                    : "bg-[#383838] border-[#444444] text-emerald-400 shadow-sm")
-                : "px-3 py-2 rounded-xl border flex items-center gap-2.5 transition-colors shadow-sm " +
+                    ? "bg-white border-[#E4E4E7] text-slate-600 shadow-sm"
+                    : "bg-[#383838] border-[#444444] text-[#D4D4D8] shadow-sm")
+                : "px-3 py-2 rounded-xl border flex items-center justify-center text-center transition-colors shadow-sm " +
                   (isLight
                     ? "bg-white border-[#E4E4E7]"
                     : "bg-[#383838] border-[#444444]")
             }`}
-            title={
-              serverStatus.sublabel
-                ? `${serverStatus.label} (${serverStatus.sublabel})`
-                : serverStatus.label
-            }
+            title={serverStatus.label || serverStatus.sublabel}
           >
             {isMinimized ? (
-              <div className="flex items-center justify-center">
-                <div className="relative flex items-center justify-center w-3.5 h-3.5">
-                  {serverStatus.connected ? (
-                    <>
-                      <motion.span
-                        className="absolute inset-0 rounded-full bg-emerald-500"
-                        animate={{
-                          scale: [1, 2.1],
-                          opacity: [0.55, 0],
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: "easeOut",
-                        }}
-                      />
-                      <motion.span
-                        className="relative block w-2.5 h-2.5 rounded-full bg-emerald-500"
-                        animate={{
-                          opacity: [1, 0.75, 1],
-                          scale: [1, 1.05, 1],
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                        style={{
-                          boxShadow: "0 0 8px rgba(16, 185, 129, 0.85)",
-                        }}
-                      />
-                    </>
-                  ) : (
-                    <span className="block w-2.5 h-2.5 rounded-full bg-rose-500" />
-                  )}
-                </div>
-              </div>
+              <Clock size={16} className={isLight ? "text-slate-600" : "text-[#D4D4D8]"} />
             ) : (
-              <>
-                <div
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border ${
-                    isLight
-                      ? "bg-white border-white"
-                      : "bg-[#383838] border-[#383838]"
-                  }`}
-                >
-                  <div className="relative flex items-center justify-center w-3 h-3">
-                    {serverStatus.connected ? (
-                      <>
-                        <motion.span
-                          className="absolute inset-0 rounded-full bg-emerald-500"
-                          animate={{
-                            scale: [1, 2.1],
-                            opacity: [0.55, 0],
-                          }}
-                          transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                            ease: "easeOut",
-                          }}
-                        />
-                        <motion.span
-                          className="relative block w-2 h-2 rounded-full bg-emerald-500"
-                          animate={{
-                            opacity: [1, 0.75, 1],
-                            scale: [1, 1.05, 1],
-                          }}
-                          transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                            ease: "easeInOut",
-                          }}
-                          style={{
-                            boxShadow: "0 0 8px rgba(16, 185, 129, 0.85)",
-                          }}
-                        />
-                      </>
-                    ) : (
-                      <span className="block w-2 h-2 rounded-full bg-rose-500" />
-                    )}
-                  </div>
-                </div>
-                <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
-                  <span
-                    className={`text-[11.5px] font-bold leading-tight truncate ${
-                      isLight ? "text-slate-900" : "text-[#FFFFFF]"
-                    }`}
-                  >
-                    {serverStatus.label}
-                  </span>
-                  {serverStatus.sublabel && (
-                    <span
-                      className={`text-[10px] leading-tight truncate mt-0.5 ${
-                        isLight ? "text-zinc-500" : "text-[#A1A1AA]"
-                      }`}
-                    >
-                      {serverStatus.sublabel}
-                    </span>
-                  )}
-                </div>
-              </>
+              <span
+                className={`text-[11.5px] font-medium leading-tight truncate text-center ${
+                  isLight ? "text-slate-600" : "text-[#D4D4D8]"
+                }`}
+              >
+                {serverStatus.label || serverStatus.sublabel}
+              </span>
             )}
           </div>
         )}
