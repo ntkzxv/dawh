@@ -255,24 +255,36 @@ export default function HeaderNavbar({
 
   // Dynamic Route-Aware Title & Subtitle Fallbacks
   const getRouteTitleAndSubtitle = () => {
-    if (title && subtitle) return { title, subtitle };
+    if (title !== undefined) {
+      return {
+        title,
+        subtitle: subtitle || "",
+      };
+    }
+
+    if (pathname?.startsWith("/controlpanel") || pathname?.startsWith("/admin")) {
+      return {
+        title: isThai ? "แผงควบคุมระบบผู้ดูแล" : "Admin Control Panel",
+        subtitle: subtitle || "",
+      };
+    }
 
     if (pathname?.startsWith("/account") || pathname?.startsWith("/settings")) {
       return {
-        title: title || (isThai ? "การตั้งค่าบัญชีและโปรไฟล์" : "Account & Profile Settings"),
+        title: isThai ? "การตั้งค่าบัญชีและโปรไฟล์" : "Account & Profile Settings",
         subtitle: subtitle || (isThai ? "จัดการและตรวจสอบข้อมูลประวัติในระบบองค์กร" : "Configure and update your employee profile"),
       };
     }
     if (pathname?.startsWith("/workspace")) {
       return {
-        title: title || (isThai ? "ศูนย์รวมระบบงาน DAWH" : "DAWH Workspace Hub"),
+        title: isThai ? "ศูนย์รวมระบบงาน DAWH" : "DAWH Workspace Hub",
         subtitle: subtitle || (isThai ? "ระบบปฏิบัติการองค์กรพร้อมสำหรับการพัฒนาโมดูล" : "Enterprise operations hub ready for refactor"),
       };
     }
 
     return {
-      title: title || (isThai ? "ระบบจัดการองค์กร" : "Enterprise System"),
-      subtitle: subtitle || (isThai ? "ศูนย์ข้อมูลและระบบบริหารจัดการ DAWH" : "DAWH Operations & Platform Services"),
+      title: isThai ? "ระบบจัดการองค์กร" : "Enterprise System",
+      subtitle: subtitle || "",
     };
   };
 

@@ -1099,6 +1099,7 @@ export default function AdminControlPanel() {
             showLogo={false}
             showAccount={true}
             title={isThai ? "แผงควบคุมระบบผู้ดูแล" : "Admin Control Panel"}
+            subtitle=""
             lang={currentLang}
             onLangChange={setAppLanguage}
           />
