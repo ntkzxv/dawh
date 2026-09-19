@@ -11,24 +11,33 @@ import {
   ShieldAlert,
   ScrollText,
   ChevronDown,
+  Layers,
+  Scale,
+  FileQuestion,
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage } from "@/utils/language";
-import type { AdminTabKey, AuditLogCategoryKey } from "@/components/controlpanel/types";
+import type {
+  AdminTabKey,
+  AuditLogCategoryKey,
+  ProductSubTabKey,
+} from "@/components/controlpanel/types";
 import { motion, AnimatePresence } from "framer-motion";
 
 export interface NavbarsubControlPanelProps {
   activeTab?: AdminTabKey;
-  onTabChange?: (tab: AdminTabKey, category?: AuditLogCategoryKey) => void;
+  onTabChange?: (tab: AdminTabKey, category?: AuditLogCategoryKey | ProductSubTabKey) => void;
   activeAuditCategory?: AuditLogCategoryKey;
+  activeProductSubTab?: ProductSubTabKey;
   isMinimized?: boolean;
   lang?: "th" | "en";
   counts?: Partial<Record<AdminTabKey, number>> & { audit_logs?: number };
   auditCategoryCounts?: Partial<Record<AuditLogCategoryKey, number>>;
+  productCategoryCounts?: Partial<Record<ProductSubTabKey, number>>;
 }
 
 interface SubMenuItem {
-  id: AuditLogCategoryKey;
+  id: string;
   titleTh: string;
   titleEn: string;
   icon: React.ElementType;
@@ -78,6 +87,32 @@ const CONTROL_PANEL_ITEMS: MenuGroup[] = [
     titleTh: "ข้อมูลสินค้าหลัก",
     titleEn: "Product Master",
     icon: Package,
+    children: [
+      {
+        id: "products",
+        titleTh: "ทะเบียนสินค้า",
+        titleEn: "Products",
+        icon: Package,
+      },
+      {
+        id: "categories",
+        titleTh: "หมวดหมู่สินค้า",
+        titleEn: "Categories",
+        icon: Layers,
+      },
+      {
+        id: "brands_uoms",
+        titleTh: "แบรนด์และหน่วยนับ",
+        titleEn: "Brands & UOM",
+        icon: Scale,
+      },
+      {
+        id: "reasons",
+        titleTh: "รหัสเหตุผล",
+        titleEn: "Reason Codes",
+        icon: FileQuestion,
+      },
+    ],
   },
   {
     id: "stock",
@@ -138,10 +173,12 @@ export default function NavbarsubControlPanel({
   activeTab = "users",
   onTabChange,
   activeAuditCategory = "all",
+  activeProductSubTab = "products",
   isMinimized = false,
   lang: propLang,
   counts = {},
   auditCategoryCounts = {},
+  productCategoryCounts = {},
 }: NavbarsubControlPanelProps) {
   const { theme } = useTheme();
   const isLight = theme === "light";
@@ -149,17 +186,24 @@ export default function NavbarsubControlPanel({
   const normalizedLang = (propLang ?? (appLang?.toLowerCase() === "en" ? "en" : "th")) as "en" | "th";
   const isThai = normalizedLang === "th";
 
-  // Track accordion expand state for Audit dropdown
-  const [isAuditExpanded, setIsAuditExpanded] = useState<boolean>(activeTab === "audit_logs");
-  const [isAuditPopupOpen, setIsAuditPopupOpen] = useState(false);
+  // Track accordion expand state for dropdown groups
+  const [expandedDropdowns, setExpandedDropdowns] = useState<Record<string, boolean>>({
+    products: activeTab === "products",
+    audit: activeTab === "audit_logs",
+  });
+
+  // Track active popup for minimized sidebar
+  const [activePopupId, setActivePopupId] = useState<string | null>(null);
   const [popupCoords, setPopupCoords] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
-  const auditButtonRef = useRef<HTMLButtonElement | null>(null);
+  const triggerRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const popupRef = useRef<HTMLDivElement | null>(null);
 
-  // Auto-expand accordion when activeTab changes to audit_logs
+  // Auto-expand accordion when activeTab changes
   useEffect(() => {
-    if (activeTab === "audit_logs") {
-      setIsAuditExpanded(true);
+    if (activeTab === "products") {
+      setExpandedDropdowns((prev) => ({ ...prev, products: true }));
+    } else if (activeTab === "audit_logs") {
+      setExpandedDropdowns((prev) => ({ ...prev, audit: true }));
     }
   }, [activeTab]);
 
@@ -170,20 +214,21 @@ export default function NavbarsubControlPanel({
       if (
         popupRef.current &&
         !popupRef.current.contains(target) &&
-        auditButtonRef.current &&
-        !auditButtonRef.current.contains(target)
+        activePopupId &&
+        triggerRefs.current[activePopupId] &&
+        !triggerRefs.current[activePopupId]?.contains(target)
       ) {
-        setIsAuditPopupOpen(false);
+        setActivePopupId(null);
       }
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setIsAuditPopupOpen(false);
+        setActivePopupId(null);
       }
     };
 
-    if (isAuditPopupOpen) {
+    if (activePopupId) {
       document.addEventListener("mousedown", handleOutsideClick);
       document.addEventListener("touchstart", handleOutsideClick);
       document.addEventListener("keydown", handleKeyDown);
@@ -194,30 +239,63 @@ export default function NavbarsubControlPanel({
       document.removeEventListener("touchstart", handleOutsideClick);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isAuditPopupOpen]);
+  }, [activePopupId]);
 
-  const handleAuditToggle = (e: React.MouseEvent) => {
+  const handleDropdownToggle = (itemId: string, itemTabKey?: AdminTabKey) => {
     if (isMinimized) {
-      // Calculate coordinates for flyout popup
-      if (auditButtonRef.current) {
-        const rect = auditButtonRef.current.getBoundingClientRect();
+      const btn = triggerRefs.current[itemId];
+      if (btn) {
+        const rect = btn.getBoundingClientRect();
         setPopupCoords({
           top: Math.max(10, rect.top - 10),
           left: rect.right + 10,
         });
       }
-      setIsAuditPopupOpen((prev) => !prev);
+      setActivePopupId((prev) => (prev === itemId ? null : itemId));
     } else {
-      setIsAuditExpanded((prev) => !prev);
-      if (activeTab !== "audit_logs") {
-        onTabChange?.("audit_logs", activeAuditCategory);
+      setExpandedDropdowns((prev) => ({
+        ...prev,
+        [itemId]: !prev[itemId],
+      }));
+      if (itemTabKey && activeTab !== itemTabKey) {
+        if (itemTabKey === "products") {
+          onTabChange?.("products", activeProductSubTab);
+        } else if (itemTabKey === "audit_logs") {
+          onTabChange?.("audit_logs", activeAuditCategory);
+        } else {
+          onTabChange?.(itemTabKey);
+        }
       }
     }
   };
 
-  const handleSubItemClick = (catId: AuditLogCategoryKey) => {
-    onTabChange?.("audit_logs", catId);
-    setIsAuditPopupOpen(false);
+  const handleSubItemClick = (groupId: string, subId: string) => {
+    if (groupId === "products") {
+      onTabChange?.("products", subId as ProductSubTabKey);
+    } else if (groupId === "audit") {
+      onTabChange?.("audit_logs", subId as AuditLogCategoryKey);
+    }
+    setActivePopupId(null);
+  };
+
+  const getSubItemCount = (groupId: string, subId: string): number | undefined => {
+    if (groupId === "products") {
+      return productCategoryCounts[subId as ProductSubTabKey];
+    }
+    if (groupId === "audit") {
+      return auditCategoryCounts[subId as AuditLogCategoryKey];
+    }
+    return undefined;
+  };
+
+  const isSubItemActive = (groupId: string, subId: string): boolean => {
+    if (groupId === "products") {
+      return activeTab === "products" && activeProductSubTab === subId;
+    }
+    if (groupId === "audit") {
+      return activeTab === "audit_logs" && activeAuditCategory === subId;
+    }
+    return false;
   };
 
   return (
@@ -229,6 +307,8 @@ export default function NavbarsubControlPanel({
           const isItemActive = item.tabKey === activeTab;
           const title = isThai ? item.titleTh : item.titleEn;
           const count = item.tabKey ? counts[item.tabKey] : undefined;
+          const isExpanded = Boolean(expandedDropdowns[item.id]);
+          const isPopupOpen = activePopupId === item.id;
 
           // Case 1: Flat item without children
           if (!hasChildren && item.tabKey) {
@@ -253,40 +333,43 @@ export default function NavbarsubControlPanel({
                 }`}
                 title={isMinimized ? title : undefined}
               >
-                <Icon
-                  size={18}
-                  className={`${
-                    isItemActive
-                      ? isLight
-                        ? "text-slate-950"
-                        : "text-[#FFFFFF]"
-                      : isLight
-                      ? "text-slate-700 group-hover:text-slate-950"
-                      : "text-[#E4E4E7] group-hover:text-[#FFFFFF]"
-                  } shrink-0 transition-colors duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]`}
-                />
+                <div className={`flex items-center ${isMinimized ? "justify-center" : "gap-3"} min-w-0`}>
+                  <Icon
+                    size={18}
+                    className={`${
+                      isItemActive
+                        ? isLight
+                          ? "text-slate-950"
+                          : "text-[#FFFFFF]"
+                        : isLight
+                        ? "text-slate-700 group-hover:text-slate-950"
+                        : "text-[#E4E4E7] group-hover:text-[#FFFFFF]"
+                    } shrink-0 transition-colors duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]`}
+                  />
 
-                <span
-                  className={`text-[13.5px] font-medium leading-tight text-left whitespace-nowrap overflow-hidden transition-all ease-out ${
-                    isItemActive
-                      ? isLight
-                        ? "text-slate-950 font-semibold"
-                        : "text-[#FFFFFF] font-semibold"
-                      : isLight
-                      ? "text-slate-800"
-                      : "text-[#E4E4E7] group-hover:text-[#FFFFFF]"
-                  } ${
-                    isMinimized
-                      ? "max-w-0 opacity-0 -translate-x-3 duration-200 pointer-events-none"
-                      : "max-w-[170px] opacity-100 translate-x-0 duration-350 delay-100"
-                  }`}
-                >
-                  {title}
-                </span>
-
-                {count !== undefined && count !== null && !isMinimized && (
                   <span
-                    className={`ml-auto px-2 py-0.5 text-[10px] font-bold rounded-full ${
+                    className={`text-[13.5px] font-medium leading-tight text-left whitespace-nowrap overflow-hidden transition-all ease-out ${
+                      isItemActive
+                        ? isLight
+                          ? "text-slate-950 font-semibold"
+                          : "text-[#FFFFFF] font-semibold"
+                        : isLight
+                        ? "text-slate-800"
+                        : "text-[#E4E4E7] group-hover:text-[#FFFFFF]"
+                    } ${
+                      isMinimized
+                        ? "max-w-0 opacity-0 -translate-x-3 duration-200 pointer-events-none"
+                        : "max-w-[150px] opacity-100 translate-x-0 duration-350 delay-100"
+                    }`}
+                  >
+                    {title}
+                  </span>
+                </div>
+
+                {/* Right Badge for Count */}
+                {!isMinimized && count !== undefined && count !== null && (
+                  <span
+                    className={`ml-auto px-1.5 py-0.5 text-[10px] font-bold rounded-full ${
                       isLight
                         ? "bg-slate-200 text-slate-900"
                         : "bg-[#282828] text-[#E4E4E7] border border-[#444444]"
@@ -296,7 +379,7 @@ export default function NavbarsubControlPanel({
                   </span>
                 )}
 
-                {/* Side line indicator when active in expanded mode */}
+                {/* Active Indicator bar */}
                 {!isMinimized && (
                   <div
                     className={`flex items-center justify-center w-4 shrink-0 ${
@@ -331,19 +414,21 @@ export default function NavbarsubControlPanel({
             );
           }
 
-          // Case 2: Dropdown accordion group (Audit Logs)
+          // Case 2: Dropdown accordion group (Product Master & Audit Trails)
           return (
             <div key={item.id} className="w-full flex flex-col">
               <button
-                ref={auditButtonRef}
+                ref={(el) => {
+                  triggerRefs.current[item.id] = el;
+                }}
                 type="button"
-                onClick={handleAuditToggle}
+                onClick={() => handleDropdownToggle(item.id, item.tabKey)}
                 className={`group relative rounded-xl border transition-colors duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] flex items-center justify-between overflow-hidden cursor-pointer outline-none focus:outline-none select-none ${
                   isMinimized
                     ? "w-12 h-12 justify-center mx-auto px-0"
                     : "w-full px-3.5 py-2.5 gap-3"
                 } ${
-                  isAuditPopupOpen
+                  isPopupOpen
                     ? isLight
                       ? "bg-slate-200/90 text-slate-950 border-slate-300 shadow-inner"
                       : "bg-[#383838] text-[#FFFFFF] border-[#555555]"
@@ -361,7 +446,7 @@ export default function NavbarsubControlPanel({
                   <Icon
                     size={18}
                     className={`${
-                      isAuditPopupOpen || isItemActive
+                      isPopupOpen || isItemActive
                         ? isLight
                           ? "text-slate-950"
                           : "text-[#FFFFFF]"
@@ -373,7 +458,7 @@ export default function NavbarsubControlPanel({
 
                   <span
                     className={`text-[13.5px] font-medium leading-tight text-left whitespace-nowrap overflow-hidden transition-all ease-out ${
-                      isAuditPopupOpen || isItemActive
+                      isPopupOpen || isItemActive
                         ? isLight
                           ? "text-slate-950 font-semibold"
                           : "text-[#FFFFFF] font-semibold"
@@ -408,7 +493,7 @@ export default function NavbarsubControlPanel({
                       size={15}
                       className={`shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
                         isLight ? "text-slate-600" : "text-[#E4E4E7]"
-                      } ${isAuditExpanded ? "rotate-180" : "rotate-0"}`}
+                      } ${isExpanded ? "rotate-180" : "rotate-0"}`}
                     />
                   </div>
                 )}
@@ -431,7 +516,7 @@ export default function NavbarsubControlPanel({
               {!isMinimized && (
                 <div
                   className={`grid transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-                    isAuditExpanded
+                    isExpanded
                       ? "grid-rows-[1fr] opacity-100 mt-1 mb-1"
                       : "grid-rows-[0fr] opacity-0 mt-0 mb-0 pointer-events-none"
                   }`}
@@ -443,15 +528,15 @@ export default function NavbarsubControlPanel({
                       }`}
                     >
                       {item.children?.map((child) => {
-                        const isSubActive = isItemActive && activeAuditCategory === child.id;
+                        const isSubActive = isSubItemActive(item.id, child.id);
                         const ChildIcon = child.icon;
-                        const subCount = auditCategoryCounts[child.id];
+                        const subCount = getSubItemCount(item.id, child.id);
 
                         return (
                           <button
                             key={child.id}
                             type="button"
-                            onClick={() => handleSubItemClick(child.id)}
+                            onClick={() => handleSubItemClick(item.id, child.id)}
                             className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left border transition-all duration-200 cursor-pointer outline-none focus:outline-none select-none ${
                               isSubActive
                                 ? isLight
@@ -518,7 +603,7 @@ export default function NavbarsubControlPanel({
 
       {/* Floating Sub Sidebar (Flyout active when sidebar is minimized) */}
       <AnimatePresence>
-        {isMinimized && isAuditPopupOpen && (
+        {isMinimized && activePopupId && (
           <motion.div
             ref={popupRef}
             initial={{ opacity: 0, scale: 0.96, x: -6 }}
@@ -537,77 +622,86 @@ export default function NavbarsubControlPanel({
                 : "bg-[#252525]/95 border-[#444444] text-white shadow-[0_25px_60px_rgba(0,0,0,0.7)]"
             }`}
           >
-            <div className="px-3 py-1.5 border-b border-zinc-200/60 dark:border-zinc-700/60 mb-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 block">
-                {isThai ? "บันทึกประวัติระบบ" : "Audit Trails"}
-              </span>
-            </div>
-            <div className="space-y-0.5">
-              {CONTROL_PANEL_ITEMS.find((i) => i.id === "audit")?.children?.map((child) => {
-                const isSubActive = activeTab === "audit_logs" && activeAuditCategory === child.id;
-                const ChildIcon = child.icon;
-                const subCount = auditCategoryCounts[child.id];
+            {(() => {
+              const currentItem = CONTROL_PANEL_ITEMS.find((i) => i.id === activePopupId);
+              if (!currentItem) return null;
 
-                return (
-                  <button
-                    key={child.id}
-                    type="button"
-                    onClick={() => handleSubItemClick(child.id)}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left border transition-colors duration-200 cursor-pointer outline-none focus:outline-none select-none ${
-                      isSubActive
-                        ? isLight
-                          ? "bg-slate-900 text-white border-slate-900 shadow-sm"
-                          : "bg-[#383838] text-white border-[#555555] shadow-sm"
-                        : isLight
-                        ? "border-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-950"
-                        : "border-transparent text-[#E4E4E7] hover:bg-white/10 hover:text-white"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <ChildIcon
-                        size={15}
-                        className={`shrink-0 ${
-                          isSubActive
-                            ? "text-white"
-                            : isLight
-                            ? "text-slate-500"
-                            : "text-zinc-400"
-                        }`}
-                      />
-                      <span className="text-[12.5px] font-medium leading-tight truncate">
-                        {isThai ? child.titleTh : child.titleEn}
-                      </span>
-                    </div>
+              return (
+                <>
+                  <div className="px-3 py-1.5 border-b border-zinc-200/60 dark:border-zinc-700/60 mb-1">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 block">
+                      {isThai ? currentItem.titleTh : currentItem.titleEn}
+                    </span>
+                  </div>
+                  <div className="space-y-0.5">
+                    {currentItem.children?.map((child) => {
+                      const isSubActive = isSubItemActive(currentItem.id, child.id);
+                      const ChildIcon = child.icon;
+                      const subCount = getSubItemCount(currentItem.id, child.id);
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      {subCount !== undefined && subCount !== null && (
-                        <span
-                          className={`px-1.5 py-0.2 text-[10px] font-bold rounded-full transition-colors ${
+                      return (
+                        <button
+                          key={child.id}
+                          type="button"
+                          onClick={() => handleSubItemClick(currentItem.id, child.id)}
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left border transition-colors duration-200 cursor-pointer outline-none focus:outline-none select-none ${
                             isSubActive
                               ? isLight
-                                ? "bg-white/20 text-white"
-                                : "bg-white/20 text-white"
+                                ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                                : "bg-[#383838] text-white border-[#555555] shadow-sm"
                               : isLight
-                              ? "bg-slate-200 text-slate-700"
-                              : "bg-[#282828] text-zinc-400 border border-[#444444]"
+                              ? "border-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-950"
+                              : "border-transparent text-[#E4E4E7] hover:bg-white/10 hover:text-white"
                           }`}
                         >
-                          {subCount}
-                        </span>
-                      )}
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <ChildIcon
+                              size={15}
+                              className={`shrink-0 ${
+                                isSubActive
+                                  ? "text-white"
+                                  : isLight
+                                  ? "text-slate-500"
+                                  : "text-zinc-400"
+                              }`}
+                            />
+                            <span className="text-[12.5px] font-medium leading-tight truncate">
+                              {isThai ? child.titleTh : child.titleEn}
+                            </span>
+                          </div>
 
-                      <span
-                        className={`w-[2px] h-[11px] rounded-full shrink-0 transition-all duration-300 ${
-                          isSubActive
-                            ? "bg-white opacity-100 scale-y-100"
-                            : "opacity-0 scale-y-50 pointer-events-none"
-                        }`}
-                      />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {subCount !== undefined && subCount !== null && (
+                              <span
+                                className={`px-1.5 py-0.2 text-[10px] font-bold rounded-full transition-colors ${
+                                  isSubActive
+                                    ? isLight
+                                      ? "bg-white/20 text-white"
+                                      : "bg-white/20 text-white"
+                                    : isLight
+                                    ? "bg-slate-200 text-slate-700"
+                                    : "bg-[#282828] text-zinc-400 border border-[#444444]"
+                                }`}
+                              >
+                                {subCount}
+                              </span>
+                            )}
+
+                            <span
+                              className={`w-[2px] h-[11px] rounded-full shrink-0 transition-all duration-300 ${
+                                isSubActive
+                                  ? "bg-white opacity-100 scale-y-100"
+                                  : "opacity-0 scale-y-50 pointer-events-none"
+                              }`}
+                            />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              );
+            })()}
           </motion.div>
         )}
       </AnimatePresence>

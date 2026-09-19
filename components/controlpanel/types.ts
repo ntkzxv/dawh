@@ -18,6 +18,12 @@ export type AuditLogCategoryKey =
   | "products"
   | "inventory";
 
+export type ProductSubTabKey =
+  | "products"
+  | "categories"
+  | "brands_uoms"
+  | "reasons";
+
 export interface AuditLogRecord {
   id: string;
   organizationId: string;

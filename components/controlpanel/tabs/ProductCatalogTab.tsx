@@ -25,12 +25,16 @@ import {
   Clock,
 } from "lucide-react";
 
+import type { ProductSubTabKey } from "../types";
+
 interface ProductCatalogTabProps {
   products: ProductRecord[];
   categories: ProductCategoryRecord[];
   brands: BrandRecord[];
   uoms: UnitOfMeasureRecord[];
   reasonCodes: ReasonCodeRecord[];
+  activeSubTab?: ProductSubTabKey;
+  onSubTabChange?: (tab: ProductSubTabKey) => void;
   onAddProduct: (data: Partial<ProductRecord>) => void;
   onUpdateProduct: (id: string, data: Partial<ProductRecord>) => void;
   onAddCategory: (data: Partial<ProductCategoryRecord>) => void;
@@ -45,6 +49,8 @@ export default function ProductCatalogTab({
   brands,
   uoms,
   reasonCodes,
+  activeSubTab: controlledSubTab,
+  onSubTabChange,
   onAddProduct,
   onUpdateProduct,
   onAddCategory,
@@ -55,7 +61,9 @@ export default function ProductCatalogTab({
   const { theme } = useTheme();
   const isLight = theme === "light";
 
-  const [activeSubTab, setActiveSubTab] = useState<"products" | "categories" | "brands_uoms" | "reasons">("products");
+  const [internalSubTab, setInternalSubTab] = useState<ProductSubTabKey>("products");
+  const activeSubTab = controlledSubTab ?? internalSubTab;
+  const setActiveSubTab = onSubTabChange ?? setInternalSubTab;
   const [productSearch, setProductSearch] = useState("");
 
   // Product Modals
@@ -161,57 +169,6 @@ export default function ProductCatalogTab({
         )}
       </div>
 
-      {/* Sub-Tabs Switcher */}
-      <div className="flex items-center gap-2 border-b pb-2 border-[#444444]/30">
-        <button
-          type="button"
-          onClick={() => setActiveSubTab("products")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-            activeSubTab === "products"
-              ? isLight ? "bg-zinc-900 text-white" : "bg-white text-zinc-900"
-              : isLight ? "text-zinc-600 hover:bg-zinc-100" : "text-zinc-400 hover:bg-white/5"
-          }`}
-        >
-          <Package size={14} />
-          <span>{isThai ? "ทะเบียนสินค้า (SKU)" : "Products"} ({products.length})</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveSubTab("categories")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-            activeSubTab === "categories"
-              ? isLight ? "bg-zinc-900 text-white" : "bg-white text-zinc-900"
-              : isLight ? "text-zinc-600 hover:bg-zinc-100" : "text-zinc-400 hover:bg-white/5"
-          }`}
-        >
-          <Layers size={14} />
-          <span>{isThai ? "หมวดหมู่สินค้า" : "Categories"} ({categories.length})</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveSubTab("brands_uoms")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-            activeSubTab === "brands_uoms"
-              ? isLight ? "bg-zinc-900 text-white" : "bg-white text-zinc-900"
-              : isLight ? "text-zinc-600 hover:bg-zinc-100" : "text-zinc-400 hover:bg-white/5"
-          }`}
-        >
-          <Scale size={14} />
-          <span>{isThai ? "แบรนด์และหน่วยนับ" : "Brands & UOM"}</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveSubTab("reasons")}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-            activeSubTab === "reasons"
-              ? isLight ? "bg-zinc-900 text-white" : "bg-white text-zinc-900"
-              : isLight ? "text-zinc-600 hover:bg-zinc-100" : "text-zinc-400 hover:bg-white/5"
-          }`}
-        >
-          <FileQuestion size={14} />
-          <span>{isThai ? "รหัสเหตุผลทางปฏิบัติการ" : "Reason Codes"} ({reasonCodes.length})</span>
-        </button>
-      </div>
 
       {/* 1. Products Sub-tab */}
       {activeSubTab === "products" && (

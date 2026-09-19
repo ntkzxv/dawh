@@ -25,6 +25,7 @@ import type {
   StockLedgerRecord,
   AuditLogRecord,
   AuditLogCategoryKey,
+  ProductSubTabKey,
 } from "./types";
 import {
   fetchControlPanelInitialData,
@@ -174,11 +175,24 @@ export default function AdminControlPanel() {
   const [activeAuditCategory, setActiveAuditCategory] = useState<AuditLogCategoryKey>("all");
   const [isAuditLoading, setIsAuditLoading] = useState<boolean>(false);
 
+  // Product Master Sub-tab State
+  const [activeProductSubTab, setActiveProductSubTab] = useState<ProductSubTabKey>("products");
+
   // RBAC Permission Check
   const isAdmin = useMemo(() => {
     if (!appMe) return false;
     return checkIsAdmin(appMe.roles, appMe.permissions);
   }, [appMe]);
+
+  // Product Master Sub-category Breakdown Counts
+  const productCategoryCounts = useMemo<Record<ProductSubTabKey, number>>(() => {
+    return {
+      products: products.length,
+      categories: categories.length,
+      brands_uoms: brands.length + uoms.length,
+      reasons: reasonCodes.length,
+    };
+  }, [products.length, categories.length, brands.length, uoms.length, reasonCodes.length]);
 
   // Audit Category Breakdown Counts
   const auditCategoryCounts = useMemo<Record<AuditLogCategoryKey, number>>(() => {
@@ -1021,16 +1035,22 @@ export default function AdminControlPanel() {
         >
           <NavbarsubControlPanel
             activeTab={activeTab}
-            onTabChange={(tab, category) => {
+            onTabChange={(tab, sub) => {
               setActiveTab(tab);
-              if (category) {
-                setActiveAuditCategory(category);
+              if (tab === "products" && sub) {
+                setActiveProductSubTab(sub as ProductSubTabKey);
               }
-              if (tab === "audit_logs" && auditLogs.length === 0) {
-                refreshAuditLogs();
+              if (tab === "audit_logs") {
+                if (sub) {
+                  setActiveAuditCategory(sub as AuditLogCategoryKey);
+                }
+                if (auditLogs.length === 0) {
+                  refreshAuditLogs();
+                }
               }
             }}
             activeAuditCategory={activeAuditCategory}
+            activeProductSubTab={activeProductSubTab}
             isMinimized={isMinimized}
             counts={{
               users: users.length,
@@ -1043,6 +1063,7 @@ export default function AdminControlPanel() {
               audit_logs: auditLogs.length,
             }}
             auditCategoryCounts={auditCategoryCounts}
+            productCategoryCounts={productCategoryCounts}
           />
         </NavbarMain>
       </motion.div>
@@ -1293,6 +1314,8 @@ export default function AdminControlPanel() {
                     brands={brands}
                     uoms={uoms}
                     reasonCodes={reasonCodes}
+                    activeSubTab={activeProductSubTab}
+                    onSubTabChange={setActiveProductSubTab}
                     onAddProduct={handleAddProduct}
                     onUpdateProduct={handleUpdateProduct}
                     onAddCategory={handleAddCategory}
