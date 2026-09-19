@@ -410,15 +410,9 @@ export default function NavbarMain({
               </div>
             ) : (
               <>
-                <div
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border ${
-                    isLight
-                      ? "bg-emerald-50 border-emerald-200/60"
-                      : "bg-emerald-950/40 border-emerald-500/20"
-                  }`}
-                >
+                <div className="flex items-center justify-center shrink-0 pl-1 pr-0.5">
                   <span
-                    className={`w-2 h-2 rounded-full ${
+                    className={`w-2.5 h-2.5 rounded-full shrink-0 ${
                       serverStatus.connected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
                     }`}
                   />
