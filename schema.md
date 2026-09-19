@@ -21,7 +21,7 @@
 
 | Schema | Owner / role | Tables or views currently present |
 | --- | --- | --- |
-| `public` | DAWH application, Better Auth, WMS foundation | 33 tables; documented in full below |
+| `public` | DAWH application, Better Auth, WMS foundation | 35 tables; documented in full below |
 | `auth` | Supabase Auth (unused by DAWH authentication) | user/session/MFA/OAuth/SSO internals |
 | `storage` | Supabase Storage | buckets, objects, multipart uploads, vector metadata |
 | `realtime` | Supabase Realtime | messages, subscription, schema_migrations |
@@ -56,7 +56,7 @@ opening WMS modules.
 | Contact | `phone`, `emergency_contact_name_th`, `emergency_contact_name_en`, `emergency_contact_relationship`, `emergency_contact_phone` |
 | Current address | `current_house_no`, `current_village`, `current_soi`, `current_province`, `current_district`, `current_subdistrict`, `current_postal_code` |
 | Registered address | `registered_house_no`, `registered_village`, `registered_soi`, `registered_province`, `registered_district`, `registered_subdistrict`, `registered_postal_code` |
-| Employment / completion | `department`, `branch_name`, `branch_code`, `terms_version`, `terms_accepted_at`, `profile_completed_at`, `created_at`, `updated_at` |
+| Employment / completion | `facility_id`, `department_id`, legacy display fields `department`, `branch_name`, `branch_code`, `terms_version`, `terms_accepted_at`, `profile_completed_at`, `created_at`, `updated_at` |
 
 The current profile-completion rule is application-owned: a profile is complete
 when `profile_completed_at` is not null. `username` is unique; `citizen_id` is
@@ -71,6 +71,7 @@ also unique when supplied.
 | `role_permissions` | composite PK `role_id`, `permission_id`; `created_at`, `created_by` | Role-to-permission mapping. |
 | `user_role_assignments` | `id`, `user_id`, `role_id`, `valid_from`, `valid_until`, `assigned_at/by`, `revoked_at/by`, `revoke_reason` | Assigns a Better Auth user to a role. Active `(user_id, role_id)` is unique. |
 | `user_facility_scopes` | `id`, `user_id`, `facility_id`, `scope_type`, validity period, version, audit columns | Limits a user to one facility with `READ`, `OPERATE`, `APPROVE`, or `ADMIN` scope. Unique per user/facility. |
+| `user_access_controls` | `user_id`, `status`, `reason`, `changed_at/by`, timestamps | Application access state. Status is `ACTIVE`, `SUSPENDED`, or `TERMINATED`; authentication remains owned by Better Auth. |
 
 ## `public`: Organization and warehouse layout
 
@@ -80,6 +81,7 @@ also unique when supplied.
 | `facilities` | `id`, `organization_id`, `code`, `name`, `facility_type`, address fields, coordinates, `is_active`, `version`, audit columns | Unique `(organization_id, code)`; type is `CENTRAL_WAREHOUSE` or `BRANCH`. |
 | `facility_routes` | `id`, `source_facility_id`, `destination_facility_id`, `distance_km`, `lead_time_minutes`, `priority`, `is_active`, version, audit columns | Unique route pair; source and destination cannot match. |
 | `warehouse_locations` | `id`, `facility_id`, `parent_id`, `code`, `name`, `hierarchy_type`, `location_type`, `path`, `depth`, capacity, `status`, `is_active`, version, audit columns | Parent must be in the same facility. Unique `(facility_id, code)`. Hierarchy: `ZONE`, `AISLE`, `RACK`, `SHELF`, `BIN`. Status: `ACTIVE`, `BLOCKED`, `MAINTENANCE`. |
+| `departments` | `id`, `organization_id`, `code`, `name`, `is_active`, version, audit columns | Organization-scoped employee department catalog. Unique `(organization_id, code)`. |
 
 Location types are `RECEIVING`, `STORAGE`, `PICKING`, `PACKING`, `DISPATCH`,
 `QUARANTINE`, `DAMAGED`, `RETURN`, and `CLAIM_HOLDING`.
@@ -138,7 +140,7 @@ The shared `set_updated_at` trigger runs on:
 `roles`, `permissions`, `organizations`, `facilities`, `facility_routes`,
 `warehouse_locations`, `user_facility_scopes`, `product_categories`, `brands`,
 `units_of_measure`, `products`, `product_units`, `lots`, `serial_numbers`,
-`safety_stock_rules`, and `reason_codes`.
+`safety_stock_rules`, `reason_codes`, `departments`, and `user_access_controls`.
 
 No database trigger posts stock, changes document status, creates audit rows, or
 increments the optimistic-lock `version`. Those are backend service duties.
@@ -185,6 +187,19 @@ Managed triggers are `realtime.tr_check_filters`, and Storage's
 - Stock writes must update `stock_balances`, append an inventory transaction and
   lines, store audit/outbox records, and claim an idempotency key in one short
   SQL transaction.
+
+## P0 frontend handoff database additions
+
+- `supabase/sql/p0_frontend_handoff.sql` is the standalone, transactional P0
+  schema/access patch. It adds departments, account access controls, profile
+  facility/department references, scope versioning, and the canonical role
+  grants.
+- `supabase/seeds/development_p0.sql` is a deterministic development-only seed
+  for two branch facilities, master data, three tracking-model products, and a
+  reconciled opening ledger/balance projection.
+- The P0 patch does **not** repair or register migration history. The connected
+  manually provisioned database must still have its migration history
+  reconciled separately before `supabase db push` is used against it.
 
 ## Reproduce and bootstrap
 
