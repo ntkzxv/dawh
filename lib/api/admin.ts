@@ -54,3 +54,7 @@ export function revokeFacilityScope(userId: string, scopeId: string, version: nu
   return apiPost<unknown>(`/api/admin/users/${encodeURIComponent(userId)}/facility-scopes/${encodeURIComponent(scopeId)}/revoke`, { version, reason });
 }
 
+export function listAuditLogsApi(params: Record<string, string | number | boolean | null | undefined> = {}) {
+  return apiGet<import("@/lib/audit/types").AuditLogRecord[]>(`/api/admin/audit-logs${query(params)}`);
+}
+

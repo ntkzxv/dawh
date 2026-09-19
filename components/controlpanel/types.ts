@@ -8,7 +8,35 @@ export type AdminTabKey =
   | "organization"
   | "products"
   | "stock"
-  | "safety_stock";
+  | "safety_stock"
+  | "audit_logs";
+
+export type AuditLogCategoryKey =
+  | "all"
+  | "security"
+  | "organization"
+  | "products"
+  | "inventory";
+
+export interface AuditLogRecord {
+  id: string;
+  organizationId: string;
+  requestId: string;
+  actorUserId: string | null;
+  actorName: string | null;
+  actorEmail: string | null;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  facilityId: string | null;
+  facilityCode: string | null;
+  facilityName: string | null;
+  oldValues: Record<string, unknown> | null;
+  newValues: Record<string, unknown> | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  occurredAt: string;
+}
 
 export interface AdminUserRecord {
   id: string;

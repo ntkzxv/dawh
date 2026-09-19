@@ -23,6 +23,8 @@ import type {
   SafetyStockRuleRecord,
   StockBalanceRecord,
   StockLedgerRecord,
+  AuditLogRecord,
+  AuditLogCategoryKey,
 } from "./types";
 import {
   fetchControlPanelInitialData,
@@ -44,6 +46,7 @@ import {
   assignFacilityScope,
   updateFacilityScope,
   revokeFacilityScope,
+  listAuditLogsApi,
 } from "@/lib/api/admin";
 import {
   listFacilities,
@@ -81,6 +84,7 @@ import OrganizationTab from "./tabs/OrganizationTab";
 import ProductCatalogTab from "./tabs/ProductCatalogTab";
 import StockMonitoringTab from "./tabs/StockMonitoringTab";
 import SafetyStockTab from "./tabs/SafetyStockTab";
+import AuditLogTab from "./tabs/AuditLogTab";
 
 import {
   Users,
@@ -165,6 +169,11 @@ export default function AdminControlPanel() {
   const [balances, setBalances] = useState<StockBalanceRecord[]>([]);
   const [ledger, setLedger] = useState<StockLedgerRecord[]>([]);
 
+  // Audit Logs State
+  const [auditLogs, setAuditLogs] = useState<AuditLogRecord[]>([]);
+  const [activeAuditCategory, setActiveAuditCategory] = useState<AuditLogCategoryKey>("all");
+  const [isAuditLoading, setIsAuditLoading] = useState<boolean>(false);
+
   // RBAC Permission Check
   const isAdmin = useMemo(() => {
     if (!appMe) return false;
@@ -232,6 +241,16 @@ export default function AdminControlPanel() {
         setSafetyRules(payload.safetyRules || []);
         setBalances(payload.balances || []);
         setLedger(payload.ledger || []);
+
+        // Load Initial Audit Trail
+        try {
+          const auditRes = await listAuditLogsApi({ limit: 200 });
+          if (auditRes?.data) {
+            setAuditLogs(auditRes.data);
+          }
+        } catch {
+          // Non-blocking
+        }
 
         // Build Role History from current active role assignments
         const generatedHistory: RoleAssignmentHistory[] = [];
@@ -336,6 +355,21 @@ export default function AdminControlPanel() {
       }
     } catch {
       // Non-blocking
+    }
+  };
+
+  // Helper to re-fetch audit logs
+  const refreshAuditLogs = async () => {
+    try {
+      setIsAuditLoading(true);
+      const res = await listAuditLogsApi({ limit: 200 });
+      if (res?.data) {
+        setAuditLogs(res.data);
+      }
+    } catch {
+      // Non-blocking
+    } finally {
+      setIsAuditLoading(false);
     }
   };
 
@@ -928,7 +962,16 @@ export default function AdminControlPanel() {
         >
           <NavbarsubControlPanel
             activeTab={activeTab}
-            onTabChange={setActiveTab}
+            onTabChange={(tab, category) => {
+              setActiveTab(tab);
+              if (category) {
+                setActiveAuditCategory(category);
+              }
+              if (tab === "audit_logs" && auditLogs.length === 0) {
+                refreshAuditLogs();
+              }
+            }}
+            activeAuditCategory={activeAuditCategory}
             isMinimized={isMinimized}
             counts={{
               users: users.length,
@@ -938,6 +981,7 @@ export default function AdminControlPanel() {
               products: products.length,
               stock: balances.length,
               safety_stock: safetyRules.length,
+              audit_logs: auditLogs.length,
             }}
           />
         </NavbarMain>
@@ -1214,6 +1258,17 @@ export default function AdminControlPanel() {
                     products={products}
                     onAddRule={handleAddSafetyRule}
                     onUpdateRule={handleUpdateSafetyRule}
+                    isThai={isThai}
+                  />
+                )}
+
+                {activeTab === "audit_logs" && (
+                  <AuditLogTab
+                    logs={auditLogs}
+                    isLoading={isAuditLoading}
+                    onRefresh={refreshAuditLogs}
+                    selectedCategory={activeAuditCategory}
+                    onSelectCategory={setActiveAuditCategory}
                     isThai={isThai}
                   />
                 )}
