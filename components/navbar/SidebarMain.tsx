@@ -42,6 +42,7 @@ export interface NavbarMainProps {
   onMinimizedChange?: (minimized: boolean) => void;
   lang?: "th" | "en";
   onLangChange?: (lang: "th" | "en") => void;
+  showAccount?: boolean;
 }
 
 const DEFAULT_LOGO_WHITE = DAWH_LOGOS.horizontal.black;
@@ -59,6 +60,7 @@ export default function NavbarMain({
   onMinimizedChange,
   lang: controlledLang,
   onLangChange,
+  showAccount = true,
 }: NavbarMainProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -358,7 +360,7 @@ export default function NavbarMain({
 
       {/* ACCOUNT & CONTROL AREA */}
       <div
-        className={`px-3 pt-5 pb-2.5 mt-auto w-full shrink-0 border-t space-y-2 transition-colors duration-700 ${
+        className={`px-3 ${showAccount ? "pt-5 pb-2.5" : "py-2.5"} mt-auto w-full shrink-0 border-t space-y-2 transition-colors duration-700 ${
           isLight
             ? "bg-[#FFFFFF] border-[#E4E4E7] shadow-sm"
             : "bg-[#1E1E1E] border-[#383838]"
@@ -442,124 +444,119 @@ export default function NavbarMain({
         </div>
 
         {/* User Profile Card & Expandable Controls */}
-        <div className="w-full flex flex-col">
-          {/* Smooth Account Divider */}
-          <div
-            className={`mx-auto border-t transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-              isLight ? "border-[#E4E4E7]" : "border-[#444444]"
-            } ${isMinimized ? "w-6 opacity-100 mb-2 scale-x-100" : "w-0 opacity-0 mb-0 scale-x-0"}`}
-          />
-
-          {/* Main Account Button */}
-          <button
-            type="button"
-            onClick={() =>
-              isMinimized ? handleToggleMinimize() : setIsAccountOpen(!isAccountOpen)
-            }
-            className={`flex items-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden cursor-pointer ${
-              isLight
-                ? "bg-[#FFFFFF] border-[#E4E4E7] text-[#222222] hover:bg-[#F4F4F5] shadow-sm"
-                : "bg-[#383838] border-[#444444] text-[#FFFFFF] hover:bg-[#444444]"
-            } ${
-              isMinimized
-                ? "w-10 h-10 aspect-square justify-center mx-auto rounded-xl p-0 border"
-                : "w-full px-3 py-2.5 rounded-2xl border gap-2.5 active:scale-95 text-left"
-            }`}
-          >
+        {showAccount && (
+          <div className="w-full flex flex-col">
+            {/* Smooth Account Divider */}
             <div
-              className={`shrink-0 flex items-center justify-center overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] rounded-full border ${
-                isMinimized ? "w-8 h-8" : "w-9 h-9"
-              } ${
-                isLight
-                  ? "bg-slate-100 border-[#E4E4E7] text-[#222222]"
-                  : "bg-white/10 text-[#FFFFFF] border-white/20"
-              }`}
-            >
-              {mounted && userAvatar ? (
-                <img
-                  src={userAvatar}
-                  className="w-full h-full object-cover"
-                  alt="Profile"
-                />
-              ) : (
-                <span className="text-sm uppercase font-bold" suppressHydrationWarning>
-                  {mounted ? userName.charAt(0) : ""}
-                </span>
-              )}
-            </div>
-
-            <div
-              className={`min-w-0 flex-1 text-left flex flex-col justify-center overflow-hidden transition-all ease-out ${
-                isMinimized
-                  ? "max-w-0 opacity-0 -translate-x-4 duration-200 pointer-events-none"
-                  : "max-w-[140px] opacity-100 translate-x-0 duration-350 delay-100"
-              }`}
-            >
-              <p
-                className={`text-[13.5px] font-bold truncate leading-none tracking-normal ${
-                  isLight ? "text-[#18181B]" : "text-[#FFFFFF]"
-                }`}
-                suppressHydrationWarning
-              >
-                {mounted ? userName : ""}
-              </p>
-              <p
-                className={`text-[12px] font-medium tracking-wide truncate leading-none mt-1 ${
-                  isLight ? "text-slate-500" : "text-[#A1A1AA]"
-                }`}
-                suppressHydrationWarning
-              >
-                {mounted ? `@${userUsername || "username"}` : ""}
-              </p>
-            </div>
-
-            <ChevronUp
-              size={16}
-              className={`shrink-0 transition-transform duration-350 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-                isLight ? "text-[#383838]" : "text-[#E4E4E7]"
-              } ${
-                isMinimized
-                  ? "opacity-0 w-0 -translate-x-2 pointer-events-none"
-                  : `opacity-100 translate-x-0 ${isAccountOpen ? "" : "rotate-180"}`
-              }`}
+              className={`mx-auto border-t transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                isLight ? "border-[#E4E4E7]" : "border-[#444444]"
+              } ${isMinimized ? "w-6 opacity-100 mb-2 scale-x-100" : "w-0 opacity-0 mb-0 scale-x-0"}`}
             />
-          </button>
 
-          {/* Action Dropdown Menu (Opens Upwards/Downwards with Smooth Slide Animation) */}
-          <AnimatePresence>
-            {!isMinimized && isAccountOpen && (
-              <motion.div
-                initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                animate={{
-                  opacity: 1,
-                  height: "auto",
-                  marginTop: 6,
-                  transition: {
-                    height: { duration: 0.35, ease: [0.4, 0, 0.2, 1] },
-                    marginTop: { duration: 0.35, ease: [0.4, 0, 0.2, 1] },
-                    opacity: { duration: 0.25, ease: "easeOut", delay: 0.05 },
-                  },
-                }}
-                exit={{
-                  opacity: 0,
-                  height: 0,
-                  marginTop: 0,
-                  transition: {
-                    height: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
-                    marginTop: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
-                    opacity: { duration: 0.2, ease: "easeIn" },
-                  },
-                }}
-                className="overflow-hidden"
+            {/* Main Account Button */}
+            <button
+              type="button"
+              onClick={() =>
+                isMinimized ? handleToggleMinimize() : setIsAccountOpen(!isAccountOpen)
+              }
+              className={`flex items-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden cursor-pointer ${
+                isLight
+                  ? "bg-[#FFFFFF] border-[#E4E4E7] text-[#222222] hover:bg-[#F4F4F5] shadow-sm"
+                  : "bg-[#383838] border-[#444444] text-[#FFFFFF] hover:bg-[#444444]"
+              } ${
+                isMinimized
+                  ? "w-10 h-10 aspect-square justify-center mx-auto rounded-xl p-0 border"
+                  : "w-full px-3 py-2.5 rounded-2xl border gap-2.5 active:scale-95 text-left"
+              }`}
+            >
+              <div
+                className={`shrink-0 flex items-center justify-center overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] rounded-full border ${
+                  isMinimized ? "w-8 h-8" : "w-9 h-9"
+                } ${
+                  isLight
+                    ? "bg-slate-100 border-[#E4E4E7] text-[#222222]"
+                    : "bg-white/10 text-[#FFFFFF] border-white/20"
+                }`}
               >
-                <div
-                  className={`overflow-hidden space-y-0.5 rounded-2xl p-1 border shadow-lg transition-colors duration-300 ${
-                    isLight
-                      ? "bg-[#FFFFFF] border-[#E4E4E7] shadow-slate-200/80"
-                      : "bg-[#282828] border-[#444444]"
+                {mounted && userAvatar ? (
+                  <img
+                    src={userAvatar}
+                    alt={userName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="font-bold text-xs">
+                    {userName?.charAt(0)?.toUpperCase() || "U"}
+                  </span>
+                )}
+              </div>
+
+              {/* Account text label */}
+              <div
+                className={`flex-1 min-w-0 transition-all duration-300 ease-out overflow-hidden ${
+                  isMinimized
+                    ? "max-w-0 opacity-0 -translate-x-3 duration-200 pointer-events-none"
+                    : "max-w-[130px] opacity-100 translate-x-0 duration-350 delay-100"
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <p
+                    className={`text-[13px] font-semibold truncate leading-tight ${
+                      isLight ? "text-slate-900" : "text-[#FFFFFF]"
+                    }`}
+                  >
+                    {userName}
+                  </p>
+                  {isAdmin && (
+                    <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-500 border border-amber-500/30 leading-tight">
+                      Admin
+                    </span>
+                  )}
+                </div>
+                <p
+                  className={`text-[11.5px] truncate leading-tight mt-0.5 ${
+                    isLight ? "text-slate-500" : "text-[#D4D4D8]"
                   }`}
                 >
-                  {/* Theme Switcher in Dropdown */}
+                  {userUsername || "dawh.internal"}
+                </p>
+              </div>
+
+              {/* Expand/Collapse Chevron Indicator */}
+              <div
+                className={`transition-all duration-300 ease-out ${
+                  isMinimized
+                    ? "max-w-0 opacity-0 pointer-events-none"
+                    : "max-w-5 opacity-100"
+                }`}
+              >
+                <ChevronUp
+                  size={15}
+                  className={`transition-transform duration-300 ${
+                    isAccountOpen ? "rotate-0" : "rotate-180"
+                  } ${isLight ? "text-slate-400" : "text-[#D4D4D8]"}`}
+                />
+              </div>
+            </button>
+
+            {/* Expandable Account Actions Dropdown Popup */}
+            <AnimatePresence>
+              {isAccountOpen && !isMinimized && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0, y: 8 }}
+                  animate={{ opacity: 1, height: "auto", y: 0 }}
+                  exit={{ opacity: 0, height: 0, y: 8 }}
+                  transition={{ duration: 0.25, ease: "easeInOut" }}
+                  className="w-full overflow-hidden mt-2"
+                >
+                  <div
+                    className={`p-2 rounded-2xl border space-y-1 shadow-lg ${
+                      isLight
+                        ? "bg-[#FFFFFF] border-[#E4E4E7]"
+                        : "bg-[#282828] border-[#444444]"
+                    }`}
+                  >
+                    {/* Theme Switcher in Dropdown */}
                   <button
                     type="button"
                     onClick={toggleTheme}
@@ -598,18 +595,45 @@ export default function NavbarMain({
                     <span className="truncate">{t.lang}</span>
                   </button>
 
+                    {/* Control Panel Link (if admin) */}
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAccountOpen(false);
+                          navigateWithLoading(
+                            "/controlpanel",
+                            activeLang === "th" ? "กำลังเปิดแผงควบคุมระบบ..." : "Opening Control Panel...",
+                            activeLang === "th" ? "กำลังโหลดเครื่องมือดูแลระบบ..." : "Loading management tools..."
+                          );
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium transition-all text-left cursor-pointer ${
+                          isLight
+                            ? "text-slate-800 hover:bg-[#F4F4F5] hover:text-slate-950"
+                            : "text-[#F4F4F5] hover:text-[#FFFFFF] hover:bg-white/10"
+                        }`}
+                      >
+                        <Monitor
+                          size={16}
+                          className={`shrink-0 ${
+                            isLight ? "text-[#222222]" : "text-[#FFFFFF]"
+                          }`}
+                        />
+                        <span className="truncate">
+                          {activeLang === "th" ? "แผงควบคุมระบบ" : "Control Panel"}
+                        </span>
+                      </button>
+                    )}
 
-
-                  {/* Control Panel */}
-                  {isAdmin && (
+                    {/* Account Settings Link */}
                     <button
                       type="button"
                       onClick={() => {
                         setIsAccountOpen(false);
                         navigateWithLoading(
-                          "/controlpanel",
-                          activeLang === "th" ? "กำลังเปิดแผงควบคุมระบบ..." : "Opening Control Panel...",
-                          activeLang === "th" ? "กำลังโหลดเครื่องมือดูแลระบบ..." : "Loading management tools..."
+                          settingsPath,
+                          "กำลังเปิดการตั้งค่าบัญชี...",
+                          "กำลังโหลดข้อมูลโปรไฟล์และความปลอดภัย..."
                         );
                       }}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium transition-all text-left cursor-pointer ${
@@ -618,61 +642,33 @@ export default function NavbarMain({
                           : "text-[#F4F4F5] hover:text-[#FFFFFF] hover:bg-white/10"
                       }`}
                     >
-                      <Monitor
+                      <Settings
                         size={16}
                         className={`shrink-0 ${
                           isLight ? "text-[#222222]" : "text-[#FFFFFF]"
                         }`}
                       />
-                      <span className="truncate">
-                        {activeLang === "th" ? "แผงควบคุมระบบ" : "Control Panel"}
-                      </span>
+                      <span className="truncate">{t.account}</span>
                     </button>
-                  )}
 
-                  {/* Account Settings */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsAccountOpen(false);
-                      navigateWithLoading(
-                        settingsPath,
-                        "กำลังเปิดการตั้งค่าบัญชี...",
-                        "กำลังโหลดข้อมูลโปรไฟล์และความปลอดภัย..."
-                      );
-                    }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium transition-all text-left cursor-pointer ${
-                      isLight
-                        ? "text-slate-800 hover:bg-[#F4F4F5] hover:text-slate-950"
-                        : "text-[#F4F4F5] hover:text-[#FFFFFF] hover:bg-white/10"
-                    }`}
-                  >
-                    <Settings
-                      size={16}
-                      className={`shrink-0 ${
-                        isLight ? "text-[#222222]" : "text-[#FFFFFF]"
-                      }`}
-                    />
-                    <span className="truncate">{t.account}</span>
-                  </button>
-
-                  {/* Logout Button */}
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setIsAccountOpen(false);
-                      await logout();
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium text-rose-500 hover:bg-rose-500/10 transition-all text-left cursor-pointer"
-                  >
-                    <LogOut size={16} className="shrink-0 text-rose-500" />
-                    <span className="truncate">{t.logout}</span>
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                    {/* Sign Out Button */}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setIsAccountOpen(false);
+                        await logout();
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium text-rose-500 hover:bg-rose-500/10 transition-all text-left cursor-pointer"
+                    >
+                      <LogOut size={16} className="shrink-0 text-rose-500" />
+                      <span className="truncate">{t.logout}</span>
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
 
         {/* Mobile Bottom Safe Area Inset */}
         <div className="pb-safe" />

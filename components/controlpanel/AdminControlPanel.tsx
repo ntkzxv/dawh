@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage, setAppLanguage } from "@/utils/language";
 import { useNotification } from "@/context/NotificationContext";
-import { HeaderNavbar, MobileNavbar } from "@/components/navbar";
+import { HeaderNavbar, MobileNavbar, NavbarMain, NavbarsubControlPanel } from "@/components/navbar";
+import { motion } from "framer-motion";
 import type {
   AdminTabKey,
   AdminUserRecord,
@@ -108,6 +109,30 @@ export default function AdminControlPanel() {
 
   // Active Main Tab
   const [activeTab, setActiveTab] = useState<AdminTabKey>("users");
+
+  // Sidebar Minimized State (mirrors warehouse layout)
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [sidebarAnimated, setSidebarAnimated] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("dawh_sidebar_minimized");
+      if (saved !== null) {
+        setIsMinimized(JSON.parse(saved));
+      }
+    } catch {
+      // Non-blocking
+    }
+  }, []);
+
+  const handleMinimizedChange = (minimized: boolean) => {
+    setIsMinimized(minimized);
+    try {
+      localStorage.setItem("dawh_sidebar_minimized", JSON.stringify(minimized));
+    } catch {
+      // Non-blocking
+    }
+  };
 
   // Loading & Sync States
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -922,31 +947,79 @@ export default function AdminControlPanel() {
 
   return (
     <div
-      className={`min-h-screen w-full flex flex-col transition-colors duration-300 ${
-        isLight ? "bg-[#F8FAFC] text-[#222222]" : "bg-[#2C2C2C] text-[#F4F4F5]"
+      className={`flex min-h-screen w-full transition-colors duration-300 ${
+        isLight
+          ? "bg-[#F8FAFC] text-[#222222] selection:bg-[#222222] selection:text-white"
+          : "bg-[#2C2C2C] text-white selection:bg-white/25 selection:text-white"
       }`}
       style={{ fontFamily: "var(--font-geist-sans), 'Geist', sans-serif" }}
     >
-      {/* Header Navbar with official DAWH brand logo & navigation */}
-      <div className="shrink-0 w-full z-40">
-        <HeaderNavbar
-          showLogo={true}
-          showAccount={true}
-          title={isThai ? "แผงควบคุมระบบผู้ดูแล" : "Admin Control Panel"}
-          subtitle={
-            isThai
-              ? "ศูนย์ควบคุมสิทธิ์การเข้าถึง โครงสร้างคลัง สินค้า และการติดตามสต็อก"
-              : "Enterprise Identity, RBAC, Facility Topologies, Product Master & Stock Governance"
-          }
-          lang={currentLang}
-          onLangChange={setAppLanguage}
-        />
-        <MobileNavbar />
-      </div>
+      {/* Sidebar with Control Panel Navigation - Slide in from Left to Right */}
+      <motion.div
+        initial={{ x: -100, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        onAnimationComplete={() => setSidebarAnimated(true)}
+        style={{ transform: sidebarAnimated ? "none" : undefined }}
+        transition={{
+          duration: 0.55,
+          ease: [0.22, 1, 0.36, 1],
+        }}
+        className="shrink-0 flex h-screen sticky top-0 z-40"
+      >
+        <NavbarMain
+          initialMinimized={isMinimized}
+          onMinimizedChange={handleMinimizedChange}
+          hubPath="/workspace"
+          settingsPath="/settings"
+          showAccount={false}
+        >
+          <NavbarsubControlPanel
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            isMinimized={isMinimized}
+            counts={{
+              users: users.length,
+              roles: roles.length,
+              scopes: users.reduce((acc, u) => acc + (u.facilityScopes?.length || 0), 0),
+              organization: facilities.length,
+              products: products.length,
+              stock: balances.length,
+              safety_stock: safetyRules.length,
+            }}
+          />
+        </NavbarMain>
+      </motion.div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 w-full overflow-y-auto min-h-0 flex flex-col items-center py-6 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-[1240px] flex flex-col items-stretch gap-5">
+      {/* Main Content Viewport - Slide in from Top to Bottom */}
+      <motion.div
+        initial={{ y: -45, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{
+          duration: 0.55,
+          delay: 0.08,
+          ease: [0.22, 1, 0.36, 1],
+        }}
+        className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto"
+      >
+        {/* Header Navbar with title, subtitle, and account in topbar (showLogo={false} since brand logo is in sidebar) */}
+        <div className="shrink-0 w-full z-30 sticky top-0">
+          <HeaderNavbar
+            showLogo={false}
+            showAccount={true}
+            title={isThai ? "แผงควบคุมระบบผู้ดูแล" : "Admin Control Panel"}
+            subtitle={
+              isThai
+                ? "ศูนย์ควบคุมสิทธิ์การเข้าถึง โครงสร้างคลัง สินค้า และการติดตามสต็อก"
+                : "Enterprise Identity, RBAC, Facility Topologies, Product Master & Stock Governance"
+            }
+            lang={currentLang}
+            onLangChange={setAppLanguage}
+          />
+        </div>
+
+        {/* Main Content Area */}
+        <div className="flex-1 w-full min-h-0 flex flex-col items-center py-6 px-4 sm:px-6 lg:px-8">
+          <div className="w-full max-w-[1240px] flex flex-col items-stretch gap-5">
           {isLoading ? (
             <div
               className={`w-full py-28 rounded-2xl border flex flex-col items-center justify-center gap-3 transition-colors ${
@@ -1227,6 +1300,7 @@ export default function AdminControlPanel() {
           )}
         </div>
       </div>
+      </motion.div>
     </div>
   );
 }
