@@ -897,53 +897,6 @@ export default function AdminControlPanel() {
     }
   };
 
-  // ==========================================================================
-  // Navigation Tabs Configuration
-  // ==========================================================================
-  const navTabs: Array<{ id: AdminTabKey; labelTh: string; labelEn: string; icon: React.ReactNode }> = [
-    {
-      id: "users",
-      labelTh: "การจัดการผู้ใช้",
-      labelEn: "User Management",
-      icon: <Users size={15} />,
-    },
-    {
-      id: "roles",
-      labelTh: "บทบาทและสิทธิ์",
-      labelEn: "Role Management",
-      icon: <Shield size={15} />,
-    },
-    {
-      id: "scopes",
-      labelTh: "ขอบเขตสาขา",
-      labelEn: "Facility Scope",
-      icon: <Building2 size={15} />,
-    },
-    {
-      id: "organization",
-      labelTh: "สาขาและผังคลัง",
-      labelEn: "Organization & Facilities",
-      icon: <Building size={15} />,
-    },
-    {
-      id: "products",
-      labelTh: "ข้อมูลสินค้าและมาสเตอร์",
-      labelEn: "Product Master",
-      icon: <Package size={15} />,
-    },
-    {
-      id: "stock",
-      labelTh: "ติดตามสต็อก",
-      labelEn: "Stock Monitoring",
-      icon: <Activity size={15} />,
-    },
-    {
-      id: "safety_stock",
-      labelTh: "เกณฑ์สต็อกปลอดภัย",
-      labelEn: "Safety Stock",
-      icon: <ShieldAlert size={15} />,
-    },
-  ];
 
   return (
     <div
@@ -1180,37 +1133,6 @@ export default function AdminControlPanel() {
                 </div>
               </div>
 
-              {/* Main 7-Domain Segmented Navigation Bar */}
-              <div
-                className={`p-1.5 rounded-2xl border flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] transition-colors shadow-sm ${
-                  isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
-                }`}
-              >
-                {navTabs.map((tab) => {
-                  const isActive = activeTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-200 select-none ${
-                        isActive
-                          ? isLight
-                            ? "bg-[#222222] text-white shadow"
-                            : "bg-white text-zinc-900 shadow"
-                          : isLight
-                          ? "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
-                          : "text-zinc-400 hover:text-white hover:bg-white/5"
-                      }`}
-                    >
-                      <span className={isActive ? (isLight ? "text-white" : "text-zinc-900") : "opacity-70"}>
-                        {tab.icon}
-                      </span>
-                      <span>{isThai ? tab.labelTh : tab.labelEn}</span>
-                    </button>
-                  );
-                })}
-              </div>
 
               {/* Active Tab Panel Rendering */}
               <div className="w-full relative min-h-[400px]">
