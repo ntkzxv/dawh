@@ -110,15 +110,6 @@ export default function HeaderNavbar({
           setIsProfileLoaded(true);
         }
       }
-      const cachedRoles = localStorage.getItem("dawh_user_roles");
-      if (cachedRoles) {
-        try {
-          const parsedRoles = JSON.parse(cachedRoles);
-          if (Array.isArray(parsedRoles) && parsedRoles.length > 0) {
-            setRoles(parsedRoles);
-          }
-        } catch {}
-      }
       const cachedSession = localStorage.getItem("dawh_session_user");
       if (cachedSession) {
         const parsedSession = JSON.parse(cachedSession);
@@ -140,11 +131,6 @@ export default function HeaderNavbar({
           if (isMounted) {
             setPermissions(me.data.permissions || []);
             setRoles(me.data.roles || []);
-            if (me.data.roles && me.data.roles.length > 0) {
-              try {
-                localStorage.setItem("dawh_user_roles", JSON.stringify(me.data.roles));
-              } catch {}
-            }
             if (me.data.profile) {
               const canonicalProfile = toEmployeeProfile(me.data.profile);
               setProfile(canonicalProfile);
@@ -266,14 +252,6 @@ export default function HeaderNavbar({
   const departmentDisplay =
     profile.department ||
     (profile.role ? `Role: ${profile.role}` : "");
-
-  // Derive primary role for display (Priority: SYSTEM_ADMINISTRATOR if admin or in roles, then canonical role code, then profile.role)
-  const primaryRole =
-    (roles && roles.length > 0
-      ? roles.find((r) => r.toUpperCase() === "SYSTEM_ADMINISTRATOR") || roles[0]
-      : null) ||
-    (profile.role ? profile.role.toUpperCase() : null) ||
-    (isAdmin ? "SYSTEM_ADMINISTRATOR" : "");
 
   // Dynamic Route-Aware Title & Subtitle Fallbacks
   const getRouteTitleAndSubtitle = () => {
@@ -462,18 +440,7 @@ export default function HeaderNavbar({
             ) : (
               <div className={`h-[16px] w-[84px] rounded-md animate-pulse my-[1px] ${isLight ? "bg-slate-200" : "bg-[#383838]"}`} />
             )}
-            {mounted && primaryRole ? (
-              <div className="flex items-center gap-1.5 mt-[1px]">
-                <span
-                  className={`font-semibold text-[11px] leading-[14px] uppercase tracking-wide truncate max-w-[140px] ${
-                    isLight ? "text-slate-600" : "text-[#D4D4D8]"
-                  }`}
-                  suppressHydrationWarning
-                >
-                  {primaryRole}
-                </span>
-              </div>
-            ) : mounted && departmentDisplay ? (
+            {mounted && departmentDisplay ? (
               <div className="flex items-center gap-1.5 mt-[1px]">
                 <span
                   className={`font-medium text-[12px] leading-[15px] truncate max-w-[140px] ${
@@ -567,22 +534,12 @@ export default function HeaderNavbar({
                     ) : (
                       <div className={`h-[14px] w-[90px] rounded-md animate-pulse my-0.5 ${isLight ? "bg-slate-200" : "bg-[#383838]"}`} />
                     )}
-                    {mounted && primaryRole ? (
-                      <span
-                        className={`text-[11px] font-semibold tracking-wide uppercase truncate ${
-                          isLight ? "text-slate-600" : "text-[#D4D4D8]"
-                        }`}
-                        suppressHydrationWarning
-                      >
-                        {primaryRole}
-                      </span>
-                    ) : mounted && departmentDisplay ? (
+                    {mounted && departmentDisplay ? (
                       <span className={`text-[11px] truncate ${isLight ? "text-[#666666]" : "text-[#E4E4E7]"}`} suppressHydrationWarning>
                         {departmentDisplay}
                       </span>
-                    ) : null}
-                    {mounted && (isProfileLoaded || fullName) && profile.email ? (
-                      <span className={`text-[10.5px] truncate ${isLight ? "text-[#888888]" : "text-[#A1A1AA]"}`} suppressHydrationWarning>
+                    ) : mounted && (isProfileLoaded || fullName) && profile.email ? (
+                      <span className="text-[11px] text-[#A1A1AA] truncate" suppressHydrationWarning>
                         {profile.email}
                       </span>
                     ) : !isProfileLoaded && !fullName ? (
