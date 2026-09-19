@@ -407,16 +407,41 @@ export default function NavbarMain({
           >
             {isMinimized ? (
               <div className="flex items-center justify-center">
-                <span className="relative flex h-2.5 w-2.5">
-                  {serverStatus.connected && (
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <div className="relative flex items-center justify-center w-3.5 h-3.5">
+                  {serverStatus.connected ? (
+                    <>
+                      <motion.span
+                        className="absolute inset-0 rounded-full bg-emerald-500"
+                        animate={{
+                          scale: [1, 2.1],
+                          opacity: [0.55, 0],
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "easeOut",
+                        }}
+                      />
+                      <motion.span
+                        className="relative block w-2.5 h-2.5 rounded-full bg-emerald-500"
+                        animate={{
+                          opacity: [1, 0.75, 1],
+                          scale: [1, 1.05, 1],
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                        }}
+                        style={{
+                          boxShadow: "0 0 8px rgba(16, 185, 129, 0.85)",
+                        }}
+                      />
+                    </>
+                  ) : (
+                    <span className="block w-2.5 h-2.5 rounded-full bg-rose-500" />
                   )}
-                  <span
-                    className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
-                      serverStatus.connected ? "bg-emerald-500" : "bg-rose-500"
-                    }`}
-                  />
-                </span>
+                </div>
               </div>
             ) : (
               <>
@@ -427,16 +452,41 @@ export default function NavbarMain({
                       : "bg-[#383838] border-[#383838]"
                   }`}
                 >
-                  <span className="relative flex h-2.5 w-2.5">
-                    {serverStatus.connected && (
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <div className="relative flex items-center justify-center w-3 h-3">
+                    {serverStatus.connected ? (
+                      <>
+                        <motion.span
+                          className="absolute inset-0 rounded-full bg-emerald-500"
+                          animate={{
+                            scale: [1, 2.1],
+                            opacity: [0.55, 0],
+                          }}
+                          transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: "easeOut",
+                          }}
+                        />
+                        <motion.span
+                          className="relative block w-2 h-2 rounded-full bg-emerald-500"
+                          animate={{
+                            opacity: [1, 0.75, 1],
+                            scale: [1, 1.05, 1],
+                          }}
+                          transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                          }}
+                          style={{
+                            boxShadow: "0 0 8px rgba(16, 185, 129, 0.85)",
+                          }}
+                        />
+                      </>
+                    ) : (
+                      <span className="block w-2 h-2 rounded-full bg-rose-500" />
                     )}
-                    <span
-                      className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
-                        serverStatus.connected ? "bg-emerald-500" : "bg-rose-500"
-                      }`}
-                    />
-                  </span>
+                  </div>
                 </div>
                 <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
                   <span
