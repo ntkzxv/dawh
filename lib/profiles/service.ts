@@ -14,7 +14,7 @@ import type {
   CompleteEmployeeProfileInput,
   EmployeeProfileDto,
   EmployeeProfileResponse,
-  UpdateEmployeeProfileInput,
+  PartialUpdateEmployeeProfileInput,
 } from "@/lib/profiles/types";
 
 type QueryExecutor = Pick<Pool | PoolClient, "query">;
@@ -65,23 +65,31 @@ export async function toEmployeeProfileDto(
   profile: EmployeeProfileResponse,
   executor: QueryExecutor = dbPool,
 ): Promise<EmployeeProfileDto> {
-  if (!profile.facility_id) throw new NotFoundError("Employee facility");
-  const result = await executor.query<{
+  let related: {
     facility_id: string;
     facility_code: string;
     facility_name: string;
     department_id: string | null;
     department_code: string | null;
     department_name: string | null;
-  }>(
-    `SELECT f.id::text AS facility_id, f.code AS facility_code, f.name AS facility_name,
-            d.id::text AS department_id, d.code AS department_code, d.name AS department_name
-     FROM public.facilities f LEFT JOIN public.departments d ON d.id = $2::bigint
-     WHERE f.id = $1::bigint`,
-    [profile.facility_id, profile.department_id],
-  );
-  const related = result.rows[0];
-  if (!related) throw new NotFoundError("Employee facility");
+  } | null = null;
+  if (profile.facility_id) {
+    const result = await executor.query<{
+      facility_id: string;
+      facility_code: string;
+      facility_name: string;
+      department_id: string | null;
+      department_code: string | null;
+      department_name: string | null;
+    }>(
+      `SELECT f.id::text AS facility_id, f.code AS facility_code, f.name AS facility_name,
+              d.id::text AS department_id, d.code AS department_code, d.name AS department_name
+       FROM public.facilities f LEFT JOIN public.departments d ON d.id = $2::bigint
+       WHERE f.id = $1::bigint`,
+      [profile.facility_id, profile.department_id],
+    );
+    related = result.rows[0] ?? null;
+  }
   return {
     userId: profile.user_id,
     email: profile.email,
@@ -111,17 +119,19 @@ export async function toEmployeeProfileDto(
     emergencyContactPhone: profile.emergency_contact_phone ?? "",
     currentAddress: address(profile, "current"),
     registeredAddress: address(profile, "registered"),
-    facilityId: related.facility_id,
-    departmentId: related.department_id,
-    facility: {
-      id: related.facility_id,
-      code: related.facility_code,
-      name: related.facility_name,
-    },
+    facilityId: related?.facility_id ?? null,
+    departmentId: related?.department_id ?? null,
+    facility: related
+      ? {
+          id: related.facility_id,
+          code: related.facility_code,
+          name: related.facility_name,
+        }
+      : null,
     department:
-      related.department_id &&
-      related.department_code &&
-      related.department_name
+      related?.department_id &&
+      related?.department_code &&
+      related?.department_name
         ? {
             id: related.department_id,
             code: related.department_code,
@@ -296,54 +306,49 @@ export async function completeEmployeeProfile(
 export async function updateEmployeeProfile(
   context: AccessContext,
   requestContext: RequestContext,
-  input: UpdateEmployeeProfileInput,
+  input: PartialUpdateEmployeeProfileInput,
 ): Promise<EmployeeProfileDto> {
   return withTransaction(async (client) => {
     const previous = await getEmployeeProfile(context.user.id, client);
     if (!previous?.is_complete)
       throw new NotFoundError("Completed employee profile");
+    const assignments: string[] = [];
+    const values: unknown[] = [context.user.id];
+    const set = (column: string, value: unknown) => {
+      values.push(value);
+      assignments.push(`${column}=$${values.length}`);
+    };
+    const scalarFields: Array<[keyof PartialUpdateEmployeeProfileInput, string]> = [
+      ["prefix", "prefix"], ["nicknameTh", "nickname_th"], ["nicknameEn", "nickname_en"],
+      ["nationality", "nationality"], ["religion", "religion"], ["educationLevel", "education_level"],
+      ["majorSubject", "major_subject"], ["universityNameTh", "university_name_th"],
+      ["universityNameEn", "university_name_en"], ["phone", "phone"],
+      ["emergencyContactNameTh", "emergency_contact_name_th"],
+      ["emergencyContactNameEn", "emergency_contact_name_en"],
+      ["emergencyContactRelationship", "emergency_contact_relationship"],
+      ["emergencyContactPhone", "emergency_contact_phone"],
+    ];
+    for (const [key, column] of scalarFields) {
+      if (input[key] !== undefined) set(column, input[key]);
+    }
+    const addressFields: Array<["currentAddress" | "registeredAddress", string]> = [
+      ["currentAddress", "current"], ["registeredAddress", "registered"],
+    ];
+    for (const [key, prefix] of addressFields) {
+      const address = input[key];
+      if (!address) continue;
+      set(`${prefix}_house_no`, address.houseNo);
+      set(`${prefix}_village`, address.village);
+      set(`${prefix}_soi`, address.soi);
+      set(`${prefix}_province`, address.province);
+      set(`${prefix}_district`, address.district);
+      set(`${prefix}_subdistrict`, address.subdistrict);
+      set(`${prefix}_postal_code`, address.postalCode);
+    }
+    assignments.push("updated_at=now()");
     await client.query(
-      `UPDATE public.employee_profiles SET prefix=$2,nickname_th=$3,nickname_en=$4,
-       nationality=$5,religion=$6,education_level=$7,major_subject=$8,
-       university_name_th=$9,university_name_en=$10,phone=$11,
-       emergency_contact_name_th=$12,emergency_contact_name_en=$13,
-       emergency_contact_relationship=$14,emergency_contact_phone=$15,
-       current_house_no=$16,current_village=$17,current_soi=$18,current_province=$19,
-       current_district=$20,current_subdistrict=$21,current_postal_code=$22,
-       registered_house_no=$23,registered_village=$24,registered_soi=$25,
-       registered_province=$26,registered_district=$27,registered_subdistrict=$28,
-       registered_postal_code=$29,updated_at=now() WHERE user_id=$1`,
-      [
-        context.user.id,
-        input.prefix,
-        input.nicknameTh,
-        input.nicknameEn,
-        input.nationality,
-        input.religion,
-        input.educationLevel,
-        input.majorSubject,
-        input.universityNameTh,
-        input.universityNameEn,
-        input.phone,
-        input.emergencyContactNameTh,
-        input.emergencyContactNameEn,
-        input.emergencyContactRelationship,
-        input.emergencyContactPhone,
-        input.currentAddress.houseNo,
-        input.currentAddress.village,
-        input.currentAddress.soi,
-        input.currentAddress.province,
-        input.currentAddress.district,
-        input.currentAddress.subdistrict,
-        input.currentAddress.postalCode,
-        input.registeredAddress.houseNo,
-        input.registeredAddress.village,
-        input.registeredAddress.soi,
-        input.registeredAddress.province,
-        input.registeredAddress.district,
-        input.registeredAddress.subdistrict,
-        input.registeredAddress.postalCode,
-      ],
+      `UPDATE public.employee_profiles SET ${assignments.join(",")} WHERE user_id=$1`,
+      values,
     );
     await writeAuditLog(client, {
       organizationId: context.organization.id,

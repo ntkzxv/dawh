@@ -20,9 +20,9 @@ import {
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
-import { supabase } from "@/utils/supabase";
 import { getCurrentSession, signOut } from "@/lib/auth-client";
-import { clearUserProfileCache, fetchAndStoreUserProfile } from "@/lib/user-profile";
+import { clearUserProfileCache, fetchAndStoreUserProfile, toEmployeeProfile } from "@/lib/user-profile";
+import { getAppMe } from "@/lib/api/session";
 import { useTheme } from "@/context/ThemeContext";
 import { DAWH_LOGOS } from "@/config/brand";
 import { useLoading } from "@/components/loading_screen";
@@ -153,6 +153,21 @@ export default function NavbarMain({
     const loadUserData = async () => {
       try {
         if (typeof window === "undefined") return;
+        try {
+          const me = await getAppMe();
+          if (me.data.profile && isMounted) {
+            const canonicalProfile = toEmployeeProfile(me.data.profile);
+            setUserName(formatDisplayName(canonicalProfile.full_name, canonicalProfile.first_name, canonicalProfile.last_name, canonicalProfile.nickname_th, canonicalProfile.nickname));
+            setUserUsername(canonicalProfile.username || "user");
+            setUserAvatar(canonicalProfile.avatar_url || null);
+            localStorage.setItem("dawh_user_profile", JSON.stringify(canonicalProfile));
+          } else if (isMounted) {
+            setUserName(me.data.user.name || me.data.user.email.split("@")[0]);
+            setUserUsername(me.data.user.email.split("@")[0] || "user");
+          }
+        } catch {
+          // Fall back to Better Auth identity below if the application API is unavailable.
+        }
         const session = await getCurrentSession();
         const targetId = session?.user.id || undefined;
         const targetEmail = session?.user.email || undefined;

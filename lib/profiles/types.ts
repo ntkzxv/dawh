@@ -95,9 +95,9 @@ export type EmployeeProfileDto = {
   emergencyContactPhone: string;
   currentAddress: AddressInput;
   registeredAddress: AddressInput;
-  facilityId: string;
+  facilityId: string | null;
   departmentId: string | null;
-  facility: { id: string; code: string; name: string };
+  facility: { id: string; code: string; name: string } | null;
   department: { id: string; code: string; name: string } | null;
   termsVersion: string;
   termsAcceptedAt: string;
@@ -119,7 +119,9 @@ export type CompleteEmployeeProfileInput = Omit<
   | "createdAt"
   | "updatedAt"
   | "isComplete"
-> & { termsAccepted: true };
+  | "facilityId"
+  | "departmentId"
+> & { facilityId: string; departmentId: string | null; termsAccepted: true };
 
 export type UpdateEmployeeProfileInput = Pick<
   CompleteEmployeeProfileInput,
@@ -140,3 +142,5 @@ export type UpdateEmployeeProfileInput = Pick<
   | "currentAddress"
   | "registeredAddress"
 >;
+
+export type PartialUpdateEmployeeProfileInput = Partial<UpdateEmployeeProfileInput>;

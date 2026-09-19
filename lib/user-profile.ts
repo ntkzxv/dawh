@@ -1,6 +1,7 @@
 "use client";
 
-import type { EmployeeProfileResponse } from "@/lib/profiles";
+import { apiGet } from "@/lib/api/client";
+import type { EmployeeProfileDto, EmployeeProfileResponse } from "@/lib/profiles";
 import type { EmployeeProfile } from "@/types/user";
 
 const PROFILE_CACHE_KEY = "dawh_user_profile";
@@ -9,7 +10,69 @@ function formatAddress(...parts: Array<string | null>) {
   return parts.filter((part): part is string => Boolean(part?.trim())).join(", ");
 }
 
-export function toEmployeeProfile(profile: EmployeeProfileResponse): EmployeeProfile {
+function fromDto(profile: EmployeeProfileDto): EmployeeProfile {
+  const currentAddress = profile.currentAddress;
+  const registeredAddress = profile.registeredAddress;
+  return {
+    id: profile.userId,
+    email: profile.email,
+    username: profile.username,
+    prefix: profile.prefix,
+    first_name: profile.firstNameEn,
+    last_name: profile.lastNameEn,
+    nickname: profile.nicknameEn,
+    first_name_th: profile.firstNameTh,
+    last_name_th: profile.lastNameTh,
+    nickname_th: profile.nicknameTh,
+    id_card: profile.citizenId,
+    birth_date: profile.birthDate,
+    gender: profile.gender,
+    blood_type: profile.bloodType,
+    marital_status: profile.maritalStatus,
+    nationality: profile.nationality,
+    religion: profile.religion,
+    phone: profile.phone,
+    emergency_contact_name_th: profile.emergencyContactNameTh,
+    emergency_contact_name: profile.emergencyContactNameEn,
+    emergency_contact_relationship: profile.emergencyContactRelationship,
+    emergency_contact_phone: profile.emergencyContactPhone,
+    current_address: formatAddress(
+      currentAddress.houseNo,
+      currentAddress.village,
+      currentAddress.soi,
+      currentAddress.subdistrict,
+      currentAddress.district,
+      currentAddress.province,
+      currentAddress.postalCode,
+    ),
+    registered_address: formatAddress(
+      registeredAddress.houseNo,
+      registeredAddress.village,
+      registeredAddress.soi,
+      registeredAddress.subdistrict,
+      registeredAddress.district,
+      registeredAddress.province,
+      registeredAddress.postalCode,
+    ),
+    department: profile.department?.name ?? null,
+    branch_name: profile.facility?.name ?? null,
+    branch_id: profile.facilityId,
+    education_level: profile.educationLevel,
+    major_subject: profile.majorSubject,
+    university_th: profile.universityNameTh,
+    university_en: profile.universityNameEn,
+    university_name: profile.universityNameTh,
+    created_at: profile.createdAt,
+    updated_at: profile.updatedAt,
+    terms_version: profile.termsVersion,
+    terms_accepted_at: profile.termsAcceptedAt,
+    profile_completed_at: profile.profileCompletedAt,
+    is_complete: profile.isComplete,
+  };
+}
+
+export function toEmployeeProfile(profile: EmployeeProfileDto | EmployeeProfileResponse): EmployeeProfile {
+  if ("userId" in profile) return fromDto(profile);
   return {
     id: profile.user_id, email: profile.email, username: profile.username, prefix: profile.prefix,
     first_name: profile.first_name_en, last_name: profile.last_name_en, nickname: profile.nickname_en,
@@ -36,23 +99,30 @@ export function toEmployeeProfile(profile: EmployeeProfileResponse): EmployeePro
 export async function fetchAndStoreUserProfile(userId: string, email?: string | null): Promise<EmployeeProfile | null> {
   if (typeof window === "undefined" || !userId) return null;
   void email;
-  const response = await fetch("/api/profile/me", { credentials: "include", cache: "no-store" });
-  if (response.status === 401) {
-    clearUserProfileCache();
-    return null;
+  try {
+    const response = await apiGet<{
+      profile: EmployeeProfileDto | null;
+      profileComplete: boolean;
+    }>("/api/profile/me");
+    const dto = response.data.profile;
+    if (!dto) {
+      localStorage.removeItem(PROFILE_CACHE_KEY);
+      return null;
+    }
+    const profile = toEmployeeProfile(dto);
+    localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile));
+    return profile;
+  } catch (error) {
+    const status = error instanceof Error && "status" in error
+      ? (error as { status?: number }).status
+      : undefined;
+    if (status === 401) {
+      clearUserProfileCache();
+      return null;
+    }
+    if (status === 404) return null;
+    throw error;
   }
-  if (!response.ok) throw new Error("Unable to load employee profile.");
-  const payload = (await response.json()) as { profile: EmployeeProfileResponse | null; isComplete?: boolean };
-  if (!payload.profile) {
-    localStorage.removeItem(PROFILE_CACHE_KEY);
-    return null;
-  }
-  const profile = toEmployeeProfile({
-    ...payload.profile,
-    is_complete: payload.isComplete ?? payload.profile.is_complete,
-  });
-  localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile));
-  return profile;
 }
 
 export function clearUserProfileCache() {

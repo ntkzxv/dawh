@@ -52,6 +52,11 @@ import { useTheme } from "@/context/ThemeContext";
 import { useNotification } from "@/context/NotificationContext";
 import { authClient, getCurrentSession, signOut } from "@/lib/auth-client";
 import { clearUserProfileCache, fetchAndStoreUserProfile, toEmployeeProfile } from "@/lib/user-profile";
+import { apiPut } from "@/lib/api/client";
+import { getOnboardingOptions } from "@/lib/api/onboarding";
+import { ApiRequestError } from "@/lib/api/client";
+import { readPendingRegistrationProfile } from "@/lib/auth/pending-profile";
+import { isValidIsoDate, isValidPhone, isValidThaiCitizenId } from "@/lib/profiles/client-validation";
 import {
   EmployeeProfile,
   Branch,
@@ -1725,6 +1730,7 @@ export default function AccountView({
     const resolvedBirthDate =
       regForm.birth_date ||
       profile.birth_date ||
+      readPendingRegistrationProfile()?.birthDate ||
       (typeof window !== "undefined" ? localStorage.getItem("current_user_birth_date") || "" : "");
     if (resolvedBirthDate && !regForm.birth_date) {
       setRegForm((prev) => ({ ...prev, birth_date: resolvedBirthDate }));
@@ -1794,7 +1800,7 @@ export default function AccountView({
     };
   }, []);
 
-  // Fetch real employee profile from Supabase Database
+  // Fetch the canonical employee profile through the application API.
   useEffect(() => {
     // 1. Instant Cache Load (0ms)
     let cachedProfile: Partial<EmployeeProfile> | null = null;
@@ -1821,25 +1827,44 @@ export default function AccountView({
         const targetEmail = session?.user.email;
 
         if (targetId) {
-          const fetched = await fetchAndStoreUserProfile(targetId, targetEmail);
+          // A profile endpoint can be temporarily unavailable while the access
+          // configuration is being seeded. Keep the account page usable and
+          // hydrate the identity captured during registration instead of
+          // leaving every field blank.
+          let fetched: EmployeeProfile | null = null;
+          try {
+            fetched = await fetchAndStoreUserProfile(targetId, targetEmail);
+          } catch (profileError) {
+            console.warn("Unable to load employee profile; using registration identity.", profileError);
+          }
+
           if (fetched) {
             setProfile(fetched);
             syncFormFromProfile(fetched);
             return;
           }
-          try {
-            const pending = JSON.parse(sessionStorage.getItem("dawh_pending_profile") || "{}") as Record<string, string>;
-            setRegForm((current) => ({
-              ...current,
-              username: pending.username || current.username,
-              first_name: pending.first_name || current.first_name,
-              last_name: pending.last_name || current.last_name,
-              birth_date: pending.birth_date || current.birth_date,
-              phone: pending.phone || current.phone,
-            }));
-          } catch {
-            // A missing pending registration is valid when login occurred on another device.
-          }
+
+          const pending = readPendingRegistrationProfile();
+          const pendingProfile: Partial<EmployeeProfile> = {
+            id: targetId,
+            email: targetEmail || "",
+            username: pending?.username || "",
+            first_name: pending?.firstName || session.user.name?.split(" ")[0] || "",
+            last_name: pending?.lastName || session.user.name?.split(" ").slice(1).join(" ") || "",
+            birth_date: pending?.birthDate || "",
+            phone: pending?.phone || "",
+            full_name: session.user.name || undefined,
+          };
+          setProfile(pendingProfile);
+          syncFormFromProfile(pendingProfile);
+          setRegForm((current) => ({
+            ...current,
+            username: pendingProfile.username || current.username,
+            first_name: pendingProfile.first_name || current.first_name,
+            last_name: pendingProfile.last_name || current.last_name,
+            birth_date: pendingProfile.birth_date || current.birth_date,
+            phone: pendingProfile.phone || current.phone,
+          }));
         }
       } catch (err) {
         console.error("Error loading user profile in settings:", err);
@@ -2093,23 +2118,46 @@ export default function AccountView({
       return;
     }
     const cleanIdCard = regForm.id_card.trim().replace(/\D/g, "");
-    if (!cleanIdCard || cleanIdCard.length !== 13) {
-      const msg = isThai ? "กรุณากรอกเลขบัตรประชาชนให้ครบ 13 หลัก" : "Please enter a valid 13-digit National ID card.";
+    if (!isValidThaiCitizenId(cleanIdCard)) {
+      const msg = isThai ? "กรุณากรอกเลขบัตรประชาชน 13 หลักให้ถูกต้อง" : "Please enter a valid 13-digit Thai citizen ID.";
       setModalError(msg);
       regFormScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
-    // birth_date is locked with a lock icon in the form, so do not block submission if empty
-    const activeBirthDate = regForm.birth_date || profile.birth_date || (typeof window !== "undefined" ? localStorage.getItem("current_user_birth_date") || "" : "");
+    // Birth date is collected during the initial registration and shown locked here.
+    const activeBirthDate =
+      regForm.birth_date ||
+      profile.birth_date ||
+      readPendingRegistrationProfile()?.birthDate ||
+      (typeof window !== "undefined" ? localStorage.getItem("current_user_birth_date") || "" : "");
+    if (!isValidIsoDate(activeBirthDate)) {
+      const msg = isThai
+        ? "ไม่พบวันเกิดจากข้อมูลการสมัคร กรุณากลับไปสมัครด้วยแท็บเดิม"
+        : "Birth date from registration is missing. Please continue in the original registration tab.";
+      setModalError(msg);
+      regFormScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
     const resolvedUsername =
       (regForm.username.trim() ||
         profile.username ||
         profile.email?.split("@")[0]?.replace(/[^a-zA-Z0-9._-]/g, "") ||
         "employee").toLowerCase();
 
-    const activePhone = (regForm.phone || profile.phone || (typeof window !== "undefined" ? localStorage.getItem("current_user_phone") || "" : "")).trim();
+    const activePhone = (
+      regForm.phone ||
+      profile.phone ||
+      readPendingRegistrationProfile()?.phone ||
+      (typeof window !== "undefined" ? localStorage.getItem("current_user_phone") || "" : "")
+    ).trim();
     if (!activePhone) {
       const msg = isThai ? "กรุณาระบุเบอร์โทรศัพท์มือถือ" : "Please enter mobile phone number.";
+      setModalError(msg);
+      regFormScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    if (!isValidPhone(activePhone)) {
+      const msg = isThai ? "กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง" : "Please enter a valid phone number.";
       setModalError(msg);
       regFormScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
       return;
@@ -2178,45 +2226,95 @@ export default function AccountView({
       // Artificial UX smooth delay so the user sees the submission and loading animation clearly
       await new Promise((resolve) => setTimeout(resolve, 800));
 
-      const cleanFullName = `${regForm.first_name.trim()} ${regForm.last_name.trim()}`.trim();
+      const pending = readPendingRegistrationProfile();
+      const resolvedFirstName = (regForm.first_name || profile.first_name || pending?.firstName || "").trim();
+      const resolvedLastName = (regForm.last_name || profile.last_name || pending?.lastName || "").trim();
+      const cleanFullName = `${resolvedFirstName} ${resolvedLastName}`.trim();
       const cleanIdCard = regForm.id_card.trim().replace(/\D/g, "");
-      const cleanBirthDate = (regForm.birth_date || profile.birth_date || "").trim() || null;
+      const cleanBirthDate = (
+        regForm.birth_date || profile.birth_date || pending?.birthDate ||
+        (typeof window !== "undefined" ? localStorage.getItem("current_user_birth_date") || "" : "")
+      ).trim();
+      if (!isValidIsoDate(cleanBirthDate)) {
+        throw new Error(isThai
+          ? "ไม่พบวันเกิดจากข้อมูลการสมัคร กรุณากลับไปสมัครด้วยแท็บเดิม"
+          : "Birth date from registration is missing. Please continue in the original registration tab.");
+      }
       const cleanUsername =
         (regForm.username.trim() ||
           profile.username ||
+          pending?.username ||
           profile.email?.split("@")[0]?.replace(/[^a-zA-Z0-9._-]/g, "") ||
           "employee").toLowerCase();
+      const resolvedPhone = (
+        regForm.phone ||
+        profile.phone ||
+        pending?.phone ||
+        (typeof window !== "undefined" ? localStorage.getItem("current_user_phone") || "" : "")
+      ).trim();
 
       const currentAddress = parseAddressString(regForm.current_address);
       const registeredAddress = parseAddressString(regForm.registered_address);
       const branch = branchesList.find((item) => item.id === regForm.branch_id || item.branch_name === regForm.branch_name) ?? DEFAULT_BRANCHES[0];
-      const response = await fetch("/api/profile/me/complete", {
-        method: "PUT",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: cleanUsername, prefix: regForm.prefix.trim(),
-          first_name_th: regForm.first_name_th.trim(), last_name_th: regForm.last_name_th.trim(), nickname_th: regForm.nickname_th.trim(),
-          first_name_en: regForm.first_name.trim(), last_name_en: regForm.last_name.trim(), nickname_en: regForm.nickname.trim(),
-          citizen_id: cleanIdCard, birth_date: cleanBirthDate, gender: regForm.gender, blood_type: regForm.blood_type,
-
-          marital_status: regForm.marital_status.trim(), nationality: regForm.nationality.trim(), religion: regForm.religion.trim(),
-          education_level: regForm.education_level, major_subject: regForm.major_subject.trim(),
-          university_name_th: regForm.university_th.trim() || regForm.university_name.trim(), university_name_en: regForm.university_en.trim() || regForm.university_name.trim(),
-          phone: regForm.phone.trim(), emergency_contact_name_th: regForm.emergency_contact_name_th.trim(), emergency_contact_name_en: regForm.emergency_contact_name.trim(),
-          emergency_contact_relationship: regForm.emergency_contact_relationship, emergency_contact_phone: regForm.emergency_contact_phone.trim(),
-          current_house_no: currentAddress.houseNo, current_village: currentAddress.moo, current_soi: currentAddress.soi,
-          current_province: currentAddress.province_en, current_district: currentAddress.district_en, current_subdistrict: currentAddress.subdistrict_en, current_postal_code: currentAddress.zipcode,
-          registered_house_no: registeredAddress.houseNo, registered_village: registeredAddress.moo, registered_soi: registeredAddress.soi,
-          registered_province: registeredAddress.province_en, registered_district: registeredAddress.district_en, registered_subdistrict: registeredAddress.subdistrict_en, registered_postal_code: registeredAddress.zipcode,
-          department: regForm.department.trim() || null, branch_name: branch.branch_name, branch_code: branch.branch_code, terms_version: "2026-09-19",
-        }),
+      const options = await getOnboardingOptions();
+      const facility = options.data.facilities.find(
+        (item) => item.id === regForm.branch_id || item.code === branch.branch_code || item.name === branch.branch_name,
+      ) ?? options.data.facilities[0];
+      if (!facility) throw new Error("No active facility is available for this profile.");
+      const department = options.data.departments.find(
+        (item) => item.id === regForm.department || item.code === regForm.department || item.name === regForm.department,
+      );
+      const response = await apiPut<import("@/lib/profiles").EmployeeProfileDto>("/api/profile/me/complete", {
+        username: cleanUsername,
+        prefix: regForm.prefix.trim(),
+        firstNameTh: regForm.first_name_th.trim(),
+        lastNameTh: regForm.last_name_th.trim(),
+        nicknameTh: regForm.nickname_th.trim(),
+        firstNameEn: resolvedFirstName,
+        lastNameEn: resolvedLastName,
+        nicknameEn: regForm.nickname.trim(),
+        citizenId: cleanIdCard,
+        birthDate: cleanBirthDate,
+        gender: regForm.gender,
+        bloodType: regForm.blood_type,
+        maritalStatus: regForm.marital_status.trim(),
+        nationality: regForm.nationality.trim(),
+        religion: regForm.religion.trim(),
+        educationLevel: regForm.education_level,
+        majorSubject: regForm.major_subject.trim(),
+        universityNameTh: regForm.university_th.trim() || regForm.university_name.trim(),
+        universityNameEn: regForm.university_en.trim() || regForm.university_name.trim(),
+        phone: resolvedPhone,
+        emergencyContactNameTh: regForm.emergency_contact_name_th.trim(),
+        emergencyContactNameEn: regForm.emergency_contact_name.trim() || null,
+        emergencyContactRelationship: regForm.emergency_contact_relationship,
+        emergencyContactPhone: regForm.emergency_contact_phone.trim(),
+        currentAddress: {
+          houseNo: currentAddress.houseNo,
+          village: currentAddress.moo || null,
+          soi: currentAddress.soi || null,
+          province: currentAddress.province_en,
+          district: currentAddress.district_en,
+          subdistrict: currentAddress.subdistrict_en,
+          postalCode: currentAddress.zipcode,
+        },
+        registeredAddress: {
+          houseNo: registeredAddress.houseNo,
+          village: registeredAddress.moo || null,
+          soi: registeredAddress.soi || null,
+          province: registeredAddress.province_en,
+          district: registeredAddress.district_en,
+          subdistrict: registeredAddress.subdistrict_en,
+          postalCode: registeredAddress.zipcode,
+        },
+        facilityId: facility.id,
+        departmentId: department?.id ?? null,
+        termsAccepted: true,
       });
-      const result = await response.json() as { error?: string; profile?: import("@/lib/profiles").EmployeeProfileResponse };
-      if (!response.ok || !result.profile) throw new Error(result.error || "Failed to save employee profile.");
+      const result = response.data;
 
       // Update local state and persistent cache
-      const updatedProfile: Partial<EmployeeProfile> = { ...toEmployeeProfile(result.profile), full_name: cleanFullName };
+      const updatedProfile: Partial<EmployeeProfile> = { ...toEmployeeProfile(result), full_name: cleanFullName };
       setProfile(updatedProfile);
       if (typeof window !== "undefined") {
         localStorage.setItem("dawh_user_profile", JSON.stringify(updatedProfile));
@@ -2240,7 +2338,14 @@ export default function AccountView({
         setRegStep("fill");
       }, 700);
     } catch (err: unknown) {
-      const errorMsg = (err instanceof Error ? err.message : null) || (isThai ? "เกิดข้อผิดพลาดในการบันทึกข้อมูล" : "Failed to update profile");
+      let errorMsg = err instanceof Error ? err.message : null;
+      if (err instanceof ApiRequestError && err.details && typeof err.details === "object") {
+        const details = Object.entries(err.details as Record<string, unknown>)
+          .map(([field, message]) => `${field}: ${String(message)}`)
+          .join("; ");
+        if (details) errorMsg = `${err.message} ${details}`;
+      }
+      errorMsg ||= isThai ? "เกิดข้อผิดพลาดในการบันทึกข้อมูล" : "Failed to update profile";
       setModalError(errorMsg);
       notify.error(isThai ? "เกิดข้อผิดพลาด" : "Save Failed", {
         message: errorMsg,

@@ -17,7 +17,7 @@ import {
 import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
 import { getCurrentSession, signOut } from "@/lib/auth-client";
-import { clearUserProfileCache, checkProfileCompleteness, fetchAndStoreUserProfile } from "@/lib/user-profile";
+import { clearUserProfileCache, checkProfileCompleteness, fetchAndStoreUserProfile, toEmployeeProfile } from "@/lib/user-profile";
 import { EmployeeProfile } from "@/types/user";
 import { useLoading } from "@/components/loading_screen";
 import { getDawhLogo } from "@/config/brand";
@@ -25,6 +25,7 @@ import { ProfileGuardModal } from "@/components/auth";
 import { useNotification } from "@/context/NotificationContext";
 import { useAppLanguage, setAppLanguage } from "@/utils/language";
 import { motion, AnimatePresence } from "framer-motion";
+import { getAppMe } from "@/lib/api/session";
 
 export interface HeaderNavbarProps {
   title?: string;
@@ -81,6 +82,7 @@ export default function HeaderNavbar({
   const [profile, setProfile] = useState<Partial<EmployeeProfile>>({});
   const [isProfileLoaded, setIsProfileLoaded] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [permissions, setPermissions] = useState<string[]>([]);
 
   // Close Dropdown on Outside Click
   useEffect(() => {
@@ -94,8 +96,9 @@ export default function HeaderNavbar({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Fetch real employee profile from Supabase Database
+  // Fetch the canonical employee profile through the application API.
   useEffect(() => {
+    let isMounted = true;
     setMounted(true);
     // 1. Instant Cache Check (0ms)
     try {
@@ -121,11 +124,35 @@ export default function HeaderNavbar({
 
     async function loadUserProfile() {
       try {
+        let appMe: Awaited<ReturnType<typeof getAppMe>> | null = null;
+        try {
+          const me = await getAppMe();
+          appMe = me;
+          if (isMounted) {
+            setPermissions(me.data.permissions);
+            if (me.data.profile) {
+              const canonicalProfile = toEmployeeProfile(me.data.profile);
+              setProfile(canonicalProfile);
+              setIsProfileLoaded(true);
+              localStorage.setItem("dawh_user_profile", JSON.stringify(canonicalProfile));
+            } else {
+              setProfile((prev) => ({
+                ...prev,
+                id: me.data.user.id,
+                email: me.data.user.email,
+                full_name: me.data.user.name,
+              }));
+              setIsProfileLoaded(true);
+            }
+          }
+        } catch {
+          // Profile and session APIs remain the source of truth for navigation guards.
+        }
         const session = await getCurrentSession();
         const targetId = session?.user.id;
         const targetEmail = session?.user.email;
 
-        if (targetId) {
+        if (targetId && !appMe?.data.profile) {
           const fetched = await fetchAndStoreUserProfile(targetId, targetEmail);
           if (fetched) {
             setProfile(fetched);
@@ -181,23 +208,17 @@ export default function HeaderNavbar({
     if (typeof window !== "undefined") {
       window.addEventListener("dawh_profile_updated", handleProfileUpdated);
       return () => {
+        isMounted = false;
         window.removeEventListener("dawh_profile_updated", handleProfileUpdated);
       };
     }
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  // Check if active user has Admin / DevOps privileges (ปิด role check ชั่วคราวเพื่อให้เข้าถึงได้ทุกคน)
-  const isAdmin = true;
-  /*
-  const isAdmin =
-    profile.role?.toLowerCase() === "devops" ||
-    profile.role?.toLowerCase() === "super_admin" ||
-    profile.role?.toLowerCase() === "superadmin" ||
-    profile.role?.toLowerCase() === "admin" ||
-    profile.role?.toLowerCase().includes("devops") ||
-    profile.role?.toLowerCase().includes("administrator") ||
-    profile.role?.toLowerCase().includes("admin");
-  */
+  // UI-only hint; every API still enforces permissions server-side.
+  const isAdmin = permissions.some((permission) => permission.startsWith("admin."));
 
   // Display calculations (Supporting Nicknames and usernames when full name is empty)
   const validFullName =

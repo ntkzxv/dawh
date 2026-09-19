@@ -6,6 +6,7 @@ import { NavbarMain, NavbarsubWarehouse } from "@/components/navbar";
 import { useTheme } from "@/context/ThemeContext";
 import { getCurrentSession } from "@/lib/auth-client";
 import { checkProfileCompleteness, fetchAndStoreUserProfile } from "@/lib/user-profile";
+import { getAppMe } from "@/lib/api/session";
 import { motion } from "framer-motion";
 
 export default function WarehouseLayout({
@@ -31,6 +32,13 @@ export default function WarehouseLayout({
         }
 
         let profile = null;
+        let profileComplete = false;
+        try {
+          const me = await getAppMe();
+          profileComplete = me.data.profileComplete;
+        } catch {
+          // Fall back to the cached profile for transient API failures.
+        }
         try {
           const cached = localStorage.getItem("dawh_user_profile");
           if (cached) profile = JSON.parse(cached);
@@ -43,7 +51,7 @@ export default function WarehouseLayout({
         }
 
         const { isComplete } = checkProfileCompleteness(profile);
-        if (!isComplete && isMounted) {
+        if (!profileComplete && !isComplete && isMounted) {
           router.replace("/workspace?incomplete=true");
         }
       } catch (err) {

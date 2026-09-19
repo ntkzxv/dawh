@@ -13,8 +13,9 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/context/ThemeContext";
-import { checkProfileCompleteness, fetchAndStoreUserProfile } from "@/lib/user-profile";
+import { checkProfileCompleteness, fetchAndStoreUserProfile, toEmployeeProfile } from "@/lib/user-profile";
 import { getCurrentSession } from "@/lib/auth-client";
+import { getAppMe } from "@/lib/api/session";
 import { useLoading } from "@/components/loading_screen";
 import { HeaderNavbar, MobileNavbar } from "@/components/navbar";
 import { ProfileGuardModal } from "@/components/auth";
@@ -112,7 +113,7 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
     }
   }, []);
 
-  // Fetch real profile from Supabase Database on mount & listen to profile updates
+  // Fetch the canonical profile through the application API on mount.
   useEffect(() => {
     let cachedProfile: Partial<EmployeeProfile> | null = null;
     // 1. Instant Cache Check
@@ -152,14 +153,17 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
 
     const fetchUserProfile = async () => {
       try {
+        const me = await getAppMe();
         const session = await getCurrentSession();
         const userId = session?.user.id || null;
         if (userId) {
-          const employeeProfile = await fetchAndStoreUserProfile(userId, null);
+          const employeeProfile = me.data.profile
+            ? toEmployeeProfile(me.data.profile)
+            : await fetchAndStoreUserProfile(userId, null);
           if (employeeProfile) {
             setProfile(employeeProfile);
             const { isComplete, missingFields: missing } = checkProfileCompleteness(employeeProfile);
-            setIsProfileComplete(isComplete);
+            setIsProfileComplete(me.data.profileComplete && isComplete);
             setMissingFields(missing);
           } else {
             // User is authenticated via Better Auth, but has not completed employee profile yet

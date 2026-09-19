@@ -1,4 +1,4 @@
-import { supabase } from "@/utils/supabase";
+import { apiGet } from "@/lib/api/client";
 
 export interface WarehouseSummary {
   totalSkusCount: number;
@@ -7,17 +7,33 @@ export interface WarehouseSummary {
   criticalLowStockCount: number;
 }
 
+type StockBalance = {
+  sku: string;
+  productNameTh: string;
+  productNameEn: string | null;
+  locationId: string | null;
+  locationCode: string | null;
+  availableQuantity: string;
+};
+
+function asNumber(value: string | null | undefined) {
+  const parsed = Number(value ?? 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 export const warehouseService = {
   /**
    * ดึงข้อมูลสรุปภาพรวมคลังสินค้า
    */
   async getSummary(): Promise<WarehouseSummary> {
     try {
+      const response = await apiGet<StockBalance[]>("/api/stock/balances?limit=1000");
+      const rows = response.data;
       return {
-        totalSkusCount: 4892,
-        inboundUnits: 148,
-        outboundUnits: 320,
-        criticalLowStockCount: 2,
+        totalSkusCount: new Set(rows.map((row) => row.sku)).size,
+        inboundUnits: 0,
+        outboundUnits: 0,
+        criticalLowStockCount: rows.filter((row) => asNumber(row.availableQuantity) <= 0).length,
       };
     } catch {
       return {
@@ -33,10 +49,16 @@ export const warehouseService = {
    * ดึงรายการ SKU สินค้าในคลัง
    */
   async getInventoryList(limit = 20) {
-    return [
-      { sku: "SKU-NV-A100", name: "GPU Node Accelerator A100", quantity: 24, location: "Zone A-01" },
-      { sku: "SKU-SFP-28G", name: "Optical Transceiver 25GbE", quantity: 180, location: "Zone B-14" },
-      { sku: "SKU-CAT6A-10", name: "High-density Patch Cable 10m", quantity: 650, location: "Zone C-03" },
-    ];
+    try {
+      const response = await apiGet<StockBalance[]>(`/api/stock/balances?limit=${encodeURIComponent(String(limit))}`);
+      return response.data.map((row) => ({
+        sku: row.sku,
+        name: row.productNameEn ?? row.productNameTh,
+        quantity: row.availableQuantity,
+        location: row.locationCode ?? row.locationId ?? "—",
+      }));
+    } catch {
+      return [];
+    }
   },
 };

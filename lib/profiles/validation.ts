@@ -10,6 +10,7 @@ import {
 import type {
   AddressInput,
   CompleteEmployeeProfileInput,
+  PartialUpdateEmployeeProfileInput,
   UpdateEmployeeProfileInput,
 } from "@/lib/profiles/types";
 
@@ -214,7 +215,32 @@ export function parseCompleteEmployeeProfile(
 
 export function parseUpdateEmployeeProfile(
   body: Record<string, unknown>,
-): UpdateEmployeeProfileInput {
+): PartialUpdateEmployeeProfileInput {
   rejectUnknownFields(body, updateFields);
-  return sharedFields(body);
+  const input: PartialUpdateEmployeeProfileInput = {};
+  const requiredKeys = [
+    "prefix", "nicknameTh", "nicknameEn", "nationality", "religion",
+    "educationLevel", "majorSubject", "universityNameTh", "universityNameEn",
+    "phone", "emergencyContactNameTh", "emergencyContactRelationship",
+    "emergencyContactPhone",
+  ] as const;
+  for (const key of requiredKeys) {
+    if (key in body) input[key] = requiredText(body, key);
+  }
+  if ("phone" in body) input.phone = validatePhone(input.phone ?? "", "phone");
+  if ("emergencyContactPhone" in body) {
+    input.emergencyContactPhone = validatePhone(
+      input.emergencyContactPhone ?? "",
+      "emergencyContactPhone",
+    );
+  }
+  if ("emergencyContactNameEn" in body) {
+    input.emergencyContactNameEn = optionalText(body, "emergencyContactNameEn");
+  }
+  if ("currentAddress" in body) input.currentAddress = parseAddress(body.currentAddress, "currentAddress");
+  if ("registeredAddress" in body) input.registeredAddress = parseAddress(body.registeredAddress, "registeredAddress");
+  if (Object.keys(input).length === 0) {
+    throw new ValidationError({ body: "Provide at least one editable field." });
+  }
+  return input;
 }

@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 
 export const GET = apiRoute(async (request) => {
   const context = await getAccessContext(request);
-  const profile = context.profile
+  const profile = context.profile?.is_complete
     ? await toEmployeeProfileDto(context.profile)
     : null;
 

@@ -29,6 +29,7 @@ import { useLoading, LoadingScreen } from "@/components/loading_screen";
 import { translations } from "@/translations";
 import { Users, ArrowLeft, History, Lock, KeyRound, Search, Trash2, Clock, Sparkles, Delete } from "lucide-react";
 import { useAppLanguage, setAppLanguage } from "@/utils/language";
+import { storePendingRegistrationProfile } from "@/lib/auth/pending-profile";
 
 export type AuthMode = "signin" | "signup";
 export type Language = "TH" | "EN";
@@ -660,16 +661,13 @@ export function UserAuthView({
         // Better Auth correctly withholds a session until email verification.
         // Keep the non-sensitive registration fields only until this browser's first login,
         // so the profile-completion form can prefill them.
-        sessionStorage.setItem(
-          "dawh_pending_profile",
-          JSON.stringify({
-            username: cleanUsername,
-            first_name: cleanFirstName,
-            last_name: cleanLastName,
-            birth_date: birthDate,
-            phone: phone.trim(),
-          })
-        );
+        storePendingRegistrationProfile({
+          username: cleanUsername,
+          firstName: cleanFirstName,
+          lastName: cleanLastName,
+          birthDate,
+          phone: phone.trim(),
+        });
         saveRecentAccount({
           id: data.user?.id,
           username: cleanUsername,
