@@ -96,7 +96,7 @@ export function UserAuthView({
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeModeParam = (searchParams.get("mode") as AuthMode) || initialMode;
-  const { navigateWithLoading } = useLoading();
+  const { navigateWithLoading, startLoading } = useLoading();
 
   const { theme, toggleTheme } = useTheme();
   const isLight = theme === "light";
@@ -334,10 +334,14 @@ export function UserAuthView({
       try {
         const session = await getCurrentSession();
         if (session) {
+          startLoading({ exitTransition: "fade" });
           const targetUrl = fromPath || "/workspace";
-          if (onAuthSuccess) onAuthSuccess();
-          else if (onNavigate) onNavigate(targetUrl);
-          else window.location.href = targetUrl;
+          router.prefetch(targetUrl);
+          setTimeout(() => {
+            if (onAuthSuccess) onAuthSuccess();
+            else if (onNavigate) onNavigate(targetUrl);
+            else router.replace(targetUrl);
+          }, 350);
         }
       } catch {
         // Continue
@@ -345,7 +349,7 @@ export function UserAuthView({
     };
 
     verifySession();
-  }, [router, onAuthSuccess, onNavigate, preventAutoRedirect, searchParams]);
+  }, [router, onAuthSuccess, onNavigate, preventAutoRedirect, searchParams, startLoading]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -383,23 +387,30 @@ export function UserAuthView({
 
         const displayName = data.user.name || data.user.email.split("@")[0] || "";
 
-        notify.success(
-          lang === "TH" ? "เข้าสู่ระบบสำเร็จ" : "Login Successful",
-          {
-            message:
-              lang === "TH"
-                ? `ยินดีต้อนรับคุณ ${displayName} เข้าสู่ระบบเรียบร้อยแล้ว`
-                : `Welcome back, ${displayName}`,
-            duration: 3500,
-          }
-        );
+        try {
+          sessionStorage.setItem(
+            "dawh_pending_notice",
+            JSON.stringify({
+              type: "success",
+              title: lang === "TH" ? "เข้าสู่ระบบสำเร็จ" : "Login Successful",
+              message:
+                lang === "TH"
+                  ? `ยินดีต้อนรับคุณ ${displayName} เข้าสู่ระบบเรียบร้อยแล้ว`
+                  : `Welcome back, ${displayName}`,
+              duration: 4000,
+            })
+          );
+        } catch {}
+
+        startLoading({ exitTransition: "fade" });
 
         const targetUrl = searchParams.get("from") || "/workspace";
+        router.prefetch(targetUrl);
         setTimeout(() => {
           if (onAuthSuccess) onAuthSuccess();
           else if (onNavigate) onNavigate(targetUrl);
-          else window.location.href = targetUrl;
-        }, 300);
+          else router.replace(targetUrl);
+        }, 350);
       }
     } catch (error: unknown) {
       setErrors({ signinEmail: true, signinPassword: true });
@@ -680,19 +691,42 @@ export function UserAuthView({
         setIsModalSuccess(true);
         setIsRegistering(false);
 
-        // Email verification is disabled — user can access immediately
+        // Transition from modal to full LoadingScreen
         setTimeout(() => {
+          setShowLoadingModal(false);
+          startLoading({ exitTransition: "fade" });
+
           if (data?.token) {
+            try {
+              sessionStorage.setItem(
+                "dawh_pending_notice",
+                JSON.stringify({
+                  type: "success",
+                  title: lang === "TH" ? "ลงทะเบียนสำเร็จ" : "Registration Successful",
+                  message:
+                    lang === "TH"
+                      ? "สร้างบัญชีพนักงานและเข้าสู่ระบบเรียบร้อยแล้ว"
+                      : "Staff account created and signed in successfully.",
+                  duration: 4000,
+                })
+              );
+            } catch {}
 
             const targetUrl = "/workspace";
-            if (onAuthSuccess) onAuthSuccess();
-            else if (onNavigate) onNavigate(targetUrl);
-            else window.location.href = targetUrl;
+            router.prefetch(targetUrl);
+            setTimeout(() => {
+              if (onAuthSuccess) onAuthSuccess();
+              else if (onNavigate) onNavigate(targetUrl);
+              else router.replace(targetUrl);
+            }, 350);
           } else {
-            if (onNavigate) onNavigate("/auth/login");
-            else window.location.href = "/auth/login";
+            const targetUrl = "/auth/login";
+            setTimeout(() => {
+              if (onNavigate) onNavigate(targetUrl);
+              else router.replace(targetUrl);
+            }, 350);
           }
-        }, 1200);
+        }, 800);
 
       }
     } catch {
@@ -2442,13 +2476,7 @@ export default function UnifiedAuthPage({
   preventAutoRedirect = false,
 }: UserAuthViewProps) {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-dvh w-full items-center justify-center bg-[#222222] text-white">
-          <Loader2 size={32} className="animate-spin text-white" />
-        </div>
-      }
-    >
+    <Suspense fallback={null}>
       <UserAuthView
         initialMode={initialMode}
         onNavigate={onNavigate}

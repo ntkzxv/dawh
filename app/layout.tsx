@@ -100,13 +100,13 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-[#181818] text-white antialiased transition-colors duration-300">
         <ThemeProvider>
-          <NotificationProvider>
-            <AuthLoadingProvider>
-              <LoadingProvider>
+          <LoadingProvider>
+            <NotificationProvider>
+              <AuthLoadingProvider>
                 {children}
-              </LoadingProvider>
-            </AuthLoadingProvider>
-          </NotificationProvider>
+              </AuthLoadingProvider>
+            </NotificationProvider>
+          </LoadingProvider>
         </ThemeProvider>
       </body>
     </html>

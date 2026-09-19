@@ -5,8 +5,10 @@ import React, {
   useContext,
   useState,
   useCallback,
+  useEffect,
   ReactNode,
 } from "react";
+import { usePathname } from "next/navigation";
 import {
   AlertCircle,
   AlertTriangle,
@@ -16,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
+import { useLoading } from "@/components/loading_screen";
 
 export type NotificationType =
   | "error"
@@ -66,6 +69,7 @@ const NotificationContext = createContext<NotificationContextType | undefined>(
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const pathname = usePathname();
 
   const dismissNotification = useCallback((id: string) => {
     setNotifications((prev) => {
@@ -101,6 +105,22 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     },
     []
   );
+
+  // Consume deferred notices after page transition and loading screen complete
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = sessionStorage.getItem("dawh_pending_notice");
+      if (raw) {
+        sessionStorage.removeItem("dawh_pending_notice");
+        const parsed = JSON.parse(raw);
+        const timer = setTimeout(() => {
+          showNotification(parsed);
+        }, 500);
+        return () => clearTimeout(timer);
+      }
+    } catch {}
+  }, [pathname, showNotification]);
 
   const notify = {
     error: useCallback(
@@ -406,7 +426,10 @@ function NotificationContainer({
   notifications: NotificationItem[];
   onDismiss: (id: string) => void;
 }) {
-  if (notifications.length === 0) return null;
+  const { isLoading } = useLoading();
+
+  // ไม่แสดง notification ในระหว่างที่ Loading Screen กำลังแสดงผล
+  if (isLoading || notifications.length === 0) return null;
 
   return (
     <aside

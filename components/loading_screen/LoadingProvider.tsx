@@ -7,7 +7,7 @@ import LoadingScreen from "./LoadingScreen";
 
 interface LoadingContextType {
   isLoading: boolean;
-  startLoading: () => void;
+  startLoading: (options?: { exitTransition?: "slide" | "fade"; duration?: number }) => void;
   stopLoading: () => void;
   navigateWithLoading: (url: string, message?: string, description?: string) => void;
 }
@@ -21,6 +21,17 @@ const LoadingContext = createContext<LoadingContextType>({
 
 export function isAllowedLoadingRoute(targetUrl: string): boolean {
   if (!targetUrl) return false;
+  const clean = targetUrl.split("?")[0].split("#")[0].replace(/\/$/, "");
+  if (
+    clean === "" ||
+    clean === "/auth/login" ||
+    clean === "/login" ||
+    clean === "/auth" ||
+    clean.startsWith("/auth/") ||
+    clean === "/landing-page"
+  ) {
+    return false;
+  }
   return true;
 }
 
@@ -34,8 +45,9 @@ export function LoadingProvider({
 
   const [isNavLoading, setIsNavLoading] = useState<boolean>(false);
   const [isExiting, setIsExiting] = useState<boolean>(false);
+  const [exitTransition, setExitTransition] = useState<"slide" | "fade">("slide");
 
-  // LoadingScreen displays only during active module navigation
+  // LoadingScreen displays only during active navigation
   const isLoading = isNavLoading && !isExiting;
 
   const prevPathnameRef = useRef<string>(pathname);
@@ -60,24 +72,30 @@ export function LoadingProvider({
     setTimeout(() => {
       setIsNavLoading(false);
       setIsExiting(false);
+      setExitTransition("slide");
     }, 650);
   }, [clearAllTimers]);
 
-  const startLoading = useCallback(() => {
-    clearAllTimers();
-    navStartTimeTracker.current = Date.now();
-    setIsExiting(false);
-    setIsNavLoading(true);
+  const startLoading = useCallback(
+    (options?: { exitTransition?: "slide" | "fade"; duration?: number }) => {
+      clearAllTimers();
+      setExitTransition(options?.exitTransition || "slide");
+      navStartTimeTracker.current = Date.now();
+      setIsExiting(false);
+      setIsNavLoading(true);
 
-    // Watchdog safety: auto dismiss after 7 seconds max
-    watchdogTimerRef.current = setTimeout(() => {
-      setIsExiting(true);
-      setTimeout(() => {
-        setIsNavLoading(false);
-        setIsExiting(false);
-      }, 650);
-    }, 7000);
-  }, [clearAllTimers]);
+      // Watchdog safety: auto dismiss after 7 seconds max
+      watchdogTimerRef.current = setTimeout(() => {
+        setIsExiting(true);
+        setTimeout(() => {
+          setIsNavLoading(false);
+          setIsExiting(false);
+          setExitTransition("slide");
+        }, 650);
+      }, 7000);
+    },
+    [clearAllTimers]
+  );
 
   const navigateWithLoading = useCallback(
     (url: string) => {
@@ -89,6 +107,14 @@ export function LoadingProvider({
       if (targetPath === currentPath) {
         clearAllTimers();
         setIsNavLoading(false);
+        router.push(url);
+        return;
+      }
+
+      if (!isAllowedLoadingRoute(url)) {
+        clearAllTimers();
+        setIsNavLoading(false);
+        setIsExiting(false);
         router.push(url);
         return;
       }
@@ -140,6 +166,7 @@ export function LoadingProvider({
           setTimeout(() => {
             setIsNavLoading(false);
             setIsExiting(false);
+            setExitTransition("slide");
           }, 550);
         }, remaining);
 
@@ -164,7 +191,7 @@ export function LoadingProvider({
             key="dawh-module-navigation-loading-screen"
             fullscreen
             duration={1.3}
-            exitTransition="slide"
+            exitTransition={exitTransition}
           />
         )}
       </AnimatePresence>
