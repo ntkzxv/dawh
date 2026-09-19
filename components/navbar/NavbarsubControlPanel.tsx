@@ -78,7 +78,7 @@ const CONTROL_PANEL_ITEMS: MenuGroup[] = [
     id: "organization",
     tabKey: "organization",
     titleTh: "สาขาและผังคลัง",
-    titleEn: "Organization & Facilities",
+    titleEn: "Organization",
     icon: Building,
   },
   {
@@ -278,16 +278,6 @@ export default function NavbarsubControlPanel({
     setActivePopupId(null);
   };
 
-  const getSubItemCount = (groupId: string, subId: string): number | undefined => {
-    if (groupId === "products") {
-      return productCategoryCounts[subId as ProductSubTabKey];
-    }
-    if (groupId === "audit") {
-      return auditCategoryCounts[subId as AuditLogCategoryKey];
-    }
-    return undefined;
-  };
-
   const isSubItemActive = (groupId: string, subId: string): boolean => {
     if (groupId === "products") {
       return activeTab === "products" && activeProductSubTab === subId;
@@ -366,26 +356,9 @@ export default function NavbarsubControlPanel({
                   </span>
                 </div>
 
-                {/* Right Badge for Count */}
-                {!isMinimized && count !== undefined && count !== null && (
-                  <span
-                    className={`ml-auto px-1.5 py-0.5 text-[10px] font-bold rounded-full ${
-                      isLight
-                        ? "bg-slate-200 text-slate-900"
-                        : "bg-[#282828] text-[#E4E4E7] border border-[#444444]"
-                    }`}
-                  >
-                    {count}
-                  </span>
-                )}
-
                 {/* Active Indicator bar */}
                 {!isMinimized && (
-                  <div
-                    className={`flex items-center justify-center w-4 shrink-0 ${
-                      count !== undefined ? "ml-1 mr-[-3px]" : "ml-auto mr-[-3px]"
-                    }`}
-                  >
+                  <div className="flex items-center justify-center w-4 shrink-0 ml-auto mr-[-3px]">
                     <span
                       className={`w-[2.5px] h-[13px] rounded-full shrink-0 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
                         isLight ? "bg-slate-900" : "bg-white"
@@ -477,18 +450,7 @@ export default function NavbarsubControlPanel({
 
                 {/* Chevron Down / Up indicator when expanded */}
                 {!isMinimized && (
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {count !== undefined && count !== null && (
-                      <span
-                        className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full ${
-                          isLight
-                            ? "bg-slate-200 text-slate-900"
-                            : "bg-[#282828] text-[#E4E4E7] border border-[#444444]"
-                        }`}
-                      >
-                        {count}
-                      </span>
-                    )}
+                  <div className="flex items-center gap-1.5 shrink-0 ml-auto">
                     <ChevronDown
                       size={15}
                       className={`shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
@@ -530,7 +492,6 @@ export default function NavbarsubControlPanel({
                       {item.children?.map((child) => {
                         const isSubActive = isSubItemActive(item.id, child.id);
                         const ChildIcon = child.icon;
-                        const subCount = getSubItemCount(item.id, child.id);
 
                         return (
                           <button
@@ -563,32 +524,14 @@ export default function NavbarsubControlPanel({
                               </span>
                             </div>
 
-                            <div className="flex items-center gap-2 shrink-0">
-                              {subCount !== undefined && subCount !== null && (
-                                <span
-                                  className={`px-1.5 py-0.2 text-[10px] font-bold rounded-full transition-colors ${
-                                    isSubActive
-                                      ? isLight
-                                        ? "bg-white/20 text-white"
-                                        : "bg-white/20 text-white"
-                                      : isLight
-                                      ? "bg-slate-200 text-slate-700"
-                                      : "bg-[#282828] text-zinc-400 border border-[#444444]"
-                                  }`}
-                                >
-                                  {subCount}
-                                </span>
-                              )}
-
-                              {/* Active dot indicator */}
-                              <span
-                                className={`w-[2px] h-[11px] rounded-full shrink-0 transition-all duration-300 ${
-                                  isSubActive
-                                    ? "bg-white opacity-100 scale-y-100"
-                                    : "opacity-0 scale-y-50 pointer-events-none"
-                                }`}
-                              />
-                            </div>
+                            {/* Active dot indicator */}
+                            <span
+                              className={`w-[2px] h-[11px] rounded-full shrink-0 transition-all duration-300 ${
+                                isSubActive
+                                  ? "bg-white opacity-100 scale-y-100"
+                                  : "opacity-0 scale-y-50 pointer-events-none"
+                              }`}
+                            />
                           </button>
                         );
                       })}
@@ -637,7 +580,6 @@ export default function NavbarsubControlPanel({
                     {currentItem.children?.map((child) => {
                       const isSubActive = isSubItemActive(currentItem.id, child.id);
                       const ChildIcon = child.icon;
-                      const subCount = getSubItemCount(currentItem.id, child.id);
 
                       return (
                         <button
@@ -670,23 +612,6 @@ export default function NavbarsubControlPanel({
                             </span>
                           </div>
 
-                          <div className="flex items-center gap-2 shrink-0">
-                            {subCount !== undefined && subCount !== null && (
-                              <span
-                                className={`px-1.5 py-0.2 text-[10px] font-bold rounded-full transition-colors ${
-                                  isSubActive
-                                    ? isLight
-                                      ? "bg-white/20 text-white"
-                                      : "bg-white/20 text-white"
-                                    : isLight
-                                    ? "bg-slate-200 text-slate-700"
-                                    : "bg-[#282828] text-zinc-400 border border-[#444444]"
-                                }`}
-                              >
-                                {subCount}
-                              </span>
-                            )}
-
                             <span
                               className={`w-[2px] h-[11px] rounded-full shrink-0 transition-all duration-300 ${
                                 isSubActive
@@ -694,7 +619,6 @@ export default function NavbarsubControlPanel({
                                   : "opacity-0 scale-y-50 pointer-events-none"
                               }`}
                             />
-                          </div>
                         </button>
                       );
                     })}
