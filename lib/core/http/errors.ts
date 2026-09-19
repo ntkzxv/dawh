@@ -16,3 +16,28 @@ export class ValidationError extends ApiError {
     this.name = "ValidationError";
   }
 }
+
+export class NotFoundError extends ApiError {
+  constructor(resource = "Resource") {
+    super(404, "NOT_FOUND", `${resource} was not found.`);
+    this.name = "NotFoundError";
+  }
+}
+
+export class ConflictError extends ApiError {
+  constructor(
+    code: "CONFLICT" | "VERSION_CONFLICT",
+    message: string,
+    details?: Record<string, unknown>
+  ) {
+    super(409, code, message, details);
+    this.name = "ConflictError";
+  }
+}
+
+export class AccountStatusError extends ApiError {
+  constructor(status: "SUSPENDED" | "TERMINATED") {
+    super(403, "ACCOUNT_SUSPENDED", "This account cannot use WMS APIs.", { status });
+    this.name = "AccountStatusError";
+  }
+}

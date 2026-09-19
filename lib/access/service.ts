@@ -2,7 +2,7 @@ import "server-only";
 
 import { requireSession } from "@/lib/auth/session";
 import { dbPool } from "@/lib/core/db/pool";
-import { ApiError } from "@/lib/core/http/errors";
+import { AccountStatusError, ApiError } from "@/lib/core/http/errors";
 import { getEmployeeProfile } from "@/lib/profiles/service";
 import type { AccessContext, FacilityScope, FacilityScopeType } from "@/lib/access/types";
 
@@ -35,6 +35,10 @@ type OrganizationRow = {
   code: string;
 };
 
+type AccountStatusRow = {
+  status: AccessContext["accountStatus"];
+};
+
 export type AccessRequirement = {
   permission: string;
   facilityId?: string;
@@ -63,7 +67,7 @@ export async function getAccessContext(request: Request): Promise<AccessContext>
 
   const organization = organizations.rows[0];
 
-  const [profile, rolePermissions, facilityScopes] = await Promise.all([
+  const [profile, rolePermissions, facilityScopes, accountStatusResult] = await Promise.all([
     getEmployeeProfile(userId),
     dbPool.query<RolePermissionRow>(
       `SELECT DISTINCT r.code AS role_code, p.code AS permission_code
@@ -88,7 +92,17 @@ export async function getAccessContext(request: Request): Promise<AccessContext>
          AND (scope.valid_until IS NULL OR scope.valid_until > now())`,
       [userId, organization.id]
     ),
+    dbPool.query<AccountStatusRow>(
+      `SELECT status
+       FROM public.user_access_controls
+       WHERE user_id = $1`,
+      [userId]
+    ),
   ]);
+
+  const accountStatus = accountStatusResult.rows[0]?.status ?? "ACTIVE";
+  if (accountStatus !== "ACTIVE") throw new AccountStatusError(accountStatus);
+  const roles = [...new Set(rolePermissions.rows.map((row) => row.role_code))].sort();
 
   return {
     user: {
@@ -97,9 +111,11 @@ export async function getAccessContext(request: Request): Promise<AccessContext>
       name: session.user.name,
     },
     sessionId: session.session.id,
+    accountStatus,
+    isSystemAdministrator: roles.includes("SYSTEM_ADMINISTRATOR"),
     organization,
     profile,
-    roles: [...new Set(rolePermissions.rows.map((row) => row.role_code))].sort(),
+    roles,
     permissions: [...new Set(rolePermissions.rows.flatMap((row) => (row.permission_code ? [row.permission_code] : [])))].sort(),
     facilityScopes: facilityScopes.rows.map(
       (scope): FacilityScope => ({ facilityId: scope.facility_id, scopeType: scope.scope_type })
@@ -117,16 +133,28 @@ export async function requireAccess(
   if (!context.permissions.includes(requirement.permission)) throw new AuthorizationError();
   if (
     requirement.facilityId &&
-    !hasFacilityScope(
-      context.facilityScopes,
-      requirement.facilityId,
-      requirement.facilityScope ?? "READ"
-    )
+    !canAccessFacility(context, requirement.facilityId, requirement.facilityScope ?? "READ")
   ) {
     throw new AuthorizationError("FORBIDDEN_FACILITY_SCOPE");
   }
 
   return context;
+}
+
+export function canAccessFacility(
+  context: AccessContext,
+  facilityId: string,
+  requiredScope: FacilityScopeType
+): boolean {
+  return (
+    context.isSystemAdministrator ||
+    hasFacilityScope(context.facilityScopes, facilityId, requiredScope)
+  );
+}
+
+export function visibleFacilityIds(context: AccessContext): string[] | null {
+  if (context.isSystemAdministrator) return null;
+  return [...new Set(context.facilityScopes.map((scope) => scope.facilityId))];
 }
 
 const scopeRank: Record<FacilityScopeType, number> = {

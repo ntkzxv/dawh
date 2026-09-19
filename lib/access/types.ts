@@ -14,6 +14,8 @@ export type AccessContext = {
     name: string;
   };
   sessionId: string;
+  accountStatus: "ACTIVE" | "SUSPENDED" | "TERMINATED";
+  isSystemAdministrator: boolean;
   organization: {
     id: string;
     code: string;
