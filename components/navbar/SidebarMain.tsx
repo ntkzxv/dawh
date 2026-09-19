@@ -18,7 +18,6 @@ import {
   Boxes,
   ArrowLeftRight,
   RotateCw,
-  Database,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
@@ -395,7 +394,7 @@ export default function NavbarMain({
                   (isLight
                     ? "bg-white border-[#E4E4E7] text-emerald-600 shadow-sm"
                     : "bg-[#383838] border-[#444444] text-emerald-400 shadow-sm")
-                : "px-3 py-2 rounded-xl border flex items-center justify-center transition-colors shadow-sm " +
+                : "px-3 py-2 rounded-xl border flex items-center gap-2.5 transition-colors shadow-sm " +
                   (isLight
                     ? "bg-white border-[#E4E4E7]"
                     : "bg-[#383838] border-[#444444]")
@@ -407,21 +406,39 @@ export default function NavbarMain({
             }
           >
             {isMinimized ? (
-              <span
-                className={`w-2.5 h-2.5 rounded-full ${
-                  serverStatus.connected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
-                }`}
-              />
-            ) : (
-              <div className="flex items-center gap-2.5 max-w-full">
-                <div className="flex items-center justify-center shrink-0">
+              <div className="flex items-center justify-center">
+                <span className="relative flex h-2.5 w-2.5">
+                  {serverStatus.connected && (
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  )}
                   <span
-                    className={`w-2 h-2 rounded-full shrink-0 ${
-                      serverStatus.connected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
+                    className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
+                      serverStatus.connected ? "bg-emerald-500" : "bg-rose-500"
                     }`}
                   />
+                </span>
+              </div>
+            ) : (
+              <>
+                <div
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border ${
+                    isLight
+                      ? "bg-white border-white"
+                      : "bg-[#383838] border-[#383838]"
+                  }`}
+                >
+                  <span className="relative flex h-2.5 w-2.5">
+                    {serverStatus.connected && (
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    )}
+                    <span
+                      className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
+                        serverStatus.connected ? "bg-emerald-500" : "bg-rose-500"
+                      }`}
+                    />
+                  </span>
                 </div>
-                <div className="flex flex-col min-w-0 text-left overflow-hidden">
+                <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
                   <span
                     className={`text-[11.5px] font-bold leading-tight truncate ${
                       isLight ? "text-slate-900" : "text-[#FFFFFF]"
@@ -439,7 +456,7 @@ export default function NavbarMain({
                     </span>
                   )}
                 </div>
-              </div>
+              </>
             )}
           </div>
         )}
