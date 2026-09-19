@@ -17,6 +17,7 @@ import {
   PackageCheck,
   Boxes,
   ArrowLeftRight,
+  RotateCw,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
@@ -43,6 +44,17 @@ export interface NavbarMainProps {
   lang?: "th" | "en";
   onLangChange?: (lang: "th" | "en") => void;
   showAccount?: boolean;
+  showHub?: boolean;
+  refreshButton?: {
+    onClick: () => void;
+    isLoading?: boolean;
+    label?: string;
+  };
+  serverStatus?: {
+    connected: boolean;
+    label: string;
+    sublabel?: string;
+  };
 }
 
 const DEFAULT_LOGO_WHITE = DAWH_LOGOS.horizontal.black;
@@ -61,6 +73,9 @@ export default function NavbarMain({
   lang: controlledLang,
   onLangChange,
   showAccount = true,
+  showHub = true,
+  refreshButton,
+  serverStatus,
 }: NavbarMainProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -251,6 +266,8 @@ export default function NavbarMain({
   const translations = {
     en: {
       hub: "Module Hub",
+      refresh: "Refresh Data",
+      syncing: "Syncing...",
       account: "Settings",
       logout: "Log out",
       lang: "Switch to Thai",
@@ -261,6 +278,8 @@ export default function NavbarMain({
     },
     th: {
       hub: "ศูนย์รวมโมดูล",
+      refresh: "รีเฟรชข้อมูล",
+      syncing: "กำลังซิงค์...",
       account: "ตั้งค่า",
       logout: "ออกจากระบบ",
       lang: "สลับเป็นภาษาอังกฤษ",
@@ -366,7 +385,41 @@ export default function NavbarMain({
             : "bg-[#1E1E1E] border-[#383838]"
         }`}
       >
-        {/* Quick Controls: Hub & Minimize Buttons */}
+        {/* Server Status Indicator */}
+        {serverStatus && (
+          <div
+            className={`w-full flex items-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+              isMinimized
+                ? "justify-center py-1.5"
+                : "px-2.5 py-1.5 rounded-xl border bg-[#F4F4F5]/60 dark:bg-[#282828]/60 border-[#E4E4E7] dark:border-[#383838] gap-2.5"
+            }`}
+            title={
+              serverStatus.sublabel
+                ? `${serverStatus.label} (${serverStatus.sublabel})`
+                : serverStatus.label
+            }
+          >
+            <span
+              className={`inline-block w-2 h-2 rounded-full shrink-0 ${
+                serverStatus.connected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
+              }`}
+            />
+            {!isMinimized && (
+              <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
+                <span className="text-[11.5px] font-bold leading-tight truncate text-emerald-600 dark:text-emerald-400">
+                  {serverStatus.label}
+                </span>
+                {serverStatus.sublabel && (
+                  <span className="text-[10px] text-zinc-500 dark:text-[#A1A1AA] leading-tight truncate mt-0.5">
+                    {serverStatus.sublabel}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Quick Controls: Refresh / Hub & Minimize Buttons */}
         <div
           className={`w-full flex items-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
             isMinimized
@@ -374,54 +427,109 @@ export default function NavbarMain({
               : "items-center gap-1.5 px-0.5"
           }`}
         >
-          {/* Hub Button */}
-          <button
-            type="button"
-            onClick={() =>
-              navigateWithLoading(
-                hubPath,
-                "กำลังเปิดศูนย์รวมโมดูล...",
-                "กำลังโหลดโมดูลและสิทธิ์การใช้งาน..."
-              )
-            }
-            className={`flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] group cursor-pointer overflow-hidden ${
-              isLight
-                ? "bg-[#FFFFFF] border-[#E4E4E7] text-slate-800 hover:bg-[#F4F4F5] shadow-sm"
-                : "bg-[#383838] border-[#444444] text-[#FFFFFF] hover:bg-[#444444]"
-            } ${
-              isMinimized
-                ? "w-10 h-10 aspect-square mx-auto rounded-xl p-0 border"
-                : "flex-1 h-9 px-3 rounded-xl border gap-2 active:scale-95 text-center"
-            }`}
-            title={t.hub}
-          >
-            {/* Icon: Centered & Hover Rotation */}
-            <div
-              className={`shrink-0 flex items-center justify-center overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-                isMinimized ? "w-8 h-8" : "w-4.5 h-4.5"
-              }`}
-            >
-              <LayoutGrid
-                size={16}
-                className={`group-hover:rotate-90 transition-transform duration-500 shrink-0 ${
-                  isLight ? "text-slate-800 group-hover:text-black" : "text-[#FFFFFF] group-hover:text-white"
-                }`}
-              />
-            </div>
-
-            {/* Text: Centered, Smooth Fade Out on Minimize */}
-            <div
-              className={`flex items-center justify-center overflow-hidden transition-all duration-300 ease-out ${
+          {/* Refresh Data Button (if provided) or Hub Button */}
+          {refreshButton ? (
+            <button
+              type="button"
+              onClick={refreshButton.onClick}
+              disabled={refreshButton.isLoading}
+              className={`flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] group cursor-pointer overflow-hidden ${
+                isLight
+                  ? "bg-[#FFFFFF] border-[#E4E4E7] text-slate-800 hover:bg-[#F4F4F5] shadow-sm disabled:opacity-50"
+                  : "bg-[#383838] border-[#444444] text-[#FFFFFF] hover:bg-[#444444] disabled:opacity-50"
+              } ${
                 isMinimized
-                  ? "max-w-0 opacity-0 -translate-x-3 duration-200 pointer-events-none"
-                  : "max-w-[140px] opacity-100 translate-x-0 duration-350 delay-100"
+                  ? "w-10 h-10 aspect-square mx-auto rounded-xl p-0 border"
+                  : "flex-1 h-9 px-3 rounded-xl border gap-2 active:scale-95 text-center"
               }`}
+              title={
+                refreshButton.isLoading
+                  ? t.syncing
+                  : refreshButton.label || t.refresh
+              }
             >
-              <span className="text-[13.5px] font-semibold leading-none tracking-wide truncate whitespace-nowrap text-center">
-                {t.hub}
-              </span>
-            </div>
-          </button>
+              {/* Icon: Centered & Rotate / Spin */}
+              <div
+                className={`shrink-0 flex items-center justify-center overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                  isMinimized ? "w-8 h-8" : "w-4.5 h-4.5"
+                }`}
+              >
+                <RotateCw
+                  size={15}
+                  className={`${
+                    refreshButton.isLoading
+                      ? "animate-spin"
+                      : "group-hover:rotate-180 transition-transform duration-500"
+                  } shrink-0 ${
+                    isLight ? "text-slate-800 group-hover:text-black" : "text-[#FFFFFF] group-hover:text-white"
+                  }`}
+                />
+              </div>
+
+              {/* Text: Centered, Smooth Fade Out on Minimize */}
+              <div
+                className={`flex items-center justify-center overflow-hidden transition-all duration-300 ease-out ${
+                  isMinimized
+                    ? "max-w-0 opacity-0 -translate-x-3 duration-200 pointer-events-none"
+                    : "max-w-[140px] opacity-100 translate-x-0 duration-350 delay-100"
+                }`}
+              >
+                <span className="text-[13px] font-semibold leading-none tracking-wide truncate whitespace-nowrap text-center">
+                  {refreshButton.isLoading
+                    ? t.syncing
+                    : refreshButton.label || t.refresh}
+                </span>
+              </div>
+            </button>
+          ) : showHub ? (
+            <button
+              type="button"
+              onClick={() =>
+                navigateWithLoading(
+                  hubPath,
+                  "กำลังเปิดศูนย์รวมโมดูล...",
+                  "กำลังโหลดโมดูลและสิทธิ์การใช้งาน..."
+                )
+              }
+              className={`flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] group cursor-pointer overflow-hidden ${
+                isLight
+                  ? "bg-[#FFFFFF] border-[#E4E4E7] text-slate-800 hover:bg-[#F4F4F5] shadow-sm"
+                  : "bg-[#383838] border-[#444444] text-[#FFFFFF] hover:bg-[#444444]"
+              } ${
+                isMinimized
+                  ? "w-10 h-10 aspect-square mx-auto rounded-xl p-0 border"
+                  : "flex-1 h-9 px-3 rounded-xl border gap-2 active:scale-95 text-center"
+              }`}
+              title={t.hub}
+            >
+              {/* Icon: Centered & Hover Rotation */}
+              <div
+                className={`shrink-0 flex items-center justify-center overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                  isMinimized ? "w-8 h-8" : "w-4.5 h-4.5"
+                }`}
+              >
+                <LayoutGrid
+                  size={16}
+                  className={`group-hover:rotate-90 transition-transform duration-500 shrink-0 ${
+                    isLight ? "text-slate-800 group-hover:text-black" : "text-[#FFFFFF] group-hover:text-white"
+                  }`}
+                />
+              </div>
+
+              {/* Text: Centered, Smooth Fade Out on Minimize */}
+              <div
+                className={`flex items-center justify-center overflow-hidden transition-all duration-300 ease-out ${
+                  isMinimized
+                    ? "max-w-0 opacity-0 -translate-x-3 duration-200 pointer-events-none"
+                    : "max-w-[140px] opacity-100 translate-x-0 duration-350 delay-100"
+                }`}
+              >
+                <span className="text-[13.5px] font-semibold leading-none tracking-wide truncate whitespace-nowrap text-center">
+                  {t.hub}
+                </span>
+              </div>
+            </button>
+          ) : null}
 
           {/* Minimize / Expand Button */}
           <button

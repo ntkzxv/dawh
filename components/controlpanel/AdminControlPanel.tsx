@@ -96,8 +96,6 @@ import {
   Activity,
   ShieldAlert,
   RotateCw,
-  Database,
-  CheckCircle2,
   Loader2,
 } from "lucide-react";
 import type { FacilityScopeType } from "@/lib/access/types";
@@ -1032,6 +1030,22 @@ export default function AdminControlPanel() {
           hubPath="/workspace"
           settingsPath="/settings"
           showAccount={false}
+          refreshButton={{
+            onClick: () => loadAllData(true),
+            isLoading: isLoading || isRefreshing,
+            label: isThai ? "รีเฟรชข้อมูล" : "Refresh Data",
+          }}
+          serverStatus={{
+            connected: true,
+            label: isThai ? "เชื่อมต่อฐานข้อมูลระบบแล้ว" : "Live PostgreSQL Connected",
+            sublabel: lastSynced
+              ? isThai
+                ? `ซิงค์ล่าสุดเวลา: ${lastSynced} น.`
+                : `Last synced at: ${lastSynced}`
+              : isThai
+              ? "กำลังเชื่อมต่อ..."
+              : "Connecting...",
+          }}
         >
           <NavbarsubControlPanel
             activeTab={activeTab}
@@ -1177,81 +1191,6 @@ export default function AdminControlPanel() {
             </div>
           ) : (
             <>
-              {/* Top Live Database Status Bar */}
-              <div
-                className={`px-4 py-3 rounded-2xl border flex flex-wrap items-center justify-between gap-3 transition-colors ${
-                  isLight
-                    ? "bg-white border-[#E4E4E7] shadow-sm"
-                    : "bg-[#383838] border-[#444444] shadow-sm"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                      isLight ? "bg-emerald-50 text-emerald-600" : "bg-emerald-950/40 text-emerald-400"
-                    }`}
-                  >
-                    <Database size={16} />
-                  </div>
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-xs font-bold">
-                        {isThai ? "เชื่อมต่อฐานข้อมูลระบบแล้ว" : "Live PostgreSQL Connected"}
-                      </span>
-                    </div>
-                    <span className={`text-[11px] ${isLight ? "text-zinc-500" : "text-[#D4D4D8]"}`}>
-                      {lastSynced
-                        ? isThai
-                          ? `ซิงค์ล่าสุดเวลา: ${lastSynced} น.`
-                          : `Last synced at: ${lastSynced}`
-                        : isThai
-                        ? "กำลังเชื่อมต่อ..."
-                        : "Connecting..."}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  {appMe?.user && (
-                    <div
-                      className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs ${
-                        isLight
-                          ? "bg-zinc-50 border-zinc-200 text-zinc-700"
-                          : "bg-[#2C2C2C] border-[#444444] text-zinc-300"
-                      }`}
-                    >
-                      <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
-                      <span className="font-semibold">{appMe.user.name || appMe.user.email}</span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-200/60 dark:bg-zinc-700 font-bold">
-                        {appMe?.roles?.[0] || (isThai ? "ผู้ดูแลระบบ" : "Admin")}
-                      </span>
-                    </div>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => loadAllData(true)}
-                    disabled={isLoading || isRefreshing}
-                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                      isLight
-                        ? "bg-zinc-100 hover:bg-zinc-200 text-zinc-800 disabled:opacity-50"
-                        : "bg-[#444444] hover:bg-[#505050] text-white disabled:opacity-50"
-                    }`}
-                  >
-                    <RotateCw size={13} className={isRefreshing ? "animate-spin" : ""} />
-                    <span>
-                      {isRefreshing
-                        ? isThai
-                          ? "กำลังซิงค์..."
-                          : "Syncing..."
-                        : isThai
-                        ? "รีเฟรชข้อมูล"
-                        : "Refresh Data"}
-                    </span>
-                  </button>
-                </div>
-              </div>
 
 
               {/* Active Tab Panel Rendering */}
