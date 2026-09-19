@@ -391,8 +391,14 @@ export default function NavbarMain({
           <div
             className={`w-full transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
               isMinimized
-                ? "flex items-center justify-center py-1.5"
-                : "px-1.5 py-1 flex items-center gap-2.5"
+                ? "w-10 h-10 aspect-square mx-auto rounded-xl border flex items-center justify-center " +
+                  (isLight
+                    ? "bg-white border-[#E4E4E7] text-emerald-600 shadow-sm"
+                    : "bg-[#383838] border-[#444444] text-emerald-400 shadow-sm")
+                : "px-3 py-2 rounded-xl border flex items-center gap-2.5 transition-colors shadow-sm " +
+                  (isLight
+                    ? "bg-white border-[#E4E4E7]"
+                    : "bg-[#383838] border-[#444444]")
             }`}
             title={
               serverStatus.sublabel
@@ -401,16 +407,14 @@ export default function NavbarMain({
             }
           >
             {isMinimized ? (
-              <div className="relative flex items-center justify-center w-8 h-8">
-                <span
-                  className={`w-2.5 h-2.5 rounded-full ${
-                    serverStatus.connected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
-                  }`}
-                />
-              </div>
+              <span
+                className={`w-2.5 h-2.5 rounded-full ${
+                  serverStatus.connected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
+                }`}
+              />
             ) : (
               <>
-                <div className="flex items-center justify-center shrink-0 pl-1">
+                <div className="flex items-center justify-center shrink-0">
                   <span
                     className={`w-2 h-2 rounded-full shrink-0 ${
                       serverStatus.connected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
