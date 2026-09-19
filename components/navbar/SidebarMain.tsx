@@ -410,9 +410,9 @@ export default function NavbarMain({
               </div>
             ) : (
               <>
-                <div className="flex items-center justify-center shrink-0 pl-1 pr-0.5">
+                <div className="flex items-center justify-center shrink-0 pl-1">
                   <span
-                    className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                    className={`w-2 h-2 rounded-full shrink-0 ${
                       serverStatus.connected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
                     }`}
                   />
