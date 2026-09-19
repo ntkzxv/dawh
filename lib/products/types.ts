@@ -1,12 +1,6 @@
-export type Product = {
-  id: string;
-  organizationId: string;
-  sku: string;
-  nameTh: string;
-  nameEn: string | null;
-  trackingMethod: "NONE" | "LOT" | "SERIAL";
-  pickingStrategy: "FIFO" | "FEFO";
-  isActive: boolean;
-  version: number;
-  createdAt: string;
-};
+import type { KeysetCursor } from "@/lib/core/http/pagination";
+export type TrackingMethod="NONE"|"LOT"|"SERIAL";export type PickingStrategy="FIFO"|"FEFO";
+export type Product={id:string;organizationId:string;sku:string;nameTh:string;nameEn:string|null;description:string|null;category:{id:string;code:string;name:string}|null;brand:{id:string;code:string;name:string}|null;baseUnit:{id:string;code:string;name:string};trackingMethod:TrackingMethod;pickingStrategy:PickingStrategy;weightKg:string|null;lengthCm:string|null;widthCm:string|null;heightCm:string|null;standardCost:string|null;currencyCode:string;shelfLifeDays:number|null;storageCondition:string|null;isActive:boolean;version:number;units:Array<{id:string;unitId:string;unitCode:string;baseQuantity:string;isActive:boolean;version:number}>;barcodes:Array<{id:string;productUnitId:string|null;barcode:string;barcodeType:string;isPrimary:boolean}>;createdAt:string;updatedAt:string};
+export type ProductInput={sku:string;nameTh:string;nameEn:string|null;description:string|null;categoryId:string|null;brandId:string|null;baseUnitId:string;trackingMethod:TrackingMethod;pickingStrategy:PickingStrategy;weightKg:string|null;lengthCm:string|null;widthCm:string|null;heightCm:string|null;standardCost:string|null;currencyCode:string;shelfLifeDays:number|null;storageCondition:string|null;isActive:boolean};
+export type ProductUpdateInput=Partial<ProductInput>&{version:number};
+export type ProductFilters={search:string|null;categoryId:string|null;brandId:string|null;trackingMethod:TrackingMethod|null;active:boolean|null;page:{limit:number;cursor:KeysetCursor|null}};
