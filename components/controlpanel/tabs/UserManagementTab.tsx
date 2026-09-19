@@ -114,18 +114,23 @@ export default function UserManagementTab({
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
       const q = searchQuery.toLowerCase().trim();
+      const userName = (user.name || "").toLowerCase();
+      const userEmail = (user.email || "").toLowerCase();
+      const userUsername = (user.username || "").toLowerCase();
+
       const matchSearch =
         !q ||
-        user.name.toLowerCase().includes(q) ||
-        user.email.toLowerCase().includes(q) ||
-        (user.username && user.username.toLowerCase().includes(q));
+        userName.includes(q) ||
+        userEmail.includes(q) ||
+        userUsername.includes(q);
 
       const matchStatus =
         statusFilter === "ALL" || user.accountStatus === statusFilter;
 
+      const userRoles = Array.isArray(user.roles) ? user.roles : [];
       const matchRole =
         roleFilter === "ALL" ||
-        user.roles.some((r) => r.code === roleFilter);
+        userRoles.some((r) => r && r.code === roleFilter);
 
       const matchFacility =
         facilityFilter === "ALL" ||
@@ -133,7 +138,7 @@ export default function UserManagementTab({
 
       const matchProfile =
         profileFilter === "ALL" ||
-        (profileFilter === "COMPLETE" ? user.profileComplete : !user.profileComplete);
+        (profileFilter === "COMPLETE" ? Boolean(user.profileComplete) : !user.profileComplete);
 
       return matchSearch && matchStatus && matchRole && matchFacility && matchProfile;
     });
@@ -551,11 +556,13 @@ export default function UserManagementTab({
                         isLight ? "bg-zinc-200 text-zinc-800" : "bg-[#2C2C2C] text-white"
                       }`}
                     >
-                      {user.name.slice(0, 2)}
+                      {(user.name || user.email || "US").slice(0, 2)}
                     </div>
                     <div className="truncate">
                       <div className="flex items-center gap-1.5 font-semibold">
-                        <span className={isLight ? "text-zinc-900" : "text-white"}>{user.name}</span>
+                        <span className={isLight ? "text-zinc-900" : "text-white"}>
+                          {user.name || user.email || "User"}
+                        </span>
                         {isCurrentUser && (
                           <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-500/10 text-blue-500 font-bold">
                             {isThai ? "บัญชีคุณ" : "YOU"}
@@ -573,7 +580,7 @@ export default function UserManagementTab({
 
                   {/* Email & Verified status */}
                   <div className="w-[180px] flex-none truncate flex items-center gap-1.5">
-                    <span className="truncate opacity-80">{user.email}</span>
+                    <span className="truncate opacity-80">{user.email || "-"}</span>
                     {user.emailVerified ? (
                       <span title="Email Verified">
                         <CheckCircle2 size={13} className="text-[#2EC4B6] shrink-0" />
@@ -590,9 +597,9 @@ export default function UserManagementTab({
 
                   {/* Roles */}
                   <div className="w-[150px] flex-none truncate">
-                    {user.roles.length > 0 ? (
+                    {user.roles && user.roles.length > 0 ? (
                       <span className="font-medium opacity-90 truncate">
-                        {user.roles.map((r) => r.name).join(", ")}
+                        {user.roles.map((r) => r.name || r.code).join(", ")}
                       </span>
                     ) : (
                       <span className="opacity-40 italic">{isThai ? "ไม่มีบทบาท" : "None"}</span>

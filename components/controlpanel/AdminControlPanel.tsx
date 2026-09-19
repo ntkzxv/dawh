@@ -72,6 +72,23 @@ import type { Product } from "@/lib/products/types";
 import type { SafetyStockRuleDto } from "@/lib/safety-stock/types";
 import type { UnitOfMeasureDto } from "@/lib/units-of-measure/types";
 
+import {
+  INITIAL_USERS,
+  CANONICAL_ROLES,
+  INITIAL_ROLE_HISTORY,
+  INITIAL_FACILITIES,
+  INITIAL_LOCATIONS,
+  INITIAL_DEPARTMENTS,
+  INITIAL_CATEGORIES,
+  INITIAL_BRANDS,
+  INITIAL_UOMS,
+  INITIAL_REASON_CODES,
+  INITIAL_PRODUCTS,
+  INITIAL_SAFETY_STOCK_RULES,
+  INITIAL_STOCK_BALANCES,
+  INITIAL_STOCK_LEDGER,
+} from "./mockData";
+
 import UserManagementTab from "./tabs/UserManagementTab";
 import RoleManagementTab from "./tabs/RoleManagementTab";
 import FacilityScopeTab from "./tabs/FacilityScopeTab";
@@ -122,20 +139,20 @@ export default function AdminControlPanel() {
   const [rawSafetyRules, setRawSafetyRules] = useState<SafetyStockRuleDto[]>([]);
 
   // Enterprise Domain States (Rendered in Tab Components)
-  const [users, setUsers] = useState<AdminUserRecord[]>([]);
-  const [roles, setRoles] = useState<CanonicalRole[]>([]);
-  const [roleHistory, setRoleHistory] = useState<RoleAssignmentHistory[]>([]);
-  const [facilities, setFacilities] = useState<FacilityRecord[]>([]);
-  const [locations, setLocations] = useState<WarehouseLocationRecord[]>([]);
-  const [departments, setDepartments] = useState<DepartmentRecord[]>([]);
-  const [categories, setCategories] = useState<ProductCategoryRecord[]>([]);
-  const [brands, setBrands] = useState<BrandRecord[]>([]);
-  const [uoms, setUoms] = useState<UnitOfMeasureRecord[]>([]);
-  const [reasonCodes, setReasonCodes] = useState<ReasonCodeRecord[]>([]);
-  const [products, setProducts] = useState<ProductRecord[]>([]);
-  const [safetyRules, setSafetyRules] = useState<SafetyStockRuleRecord[]>([]);
-  const [balances, setBalances] = useState<StockBalanceRecord[]>([]);
-  const [ledger, setLedger] = useState<StockLedgerRecord[]>([]);
+  const [users, setUsers] = useState<AdminUserRecord[]>(INITIAL_USERS);
+  const [roles, setRoles] = useState<CanonicalRole[]>(CANONICAL_ROLES);
+  const [roleHistory, setRoleHistory] = useState<RoleAssignmentHistory[]>(INITIAL_ROLE_HISTORY);
+  const [facilities, setFacilities] = useState<FacilityRecord[]>(INITIAL_FACILITIES);
+  const [locations, setLocations] = useState<WarehouseLocationRecord[]>(INITIAL_LOCATIONS);
+  const [departments, setDepartments] = useState<DepartmentRecord[]>(INITIAL_DEPARTMENTS);
+  const [categories, setCategories] = useState<ProductCategoryRecord[]>(INITIAL_CATEGORIES);
+  const [brands, setBrands] = useState<BrandRecord[]>(INITIAL_BRANDS);
+  const [uoms, setUoms] = useState<UnitOfMeasureRecord[]>(INITIAL_UOMS);
+  const [reasonCodes, setReasonCodes] = useState<ReasonCodeRecord[]>(INITIAL_REASON_CODES);
+  const [products, setProducts] = useState<ProductRecord[]>(INITIAL_PRODUCTS);
+  const [safetyRules, setSafetyRules] = useState<SafetyStockRuleRecord[]>(INITIAL_SAFETY_STOCK_RULES);
+  const [balances, setBalances] = useState<StockBalanceRecord[]>(INITIAL_STOCK_BALANCES);
+  const [ledger, setLedger] = useState<StockLedgerRecord[]>(INITIAL_STOCK_LEDGER);
 
   // ==========================================================================
   // Initial Data Fetching from PostgreSQL & Next.js APIs
@@ -170,25 +187,26 @@ export default function AdminControlPanel() {
           setRawUoms(payload.rawUoms);
           setRawSafetyRules(payload.rawSafetyRules);
 
-          // Store Formatted Records
-          setUsers(payload.users);
-          setRoles(payload.roles);
-          setFacilities(payload.facilities);
-          setLocations(payload.locations);
-          setDepartments(payload.departments);
-          setCategories(payload.categories);
-          setBrands(payload.brands);
-          setUoms(payload.uoms);
-          setReasonCodes(payload.reasonCodes);
-          setProducts(payload.products);
-          setSafetyRules(payload.safetyRules);
-          setBalances(payload.balances);
-          setLedger(payload.ledger);
+          // Store Formatted Records (safely fallback if empty)
+          if (payload.users && payload.users.length > 0) setUsers(payload.users);
+          if (payload.roles && payload.roles.length > 0) setRoles(payload.roles);
+          if (payload.facilities && payload.facilities.length > 0) setFacilities(payload.facilities);
+          if (payload.locations && payload.locations.length > 0) setLocations(payload.locations);
+          if (payload.departments && payload.departments.length > 0) setDepartments(payload.departments);
+          if (payload.categories && payload.categories.length > 0) setCategories(payload.categories);
+          if (payload.brands && payload.brands.length > 0) setBrands(payload.brands);
+          if (payload.uoms && payload.uoms.length > 0) setUoms(payload.uoms);
+          if (payload.reasonCodes && payload.reasonCodes.length > 0) setReasonCodes(payload.reasonCodes);
+          if (payload.products && payload.products.length > 0) setProducts(payload.products);
+          if (payload.safetyRules && payload.safetyRules.length > 0) setSafetyRules(payload.safetyRules);
+          if (payload.balances && payload.balances.length > 0) setBalances(payload.balances);
+          if (payload.ledger && payload.ledger.length > 0) setLedger(payload.ledger);
 
           // Build Role History from current active role assignments
+          const activeUsers = payload.users && payload.users.length > 0 ? payload.users : users;
           const generatedHistory: RoleAssignmentHistory[] = [];
-          payload.users.forEach((u) => {
-            u.roles.forEach((r) => {
+          activeUsers.forEach((u) => {
+            (u.roles || []).forEach((r) => {
               generatedHistory.push({
                 id: `hist-${r.assignmentId}`,
                 userId: u.id,
@@ -203,7 +221,7 @@ export default function AdminControlPanel() {
               });
             });
           });
-          setRoleHistory(generatedHistory);
+          if (generatedHistory.length > 0) setRoleHistory(generatedHistory);
 
           const now = new Date();
           const timeStr = now.toLocaleTimeString(isThai ? "th-TH" : "en-US", {
