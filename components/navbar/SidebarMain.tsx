@@ -22,7 +22,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import { getCurrentSession, logout } from "@/lib/auth-client";
 import { fetchAndStoreUserProfile, toEmployeeProfile } from "@/lib/user-profile";
-import { getAppMe } from "@/lib/api/session";
+import { getAppMe, checkIsAdmin } from "@/lib/api/session";
 import { useTheme } from "@/context/ThemeContext";
 import { DAWH_LOGOS } from "@/config/brand";
 import { useLoading } from "@/components/loading_screen";
@@ -68,6 +68,7 @@ export default function NavbarMain({
   const [userName, setUserName] = useState<string>("User");
   const [userUsername, setUserUsername] = useState<string | null>(null);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isMinimized, setIsMinimized] = useState(initialMinimized);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -155,6 +156,10 @@ export default function NavbarMain({
         if (typeof window === "undefined") return;
         try {
           const me = await getAppMe();
+          if (me?.data && isMounted) {
+            const adminCheck = checkIsAdmin(me.data.roles, me.data.permissions);
+            setIsAdmin(adminCheck);
+          }
           if (me.data.profile && isMounted) {
             const canonicalProfile = toEmployeeProfile(me.data.profile);
             setUserName(formatDisplayName(canonicalProfile.full_name, canonicalProfile.first_name, canonicalProfile.last_name, canonicalProfile.nickname_th, canonicalProfile.nickname));
@@ -596,32 +601,34 @@ export default function NavbarMain({
 
 
                   {/* Control Panel */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsAccountOpen(false);
-                      navigateWithLoading(
-                        "/controlpanel",
-                        activeLang === "th" ? "กำลังเปิดแผงควบคุมระบบ..." : "Opening Control Panel...",
-                        activeLang === "th" ? "กำลังโหลดเครื่องมือดูแลระบบ..." : "Loading management tools..."
-                      );
-                    }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium transition-all text-left cursor-pointer ${
-                      isLight
-                        ? "text-slate-800 hover:bg-[#F4F4F5] hover:text-slate-950"
-                        : "text-[#F4F4F5] hover:text-[#FFFFFF] hover:bg-white/10"
-                    }`}
-                  >
-                    <Monitor
-                      size={16}
-                      className={`shrink-0 ${
-                        isLight ? "text-[#222222]" : "text-[#FFFFFF]"
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAccountOpen(false);
+                        navigateWithLoading(
+                          "/controlpanel",
+                          activeLang === "th" ? "กำลังเปิดแผงควบคุมระบบ..." : "Opening Control Panel...",
+                          activeLang === "th" ? "กำลังโหลดเครื่องมือดูแลระบบ..." : "Loading management tools..."
+                        );
+                      }}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium transition-all text-left cursor-pointer ${
+                        isLight
+                          ? "text-slate-800 hover:bg-[#F4F4F5] hover:text-slate-950"
+                          : "text-[#F4F4F5] hover:text-[#FFFFFF] hover:bg-white/10"
                       }`}
-                    />
-                    <span className="truncate">
-                      {activeLang === "th" ? "แผงควบคุมระบบ" : "Control Panel"}
-                    </span>
-                  </button>
+                    >
+                      <Monitor
+                        size={16}
+                        className={`shrink-0 ${
+                          isLight ? "text-[#222222]" : "text-[#FFFFFF]"
+                        }`}
+                      />
+                      <span className="truncate">
+                        {activeLang === "th" ? "แผงควบคุมระบบ" : "Control Panel"}
+                      </span>
+                    </button>
+                  )}
 
                   {/* Account Settings */}
                   <button

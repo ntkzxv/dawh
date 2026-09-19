@@ -27,6 +27,7 @@ import { getCurrentSession, logout } from "@/lib/auth-client";
 import { useLoading } from "@/components/loading_screen";
 import { DAWH_LOGOS, getDawhLogo } from "@/config/brand";
 import { motion, AnimatePresence } from "framer-motion";
+import { getAppMe, checkIsAdmin } from "@/lib/api/session";
 
 interface SubTabItem {
   id: string;
@@ -129,6 +130,19 @@ export default function MobileNavbar({
 
       const loadLiveProfile = async () => {
         try {
+          try {
+            const me = await getAppMe();
+            if (me?.data) {
+              const isMeAdmin = checkIsAdmin(me.data.roles, me.data.permissions);
+              setUserProfile((prev) => ({
+                ...prev,
+                isAdmin: isMeAdmin,
+              }));
+            }
+          } catch {
+            // fallback to profile check
+          }
+
           const session = await getCurrentSession();
           const targetId = session?.user.id;
           const targetEmail = session?.user.email;
@@ -495,21 +509,23 @@ export default function MobileNavbar({
               </div>
 
               {/* Control Panel Access */}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsAccountSheetOpen(false);
-                  navigateWithLoading(
-                    "/controlpanel",
-                    isThai ? "กำลังเปิดแผงควบคุมระบบ..." : "Opening Control Panel...",
-                    isThai ? "กำลังโหลดเครื่องมือจัดการสถานะ..." : "Loading management tools..."
-                  );
-                }}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-[#282828] hover:bg-[#3E3E3E] text-white text-xs font-semibold border border-[#444444] transition-all cursor-pointer"
-              >
-                <Monitor size={14} />
-                <span>{isThai ? "แผงควบคุมระบบ" : "Control Panel"}</span>
-              </button>
+              {userProfile.isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAccountSheetOpen(false);
+                    navigateWithLoading(
+                      "/controlpanel",
+                      isThai ? "กำลังเปิดแผงควบคุมระบบ..." : "Opening Control Panel...",
+                      isThai ? "กำลังโหลดเครื่องมือจัดการสถานะ..." : "Loading management tools..."
+                    );
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-[#282828] hover:bg-[#3E3E3E] text-white text-xs font-semibold border border-[#444444] transition-all cursor-pointer"
+                >
+                  <Monitor size={14} />
+                  <span>{isThai ? "แผงควบคุมระบบ" : "Control Panel"}</span>
+                </button>
+              )}
 
               {/* System Preferences */}
               <div className="space-y-3 pt-1">

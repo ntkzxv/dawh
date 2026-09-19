@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage, setAppLanguage } from "@/utils/language";
 import { useNotification } from "@/context/NotificationContext";
@@ -64,30 +65,13 @@ import {
   updateSafetyStockRule,
 } from "@/lib/api/products";
 import { listStockBalances, listStockLedger } from "@/lib/api/stock";
-import { getAppMe, type AppMe } from "@/lib/api/session";
+import { getAppMe, checkIsAdmin, type AppMe } from "@/lib/api/session";
 import type { Facility } from "@/lib/facilities/types";
 import type { LocationDto } from "@/lib/locations/types";
 import type { DepartmentDto } from "@/lib/departments/types";
 import type { Product } from "@/lib/products/types";
 import type { SafetyStockRuleDto } from "@/lib/safety-stock/types";
 import type { UnitOfMeasureDto } from "@/lib/units-of-measure/types";
-
-import {
-  INITIAL_USERS,
-  CANONICAL_ROLES,
-  INITIAL_ROLE_HISTORY,
-  INITIAL_FACILITIES,
-  INITIAL_LOCATIONS,
-  INITIAL_DEPARTMENTS,
-  INITIAL_CATEGORIES,
-  INITIAL_BRANDS,
-  INITIAL_UOMS,
-  INITIAL_REASON_CODES,
-  INITIAL_PRODUCTS,
-  INITIAL_SAFETY_STOCK_RULES,
-  INITIAL_STOCK_BALANCES,
-  INITIAL_STOCK_LEDGER,
-} from "./mockData";
 
 import UserManagementTab from "./tabs/UserManagementTab";
 import RoleManagementTab from "./tabs/RoleManagementTab";
@@ -130,6 +114,8 @@ export default function AdminControlPanel() {
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [lastSynced, setLastSynced] = useState<string | null>(null);
 
+  const router = useRouter();
+
   // Raw Backend DTO States (needed for versioning in optimistic updates and PATCH requests)
   const [rawFacilities, setRawFacilities] = useState<Facility[]>([]);
   const [rawLocations, setRawLocations] = useState<LocationDto[]>([]);
@@ -138,21 +124,27 @@ export default function AdminControlPanel() {
   const [rawUoms, setRawUoms] = useState<UnitOfMeasureDto[]>([]);
   const [rawSafetyRules, setRawSafetyRules] = useState<SafetyStockRuleDto[]>([]);
 
-  // Enterprise Domain States (Rendered in Tab Components)
-  const [users, setUsers] = useState<AdminUserRecord[]>(INITIAL_USERS);
-  const [roles, setRoles] = useState<CanonicalRole[]>(CANONICAL_ROLES);
-  const [roleHistory, setRoleHistory] = useState<RoleAssignmentHistory[]>(INITIAL_ROLE_HISTORY);
-  const [facilities, setFacilities] = useState<FacilityRecord[]>(INITIAL_FACILITIES);
-  const [locations, setLocations] = useState<WarehouseLocationRecord[]>(INITIAL_LOCATIONS);
-  const [departments, setDepartments] = useState<DepartmentRecord[]>(INITIAL_DEPARTMENTS);
-  const [categories, setCategories] = useState<ProductCategoryRecord[]>(INITIAL_CATEGORIES);
-  const [brands, setBrands] = useState<BrandRecord[]>(INITIAL_BRANDS);
-  const [uoms, setUoms] = useState<UnitOfMeasureRecord[]>(INITIAL_UOMS);
-  const [reasonCodes, setReasonCodes] = useState<ReasonCodeRecord[]>(INITIAL_REASON_CODES);
-  const [products, setProducts] = useState<ProductRecord[]>(INITIAL_PRODUCTS);
-  const [safetyRules, setSafetyRules] = useState<SafetyStockRuleRecord[]>(INITIAL_SAFETY_STOCK_RULES);
-  const [balances, setBalances] = useState<StockBalanceRecord[]>(INITIAL_STOCK_BALANCES);
-  const [ledger, setLedger] = useState<StockLedgerRecord[]>(INITIAL_STOCK_LEDGER);
+  // Enterprise Domain States (Empty by default; populated from database only for authorized admins)
+  const [users, setUsers] = useState<AdminUserRecord[]>([]);
+  const [roles, setRoles] = useState<CanonicalRole[]>([]);
+  const [roleHistory, setRoleHistory] = useState<RoleAssignmentHistory[]>([]);
+  const [facilities, setFacilities] = useState<FacilityRecord[]>([]);
+  const [locations, setLocations] = useState<WarehouseLocationRecord[]>([]);
+  const [departments, setDepartments] = useState<DepartmentRecord[]>([]);
+  const [categories, setCategories] = useState<ProductCategoryRecord[]>([]);
+  const [brands, setBrands] = useState<BrandRecord[]>([]);
+  const [uoms, setUoms] = useState<UnitOfMeasureRecord[]>([]);
+  const [reasonCodes, setReasonCodes] = useState<ReasonCodeRecord[]>([]);
+  const [products, setProducts] = useState<ProductRecord[]>([]);
+  const [safetyRules, setSafetyRules] = useState<SafetyStockRuleRecord[]>([]);
+  const [balances, setBalances] = useState<StockBalanceRecord[]>([]);
+  const [ledger, setLedger] = useState<StockLedgerRecord[]>([]);
+
+  // RBAC Permission Check
+  const isAdmin = useMemo(() => {
+    if (!appMe) return false;
+    return checkIsAdmin(appMe.roles, appMe.permissions);
+  }, [appMe]);
 
   // ==========================================================================
   // Initial Data Fetching from PostgreSQL & Next.js APIs
@@ -166,94 +158,99 @@ export default function AdminControlPanel() {
       }
 
       try {
-        // Fetch session me in parallel
-        const [sessionResult, dataResult] = await Promise.allSettled([
-          getAppMe(),
-          fetchControlPanelInitialData(),
-        ]);
-
-        if (sessionResult.status === "fulfilled" && sessionResult.value?.data) {
-          setAppMe(sessionResult.value.data);
+        // Step 1: Verify current session & RBAC privileges
+        let meData: AppMe | null = null;
+        try {
+          const sessionResult = await getAppMe();
+          if (sessionResult?.data) {
+            meData = sessionResult.data;
+            setAppMe(meData);
+          }
+        } catch {
+          setAppMe(null);
         }
 
-        if (dataResult.status === "fulfilled") {
-          const payload = dataResult.value;
+        const hasAdminAccess = checkIsAdmin(
+          meData?.roles,
+          meData?.permissions
+        );
 
-          // Store Raw Objects for version tracking
-          setRawFacilities(payload.rawFacilities);
-          setRawLocations(payload.rawLocations);
-          setRawDepartments(payload.rawDepartments);
-          setRawProducts(payload.rawProducts);
-          setRawUoms(payload.rawUoms);
-          setRawSafetyRules(payload.rawSafetyRules);
+        if (!hasAdminAccess) {
+          // If user lacks admin permissions: do NOT load enterprise records & do NOT leak mock data
+          setIsLoading(false);
+          setIsRefreshing(false);
+          return;
+        }
 
-          // Store Formatted Records (safely fallback if empty)
-          if (payload.users && payload.users.length > 0) setUsers(payload.users);
-          if (payload.roles && payload.roles.length > 0) setRoles(payload.roles);
-          if (payload.facilities && payload.facilities.length > 0) setFacilities(payload.facilities);
-          if (payload.locations && payload.locations.length > 0) setLocations(payload.locations);
-          if (payload.departments && payload.departments.length > 0) setDepartments(payload.departments);
-          if (payload.categories && payload.categories.length > 0) setCategories(payload.categories);
-          if (payload.brands && payload.brands.length > 0) setBrands(payload.brands);
-          if (payload.uoms && payload.uoms.length > 0) setUoms(payload.uoms);
-          if (payload.reasonCodes && payload.reasonCodes.length > 0) setReasonCodes(payload.reasonCodes);
-          if (payload.products && payload.products.length > 0) setProducts(payload.products);
-          if (payload.safetyRules && payload.safetyRules.length > 0) setSafetyRules(payload.safetyRules);
-          if (payload.balances && payload.balances.length > 0) setBalances(payload.balances);
-          if (payload.ledger && payload.ledger.length > 0) setLedger(payload.ledger);
+        // Step 2: User is confirmed Admin -> load live enterprise records
+        const payload = await fetchControlPanelInitialData();
 
-          // Build Role History from current active role assignments
-          const activeUsers = payload.users && payload.users.length > 0 ? payload.users : users;
-          const generatedHistory: RoleAssignmentHistory[] = [];
-          activeUsers.forEach((u) => {
-            (u.roles || []).forEach((r) => {
-              generatedHistory.push({
-                id: `hist-${r.assignmentId}`,
-                userId: u.id,
-                userName: u.name || u.email,
-                roleCode: r.code,
-                roleName: r.name,
-                action: "ASSIGN",
-                validFrom: r.validFrom,
-                validUntil: r.validUntil,
-                performedBy: "ผู้ดูแลระบบ (System Admin)",
-                timestamp: u.createdAt,
-              });
+        // Store Raw Objects for version tracking
+        setRawFacilities(payload.rawFacilities);
+        setRawLocations(payload.rawLocations);
+        setRawDepartments(payload.rawDepartments);
+        setRawProducts(payload.rawProducts);
+        setRawUoms(payload.rawUoms);
+        setRawSafetyRules(payload.rawSafetyRules);
+
+        // Store Formatted Records (real data from database)
+        setUsers(payload.users || []);
+        setRoles(payload.roles || []);
+        setFacilities(payload.facilities || []);
+        setLocations(payload.locations || []);
+        setDepartments(payload.departments || []);
+        setCategories(payload.categories || []);
+        setBrands(payload.brands || []);
+        setUoms(payload.uoms || []);
+        setReasonCodes(payload.reasonCodes || []);
+        setProducts(payload.products || []);
+        setSafetyRules(payload.safetyRules || []);
+        setBalances(payload.balances || []);
+        setLedger(payload.ledger || []);
+
+        // Build Role History from current active role assignments
+        const generatedHistory: RoleAssignmentHistory[] = [];
+        (payload.users || []).forEach((u) => {
+          (u.roles || []).forEach((r) => {
+            generatedHistory.push({
+              id: `hist-${r.assignmentId}`,
+              userId: u.id,
+              userName: u.name || u.email,
+              roleCode: r.code,
+              roleName: r.name,
+              action: "ASSIGN",
+              validFrom: r.validFrom,
+              validUntil: r.validUntil,
+              performedBy: "ผู้ดูแลระบบ (System Admin)",
+              timestamp: u.createdAt,
             });
           });
-          if (generatedHistory.length > 0) setRoleHistory(generatedHistory);
+        });
+        setRoleHistory(generatedHistory);
 
-          const now = new Date();
-          const timeStr = now.toLocaleTimeString(isThai ? "th-TH" : "en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-          });
-          setLastSynced(timeStr);
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString(isThai ? "th-TH" : "en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        });
+        setLastSynced(timeStr);
 
-          if (isManualRefresh) {
-            notify.success(
-              isThai ? "ซิงค์ข้อมูลสำเร็จ" : "Data Synced",
-              {
-                message: isThai
-                  ? "อัปเดตข้อมูลจากฐานข้อมูลล่าสุดเรียบร้อยแล้ว"
-                  : "All records updated from the database.",
-              }
-            );
-          }
-        } else {
-          notify.error(
-            isThai ? "ไม่สามารถโหลดข้อมูลได้" : "Data Fetch Failed",
+        if (isManualRefresh) {
+          notify.success(
+            isThai ? "ซิงค์ข้อมูลสำเร็จ" : "Data Synced",
             {
               message: isThai
-                ? "เกิดข้อผิดพลาดในการเชื่อมต่อกับ API หรือฐานข้อมูล"
-                : "Failed to load database records.",
+                ? "อัปเดตข้อมูลจากฐานข้อมูลล่าสุดเรียบร้อยแล้ว"
+                : "All records updated from the database.",
             }
           );
         }
       } catch (err: unknown) {
-        const errorMsg = err instanceof Error ? err.message : "เกิดข้อผิดพลาด";
-        notify.error(isThai ? "ข้อผิดพลาดระบบ" : "System Error", { message: errorMsg });
+        const errorMsg = err instanceof Error ? err.message : "เกิดข้อผิดพลาดในการโหลดข้อมูล";
+        notify.error(isThai ? "ไม่สามารถโหลดข้อมูลได้" : "Data Fetch Failed", {
+          message: errorMsg,
+        });
       } finally {
         setIsLoading(false);
         setIsRefreshing(false);
@@ -950,134 +947,200 @@ export default function AdminControlPanel() {
       {/* Main Content Area */}
       <div className="flex-1 w-full overflow-y-auto min-h-0 flex flex-col items-center py-6 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-[1240px] flex flex-col items-stretch gap-5">
-          {/* Top Live Database Status Bar */}
-          <div
-            className={`px-4 py-3 rounded-2xl border flex flex-wrap items-center justify-between gap-3 transition-colors ${
-              isLight
-                ? "bg-white border-[#E4E4E7] shadow-sm"
-                : "bg-[#383838] border-[#444444] shadow-sm"
-            }`}
-          >
-            <div className="flex items-center gap-3">
+          {isLoading ? (
+            <div
+              className={`w-full py-28 rounded-2xl border flex flex-col items-center justify-center gap-3 transition-colors ${
+                isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
+              }`}
+            >
+              <Loader2 size={32} className="animate-spin text-emerald-500" />
+              <span className="text-sm font-bold">
+                {isThai
+                  ? "กำลังโหลดข้อมูลจากฐานข้อมูล..."
+                  : "Fetching live enterprise data..."}
+              </span>
+              <span className={`text-xs ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>
+                {isThai ? "กำลังซิงค์สิทธิ์และข้อมูลโครงสร้างระบบ" : "Synchronizing RBAC & topologies..."}
+              </span>
+            </div>
+          ) : !isAdmin ? (
+            /* Access Denied View: Non-admin users see NO data */
+            <div
+              className={`w-full py-20 px-6 rounded-2xl border flex flex-col items-center justify-center text-center max-w-2xl mx-auto my-8 shadow-sm transition-colors ${
+                isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
+              }`}
+            >
               <div
-                className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                  isLight ? "bg-emerald-50 text-emerald-600" : "bg-emerald-950/40 text-emerald-400"
+                className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-5 ${
+                  isLight ? "bg-rose-50 text-rose-600 border border-rose-200" : "bg-rose-950/40 text-rose-400 border border-rose-800/40"
                 }`}
               >
-                <Database size={16} />
+                <ShieldAlert size={36} />
               </div>
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-xs font-bold">
-                    {isThai ? "เชื่อมต่อฐานข้อมูลระบบแล้ว" : "Live PostgreSQL Connected"}
-                  </span>
-                </div>
-                <span className={`text-[11px] ${isLight ? "text-zinc-500" : "text-[#D4D4D8]"}`}>
-                  {lastSynced
-                    ? isThai
-                      ? `ซิงค์ล่าสุดเวลา: ${lastSynced} น.`
-                      : `Last synced at: ${lastSynced}`
-                    : isThai
-                    ? "กำลังเชื่อมต่อ..."
-                    : "Connecting..."}
-                </span>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-3">
+              <h2 className="text-xl font-bold mb-2">
+                {isThai ? "ไม่มีสิทธิ์เข้าถึงแผงควบคุมระบบ" : "Access Denied: Administrator Only"}
+              </h2>
+
+              <p
+                className={`text-sm max-w-md leading-relaxed mb-6 ${
+                  isLight ? "text-zinc-600" : "text-zinc-400"
+                }`}
+              >
+                {isThai
+                  ? "หน้านี้สงวนไว้สำหรับผู้ดูแลระบบ (System Administrator) เท่านั้น เนื่องจากบัญชีของคุณไม่มีสิทธิ์ที่จำเป็นในการเข้าถึงหรือดูข้อมูลโครงสร้างระบบ"
+                  : "This management console is strictly restricted to system administrators. Your account does not possess the required permissions to view or manage enterprise records."}
+              </p>
+
               {appMe?.user && (
                 <div
-                  className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs ${
-                    isLight
-                      ? "bg-zinc-50 border-zinc-200 text-zinc-700"
-                      : "bg-[#2C2C2C] border-[#444444] text-zinc-300"
+                  className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs mb-6 font-mono ${
+                    isLight ? "bg-zinc-50 border-zinc-200 text-zinc-600" : "bg-[#2A2A2A] border-[#444444] text-zinc-400"
                   }`}
                 >
-                  <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
-                  <span className="font-semibold">{appMe.user.name || appMe.user.email}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-200/60 dark:bg-zinc-700 font-bold">
-                    {appMe.roles[0] || "ADMIN"}
-                  </span>
+                  <span>{appMe.user.email}</span>
+                  <span>•</span>
+                  <span>{isThai ? "สิทธิ์ปัจจุบัน: บัญชีผู้ใช้ทั่วไป" : "Current Role: Standard User"}</span>
                 </div>
               )}
 
-              <button
-                type="button"
-                onClick={() => loadAllData(true)}
-                disabled={isLoading || isRefreshing}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  isLight
-                    ? "bg-zinc-100 hover:bg-zinc-200 text-zinc-800 disabled:opacity-50"
-                    : "bg-[#444444] hover:bg-[#505050] text-white disabled:opacity-50"
-                }`}
-              >
-                <RotateCw size={13} className={isRefreshing ? "animate-spin" : ""} />
-                <span>
-                  {isRefreshing
-                    ? isThai
-                      ? "กำลังซิงค์..."
-                      : "Syncing..."
-                    : isThai
-                    ? "รีเฟรชข้อมูล"
-                    : "Refresh Data"}
-                </span>
-              </button>
-            </div>
-          </div>
-
-          {/* Main 7-Domain Segmented Navigation Bar */}
-          <div
-            className={`p-1.5 rounded-2xl border flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] transition-colors shadow-sm ${
-              isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
-            }`}
-          >
-            {navTabs.map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
+              <div className="flex items-center gap-3">
                 <button
-                  key={tab.id}
                   type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-200 select-none ${
-                    isActive
-                      ? isLight
-                        ? "bg-[#222222] text-white shadow"
-                        : "bg-white text-zinc-900 shadow"
-                      : isLight
-                      ? "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
-                      : "text-zinc-400 hover:text-white hover:bg-white/5"
+                  onClick={() => router.push("/workspace")}
+                  className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    isLight
+                      ? "bg-[#222222] hover:bg-[#333333] text-white shadow-sm"
+                      : "bg-white hover:bg-zinc-200 text-zinc-900 shadow-sm"
                   }`}
                 >
-                  <span className={isActive ? (isLight ? "text-white" : "text-zinc-900") : "opacity-70"}>
-                    {tab.icon}
-                  </span>
-                  <span>{isThai ? tab.labelTh : tab.labelEn}</span>
+                  {isThai ? "กลับสู่หน้าหลัก" : "Back to Workspace"}
                 </button>
-              );
-            })}
-          </div>
-
-          {/* Active Tab Panel Rendering with Loading Overlay */}
-          <div className="w-full relative min-h-[400px]">
-            {isLoading ? (
+                <button
+                  type="button"
+                  onClick={() => router.push("/account")}
+                  className={`px-5 py-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                    isLight
+                      ? "bg-zinc-50 hover:bg-zinc-100 border-zinc-200 text-zinc-700"
+                      : "bg-[#2E2E2E] hover:bg-[#3E3E3E] border-[#444444] text-zinc-300"
+                  }`}
+                >
+                  {isThai ? "ดูโปรไฟล์ของฉัน" : "View My Profile"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Top Live Database Status Bar */}
               <div
-                className={`w-full py-28 rounded-2xl border flex flex-col items-center justify-center gap-3 transition-colors ${
+                className={`px-4 py-3 rounded-2xl border flex flex-wrap items-center justify-between gap-3 transition-colors ${
+                  isLight
+                    ? "bg-white border-[#E4E4E7] shadow-sm"
+                    : "bg-[#383838] border-[#444444] shadow-sm"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                      isLight ? "bg-emerald-50 text-emerald-600" : "bg-emerald-950/40 text-emerald-400"
+                    }`}
+                  >
+                    <Database size={16} />
+                  </div>
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-xs font-bold">
+                        {isThai ? "เชื่อมต่อฐานข้อมูลระบบแล้ว" : "Live PostgreSQL Connected"}
+                      </span>
+                    </div>
+                    <span className={`text-[11px] ${isLight ? "text-zinc-500" : "text-[#D4D4D8]"}`}>
+                      {lastSynced
+                        ? isThai
+                          ? `ซิงค์ล่าสุดเวลา: ${lastSynced} น.`
+                          : `Last synced at: ${lastSynced}`
+                        : isThai
+                        ? "กำลังเชื่อมต่อ..."
+                        : "Connecting..."}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  {appMe?.user && (
+                    <div
+                      className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs ${
+                        isLight
+                          ? "bg-zinc-50 border-zinc-200 text-zinc-700"
+                          : "bg-[#2C2C2C] border-[#444444] text-zinc-300"
+                      }`}
+                    >
+                      <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
+                      <span className="font-semibold">{appMe.user.name || appMe.user.email}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-200/60 dark:bg-zinc-700 font-bold">
+                        {appMe?.roles?.[0] || (isThai ? "ผู้ดูแลระบบ" : "Admin")}
+                      </span>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => loadAllData(true)}
+                    disabled={isLoading || isRefreshing}
+                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      isLight
+                        ? "bg-zinc-100 hover:bg-zinc-200 text-zinc-800 disabled:opacity-50"
+                        : "bg-[#444444] hover:bg-[#505050] text-white disabled:opacity-50"
+                    }`}
+                  >
+                    <RotateCw size={13} className={isRefreshing ? "animate-spin" : ""} />
+                    <span>
+                      {isRefreshing
+                        ? isThai
+                          ? "กำลังซิงค์..."
+                          : "Syncing..."
+                        : isThai
+                        ? "รีเฟรชข้อมูล"
+                        : "Refresh Data"}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Main 7-Domain Segmented Navigation Bar */}
+              <div
+                className={`p-1.5 rounded-2xl border flex items-center gap-1.5 overflow-x-auto [scrollbar-width:none] transition-colors shadow-sm ${
                   isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
                 }`}
               >
-                <Loader2 size={32} className="animate-spin text-emerald-500" />
-                <span className="text-sm font-bold">
-                  {isThai
-                    ? "กำลังโหลดข้อมูลจากฐานข้อมูล..."
-                    : "Fetching live enterprise data..."}
-                </span>
-                <span className={`text-xs ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>
-                  {isThai ? "กำลังซิงค์สิทธิ์และข้อมูลโครงสร้างระบบ" : "Synchronizing RBAC & topologies..."}
-                </span>
+                {navTabs.map((tab) => {
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-200 select-none ${
+                        isActive
+                          ? isLight
+                            ? "bg-[#222222] text-white shadow"
+                            : "bg-white text-zinc-900 shadow"
+                          : isLight
+                          ? "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
+                          : "text-zinc-400 hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      <span className={isActive ? (isLight ? "text-white" : "text-zinc-900") : "opacity-70"}>
+                        {tab.icon}
+                      </span>
+                      <span>{isThai ? tab.labelTh : tab.labelEn}</span>
+                    </button>
+                  );
+                })}
               </div>
-            ) : (
-              <>
+
+              {/* Active Tab Panel Rendering */}
+              <div className="w-full relative min-h-[400px]">
                 {activeTab === "users" && (
                   <UserManagementTab
                     users={users}
@@ -1159,9 +1222,9 @@ export default function AdminControlPanel() {
                     isThai={isThai}
                   />
                 )}
-              </>
-            )}
-          </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

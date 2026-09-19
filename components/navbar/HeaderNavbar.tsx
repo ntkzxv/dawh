@@ -25,7 +25,7 @@ import { ProfileGuardModal } from "@/components/auth";
 import { useNotification } from "@/context/NotificationContext";
 import { useAppLanguage, setAppLanguage } from "@/utils/language";
 import { motion, AnimatePresence } from "framer-motion";
-import { getAppMe } from "@/lib/api/session";
+import { getAppMe, checkIsAdmin } from "@/lib/api/session";
 
 export interface HeaderNavbarProps {
   title?: string;
@@ -82,6 +82,7 @@ export default function HeaderNavbar({
   const [isProfileLoaded, setIsProfileLoaded] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [permissions, setPermissions] = useState<string[]>([]);
+  const [roles, setRoles] = useState<string[]>([]);
 
   // Close Dropdown on Outside Click
   useEffect(() => {
@@ -128,7 +129,8 @@ export default function HeaderNavbar({
           const me = await getAppMe();
           appMe = me;
           if (isMounted) {
-            setPermissions(me.data.permissions);
+            setPermissions(me.data.permissions || []);
+            setRoles(me.data.roles || []);
             if (me.data.profile) {
               const canonicalProfile = toEmployeeProfile(me.data.profile);
               setProfile(canonicalProfile);
@@ -217,7 +219,7 @@ export default function HeaderNavbar({
   }, []);
 
   // UI-only hint; every API still enforces permissions server-side.
-  const isAdmin = permissions.some((permission) => permission.startsWith("admin."));
+  const isAdmin = checkIsAdmin(roles, permissions, profile.role);
 
   // Display calculations (Supporting Nicknames and usernames when full name is empty)
   const validFullName =
@@ -604,7 +606,7 @@ export default function HeaderNavbar({
                 </button>
 
                 {/* Control Panel (Admin & Operations) */}
-                {pathname !== "/controlpanel" && (
+                {isAdmin && pathname !== "/controlpanel" && (
                   <button
                     type="button"
                     onClick={() => {

@@ -54,6 +54,7 @@ import { authClient, getCurrentSession, logout } from "@/lib/auth-client";
 import { fetchAndStoreUserProfile, toEmployeeProfile } from "@/lib/user-profile";
 import { apiPut } from "@/lib/api/client";
 import { getOnboardingOptions } from "@/lib/api/onboarding";
+import { getAppMe, checkIsAdmin, type AppMe } from "@/lib/api/session";
 import { ApiRequestError } from "@/lib/api/client";
 import { readPendingRegistrationProfile } from "@/lib/auth/pending-profile";
 import { isValidIsoDate, isValidPhone, isValidThaiCitizenId } from "@/lib/profiles/client-validation";
@@ -1435,6 +1436,7 @@ export default function AccountView({
   // Profile State
   const [profile, setProfile] = useState<Partial<EmployeeProfile>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [appMe, setAppMe] = useState<AppMe | null>(null);
 
   // Search State
   const [searchQuery, setSearchQuery] = useState("");
@@ -1823,6 +1825,15 @@ export default function AccountView({
         setIsLoading(true);
       }
       try {
+        try {
+          const me = await getAppMe();
+          if (me?.data) {
+            setAppMe(me.data);
+          }
+        } catch {
+          // non-blocking
+        }
+
         const session = await getCurrentSession();
         const targetId = session?.user.id;
         const targetEmail = session?.user.email;
@@ -1923,6 +1934,7 @@ export default function AccountView({
 
   // Check if active user is Admin
   const isAdmin =
+    checkIsAdmin(appMe?.roles, appMe?.permissions, profile.role) ||
     profile.role?.toLowerCase() === "admin" ||
     profile.role?.toLowerCase() === "superadmin" ||
     profile.role?.toLowerCase().includes("administrator") ||
@@ -2965,21 +2977,23 @@ export default function AccountView({
             )}
           </button>
 
-          <button
-            type="button"
-            onClick={() => router.push("/controlpanel")}
-            className={`relative px-6 py-3 h-[42px] text-[14px] leading-[18px] font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-2 ${
-              activeTab === "admin"
-                ? isLight
-                  ? "text-[#222222]"
-                  : "text-[#FFFFFF]"
-                : isLight
-                ? "text-[#666666] hover:text-[#222222]"
-                : "text-[#E4E4E7] hover:text-[#FFFFFF]"
-            }`}
-          >
-            <span>{isThai ? "แผงควบคุมระบบ (Admin)" : "Admin Control Panel"}</span>
-          </button>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => router.push("/controlpanel")}
+              className={`relative px-6 py-3 h-[42px] text-[14px] leading-[18px] font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-2 ${
+                activeTab === "admin"
+                  ? isLight
+                    ? "text-[#222222]"
+                    : "text-[#FFFFFF]"
+                  : isLight
+                  ? "text-[#666666] hover:text-[#222222]"
+                  : "text-[#E4E4E7] hover:text-[#FFFFFF]"
+              }`}
+            >
+              <span>{isThai ? "แผงควบคุมระบบ" : "Admin Control Panel"}</span>
+            </button>
+          )}
         </div>
 
         {(activeTab === "profile" || activeTab === "employment" || activeTab === "security") && (

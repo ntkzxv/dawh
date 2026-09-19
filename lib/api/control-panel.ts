@@ -31,22 +31,6 @@ import type {
   LocationType,
 } from "@/components/controlpanel/types";
 
-import {
-  INITIAL_USERS,
-  CANONICAL_ROLES,
-  INITIAL_FACILITIES,
-  INITIAL_LOCATIONS,
-  INITIAL_DEPARTMENTS,
-  INITIAL_CATEGORIES,
-  INITIAL_BRANDS,
-  INITIAL_UOMS,
-  INITIAL_REASON_CODES,
-  INITIAL_PRODUCTS,
-  INITIAL_SAFETY_STOCK_RULES,
-  INITIAL_STOCK_BALANCES,
-  INITIAL_STOCK_LEDGER,
-} from "@/components/controlpanel/mockData";
-
 // ============================================================================
 // Thai Name Mapping for Roles
 // ============================================================================
@@ -68,17 +52,17 @@ const ROLE_THAI_NAMES: Record<string, string> = {
 export function mapUserSummaryToRecord(u: AdminUserSummary): AdminUserRecord {
   return {
     id: u.id,
-    name: u.name || u.email?.split("@")[0] || "User",
-    email: u.email || "",
-    emailVerified: Boolean(u.emailVerified),
-    accountStatus: u.accountStatus || "ACTIVE",
-    profileComplete: Boolean(u.profileComplete),
-    username: u.username || null,
-    facility: u.facility || null,
-    department: u.department || null,
-    roles: Array.isArray(u.roles) ? u.roles : [],
-    facilityScopes: Array.isArray(u.facilityScopes) ? u.facilityScopes : [],
-    createdAt: u.createdAt || new Date().toISOString(),
+    name: u.name,
+    email: u.email,
+    emailVerified: u.emailVerified,
+    accountStatus: u.accountStatus,
+    profileComplete: u.profileComplete,
+    username: u.username,
+    facility: u.facility,
+    department: u.department,
+    roles: u.roles || [],
+    facilityScopes: u.facilityScopes || [],
+    createdAt: u.createdAt,
   };
 }
 
@@ -369,64 +353,25 @@ export async function fetchControlPanelInitialData() {
     rawSafetyRules: safetyRulesRes.data || [],
     rawLocations: allLocations,
 
-    users:
-      usersRes.data && usersRes.data.length > 0
-        ? usersRes.data.map(mapUserSummaryToRecord)
-        : INITIAL_USERS,
-    roles:
-      rolesRes.data && rolesRes.data.length > 0
-        ? rolesRes.data.map(mapRoleDtoToCanonicalRole)
-        : CANONICAL_ROLES,
+    users: (usersRes.data || []).map(mapUserSummaryToRecord),
+    roles: (rolesRes.data || []).map(mapRoleDtoToCanonicalRole),
     permissions: permissionsRes.data || [],
-    facilities:
-      facilitiesRes.data && facilitiesRes.data.length > 0
-        ? facilitiesRes.data.map(mapFacilityDtoToRecord)
-        : INITIAL_FACILITIES,
-    locations:
-      allLocations.length > 0
-        ? allLocations.map(mapLocationDtoToRecord)
-        : INITIAL_LOCATIONS,
-    departments:
-      departmentsRes.data && departmentsRes.data.length > 0
-        ? departmentsRes.data.map(mapDepartmentDtoToRecord)
-        : INITIAL_DEPARTMENTS,
-    categories:
-      categoriesRes.data && categoriesRes.data.length > 0
-        ? categoriesRes.data.map(mapCategoryDtoToRecord)
-        : INITIAL_CATEGORIES,
-    brands:
-      brandsRes.data && brandsRes.data.length > 0
-        ? brandsRes.data.map(mapBrandDtoToRecord)
-        : INITIAL_BRANDS,
-    uoms:
-      uomsRes.data && uomsRes.data.length > 0
-        ? uomsRes.data.map(mapUomDtoToRecord)
-        : INITIAL_UOMS,
-    reasonCodes:
-      reasonCodesRes.data && reasonCodesRes.data.length > 0
-        ? reasonCodesRes.data.map(mapReasonCodeDtoToRecord)
-        : INITIAL_REASON_CODES,
-    products:
-      productsRes.data && productsRes.data.length > 0
-        ? productsRes.data.map(mapProductDtoToRecord)
-        : INITIAL_PRODUCTS,
-    safetyRules:
-      safetyRulesRes.data && safetyRulesRes.data.length > 0
-        ? safetyRulesRes.data.map((r) =>
-            mapSafetyRuleDtoToRecord(
-              r,
-              facilityMap.get(r.facilityId) || r.facilityCode,
-              productMap.get(r.productId) || r.sku
-            )
-          )
-        : INITIAL_SAFETY_STOCK_RULES,
-    balances:
-      balancesRes.data && balancesRes.data.length > 0
-        ? balancesRes.data.map(mapStockBalanceDtoToRecord)
-        : INITIAL_STOCK_BALANCES,
-    ledger:
-      ledgerRes.data && ledgerRes.data.length > 0
-        ? ledgerRes.data.map(mapStockLedgerDtoToRecord)
-        : INITIAL_STOCK_LEDGER,
+    facilities: (facilitiesRes.data || []).map(mapFacilityDtoToRecord),
+    locations: allLocations.map(mapLocationDtoToRecord),
+    departments: (departmentsRes.data || []).map(mapDepartmentDtoToRecord),
+    categories: (categoriesRes.data || []).map(mapCategoryDtoToRecord),
+    brands: (brandsRes.data || []).map(mapBrandDtoToRecord),
+    uoms: (uomsRes.data || []).map(mapUomDtoToRecord),
+    reasonCodes: (reasonCodesRes.data || []).map(mapReasonCodeDtoToRecord),
+    products: (productsRes.data || []).map(mapProductDtoToRecord),
+    safetyRules: (safetyRulesRes.data || []).map((r) =>
+      mapSafetyRuleDtoToRecord(
+        r,
+        facilityMap.get(r.facilityId) || r.facilityCode,
+        productMap.get(r.productId) || r.sku
+      )
+    ),
+    balances: (balancesRes.data || []).map(mapStockBalanceDtoToRecord),
+    ledger: (ledgerRes.data || []).map(mapStockLedgerDtoToRecord),
   };
 }

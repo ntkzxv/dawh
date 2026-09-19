@@ -289,15 +289,16 @@ export default function RoleManagementTab({
                     isLight ? "border-zinc-200" : "border-[#444444]"
                   }`}
                 >
-                  {users.filter((u) => u.roles.some((r) => r.code === selectedRole.code)).length === 0 ? (
+                  {users.filter((u) => u.roles?.some((r) => r.code === selectedRole?.code)).length === 0 ? (
                     <div className="p-4 text-center text-xs opacity-50 italic">
                       {isThai ? "ยังไม่มีผู้ใช้งานได้รับบทบาทนี้" : "No active users assigned to this role."}
                     </div>
                   ) : (
                     users
-                      .filter((u) => u.roles.some((r) => r.code === selectedRole.code))
+                      .filter((u) => u.roles?.some((r) => r.code === selectedRole?.code))
                       .map((user) => {
-                        const assignment = user.roles.find((r) => r.code === selectedRole.code)!;
+                        const assignment = user.roles?.find((r) => r.code === selectedRole?.code);
+                        if (!assignment) return null;
                         return (
                           <div
                             key={user.id}
