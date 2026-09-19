@@ -24,6 +24,7 @@ export interface NavbarsubControlPanelProps {
   isMinimized?: boolean;
   lang?: "th" | "en";
   counts?: Partial<Record<AdminTabKey, number>> & { audit_logs?: number };
+  auditCategoryCounts?: Partial<Record<AuditLogCategoryKey, number>>;
 }
 
 interface SubMenuItem {
@@ -140,6 +141,7 @@ export default function NavbarsubControlPanel({
   isMinimized = false,
   lang: propLang,
   counts = {},
+  auditCategoryCounts = {},
 }: NavbarsubControlPanelProps) {
   const { theme } = useTheme();
   const isLight = theme === "light";
@@ -443,6 +445,7 @@ export default function NavbarsubControlPanel({
                       {item.children?.map((child) => {
                         const isSubActive = isItemActive && activeAuditCategory === child.id;
                         const ChildIcon = child.icon;
+                        const subCount = auditCategoryCounts[child.id];
 
                         return (
                           <button
@@ -452,8 +455,8 @@ export default function NavbarsubControlPanel({
                             className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left border transition-all duration-200 cursor-pointer outline-none focus:outline-none select-none ${
                               isSubActive
                                 ? isLight
-                                  ? "bg-slate-900 text-white border-slate-900 shadow-sm font-semibold"
-                                  : "bg-[#383838] text-white border-[#555555] shadow-sm font-semibold"
+                                ? "bg-slate-900 text-white border-slate-900 shadow-sm font-semibold"
+                                : "bg-[#383838] text-white border-[#555555] shadow-sm font-semibold"
                                 : isLight
                                 ? "border-transparent text-slate-600 hover:text-slate-950 hover:bg-slate-100 font-normal"
                                 : "border-transparent text-[#E4E4E7] hover:text-[#FFFFFF] hover:bg-white/5 font-normal"
@@ -475,14 +478,32 @@ export default function NavbarsubControlPanel({
                               </span>
                             </div>
 
-                            {/* Active dot indicator */}
-                            <span
-                              className={`w-[2px] h-[11px] rounded-full shrink-0 transition-all duration-300 ${
-                                isSubActive
-                                  ? "bg-white opacity-100 scale-y-100"
-                                  : "opacity-0 scale-y-50 pointer-events-none"
-                              }`}
-                            />
+                            <div className="flex items-center gap-2 shrink-0">
+                              {subCount !== undefined && subCount !== null && (
+                                <span
+                                  className={`px-1.5 py-0.2 text-[10px] font-bold rounded-full transition-colors ${
+                                    isSubActive
+                                      ? isLight
+                                        ? "bg-white/20 text-white"
+                                        : "bg-white/20 text-white"
+                                      : isLight
+                                      ? "bg-slate-200 text-slate-700"
+                                      : "bg-[#282828] text-zinc-400 border border-[#444444]"
+                                  }`}
+                                >
+                                  {subCount}
+                                </span>
+                              )}
+
+                              {/* Active dot indicator */}
+                              <span
+                                className={`w-[2px] h-[11px] rounded-full shrink-0 transition-all duration-300 ${
+                                  isSubActive
+                                    ? "bg-white opacity-100 scale-y-100"
+                                    : "opacity-0 scale-y-50 pointer-events-none"
+                                }`}
+                              />
+                            </div>
                           </button>
                         );
                       })}
@@ -525,6 +546,7 @@ export default function NavbarsubControlPanel({
               {CONTROL_PANEL_ITEMS.find((i) => i.id === "audit")?.children?.map((child) => {
                 const isSubActive = activeTab === "audit_logs" && activeAuditCategory === child.id;
                 const ChildIcon = child.icon;
+                const subCount = auditCategoryCounts[child.id];
 
                 return (
                   <button
@@ -557,13 +579,31 @@ export default function NavbarsubControlPanel({
                       </span>
                     </div>
 
-                    <span
-                      className={`w-[2px] h-[11px] rounded-full shrink-0 transition-all duration-300 ${
-                        isSubActive
-                          ? "bg-white opacity-100 scale-y-100"
-                          : "opacity-0 scale-y-50 pointer-events-none"
-                      }`}
-                    />
+                    <div className="flex items-center gap-2 shrink-0">
+                      {subCount !== undefined && subCount !== null && (
+                        <span
+                          className={`px-1.5 py-0.2 text-[10px] font-bold rounded-full transition-colors ${
+                            isSubActive
+                              ? isLight
+                                ? "bg-white/20 text-white"
+                                : "bg-white/20 text-white"
+                              : isLight
+                              ? "bg-slate-200 text-slate-700"
+                              : "bg-[#282828] text-zinc-400 border border-[#444444]"
+                          }`}
+                        >
+                          {subCount}
+                        </span>
+                      )}
+
+                      <span
+                        className={`w-[2px] h-[11px] rounded-full shrink-0 transition-all duration-300 ${
+                          isSubActive
+                            ? "bg-white opacity-100 scale-y-100"
+                            : "opacity-0 scale-y-50 pointer-events-none"
+                        }`}
+                      />
+                    </div>
                   </button>
                 );
               })}

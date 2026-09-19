@@ -180,6 +180,65 @@ export default function AdminControlPanel() {
     return checkIsAdmin(appMe.roles, appMe.permissions);
   }, [appMe]);
 
+  // Audit Category Breakdown Counts
+  const auditCategoryCounts = useMemo<Record<AuditLogCategoryKey, number>>(() => {
+    let security = 0;
+    let organization = 0;
+    let products = 0;
+    let inventory = 0;
+
+    auditLogs.forEach((log) => {
+      if (
+        log.entityType.includes("user") ||
+        log.entityType.includes("role") ||
+        log.entityType.includes("scope") ||
+        log.action.startsWith("user.") ||
+        log.action.startsWith("role.") ||
+        log.action.startsWith("facility_scope.")
+      ) {
+        security++;
+      } else if (
+        log.entityType.includes("facility") ||
+        log.entityType.includes("location") ||
+        log.entityType.includes("department") ||
+        log.action.startsWith("facility.") ||
+        log.action.startsWith("location.") ||
+        log.action.startsWith("department.")
+      ) {
+        organization++;
+      } else if (
+        log.entityType.includes("product") ||
+        log.entityType.includes("category") ||
+        log.entityType.includes("brand") ||
+        log.entityType.includes("unit") ||
+        log.entityType.includes("reason_code") ||
+        log.action.startsWith("product.") ||
+        log.action.startsWith("category.") ||
+        log.action.startsWith("brand.") ||
+        log.action.startsWith("uom.") ||
+        log.action.startsWith("reason_code.")
+      ) {
+        products++;
+      } else if (
+        log.entityType.includes("stock") ||
+        log.entityType.includes("inventory") ||
+        log.entityType.includes("safety_stock") ||
+        log.action.startsWith("stock.") ||
+        log.action.startsWith("safety_stock.")
+      ) {
+        inventory++;
+      }
+    });
+
+    return {
+      all: auditLogs.length,
+      security,
+      organization,
+      products,
+      inventory,
+    };
+  }, [auditLogs]);
+
   // ==========================================================================
   // Initial Data Fetching from PostgreSQL & Next.js APIs
   // ==========================================================================
@@ -983,6 +1042,7 @@ export default function AdminControlPanel() {
               safety_stock: safetyRules.length,
               audit_logs: auditLogs.length,
             }}
+            auditCategoryCounts={auditCategoryCounts}
           />
         </NavbarMain>
       </motion.div>

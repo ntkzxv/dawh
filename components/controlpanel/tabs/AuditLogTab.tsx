@@ -141,54 +141,6 @@ export default function AuditLogTab({
     });
   }, [logs, selectedCategory, selectedEntityFilter, searchQuery]);
 
-  // Counts by category
-  const categoryCounts = useMemo(() => {
-    let security = 0;
-    let organization = 0;
-    let products = 0;
-    let inventory = 0;
-
-    logs.forEach((log) => {
-      if (
-        log.entityType.includes("user") ||
-        log.entityType.includes("role") ||
-        log.entityType.includes("scope") ||
-        log.action.startsWith("user.") ||
-        log.action.startsWith("role.") ||
-        log.action.startsWith("facility_scope.")
-      ) {
-        security++;
-      } else if (
-        log.entityType.includes("facility") ||
-        log.entityType.includes("location") ||
-        log.entityType.includes("department")
-      ) {
-        organization++;
-      } else if (
-        log.entityType.includes("product") ||
-        log.entityType.includes("category") ||
-        log.entityType.includes("brand") ||
-        log.entityType.includes("unit") ||
-        log.entityType.includes("reason_code")
-      ) {
-        products++;
-      } else if (
-        log.entityType.includes("stock") ||
-        log.entityType.includes("inventory") ||
-        log.entityType.includes("safety_stock")
-      ) {
-        inventory++;
-      }
-    });
-
-    return {
-      all: logs.length,
-      security,
-      organization,
-      products,
-      inventory,
-    };
-  }, [logs]);
 
   const copyToClipboard = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -234,65 +186,6 @@ export default function AuditLogTab({
 
   return (
     <div className="w-full flex flex-col gap-5">
-      {/* Overview Stat Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-        {categories.map((cat) => {
-          const Icon = cat.icon;
-          const isSelected = selectedCategory === cat.id;
-          const count = categoryCounts[cat.id];
-
-          return (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => onSelectCategory(cat.id)}
-              className={`p-4 rounded-2xl border text-left transition-all duration-200 cursor-pointer outline-none relative overflow-hidden group ${
-                isSelected
-                  ? isLight
-                    ? "bg-slate-900 text-white border-slate-900 shadow-md ring-2 ring-slate-900/20"
-                    : "bg-white text-zinc-950 border-white shadow-md ring-2 ring-white/20"
-                  : isLight
-                  ? "bg-white border-[#E4E4E7] text-zinc-800 hover:border-slate-400 hover:shadow-sm"
-                  : "bg-[#383838] border-[#444444] text-zinc-200 hover:border-zinc-500 hover:shadow-sm"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
-                    isSelected
-                      ? isLight
-                        ? "bg-white/15 text-white"
-                        : "bg-black/10 text-zinc-950"
-                      : isLight
-                      ? "bg-zinc-100 text-zinc-600 group-hover:bg-zinc-200"
-                      : "bg-[#2A2A2A] text-zinc-300 group-hover:bg-[#323232]"
-                  }`}
-                >
-                  <Icon size={16} />
-                </div>
-                <span
-                  className={`text-xl font-bold font-mono tracking-tight ${
-                    isSelected
-                      ? isLight ? "text-white" : "text-zinc-950"
-                      : isLight ? "text-zinc-900" : "text-white"
-                  }`}
-                >
-                  {count}
-                </span>
-              </div>
-              <p
-                className={`text-xs font-semibold truncate leading-tight ${
-                  isSelected
-                    ? isLight ? "text-white" : "text-zinc-950"
-                    : isLight ? "text-zinc-700" : "text-zinc-300"
-                }`}
-              >
-                {isThai ? cat.labelTh : cat.labelEn}
-              </p>
-            </button>
-          );
-        })}
-      </div>
 
       {/* Filter and Search Bar */}
       <div
