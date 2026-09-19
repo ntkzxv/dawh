@@ -1,6 +1,6 @@
 import "server-only";
 
-import { authPool } from "@/lib/auth/db";
+import { dbPool } from "@/lib/core/db/pool";
 import type { CompleteEmployeeProfileInput, EmployeeProfileResponse } from "@/lib/profiles/types";
 
 const columns = `
@@ -19,7 +19,7 @@ const columns = `
   (p.profile_completed_at IS NOT NULL) AS is_complete`;
 
 export async function getEmployeeProfile(userId: string): Promise<EmployeeProfileResponse | null> {
-  const result = await authPool.query<EmployeeProfileResponse>(
+  const result = await dbPool.query<EmployeeProfileResponse>(
     `SELECT ${columns}
      FROM public.employee_profiles p
      JOIN public."user" u ON u.id = p.user_id
@@ -38,7 +38,7 @@ export async function completeEmployeeProfile(
   const insertColumns = ["user_id", ...fieldNames].join(", ");
   const placeholders = ["$1", ...fieldNames.map((_, index) => `$${index + 2}`)].join(", ");
   const updates = fieldNames.map((field) => `${field} = EXCLUDED.${field}`).join(", ");
-  const result = await authPool.query<EmployeeProfileResponse>(
+  const result = await dbPool.query<EmployeeProfileResponse>(
     `INSERT INTO public.employee_profiles (${insertColumns}, terms_accepted_at, profile_completed_at)
      VALUES (${placeholders}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
      ON CONFLICT (user_id) DO UPDATE SET

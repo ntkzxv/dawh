@@ -1,10 +1,11 @@
 import { betterAuth } from "better-auth";
 
-import { authPool } from "@/lib/auth/db";
 import { sendVerificationEmail } from "@/lib/auth/email";
+import { dbPool } from "@/lib/core/db/pool";
 
 const oneDay = 60 * 60 * 24;
 const baseURL = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
+const authEmailEnabled = process.env.AUTH_EMAIL_ENABLED === "true";
 const trustedOrigins = [
   baseURL,
   ...(process.env.BETTER_AUTH_TRUSTED_ORIGINS ?? "")
@@ -13,18 +14,13 @@ const trustedOrigins = [
     .filter(Boolean),
 ];
 
-const globalForBetterAuth = globalThis as typeof globalThis & {
-  dawhBetterAuth?: any;
-};
-
-export const auth =
-  globalForBetterAuth.dawhBetterAuth ??
+const createAuth = () =>
   betterAuth({
     appName: "DAWH",
     baseURL,
     secret: process.env.BETTER_AUTH_SECRET,
     trustedOrigins,
-    database: authPool,
+    database: dbPool,
     advanced: {
       cookiePrefix: "dawh",
       defaultCookieAttributes: {
@@ -38,18 +34,22 @@ export const auth =
       enabled: true,
       minPasswordLength: 8,
       maxPasswordLength: 128,
-      requireEmailVerification: false,
+      requireEmailVerification: authEmailEnabled,
     },
     emailVerification: {
-      sendOnSignUp: false,
+      sendOnSignUp: authEmailEnabled,
       sendOnSignIn: false,
       autoSignInAfterVerification: true,
-      sendVerificationEmail: ({ user, url }) =>
-        sendVerificationEmail({ email: user.email, url }),
+      ...(authEmailEnabled
+        ? {
+            sendVerificationEmail: ({ user, url }: { user: { email: string }; url: string }) =>
+              sendVerificationEmail({ email: user.email, url }),
+          }
+        : {}),
     },
     user: {
       changeEmail: {
-        enabled: true,
+        enabled: authEmailEnabled,
       },
     },
     session: {
@@ -64,6 +64,16 @@ export const auth =
       max: 100,
     },
   });
+
+type BetterAuthInstance = ReturnType<typeof createAuth>;
+
+const globalForBetterAuth = globalThis as typeof globalThis & {
+  dawhBetterAuth?: BetterAuthInstance;
+};
+
+export const auth =
+  globalForBetterAuth.dawhBetterAuth ??
+  createAuth();
 
 if (process.env.NODE_ENV !== "production") {
   globalForBetterAuth.dawhBetterAuth = auth;
