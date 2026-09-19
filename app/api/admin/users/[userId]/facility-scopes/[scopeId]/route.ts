@@ -12,9 +12,21 @@ export const runtime = "nodejs";
 type Context = { params: Promise<{ userId: string; scopeId: string }> };
 
 export const PATCH = apiRoute(async (request, routeContext: Context) => {
-  const context = await requireAccess(request, { permission: "admin.users.manage" });
+  const context = await requireAccess(request, {
+    permission: "admin.users.manage",
+  });
   const { userId, scopeId } = await routeContext.params;
-  if (!isBigIntId(scopeId)) throw new ValidationError({ scopeId: "Use a positive integer ID." });
+  if (!isBigIntId(scopeId))
+    throw new ValidationError({ scopeId: "Use a positive integer ID." });
   const input = parseUpdateFacilityScope(await parseJsonObject(request));
-  return jsonOk(request, await updateFacilityScope(context, getRequestContext(request), userId, scopeId, input));
+  return jsonOk(
+    request,
+    await updateFacilityScope(
+      context,
+      getRequestContext(request),
+      userId,
+      scopeId,
+      input,
+    ),
+  );
 });

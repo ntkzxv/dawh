@@ -7,7 +7,9 @@ export const runtime = "nodejs";
 
 export const GET = apiRoute(async (request) => {
   const context = await getAccessContext(request);
-  const profile = context.profile ? await toEmployeeProfileDto(context.profile) : null;
+  const profile = context.profile
+    ? await toEmployeeProfileDto(context.profile)
+    : null;
 
   return jsonOk(request, {
     user: context.user,

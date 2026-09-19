@@ -1,2 +1,26 @@
-export type ReasonCodeDto={id:string;organizationId:string;domain:string;code:string;name:string;description:string|null;requiresNote:boolean;requiresAttachment:boolean;isActive:boolean;version:number;createdAt:string;updatedAt:string};
-export type ReasonCodeInput={domain:string;code:string;name:string;description:string|null;requiresNote:boolean;requiresAttachment:boolean;isActive:boolean};export type ReasonCodeUpdateInput=Partial<ReasonCodeInput>&{version:number};
+export type ReasonCodeDto = {
+  id: string;
+  organizationId: string;
+  domain: string;
+  code: string;
+  name: string;
+  description: string | null;
+  requiresNote: boolean;
+  requiresAttachment: boolean;
+  isActive: boolean;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+};
+export type ReasonCodeInput = {
+  domain: string;
+  code: string;
+  name: string;
+  description: string | null;
+  requiresNote: boolean;
+  requiresAttachment: boolean;
+  isActive: boolean;
+};
+export type ReasonCodeUpdateInput = Partial<ReasonCodeInput> & {
+  version: number;
+};

@@ -5,7 +5,7 @@ import type { PoolClient } from "pg";
 import { dbPool } from "@/lib/core/db/pool";
 
 export async function withTransaction<T>(
-  work: (client: PoolClient) => Promise<T>
+  work: (client: PoolClient) => Promise<T>,
 ): Promise<T> {
   const client = await dbPool.connect();
 

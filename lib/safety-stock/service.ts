@@ -1,7 +1,220 @@
-import "server-only";import type { AccessContext } from "@/lib/access/types";import { AuthorizationError,canAccessFacility,visibleFacilityIds } from "@/lib/access/service";import { writeAuditLog } from "@/lib/audit/service";import { dbPool } from "@/lib/core/db/pool";import { withTransaction } from "@/lib/core/db/transaction";import type { RequestContext } from "@/lib/core/http/context";import { ConflictError,NotFoundError,ValidationError } from "@/lib/core/http/errors";import type { SafetyStockInput,SafetyStockRuleDto,SafetyStockUpdateInput } from "@/lib/safety-stock/types";
-type Row={id:string;facility_id:string;facility_code:string;product_id:string;sku:string;minimum_quantity:string;maximum_quantity:string|null;reorder_point:string;safety_quantity:string;version:number;created_at:Date;updated_at:Date};const select=`SELECT s.id,s.facility_id,f.code facility_code,s.product_id,p.sku,s.minimum_quantity::text,s.maximum_quantity::text,s.reorder_point::text,s.safety_quantity::text,s.version,s.created_at,s.updated_at FROM public.safety_stock_rules s JOIN public.facilities f ON f.id=s.facility_id JOIN public.products p ON p.id=s.product_id`;const map=(r:Row):SafetyStockRuleDto=>({id:r.id,facilityId:r.facility_id,facilityCode:r.facility_code,productId:r.product_id,sku:r.sku,minimumQuantity:r.minimum_quantity,maximumQuantity:r.maximum_quantity,reorderPoint:r.reorder_point,safetyQuantity:r.safety_quantity,version:r.version,createdAt:r.created_at.toISOString(),updatedAt:r.updated_at.toISOString()});function manage(c:AccessContext){if(!c.permissions.includes("admin.products.manage"))throw new AuthorizationError();}function dup(e:unknown):never{if((e as{code?:string}).code==="23505")throw new ConflictError("CONFLICT","A safety-stock rule already exists for this product and facility.");throw e;}
-async function validate(x:Parameters<Parameters<typeof withTransaction>[0]>[0],c:AccessContext,i:SafetyStockInput){const [f,p,order]=await Promise.all([x.query(`SELECT 1 FROM public.facilities WHERE id=$1 AND organization_id=$2 AND is_active`,[i.facilityId,c.organization.id]),x.query(`SELECT 1 FROM public.products WHERE id=$1 AND organization_id=$2 AND is_active`,[i.productId,c.organization.id]),x.query<{ok:boolean}>(`SELECT $1::numeric<=$2::numeric AND($3::numeric IS NULL OR($2::numeric<=$3::numeric AND $4::numeric<=$3::numeric))ok`,[i.minimumQuantity,i.reorderPoint,i.maximumQuantity,i.safetyQuantity])]);if(!f.rowCount)throw new NotFoundError("Facility");if(!p.rowCount)throw new NotFoundError("Product");if(!order.rows[0]?.ok)throw new ValidationError({quantities:"Require minimumQuantity <= reorderPoint <= maximumQuantity and safetyQuantity <= maximumQuantity."});}
-export async function listSafetyStock(c:AccessContext){if(!c.permissions.includes("admin.products.read")&&!c.permissions.includes("product.read"))throw new AuthorizationError();const ids=visibleFacilityIds(c);if(ids?.length===0)return[];return(await dbPool.query<Row>(`${select} WHERE f.organization_id=$1 AND p.organization_id=$1 AND($2::boolean OR s.facility_id=ANY($3::bigint[]))ORDER BY f.code,p.sku`,[c.organization.id,ids===null,ids??[]])).rows.map(map);}
-export async function getSafetyStock(c:AccessContext,id:string,x:Pick<typeof dbPool,"query">=dbPool){const r=await x.query<Row>(`${select} WHERE s.id=$1 AND f.organization_id=$2 AND p.organization_id=$2`,[id,c.organization.id]);if(!r.rows[0])throw new NotFoundError("Safety-stock rule");if(!c.permissions.includes("admin.products.read")&&!canAccessFacility(c,r.rows[0].facility_id,"READ"))throw new AuthorizationError("FORBIDDEN_FACILITY_SCOPE");return map(r.rows[0]);}
-export async function createSafetyStock(c:AccessContext,rc:RequestContext,i:SafetyStockInput){manage(c);try{return await withTransaction(async x=>{await validate(x,c,i);const r=await x.query<Row>(`WITH z AS(INSERT INTO public.safety_stock_rules(facility_id,product_id,minimum_quantity,maximum_quantity,reorder_point,safety_quantity,created_by,updated_by)VALUES($1,$2,$3::numeric,$4::numeric,$5::numeric,$6::numeric,$7,$7)RETURNING *)SELECT z.id,z.facility_id,f.code facility_code,z.product_id,p.sku,z.minimum_quantity::text,z.maximum_quantity::text,z.reorder_point::text,z.safety_quantity::text,z.version,z.created_at,z.updated_at FROM z JOIN public.facilities f ON f.id=z.facility_id JOIN public.products p ON p.id=z.product_id`,[i.facilityId,i.productId,i.minimumQuantity,i.maximumQuantity,i.reorderPoint,i.safetyQuantity,c.user.id]);const dto=map(r.rows[0]);await writeAuditLog(x,{organizationId:c.organization.id,requestId:rc.requestId,actorUserId:c.user.id,action:"safety_stock.created",entityType:"safety_stock_rule",entityId:dto.id,facilityId:dto.facilityId,newData:dto,ipAddress:rc.ipAddress,userAgent:rc.userAgent});return dto;});}catch(e){return dup(e);}}
-export async function updateSafetyStock(c:AccessContext,rc:RequestContext,id:string,i:SafetyStockUpdateInput){manage(c);try{return await withTransaction(async x=>{const old=await getSafetyStock(c,id,x),m:SafetyStockInput={facilityId:old.facilityId,productId:old.productId,minimumQuantity:i.minimumQuantity??old.minimumQuantity,maximumQuantity:i.maximumQuantity===undefined?old.maximumQuantity:i.maximumQuantity,reorderPoint:i.reorderPoint??old.reorderPoint,safetyQuantity:i.safetyQuantity??old.safetyQuantity};await validate(x,c,m);const r=await x.query<Row>(`WITH z AS(UPDATE public.safety_stock_rules SET minimum_quantity=$2::numeric,maximum_quantity=$3::numeric,reorder_point=$4::numeric,safety_quantity=$5::numeric,version=version+1,updated_by=$6 WHERE id=$1 AND version=$7 RETURNING *)SELECT z.id,z.facility_id,f.code facility_code,z.product_id,p.sku,z.minimum_quantity::text,z.maximum_quantity::text,z.reorder_point::text,z.safety_quantity::text,z.version,z.created_at,z.updated_at FROM z JOIN public.facilities f ON f.id=z.facility_id JOIN public.products p ON p.id=z.product_id`,[id,m.minimumQuantity,m.maximumQuantity,m.reorderPoint,m.safetyQuantity,c.user.id,i.version]);if(!r.rows[0])throw new ConflictError("VERSION_CONFLICT","The safety-stock rule was updated by another request.");const dto=map(r.rows[0]);await writeAuditLog(x,{organizationId:c.organization.id,requestId:rc.requestId,actorUserId:c.user.id,action:"safety_stock.updated",entityType:"safety_stock_rule",entityId:id,facilityId:dto.facilityId,oldData:old,newData:dto,ipAddress:rc.ipAddress,userAgent:rc.userAgent});return dto;});}catch(e){return dup(e);}}
+import "server-only";
+import type { AccessContext } from "@/lib/access/types";
+import {
+  AuthorizationError,
+  canAccessFacility,
+  visibleFacilityIds,
+} from "@/lib/access/service";
+import { writeAuditLog } from "@/lib/audit/service";
+import { dbPool } from "@/lib/core/db/pool";
+import { withTransaction } from "@/lib/core/db/transaction";
+import type { RequestContext } from "@/lib/core/http/context";
+import {
+  ConflictError,
+  NotFoundError,
+  ValidationError,
+} from "@/lib/core/http/errors";
+import type {
+  SafetyStockInput,
+  SafetyStockRuleDto,
+  SafetyStockUpdateInput,
+} from "@/lib/safety-stock/types";
+type Row = {
+  id: string;
+  facility_id: string;
+  facility_code: string;
+  product_id: string;
+  sku: string;
+  minimum_quantity: string;
+  maximum_quantity: string | null;
+  reorder_point: string;
+  safety_quantity: string;
+  version: number;
+  created_at: Date;
+  updated_at: Date;
+};
+const select = `SELECT s.id,s.facility_id,f.code facility_code,s.product_id,p.sku,s.minimum_quantity::text,s.maximum_quantity::text,s.reorder_point::text,s.safety_quantity::text,s.version,s.created_at,s.updated_at FROM public.safety_stock_rules s JOIN public.facilities f ON f.id=s.facility_id JOIN public.products p ON p.id=s.product_id`;
+const map = (r: Row): SafetyStockRuleDto => ({
+  id: r.id,
+  facilityId: r.facility_id,
+  facilityCode: r.facility_code,
+  productId: r.product_id,
+  sku: r.sku,
+  minimumQuantity: r.minimum_quantity,
+  maximumQuantity: r.maximum_quantity,
+  reorderPoint: r.reorder_point,
+  safetyQuantity: r.safety_quantity,
+  version: r.version,
+  createdAt: r.created_at.toISOString(),
+  updatedAt: r.updated_at.toISOString(),
+});
+function manage(c: AccessContext) {
+  if (!c.permissions.includes("admin.products.manage"))
+    throw new AuthorizationError();
+}
+function dup(e: unknown): never {
+  if ((e as { code?: string }).code === "23505")
+    throw new ConflictError(
+      "CONFLICT",
+      "A safety-stock rule already exists for this product and facility.",
+    );
+  throw e;
+}
+async function validate(
+  x: Parameters<Parameters<typeof withTransaction>[0]>[0],
+  c: AccessContext,
+  i: SafetyStockInput,
+) {
+  const [f, p, order] = await Promise.all([
+    x.query(
+      `SELECT 1 FROM public.facilities WHERE id=$1 AND organization_id=$2 AND is_active`,
+      [i.facilityId, c.organization.id],
+    ),
+    x.query(
+      `SELECT 1 FROM public.products WHERE id=$1 AND organization_id=$2 AND is_active`,
+      [i.productId, c.organization.id],
+    ),
+    x.query<{ ok: boolean }>(
+      `SELECT $1::numeric<=$2::numeric AND($3::numeric IS NULL OR($2::numeric<=$3::numeric AND $4::numeric<=$3::numeric))ok`,
+      [i.minimumQuantity, i.reorderPoint, i.maximumQuantity, i.safetyQuantity],
+    ),
+  ]);
+  if (!f.rowCount) throw new NotFoundError("Facility");
+  if (!p.rowCount) throw new NotFoundError("Product");
+  if (!order.rows[0]?.ok)
+    throw new ValidationError({
+      quantities:
+        "Require minimumQuantity <= reorderPoint <= maximumQuantity and safetyQuantity <= maximumQuantity.",
+    });
+}
+export async function listSafetyStock(c: AccessContext) {
+  if (
+    !c.permissions.includes("admin.products.read") &&
+    !c.permissions.includes("product.read")
+  )
+    throw new AuthorizationError();
+  const ids = visibleFacilityIds(c);
+  if (ids?.length === 0) return [];
+  return (
+    await dbPool.query<Row>(
+      `${select} WHERE f.organization_id=$1 AND p.organization_id=$1 AND($2::boolean OR s.facility_id=ANY($3::bigint[]))ORDER BY f.code,p.sku`,
+      [c.organization.id, ids === null, ids ?? []],
+    )
+  ).rows.map(map);
+}
+export async function getSafetyStock(
+  c: AccessContext,
+  id: string,
+  x: Pick<typeof dbPool, "query"> = dbPool,
+) {
+  const r = await x.query<Row>(
+    `${select} WHERE s.id=$1 AND f.organization_id=$2 AND p.organization_id=$2`,
+    [id, c.organization.id],
+  );
+  if (!r.rows[0]) throw new NotFoundError("Safety-stock rule");
+  if (
+    !c.permissions.includes("admin.products.read") &&
+    !canAccessFacility(c, r.rows[0].facility_id, "READ")
+  )
+    throw new AuthorizationError("FORBIDDEN_FACILITY_SCOPE");
+  return map(r.rows[0]);
+}
+export async function createSafetyStock(
+  c: AccessContext,
+  rc: RequestContext,
+  i: SafetyStockInput,
+) {
+  manage(c);
+  try {
+    return await withTransaction(async (x) => {
+      await validate(x, c, i);
+      const r = await x.query<Row>(
+        `WITH z AS(INSERT INTO public.safety_stock_rules(facility_id,product_id,minimum_quantity,maximum_quantity,reorder_point,safety_quantity,created_by,updated_by)VALUES($1,$2,$3::numeric,$4::numeric,$5::numeric,$6::numeric,$7,$7)RETURNING *)SELECT z.id,z.facility_id,f.code facility_code,z.product_id,p.sku,z.minimum_quantity::text,z.maximum_quantity::text,z.reorder_point::text,z.safety_quantity::text,z.version,z.created_at,z.updated_at FROM z JOIN public.facilities f ON f.id=z.facility_id JOIN public.products p ON p.id=z.product_id`,
+        [
+          i.facilityId,
+          i.productId,
+          i.minimumQuantity,
+          i.maximumQuantity,
+          i.reorderPoint,
+          i.safetyQuantity,
+          c.user.id,
+        ],
+      );
+      const dto = map(r.rows[0]);
+      await writeAuditLog(x, {
+        organizationId: c.organization.id,
+        requestId: rc.requestId,
+        actorUserId: c.user.id,
+        action: "safety_stock.created",
+        entityType: "safety_stock_rule",
+        entityId: dto.id,
+        facilityId: dto.facilityId,
+        newData: dto,
+        ipAddress: rc.ipAddress,
+        userAgent: rc.userAgent,
+      });
+      return dto;
+    });
+  } catch (e) {
+    return dup(e);
+  }
+}
+export async function updateSafetyStock(
+  c: AccessContext,
+  rc: RequestContext,
+  id: string,
+  i: SafetyStockUpdateInput,
+) {
+  manage(c);
+  try {
+    return await withTransaction(async (x) => {
+      const old = await getSafetyStock(c, id, x),
+        m: SafetyStockInput = {
+          facilityId: old.facilityId,
+          productId: old.productId,
+          minimumQuantity: i.minimumQuantity ?? old.minimumQuantity,
+          maximumQuantity:
+            i.maximumQuantity === undefined
+              ? old.maximumQuantity
+              : i.maximumQuantity,
+          reorderPoint: i.reorderPoint ?? old.reorderPoint,
+          safetyQuantity: i.safetyQuantity ?? old.safetyQuantity,
+        };
+      await validate(x, c, m);
+      const r = await x.query<Row>(
+        `WITH z AS(UPDATE public.safety_stock_rules SET minimum_quantity=$2::numeric,maximum_quantity=$3::numeric,reorder_point=$4::numeric,safety_quantity=$5::numeric,version=version+1,updated_by=$6 WHERE id=$1 AND version=$7 RETURNING *)SELECT z.id,z.facility_id,f.code facility_code,z.product_id,p.sku,z.minimum_quantity::text,z.maximum_quantity::text,z.reorder_point::text,z.safety_quantity::text,z.version,z.created_at,z.updated_at FROM z JOIN public.facilities f ON f.id=z.facility_id JOIN public.products p ON p.id=z.product_id`,
+        [
+          id,
+          m.minimumQuantity,
+          m.maximumQuantity,
+          m.reorderPoint,
+          m.safetyQuantity,
+          c.user.id,
+          i.version,
+        ],
+      );
+      if (!r.rows[0])
+        throw new ConflictError(
+          "VERSION_CONFLICT",
+          "The safety-stock rule was updated by another request.",
+        );
+      const dto = map(r.rows[0]);
+      await writeAuditLog(x, {
+        organizationId: c.organization.id,
+        requestId: rc.requestId,
+        actorUserId: c.user.id,
+        action: "safety_stock.updated",
+        entityType: "safety_stock_rule",
+        entityId: id,
+        facilityId: dto.facilityId,
+        oldData: old,
+        newData: dto,
+        ipAddress: rc.ipAddress,
+        userAgent: rc.userAgent,
+      });
+      return dto;
+    });
+  } catch (e) {
+    return dup(e);
+  }
+}

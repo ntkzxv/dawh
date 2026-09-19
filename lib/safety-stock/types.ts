@@ -1,1 +1,25 @@
-export type SafetyStockRuleDto={id:string;facilityId:string;facilityCode:string;productId:string;sku:string;minimumQuantity:string;maximumQuantity:string|null;reorderPoint:string;safetyQuantity:string;version:number;createdAt:string;updatedAt:string};export type SafetyStockInput={facilityId:string;productId:string;minimumQuantity:string;maximumQuantity:string|null;reorderPoint:string;safetyQuantity:string};export type SafetyStockUpdateInput=Partial<Omit<SafetyStockInput,"facilityId"|"productId">>&{version:number};
+export type SafetyStockRuleDto = {
+  id: string;
+  facilityId: string;
+  facilityCode: string;
+  productId: string;
+  sku: string;
+  minimumQuantity: string;
+  maximumQuantity: string | null;
+  reorderPoint: string;
+  safetyQuantity: string;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+};
+export type SafetyStockInput = {
+  facilityId: string;
+  productId: string;
+  minimumQuantity: string;
+  maximumQuantity: string | null;
+  reorderPoint: string;
+  safetyQuantity: string;
+};
+export type SafetyStockUpdateInput = Partial<
+  Omit<SafetyStockInput, "facilityId" | "productId">
+> & { version: number };

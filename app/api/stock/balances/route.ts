@@ -23,7 +23,9 @@ export const GET = apiRoute(async (request) => {
 
   return jsonCollection(request, data, {
     limit: page.limit,
-    nextCursor: hasMore ? nextCursor(balances, page.limit, (balance) => balance.updatedAt) : null,
+    nextCursor: hasMore
+      ? nextCursor(balances, page.limit, (balance) => balance.updatedAt)
+      : null,
     hasMore,
   });
 });

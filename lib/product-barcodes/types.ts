@@ -1,1 +1,16 @@
-export type BarcodeType="EAN_13"|"UPC_A"|"CODE_128"|"QR"|"INTERNAL";export type ProductBarcodeDto={id:string;productId:string;productUnitId:string|null;barcode:string;barcodeType:BarcodeType;isPrimary:boolean;createdAt:string};export type ProductBarcodeInput={productUnitId:string|null;barcode:string;barcodeType:BarcodeType;isPrimary:boolean};
+export type BarcodeType = "EAN_13" | "UPC_A" | "CODE_128" | "QR" | "INTERNAL";
+export type ProductBarcodeDto = {
+  id: string;
+  productId: string;
+  productUnitId: string | null;
+  barcode: string;
+  barcodeType: BarcodeType;
+  isPrimary: boolean;
+  createdAt: string;
+};
+export type ProductBarcodeInput = {
+  productUnitId: string | null;
+  barcode: string;
+  barcodeType: BarcodeType;
+  isPrimary: boolean;
+};

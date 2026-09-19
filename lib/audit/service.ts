@@ -15,11 +15,14 @@ function redact(value: unknown): unknown {
     Object.entries(value as Record<string, unknown>).map(([key, item]) => [
       key,
       sensitiveKey.test(key) ? "[REDACTED]" : redact(item),
-    ])
+    ]),
   );
 }
 
-export async function writeAuditLog(client: PoolClient, input: AuditInput): Promise<void> {
+export async function writeAuditLog(
+  client: PoolClient,
+  input: AuditInput,
+): Promise<void> {
   if (input.entityId && !isBigIntId(input.entityId)) {
     throw new TypeError("Audit entityId must be a positive bigint string.");
   }
@@ -45,6 +48,6 @@ export async function writeAuditLog(client: PoolClient, input: AuditInput): Prom
       input.newData ? JSON.stringify(redact(input.newData)) : null,
       input.ipAddress ?? null,
       input.userAgent ?? null,
-    ]
+    ],
   );
 }

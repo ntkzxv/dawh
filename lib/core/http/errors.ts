@@ -3,7 +3,7 @@ export class ApiError extends Error {
     public readonly status: number,
     public readonly code: string,
     message: string,
-    public readonly details?: Record<string, unknown>
+    public readonly details?: Record<string, unknown>,
   ) {
     super(message);
     this.name = "ApiError";
@@ -28,7 +28,7 @@ export class ConflictError extends ApiError {
   constructor(
     code: "CONFLICT" | "VERSION_CONFLICT",
     message: string,
-    details?: Record<string, unknown>
+    details?: Record<string, unknown>,
   ) {
     super(409, code, message, details);
     this.name = "ConflictError";
@@ -37,7 +37,9 @@ export class ConflictError extends ApiError {
 
 export class AccountStatusError extends ApiError {
   constructor(status: "SUSPENDED" | "TERMINATED") {
-    super(403, "ACCOUNT_SUSPENDED", "This account cannot use WMS APIs.", { status });
+    super(403, "ACCOUNT_SUSPENDED", "This account cannot use WMS APIs.", {
+      status,
+    });
     this.name = "AccountStatusError";
   }
 }

@@ -7,7 +7,10 @@ export type FacilityScopeInput = {
   validUntil: string | null;
 };
 
-export type UpdateFacilityScopeInput = Omit<FacilityScopeInput, "facilityId"> & { version: number };
+export type UpdateFacilityScopeInput = Omit<
+  FacilityScopeInput,
+  "facilityId"
+> & { version: number };
 
 export type FacilityScopeDto = FacilityScopeInput & {
   id: string;

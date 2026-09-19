@@ -11,12 +11,18 @@ type DepartmentRow = OnboardingOptions["departments"][number];
 export function getCurrentTermsVersion(): string {
   const value = process.env.CURRENT_TERMS_VERSION?.trim();
   if (!value) {
-    throw new ApiError(503, "TERMS_CONFIGURATION_ERROR", "The current terms version is not configured.");
+    throw new ApiError(
+      503,
+      "TERMS_CONFIGURATION_ERROR",
+      "The current terms version is not configured.",
+    );
   }
   return value;
 }
 
-export async function getOnboardingOptions(request: Request): Promise<OnboardingOptions> {
+export async function getOnboardingOptions(
+  request: Request,
+): Promise<OnboardingOptions> {
   const context = await getAccessContext(request);
   const [facilities, departments] = await Promise.all([
     dbPool.query<FacilityRow>(
@@ -24,14 +30,14 @@ export async function getOnboardingOptions(request: Request): Promise<Onboarding
        FROM public.facilities
        WHERE organization_id = $1 AND is_active = true
        ORDER BY facility_type, code`,
-      [context.organization.id]
+      [context.organization.id],
     ),
     dbPool.query<DepartmentRow>(
       `SELECT id::text AS id, code, name
        FROM public.departments
        WHERE organization_id = $1 AND is_active = true
        ORDER BY code`,
-      [context.organization.id]
+      [context.organization.id],
     ),
   ]);
 
@@ -43,9 +49,31 @@ export async function getOnboardingOptions(request: Request): Promise<Onboarding
     genders: ["MALE", "FEMALE", "NON_BINARY", "PREFER_NOT_TO_SAY"],
     bloodTypes: ["A", "B", "AB", "O", "UNKNOWN"],
     maritalStatuses: ["SINGLE", "MARRIED", "DIVORCED", "WIDOWED"],
-    religions: ["BUDDHISM", "CHRISTIANITY", "ISLAM", "HINDUISM", "OTHER", "NONE"],
-    educationLevels: ["SECONDARY", "VOCATIONAL", "DIPLOMA", "BACHELOR", "MASTER", "DOCTORATE", "OTHER"],
+    religions: [
+      "BUDDHISM",
+      "CHRISTIANITY",
+      "ISLAM",
+      "HINDUISM",
+      "OTHER",
+      "NONE",
+    ],
+    educationLevels: [
+      "SECONDARY",
+      "VOCATIONAL",
+      "DIPLOMA",
+      "BACHELOR",
+      "MASTER",
+      "DOCTORATE",
+      "OTHER",
+    ],
     nationalities: ["THAI", "OTHER"],
-    emergencyRelationships: ["PARENT", "SPOUSE", "SIBLING", "RELATIVE", "FRIEND", "OTHER"],
+    emergencyRelationships: [
+      "PARENT",
+      "SPOUSE",
+      "SIBLING",
+      "RELATIVE",
+      "FRIEND",
+      "OTHER",
+    ],
   };
 }

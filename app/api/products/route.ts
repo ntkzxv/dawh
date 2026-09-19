@@ -5,7 +5,10 @@ import { getRequestContext } from "@/lib/core/http/context";
 import { apiRoute } from "@/lib/core/http/handler";
 import { jsonCollection, jsonOk } from "@/lib/core/http/response";
 import { createProduct, listProducts } from "@/lib/products/service";
-import { parseCreateProduct, parseProductFilters } from "@/lib/products/validation";
+import {
+  parseCreateProduct,
+  parseProductFilters,
+} from "@/lib/products/validation";
 
 export const runtime = "nodejs";
 
@@ -20,12 +23,24 @@ export const GET = apiRoute(async (request) => {
 
   return jsonCollection(request, data, {
     limit: page.limit,
-    nextCursor: hasMore ? nextCursor(products, page.limit, (product) => product.createdAt) : null,
+    nextCursor: hasMore
+      ? nextCursor(products, page.limit, (product) => product.createdAt)
+      : null,
     hasMore,
   });
 });
 
 export const POST = apiRoute(async (request) => {
-  const context = await requireAccess(request, { permission: "admin.products.manage" });
-  return jsonOk(request, await createProduct(context, getRequestContext(request), parseCreateProduct(await parseJsonObject(request))), 201);
+  const context = await requireAccess(request, {
+    permission: "admin.products.manage",
+  });
+  return jsonOk(
+    request,
+    await createProduct(
+      context,
+      getRequestContext(request),
+      parseCreateProduct(await parseJsonObject(request)),
+    ),
+    201,
+  );
 });

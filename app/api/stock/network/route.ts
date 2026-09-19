@@ -1,2 +1,25 @@
-import { requireAccess } from "@/lib/access/service";import { ValidationError } from "@/lib/core/http/errors";import { apiRoute } from "@/lib/core/http/handler";import { jsonOk } from "@/lib/core/http/response";import { isBigIntId } from "@/lib/core/ids/bigint";import { listNetworkStock } from "@/lib/stock/service";export const runtime="nodejs";
-export const GET=apiRoute(async request=>{const url=new URL(request.url),facilityId=url.searchParams.get("facilityId"),productId=url.searchParams.get("productId");if(facilityId&&!isBigIntId(facilityId))throw new ValidationError({facilityId:"Use a positive integer ID."});if(productId&&!isBigIntId(productId))throw new ValidationError({productId:"Use a positive integer ID."});const context=await requireAccess(request,{permission:"stock.read",facilityId:facilityId??undefined,facilityScope:"READ"});return jsonOk(request,await listNetworkStock(context,facilityId,productId));});
+import { requireAccess } from "@/lib/access/service";
+import { ValidationError } from "@/lib/core/http/errors";
+import { apiRoute } from "@/lib/core/http/handler";
+import { jsonOk } from "@/lib/core/http/response";
+import { isBigIntId } from "@/lib/core/ids/bigint";
+import { listNetworkStock } from "@/lib/stock/service";
+export const runtime = "nodejs";
+export const GET = apiRoute(async (request) => {
+  const url = new URL(request.url),
+    facilityId = url.searchParams.get("facilityId"),
+    productId = url.searchParams.get("productId");
+  if (facilityId && !isBigIntId(facilityId))
+    throw new ValidationError({ facilityId: "Use a positive integer ID." });
+  if (productId && !isBigIntId(productId))
+    throw new ValidationError({ productId: "Use a positive integer ID." });
+  const context = await requireAccess(request, {
+    permission: "stock.read",
+    facilityId: facilityId ?? undefined,
+    facilityScope: "READ",
+  });
+  return jsonOk(
+    request,
+    await listNetworkStock(context, facilityId, productId),
+  );
+});

@@ -9,7 +9,10 @@ export type RequestContext = {
 };
 
 export function getRequestContext(request: Request): RequestContext {
-  const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const forwardedFor = request.headers
+    .get("x-forwarded-for")
+    ?.split(",")[0]
+    ?.trim();
 
   return {
     requestId: getRequestId(request),

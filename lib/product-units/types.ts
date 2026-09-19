@@ -1,1 +1,27 @@
-export type ProductUnitDto={id:string;productId:string;unitId:string;unitCode:string;baseQuantity:string;lengthCm:string|null;widthCm:string|null;heightCm:string|null;weightKg:string|null;isActive:boolean;version:number;createdAt:string;updatedAt:string};export type ProductUnitInput={unitId:string;baseQuantity:string;lengthCm:string|null;widthCm:string|null;heightCm:string|null;weightKg:string|null;isActive:boolean};export type ProductUnitUpdateInput=Partial<ProductUnitInput>&{version:number};
+export type ProductUnitDto = {
+  id: string;
+  productId: string;
+  unitId: string;
+  unitCode: string;
+  baseQuantity: string;
+  lengthCm: string | null;
+  widthCm: string | null;
+  heightCm: string | null;
+  weightKg: string | null;
+  isActive: boolean;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+};
+export type ProductUnitInput = {
+  unitId: string;
+  baseQuantity: string;
+  lengthCm: string | null;
+  widthCm: string | null;
+  heightCm: string | null;
+  weightKg: string | null;
+  isActive: boolean;
+};
+export type ProductUnitUpdateInput = Partial<ProductUnitInput> & {
+  version: number;
+};

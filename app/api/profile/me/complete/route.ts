@@ -11,5 +11,8 @@ export const runtime = "nodejs";
 export const PUT = apiRoute(async (request) => {
   const context = await getAccessContext(request);
   const input = parseCompleteEmployeeProfile(await parseJsonObject(request));
-  return jsonOk(request, await completeEmployeeProfile(context, getRequestContext(request), input));
+  return jsonOk(
+    request,
+    await completeEmployeeProfile(context, getRequestContext(request), input),
+  );
 });

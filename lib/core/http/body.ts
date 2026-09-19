@@ -2,7 +2,9 @@ import "server-only";
 
 import { ValidationError } from "@/lib/core/http/errors";
 
-export async function parseJsonObject(request: Request): Promise<Record<string, unknown>> {
+export async function parseJsonObject(
+  request: Request,
+): Promise<Record<string, unknown>> {
   let value: unknown;
 
   try {

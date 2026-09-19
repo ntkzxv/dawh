@@ -21,7 +21,18 @@ export type Facility = {
   updatedAt: string;
 };
 
-export type FacilityInput = Omit<Facility,
-  "id" | "organizationId" | "organizationCode" | "version" | "createdAt" | "updatedAt">;
+export type FacilityInput = Omit<
+  Facility,
+  | "id"
+  | "organizationId"
+  | "organizationCode"
+  | "version"
+  | "createdAt"
+  | "updatedAt"
+>;
 export type FacilityUpdateInput = Partial<FacilityInput> & { version: number };
-export type FacilityFilters = { search: string | null; facilityType: FacilityType | null; active: boolean | null };
+export type FacilityFilters = {
+  search: string | null;
+  facilityType: FacilityType | null;
+  active: boolean | null;
+};

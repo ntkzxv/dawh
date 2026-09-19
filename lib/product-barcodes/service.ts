@@ -1,6 +1,151 @@
-import "server-only";import type { AccessContext } from "@/lib/access/types";import { AuthorizationError } from "@/lib/access/service";import { writeAuditLog } from "@/lib/audit/service";import { dbPool } from "@/lib/core/db/pool";import { withTransaction } from "@/lib/core/db/transaction";import type { RequestContext } from "@/lib/core/http/context";import { ConflictError,NotFoundError } from "@/lib/core/http/errors";import type { ProductBarcodeDto,ProductBarcodeInput } from "@/lib/product-barcodes/types";
-type Row={id:string;product_id:string;product_unit_id:string|null;barcode:string;barcode_type:ProductBarcodeDto["barcodeType"];is_primary:boolean;created_at:Date};const map=(r:Row):ProductBarcodeDto=>({id:r.id,productId:r.product_id,productUnitId:r.product_unit_id,barcode:r.barcode,barcodeType:r.barcode_type,isPrimary:r.is_primary,createdAt:r.created_at.toISOString()});function allow(c:AccessContext,p:string){if(!c.permissions.includes(p))throw new AuthorizationError();}function dup(e:unknown):never{if((e as{code?:string}).code==="23505")throw new ConflictError("CONFLICT","The barcode is already in use.");throw e;}
-async function targets(c:AccessContext,x:Parameters<Parameters<typeof withTransaction>[0]>[0],productId:string,unitId:string|null){const p=await x.query(`SELECT 1 FROM public.products WHERE id=$1 AND organization_id=$2`,[productId,c.organization.id]);if(!p.rowCount)throw new NotFoundError("Product");if(unitId){const u=await x.query(`SELECT 1 FROM public.product_units WHERE id=$1 AND product_id=$2`,[unitId,productId]);if(!u.rowCount)throw new NotFoundError("Product unit");}}
-export async function listProductBarcodes(c:AccessContext,productId:string){allow(c,"admin.products.read");const p=await dbPool.query(`SELECT 1 FROM public.products WHERE id=$1 AND organization_id=$2`,[productId,c.organization.id]);if(!p.rowCount)throw new NotFoundError("Product");return(await dbPool.query<Row>(`SELECT * FROM public.product_barcodes WHERE product_id=$1 ORDER BY is_primary DESC,barcode`,[productId])).rows.map(map);}
-async function save(c:AccessContext,rc:RequestContext,productId:string,id:string|null,i:ProductBarcodeInput){allow(c,"admin.products.manage");try{return await withTransaction(async x=>{await targets(c,x,productId,i.productUnitId);let old:ProductBarcodeDto|null=null;if(id){const q=await x.query<Row>(`SELECT * FROM public.product_barcodes WHERE id=$1 AND product_id=$2 FOR UPDATE`,[id,productId]);if(!q.rows[0])throw new NotFoundError("Product barcode");old=map(q.rows[0]);}if(i.isPrimary)await x.query(`UPDATE public.product_barcodes SET is_primary=false WHERE product_id=$1 AND($2::bigint IS NULL OR id<>$2)`,[productId,id]);const r=id?await x.query<Row>(`UPDATE public.product_barcodes SET product_unit_id=$3,barcode=$4,barcode_type=$5,is_primary=$6 WHERE id=$1 AND product_id=$2 RETURNING *`,[id,productId,i.productUnitId,i.barcode,i.barcodeType,i.isPrimary]):await x.query<Row>(`INSERT INTO public.product_barcodes(product_id,product_unit_id,barcode,barcode_type,is_primary,created_by)VALUES($1,$2,$3,$4,$5,$6)RETURNING *`,[productId,i.productUnitId,i.barcode,i.barcodeType,i.isPrimary,c.user.id]);const dto=map(r.rows[0]);await writeAuditLog(x,{organizationId:c.organization.id,requestId:rc.requestId,actorUserId:c.user.id,action:id?"barcode.updated":"barcode.created",entityType:"product_barcode",entityId:dto.id,oldData:old,newData:dto,ipAddress:rc.ipAddress,userAgent:rc.userAgent});return dto;});}catch(e){return dup(e);}}
-export const createProductBarcode=(c:AccessContext,rc:RequestContext,p:string,i:ProductBarcodeInput)=>save(c,rc,p,null,i);export const updateProductBarcode=(c:AccessContext,rc:RequestContext,p:string,id:string,i:ProductBarcodeInput)=>save(c,rc,p,id,i);
+import "server-only";
+import type { AccessContext } from "@/lib/access/types";
+import { AuthorizationError } from "@/lib/access/service";
+import { writeAuditLog } from "@/lib/audit/service";
+import { dbPool } from "@/lib/core/db/pool";
+import { withTransaction } from "@/lib/core/db/transaction";
+import type { RequestContext } from "@/lib/core/http/context";
+import { ConflictError, NotFoundError } from "@/lib/core/http/errors";
+import type {
+  ProductBarcodeDto,
+  ProductBarcodeInput,
+} from "@/lib/product-barcodes/types";
+type Row = {
+  id: string;
+  product_id: string;
+  product_unit_id: string | null;
+  barcode: string;
+  barcode_type: ProductBarcodeDto["barcodeType"];
+  is_primary: boolean;
+  created_at: Date;
+};
+const map = (r: Row): ProductBarcodeDto => ({
+  id: r.id,
+  productId: r.product_id,
+  productUnitId: r.product_unit_id,
+  barcode: r.barcode,
+  barcodeType: r.barcode_type,
+  isPrimary: r.is_primary,
+  createdAt: r.created_at.toISOString(),
+});
+function allow(c: AccessContext, p: string) {
+  if (!c.permissions.includes(p)) throw new AuthorizationError();
+}
+function dup(e: unknown): never {
+  if ((e as { code?: string }).code === "23505")
+    throw new ConflictError("CONFLICT", "The barcode is already in use.");
+  throw e;
+}
+async function targets(
+  c: AccessContext,
+  x: Parameters<Parameters<typeof withTransaction>[0]>[0],
+  productId: string,
+  unitId: string | null,
+) {
+  const p = await x.query(
+    `SELECT 1 FROM public.products WHERE id=$1 AND organization_id=$2`,
+    [productId, c.organization.id],
+  );
+  if (!p.rowCount) throw new NotFoundError("Product");
+  if (unitId) {
+    const u = await x.query(
+      `SELECT 1 FROM public.product_units WHERE id=$1 AND product_id=$2`,
+      [unitId, productId],
+    );
+    if (!u.rowCount) throw new NotFoundError("Product unit");
+  }
+}
+export async function listProductBarcodes(c: AccessContext, productId: string) {
+  allow(c, "admin.products.read");
+  const p = await dbPool.query(
+    `SELECT 1 FROM public.products WHERE id=$1 AND organization_id=$2`,
+    [productId, c.organization.id],
+  );
+  if (!p.rowCount) throw new NotFoundError("Product");
+  return (
+    await dbPool.query<Row>(
+      `SELECT * FROM public.product_barcodes WHERE product_id=$1 ORDER BY is_primary DESC,barcode`,
+      [productId],
+    )
+  ).rows.map(map);
+}
+async function save(
+  c: AccessContext,
+  rc: RequestContext,
+  productId: string,
+  id: string | null,
+  i: ProductBarcodeInput,
+) {
+  allow(c, "admin.products.manage");
+  try {
+    return await withTransaction(async (x) => {
+      await targets(c, x, productId, i.productUnitId);
+      let old: ProductBarcodeDto | null = null;
+      if (id) {
+        const q = await x.query<Row>(
+          `SELECT * FROM public.product_barcodes WHERE id=$1 AND product_id=$2 FOR UPDATE`,
+          [id, productId],
+        );
+        if (!q.rows[0]) throw new NotFoundError("Product barcode");
+        old = map(q.rows[0]);
+      }
+      if (i.isPrimary)
+        await x.query(
+          `UPDATE public.product_barcodes SET is_primary=false WHERE product_id=$1 AND($2::bigint IS NULL OR id<>$2)`,
+          [productId, id],
+        );
+      const r = id
+        ? await x.query<Row>(
+            `UPDATE public.product_barcodes SET product_unit_id=$3,barcode=$4,barcode_type=$5,is_primary=$6 WHERE id=$1 AND product_id=$2 RETURNING *`,
+            [
+              id,
+              productId,
+              i.productUnitId,
+              i.barcode,
+              i.barcodeType,
+              i.isPrimary,
+            ],
+          )
+        : await x.query<Row>(
+            `INSERT INTO public.product_barcodes(product_id,product_unit_id,barcode,barcode_type,is_primary,created_by)VALUES($1,$2,$3,$4,$5,$6)RETURNING *`,
+            [
+              productId,
+              i.productUnitId,
+              i.barcode,
+              i.barcodeType,
+              i.isPrimary,
+              c.user.id,
+            ],
+          );
+      const dto = map(r.rows[0]);
+      await writeAuditLog(x, {
+        organizationId: c.organization.id,
+        requestId: rc.requestId,
+        actorUserId: c.user.id,
+        action: id ? "barcode.updated" : "barcode.created",
+        entityType: "product_barcode",
+        entityId: dto.id,
+        oldData: old,
+        newData: dto,
+        ipAddress: rc.ipAddress,
+        userAgent: rc.userAgent,
+      });
+      return dto;
+    });
+  } catch (e) {
+    return dup(e);
+  }
+}
+export const createProductBarcode = (
+  c: AccessContext,
+  rc: RequestContext,
+  p: string,
+  i: ProductBarcodeInput,
+) => save(c, rc, p, null, i);
+export const updateProductBarcode = (
+  c: AccessContext,
+  rc: RequestContext,
+  p: string,
+  id: string,
+  i: ProductBarcodeInput,
+) => save(c, rc, p, id, i);

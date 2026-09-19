@@ -7,25 +7,72 @@ import {
   requiredBoolean,
   requiredText,
 } from "@/lib/core/validation/fields";
-import type { AddressInput, CompleteEmployeeProfileInput, UpdateEmployeeProfileInput } from "@/lib/profiles/types";
+import type {
+  AddressInput,
+  CompleteEmployeeProfileInput,
+  UpdateEmployeeProfileInput,
+} from "@/lib/profiles/types";
 
 const completeFields = [
-  "username", "prefix", "firstNameTh", "lastNameTh", "nicknameTh", "firstNameEn",
-  "lastNameEn", "nicknameEn", "citizenId", "birthDate", "gender", "bloodType",
-  "maritalStatus", "nationality", "religion", "educationLevel", "majorSubject",
-  "universityNameTh", "universityNameEn", "phone", "emergencyContactNameTh",
-  "emergencyContactNameEn", "emergencyContactRelationship", "emergencyContactPhone",
-  "currentAddress", "registeredAddress", "departmentId", "facilityId", "termsAccepted",
+  "username",
+  "prefix",
+  "firstNameTh",
+  "lastNameTh",
+  "nicknameTh",
+  "firstNameEn",
+  "lastNameEn",
+  "nicknameEn",
+  "citizenId",
+  "birthDate",
+  "gender",
+  "bloodType",
+  "maritalStatus",
+  "nationality",
+  "religion",
+  "educationLevel",
+  "majorSubject",
+  "universityNameTh",
+  "universityNameEn",
+  "phone",
+  "emergencyContactNameTh",
+  "emergencyContactNameEn",
+  "emergencyContactRelationship",
+  "emergencyContactPhone",
+  "currentAddress",
+  "registeredAddress",
+  "departmentId",
+  "facilityId",
+  "termsAccepted",
 ] as const;
 
 const updateFields = [
-  "prefix", "nicknameTh", "nicknameEn", "nationality", "religion", "educationLevel",
-  "majorSubject", "universityNameTh", "universityNameEn", "phone",
-  "emergencyContactNameTh", "emergencyContactNameEn", "emergencyContactRelationship",
-  "emergencyContactPhone", "currentAddress", "registeredAddress",
+  "prefix",
+  "nicknameTh",
+  "nicknameEn",
+  "nationality",
+  "religion",
+  "educationLevel",
+  "majorSubject",
+  "universityNameTh",
+  "universityNameEn",
+  "phone",
+  "emergencyContactNameTh",
+  "emergencyContactNameEn",
+  "emergencyContactRelationship",
+  "emergencyContactPhone",
+  "currentAddress",
+  "registeredAddress",
 ] as const;
 
-const addressFields = ["houseNo", "village", "soi", "province", "district", "subdistrict", "postalCode"] as const;
+const addressFields = [
+  "houseNo",
+  "village",
+  "soi",
+  "province",
+  "district",
+  "subdistrict",
+  "postalCode",
+] as const;
 
 function parseAddress(value: unknown, key: string): AddressInput {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -35,7 +82,9 @@ function parseAddress(value: unknown, key: string): AddressInput {
   rejectUnknownFields(body, addressFields);
   const postalCode = requiredText(body, "postalCode");
   if (!/^\d{5}$/.test(postalCode)) {
-    throw new ValidationError({ [`${key}.postalCode`]: "Use a 5-digit postal code." });
+    throw new ValidationError({
+      [`${key}.postalCode`]: "Use a 5-digit postal code.",
+    });
   }
   return {
     houseNo: requiredText(body, "houseNo"),
@@ -51,7 +100,10 @@ function parseAddress(value: unknown, key: string): AddressInput {
 function validateUsername(value: string) {
   const username = value.toLowerCase();
   if (!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(username)) {
-    throw new ValidationError({ username: "Use 3-32 lowercase letters, digits, dots, underscores, or hyphens." });
+    throw new ValidationError({
+      username:
+        "Use 3-32 lowercase letters, digits, dots, underscores, or hyphens.",
+    });
   }
   return username;
 }
@@ -59,12 +111,18 @@ function validateUsername(value: string) {
 function validateCitizenId(value: string) {
   const citizenId = value.replace(/\D/g, "");
   if (!/^\d{13}$/.test(citizenId)) {
-    throw new ValidationError({ citizenId: "Use a valid 13-digit Thai citizen ID." });
+    throw new ValidationError({
+      citizenId: "Use a valid 13-digit Thai citizen ID.",
+    });
   }
   const digits = citizenId.split("").map(Number);
-  const sum = digits.slice(0, 12).reduce((total, digit, index) => total + digit * (13 - index), 0);
+  const sum = digits
+    .slice(0, 12)
+    .reduce((total, digit, index) => total + digit * (13 - index), 0);
   if ((11 - (sum % 11)) % 10 !== digits[12]) {
-    throw new ValidationError({ citizenId: "The Thai citizen ID checksum is invalid." });
+    throw new ValidationError({
+      citizenId: "The Thai citizen ID checksum is invalid.",
+    });
   }
   return citizenId;
 }
@@ -74,11 +132,16 @@ function validateBirthDate(value: string) {
     throw new ValidationError({ birthDate: "Use YYYY-MM-DD." });
   }
   const date = new Date(`${value}T00:00:00.000Z`);
-  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.toISOString().slice(0, 10) !== value
+  ) {
     throw new ValidationError({ birthDate: "Use a valid calendar date." });
   }
   if (date.getTime() > Date.now()) {
-    throw new ValidationError({ birthDate: "Birth date cannot be in the future." });
+    throw new ValidationError({
+      birthDate: "Birth date cannot be in the future.",
+    });
   }
   return value;
 }
@@ -90,7 +153,9 @@ function validatePhone(value: string, key: string) {
   return value;
 }
 
-function sharedFields(body: Record<string, unknown>): UpdateEmployeeProfileInput {
+function sharedFields(
+  body: Record<string, unknown>,
+): UpdateEmployeeProfileInput {
   return {
     prefix: requiredText(body, "prefix"),
     nicknameTh: requiredText(body, "nicknameTh"),
@@ -104,17 +169,31 @@ function sharedFields(body: Record<string, unknown>): UpdateEmployeeProfileInput
     phone: validatePhone(requiredText(body, "phone"), "phone"),
     emergencyContactNameTh: requiredText(body, "emergencyContactNameTh"),
     emergencyContactNameEn: optionalText(body, "emergencyContactNameEn"),
-    emergencyContactRelationship: requiredText(body, "emergencyContactRelationship"),
-    emergencyContactPhone: validatePhone(requiredText(body, "emergencyContactPhone"), "emergencyContactPhone"),
+    emergencyContactRelationship: requiredText(
+      body,
+      "emergencyContactRelationship",
+    ),
+    emergencyContactPhone: validatePhone(
+      requiredText(body, "emergencyContactPhone"),
+      "emergencyContactPhone",
+    ),
     currentAddress: parseAddress(body.currentAddress, "currentAddress"),
-    registeredAddress: parseAddress(body.registeredAddress, "registeredAddress"),
+    registeredAddress: parseAddress(
+      body.registeredAddress,
+      "registeredAddress",
+    ),
   };
 }
 
-export function parseCompleteEmployeeProfile(body: Record<string, unknown>): CompleteEmployeeProfileInput {
+export function parseCompleteEmployeeProfile(
+  body: Record<string, unknown>,
+): CompleteEmployeeProfileInput {
   rejectUnknownFields(body, completeFields);
   const termsAccepted = requiredBoolean(body, "termsAccepted");
-  if (!termsAccepted) throw new ValidationError({ termsAccepted: "Accept the current terms to continue." });
+  if (!termsAccepted)
+    throw new ValidationError({
+      termsAccepted: "Accept the current terms to continue.",
+    });
   return {
     ...sharedFields(body),
     username: validateUsername(requiredText(body, "username")),
@@ -133,7 +212,9 @@ export function parseCompleteEmployeeProfile(body: Record<string, unknown>): Com
   };
 }
 
-export function parseUpdateEmployeeProfile(body: Record<string, unknown>): UpdateEmployeeProfileInput {
+export function parseUpdateEmployeeProfile(
+  body: Record<string, unknown>,
+): UpdateEmployeeProfileInput {
   rejectUnknownFields(body, updateFields);
   return sharedFields(body);
 }

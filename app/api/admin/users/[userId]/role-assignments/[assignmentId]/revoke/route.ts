@@ -12,9 +12,21 @@ export const runtime = "nodejs";
 type Context = { params: Promise<{ userId: string; assignmentId: string }> };
 
 export const POST = apiRoute(async (request, routeContext: Context) => {
-  const context = await requireAccess(request, { permission: "admin.roles.manage" });
+  const context = await requireAccess(request, {
+    permission: "admin.roles.manage",
+  });
   const { userId, assignmentId } = await routeContext.params;
-  if (!isBigIntId(assignmentId)) throw new ValidationError({ assignmentId: "Use a positive integer ID." });
+  if (!isBigIntId(assignmentId))
+    throw new ValidationError({ assignmentId: "Use a positive integer ID." });
   const reason = parseRevokeRole(await parseJsonObject(request));
-  return jsonOk(request, await revokeRole(context, getRequestContext(request), userId, assignmentId, reason));
+  return jsonOk(
+    request,
+    await revokeRole(
+      context,
+      getRequestContext(request),
+      userId,
+      assignmentId,
+      reason,
+    ),
+  );
 });

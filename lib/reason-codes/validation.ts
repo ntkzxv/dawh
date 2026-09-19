@@ -1,4 +1,74 @@
-import { ValidationError } from "@/lib/core/http/errors";import { optionalText,rejectUnknownFields,requiredBoolean,requiredInteger,requiredText } from "@/lib/core/validation/fields";import type { ReasonCodeInput,ReasonCodeUpdateInput } from "@/lib/reason-codes/types";
-function upper(b:Record<string,unknown>,key:string){const v=requiredText(b,key).toUpperCase();if(!/^[A-Z0-9][A-Z0-9_-]{0,47}$/.test(v))throw new ValidationError({[key]:"Use uppercase letters, numbers, underscores, or hyphens."});return v;}
-export function parseCreateReasonCode(b:Record<string,unknown>):ReasonCodeInput{rejectUnknownFields(b,["domain","code","name","description","requiresNote","requiresAttachment","isActive"]);return{domain:upper(b,"domain"),code:upper(b,"code"),name:requiredText(b,"name"),description:optionalText(b,"description"),requiresNote:requiredBoolean(b,"requiresNote"),requiresAttachment:requiredBoolean(b,"requiresAttachment"),isActive:requiredBoolean(b,"isActive")};}
-export function parseUpdateReasonCode(b:Record<string,unknown>):ReasonCodeUpdateInput{rejectUnknownFields(b,["domain","code","name","description","requiresNote","requiresAttachment","isActive","version"]);const o:ReasonCodeUpdateInput={version:requiredInteger(b,"version",1,2147483647)};if(b.domain!==undefined)o.domain=upper(b,"domain");if(b.code!==undefined)o.code=upper(b,"code");if(b.name!==undefined)o.name=requiredText(b,"name");if(b.description!==undefined)o.description=optionalText(b,"description");if(b.requiresNote!==undefined)o.requiresNote=requiredBoolean(b,"requiresNote");if(b.requiresAttachment!==undefined)o.requiresAttachment=requiredBoolean(b,"requiresAttachment");if(b.isActive!==undefined)o.isActive=requiredBoolean(b,"isActive");if(Object.keys(o).length===1)throw new ValidationError({body:"Provide at least one field to update."});return o;}
+import { ValidationError } from "@/lib/core/http/errors";
+import {
+  optionalText,
+  rejectUnknownFields,
+  requiredBoolean,
+  requiredInteger,
+  requiredText,
+} from "@/lib/core/validation/fields";
+import type {
+  ReasonCodeInput,
+  ReasonCodeUpdateInput,
+} from "@/lib/reason-codes/types";
+function upper(b: Record<string, unknown>, key: string) {
+  const v = requiredText(b, key).toUpperCase();
+  if (!/^[A-Z0-9][A-Z0-9_-]{0,47}$/.test(v))
+    throw new ValidationError({
+      [key]: "Use uppercase letters, numbers, underscores, or hyphens.",
+    });
+  return v;
+}
+export function parseCreateReasonCode(
+  b: Record<string, unknown>,
+): ReasonCodeInput {
+  rejectUnknownFields(b, [
+    "domain",
+    "code",
+    "name",
+    "description",
+    "requiresNote",
+    "requiresAttachment",
+    "isActive",
+  ]);
+  return {
+    domain: upper(b, "domain"),
+    code: upper(b, "code"),
+    name: requiredText(b, "name"),
+    description: optionalText(b, "description"),
+    requiresNote: requiredBoolean(b, "requiresNote"),
+    requiresAttachment: requiredBoolean(b, "requiresAttachment"),
+    isActive: requiredBoolean(b, "isActive"),
+  };
+}
+export function parseUpdateReasonCode(
+  b: Record<string, unknown>,
+): ReasonCodeUpdateInput {
+  rejectUnknownFields(b, [
+    "domain",
+    "code",
+    "name",
+    "description",
+    "requiresNote",
+    "requiresAttachment",
+    "isActive",
+    "version",
+  ]);
+  const o: ReasonCodeUpdateInput = {
+    version: requiredInteger(b, "version", 1, 2147483647),
+  };
+  if (b.domain !== undefined) o.domain = upper(b, "domain");
+  if (b.code !== undefined) o.code = upper(b, "code");
+  if (b.name !== undefined) o.name = requiredText(b, "name");
+  if (b.description !== undefined)
+    o.description = optionalText(b, "description");
+  if (b.requiresNote !== undefined)
+    o.requiresNote = requiredBoolean(b, "requiresNote");
+  if (b.requiresAttachment !== undefined)
+    o.requiresAttachment = requiredBoolean(b, "requiresAttachment");
+  if (b.isActive !== undefined) o.isActive = requiredBoolean(b, "isActive");
+  if (Object.keys(o).length === 1)
+    throw new ValidationError({
+      body: "Provide at least one field to update.",
+    });
+  return o;
+}

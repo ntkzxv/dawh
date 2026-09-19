@@ -4,7 +4,12 @@ import type { Pool, PoolClient } from "pg";
 
 import { AuthorizationError, requireAccess } from "@/lib/access/service";
 import type { AccessContext } from "@/lib/access/types";
-import type { AdminUserSummary, ChangeAccountStatusInput, UserFilters, UserPageRequest } from "@/lib/admin/users/types";
+import type {
+  AdminUserSummary,
+  ChangeAccountStatusInput,
+  UserFilters,
+  UserPageRequest,
+} from "@/lib/admin/users/types";
 import { writeAuditLog } from "@/lib/audit/service";
 import { dbPool } from "@/lib/core/db/pool";
 import { withTransaction } from "@/lib/core/db/transaction";
@@ -80,12 +85,22 @@ function mapUser(row: UserRow): AdminUserSummary {
     accountStatus: row.account_status,
     profileComplete: row.profile_complete,
     username: row.username,
-    facility: row.facility_id && row.facility_code && row.facility_name
-      ? { id: row.facility_id, code: row.facility_code, name: row.facility_name }
-      : null,
-    department: row.department_id && row.department_code && row.department_name
-      ? { id: row.department_id, code: row.department_code, name: row.department_name }
-      : null,
+    facility:
+      row.facility_id && row.facility_code && row.facility_name
+        ? {
+            id: row.facility_id,
+            code: row.facility_code,
+            name: row.facility_name,
+          }
+        : null,
+    department:
+      row.department_id && row.department_code && row.department_name
+        ? {
+            id: row.department_id,
+            code: row.department_code,
+            name: row.department_name,
+          }
+        : null,
     roles: row.roles,
     facilityScopes: row.facility_scopes,
     createdAt: row.created_at.toISOString(),
@@ -95,9 +110,11 @@ function mapUser(row: UserRow): AdminUserSummary {
 export async function listAdminUsers(
   request: Request,
   page: UserPageRequest,
-  filters: UserFilters
+  filters: UserFilters,
 ): Promise<{ context: AccessContext; users: AdminUserSummary[] }> {
-  const context = await requireAccess(request, { permission: "admin.users.read" });
+  const context = await requireAccess(request, {
+    permission: "admin.users.read",
+  });
   const result = await dbPool.query<UserRow>(
     `${selectUser}
      WHERE ($1::text IS NULL OR u.email ILIKE '%' || $1 || '%' OR u.name ILIKE '%' || $1 || '%' OR profile.username ILIKE '%' || $1 || '%')
@@ -114,8 +131,16 @@ export async function listAdminUsers(
        AND ($5::boolean IS NULL OR (profile.profile_completed_at IS NOT NULL AND profile.facility_id IS NOT NULL)=$5)
        AND ($6::timestamptz IS NULL OR (u."createdAt",u.id)<($6::timestamptz,$7::text))
      ORDER BY u."createdAt" DESC,u.id DESC LIMIT $8`,
-    [filters.search, filters.status, filters.roleCode, filters.facilityId,
-     filters.profileComplete, page.cursor?.timestamp ?? null, page.cursor?.id ?? null, page.limit + 1]
+    [
+      filters.search,
+      filters.status,
+      filters.roleCode,
+      filters.facilityId,
+      filters.profileComplete,
+      page.cursor?.timestamp ?? null,
+      page.cursor?.id ?? null,
+      page.limit + 1,
+    ],
   );
   return { context, users: result.rows.map(mapUser) };
 }
@@ -123,10 +148,13 @@ export async function listAdminUsers(
 export async function getAdminUser(
   context: AccessContext,
   userId: string,
-  executor: QueryExecutor = dbPool
+  executor: QueryExecutor = dbPool,
 ): Promise<AdminUserSummary> {
-  if (!context.permissions.includes("admin.users.read")) throw new AuthorizationError();
-  const result = await executor.query<UserRow>(`${selectUser} WHERE u.id=$1`, [userId]);
+  if (!context.permissions.includes("admin.users.read"))
+    throw new AuthorizationError();
+  const result = await executor.query<UserRow>(`${selectUser} WHERE u.id=$1`, [
+    userId,
+  ]);
   if (!result.rows[0]) throw new NotFoundError("User");
   return mapUser(result.rows[0]);
 }
@@ -135,19 +163,27 @@ export async function changeAccountStatus(
   context: AccessContext,
   requestContext: RequestContext,
   userId: string,
-  input: ChangeAccountStatusInput
+  input: ChangeAccountStatusInput,
 ): Promise<AdminUserSummary> {
-  if (!context.permissions.includes("admin.users.manage")) throw new AuthorizationError();
-  if (userId === context.user.id) throw new ConflictError("CONFLICT", "You cannot change your own account status.");
+  if (!context.permissions.includes("admin.users.manage"))
+    throw new AuthorizationError();
+  if (userId === context.user.id)
+    throw new ConflictError(
+      "CONFLICT",
+      "You cannot change your own account status.",
+    );
 
   await withTransaction(async (client) => {
-    const target = await client.query<{ id: string }>(`SELECT id FROM public."user" WHERE id=$1 FOR UPDATE`, [userId]);
+    const target = await client.query<{ id: string }>(
+      `SELECT id FROM public."user" WHERE id=$1 FOR UPDATE`,
+      [userId],
+    );
     if (!target.rows[0]) throw new NotFoundError("User");
     const isSystemAdmin = await client.query(
       `SELECT 1 FROM public.user_role_assignments a JOIN public.roles r ON r.id=a.role_id
        WHERE a.user_id=$1 AND r.code='SYSTEM_ADMINISTRATOR' AND a.revoked_at IS NULL
          AND (a.valid_from IS NULL OR a.valid_from<=now()) AND (a.valid_until IS NULL OR a.valid_until>now())`,
-      [userId]
+      [userId],
     );
     if (input.status !== "ACTIVE" && isSystemAdmin.rowCount) {
       const activeAdmins = await client.query(
@@ -156,27 +192,41 @@ export async function changeAccountStatus(
          LEFT JOIN public.user_access_controls c ON c.user_id=a.user_id
          WHERE r.code='SYSTEM_ADMINISTRATOR' AND a.revoked_at IS NULL
            AND COALESCE(c.status,'ACTIVE')='ACTIVE'
-           AND (a.valid_from IS NULL OR a.valid_from<=now()) AND (a.valid_until IS NULL OR a.valid_until>now())`
+           AND (a.valid_from IS NULL OR a.valid_from<=now()) AND (a.valid_until IS NULL OR a.valid_until>now())`,
       );
       if ((activeAdmins.rows[0]?.count ?? 0) <= 1) {
-        throw new ConflictError("CONFLICT", "The last active system administrator cannot be disabled.");
+        throw new ConflictError(
+          "CONFLICT",
+          "The last active system administrator cannot be disabled.",
+        );
       }
     }
-    const previous = await client.query<{ status: string; reason: string | null }>(
-      `SELECT status,reason FROM public.user_access_controls WHERE user_id=$1`, [userId]
+    const previous = await client.query<{
+      status: string;
+      reason: string | null;
+    }>(
+      `SELECT status,reason FROM public.user_access_controls WHERE user_id=$1`,
+      [userId],
     );
     await client.query(
       `INSERT INTO public.user_access_controls(user_id,status,reason,changed_at,changed_by)
        VALUES($1,$2,$3,now(),$4)
        ON CONFLICT(user_id) DO UPDATE SET status=EXCLUDED.status,reason=EXCLUDED.reason,
          changed_at=now(),changed_by=EXCLUDED.changed_by,updated_at=now()`,
-      [userId, input.status, input.reason, context.user.id]
+      [userId, input.status, input.reason, context.user.id],
     );
     await writeAuditLog(client, {
-      organizationId: context.organization.id, requestId: requestContext.requestId,
-      actorUserId: context.user.id, action: "user.status.changed", entityType: "user_access",
-      oldData: { targetUserId: userId, ...(previous.rows[0] ?? { status: "ACTIVE", reason: null }) },
-      newData: { targetUserId: userId, ...input }, ipAddress: requestContext.ipAddress,
+      organizationId: context.organization.id,
+      requestId: requestContext.requestId,
+      actorUserId: context.user.id,
+      action: "user.status.changed",
+      entityType: "user_access",
+      oldData: {
+        targetUserId: userId,
+        ...(previous.rows[0] ?? { status: "ACTIVE", reason: null }),
+      },
+      newData: { targetUserId: userId, ...input },
+      ipAddress: requestContext.ipAddress,
       userAgent: requestContext.userAgent,
     });
   });

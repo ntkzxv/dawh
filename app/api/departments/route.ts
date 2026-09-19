@@ -3,8 +3,23 @@ import { parseJsonObject } from "@/lib/core/http/body";
 import { getRequestContext } from "@/lib/core/http/context";
 import { apiRoute } from "@/lib/core/http/handler";
 import { jsonOk } from "@/lib/core/http/response";
-import { createDepartment,listDepartments } from "@/lib/departments/service";
+import { createDepartment, listDepartments } from "@/lib/departments/service";
 import { parseCreateDepartment } from "@/lib/departments/validation";
-export const runtime="nodejs";
-export const GET=apiRoute(async request=>{const context=await requireAccess(request,{permission:"admin.facilities.read"});return jsonOk(request,await listDepartments(context));});
-export const POST=apiRoute(async request=>{const context=await requireAccess(request,{permission:"admin.facilities.manage"});const input=parseCreateDepartment(await parseJsonObject(request));return jsonOk(request,await createDepartment(context,getRequestContext(request),input),201);});
+export const runtime = "nodejs";
+export const GET = apiRoute(async (request) => {
+  const context = await requireAccess(request, {
+    permission: "admin.facilities.read",
+  });
+  return jsonOk(request, await listDepartments(context));
+});
+export const POST = apiRoute(async (request) => {
+  const context = await requireAccess(request, {
+    permission: "admin.facilities.manage",
+  });
+  const input = parseCreateDepartment(await parseJsonObject(request));
+  return jsonOk(
+    request,
+    await createDepartment(context, getRequestContext(request), input),
+    201,
+  );
+});

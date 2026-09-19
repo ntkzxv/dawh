@@ -1,2 +1,39 @@
-import { requireAccess } from "@/lib/access/service";import { parseJsonObject } from "@/lib/core/http/body";import { getRequestContext } from "@/lib/core/http/context";import { ValidationError } from "@/lib/core/http/errors";import { apiRoute } from "@/lib/core/http/handler";import { jsonOk } from "@/lib/core/http/response";import { isBigIntId } from "@/lib/core/ids/bigint";import { createProductBarcode,listProductBarcodes } from "@/lib/product-barcodes/service";import { parseProductBarcode } from "@/lib/product-barcodes/validation";export const runtime="nodejs";type C={params:Promise<{productId:string}>};const id=(v:string)=>{if(!isBigIntId(v))throw new ValidationError({productId:"Use a positive integer ID."});return v;};
-export const GET=apiRoute(async(r,x:C)=>{const c=await requireAccess(r,{permission:"admin.products.read"});return jsonOk(r,await listProductBarcodes(c,id((await x.params).productId)));});export const POST=apiRoute(async(r,x:C)=>{const c=await requireAccess(r,{permission:"admin.products.manage"});return jsonOk(r,await createProductBarcode(c,getRequestContext(r),id((await x.params).productId),parseProductBarcode(await parseJsonObject(r))),201);});
+import { requireAccess } from "@/lib/access/service";
+import { parseJsonObject } from "@/lib/core/http/body";
+import { getRequestContext } from "@/lib/core/http/context";
+import { ValidationError } from "@/lib/core/http/errors";
+import { apiRoute } from "@/lib/core/http/handler";
+import { jsonOk } from "@/lib/core/http/response";
+import { isBigIntId } from "@/lib/core/ids/bigint";
+import {
+  createProductBarcode,
+  listProductBarcodes,
+} from "@/lib/product-barcodes/service";
+import { parseProductBarcode } from "@/lib/product-barcodes/validation";
+export const runtime = "nodejs";
+type C = { params: Promise<{ productId: string }> };
+const id = (v: string) => {
+  if (!isBigIntId(v))
+    throw new ValidationError({ productId: "Use a positive integer ID." });
+  return v;
+};
+export const GET = apiRoute(async (r, x: C) => {
+  const c = await requireAccess(r, { permission: "admin.products.read" });
+  return jsonOk(
+    r,
+    await listProductBarcodes(c, id((await x.params).productId)),
+  );
+});
+export const POST = apiRoute(async (r, x: C) => {
+  const c = await requireAccess(r, { permission: "admin.products.manage" });
+  return jsonOk(
+    r,
+    await createProductBarcode(
+      c,
+      getRequestContext(r),
+      id((await x.params).productId),
+      parseProductBarcode(await parseJsonObject(r)),
+    ),
+    201,
+  );
+});

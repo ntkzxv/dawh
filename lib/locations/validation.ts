@@ -1,14 +1,128 @@
 import { ValidationError } from "@/lib/core/http/errors";
-import { optionalBigIntId, rejectUnknownFields, requiredBoolean, requiredInteger, requiredText } from "@/lib/core/validation/fields";
-import type { HierarchyType, LocationInput, LocationStatus, LocationType, LocationUpdateInput } from "@/lib/locations/types";
-const fields=["parentId","code","name","hierarchyType","locationType","maxVolume","maxWeight","status","isActive"] as const;
-const hierarchy=new Set<HierarchyType>(["ZONE","AISLE","RACK","SHELF","BIN"]);
-const kinds=new Set<LocationType>(["RECEIVING","STORAGE","PICKING","PACKING","DISPATCH","QUARANTINE","DAMAGED","RETURN","CLAIM_HOLDING"]);
-const statuses=new Set<LocationStatus>(["ACTIVE","BLOCKED","MAINTENANCE"]);
-function nullableDecimal(body:Record<string,unknown>,key:string){const v=body[key];if(v===undefined||v===null||v==="")return null;if(typeof v!=="string"||!/^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(v)||!/[1-9]/.test(v))throw new ValidationError({[key]:"Use a positive decimal string or null."});return v;}
-function code(body:Record<string,unknown>){const v=requiredText(body,"code").toUpperCase();if(!/^[A-Z0-9][A-Z0-9_-]{0,31}$/.test(v))throw new ValidationError({code:"Use 1-32 uppercase letters, numbers, underscores, or hyphens."});return v;}
-function hierarchyType(body:Record<string,unknown>){const v=requiredText(body,"hierarchyType").toUpperCase() as HierarchyType;if(!hierarchy.has(v))throw new ValidationError({hierarchyType:"Unsupported hierarchy type."});return v;}
-function locationType(body:Record<string,unknown>){const v=requiredText(body,"locationType").toUpperCase() as LocationType;if(!kinds.has(v))throw new ValidationError({locationType:"Unsupported location type."});return v;}
-function status(body:Record<string,unknown>){const v=requiredText(body,"status").toUpperCase() as LocationStatus;if(!statuses.has(v))throw new ValidationError({status:"Use ACTIVE, BLOCKED, or MAINTENANCE."});return v;}
-export function parseCreateLocation(body:Record<string,unknown>):LocationInput{rejectUnknownFields(body,fields);return{parentId:optionalBigIntId(body,"parentId"),code:code(body),name:requiredText(body,"name"),hierarchyType:hierarchyType(body),locationType:locationType(body),maxVolume:nullableDecimal(body,"maxVolume"),maxWeight:nullableDecimal(body,"maxWeight"),status:status(body),isActive:requiredBoolean(body,"isActive")};}
-export function parseUpdateLocation(body:Record<string,unknown>):LocationUpdateInput{rejectUnknownFields(body,[...fields,"version"]);const o:LocationUpdateInput={version:requiredInteger(body,"version",1,2147483647)};if(body.parentId!==undefined)o.parentId=optionalBigIntId(body,"parentId");if(body.code!==undefined)o.code=code(body);if(body.name!==undefined)o.name=requiredText(body,"name");if(body.hierarchyType!==undefined)o.hierarchyType=hierarchyType(body);if(body.locationType!==undefined)o.locationType=locationType(body);if(body.maxVolume!==undefined)o.maxVolume=nullableDecimal(body,"maxVolume");if(body.maxWeight!==undefined)o.maxWeight=nullableDecimal(body,"maxWeight");if(body.status!==undefined)o.status=status(body);if(body.isActive!==undefined)o.isActive=requiredBoolean(body,"isActive");if(Object.keys(o).length===1)throw new ValidationError({body:"Provide at least one field to update."});return o;}
+import {
+  optionalBigIntId,
+  rejectUnknownFields,
+  requiredBoolean,
+  requiredInteger,
+  requiredText,
+} from "@/lib/core/validation/fields";
+import type {
+  HierarchyType,
+  LocationInput,
+  LocationStatus,
+  LocationType,
+  LocationUpdateInput,
+} from "@/lib/locations/types";
+const fields = [
+  "parentId",
+  "code",
+  "name",
+  "hierarchyType",
+  "locationType",
+  "maxVolume",
+  "maxWeight",
+  "status",
+  "isActive",
+] as const;
+const hierarchy = new Set<HierarchyType>([
+  "ZONE",
+  "AISLE",
+  "RACK",
+  "SHELF",
+  "BIN",
+]);
+const kinds = new Set<LocationType>([
+  "RECEIVING",
+  "STORAGE",
+  "PICKING",
+  "PACKING",
+  "DISPATCH",
+  "QUARANTINE",
+  "DAMAGED",
+  "RETURN",
+  "CLAIM_HOLDING",
+]);
+const statuses = new Set<LocationStatus>(["ACTIVE", "BLOCKED", "MAINTENANCE"]);
+function nullableDecimal(body: Record<string, unknown>, key: string) {
+  const v = body[key];
+  if (v === undefined || v === null || v === "") return null;
+  if (
+    typeof v !== "string" ||
+    !/^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(v) ||
+    !/[1-9]/.test(v)
+  )
+    throw new ValidationError({
+      [key]: "Use a positive decimal string or null.",
+    });
+  return v;
+}
+function code(body: Record<string, unknown>) {
+  const v = requiredText(body, "code").toUpperCase();
+  if (!/^[A-Z0-9][A-Z0-9_-]{0,31}$/.test(v))
+    throw new ValidationError({
+      code: "Use 1-32 uppercase letters, numbers, underscores, or hyphens.",
+    });
+  return v;
+}
+function hierarchyType(body: Record<string, unknown>) {
+  const v = requiredText(body, "hierarchyType").toUpperCase() as HierarchyType;
+  if (!hierarchy.has(v))
+    throw new ValidationError({ hierarchyType: "Unsupported hierarchy type." });
+  return v;
+}
+function locationType(body: Record<string, unknown>) {
+  const v = requiredText(body, "locationType").toUpperCase() as LocationType;
+  if (!kinds.has(v))
+    throw new ValidationError({ locationType: "Unsupported location type." });
+  return v;
+}
+function status(body: Record<string, unknown>) {
+  const v = requiredText(body, "status").toUpperCase() as LocationStatus;
+  if (!statuses.has(v))
+    throw new ValidationError({
+      status: "Use ACTIVE, BLOCKED, or MAINTENANCE.",
+    });
+  return v;
+}
+export function parseCreateLocation(
+  body: Record<string, unknown>,
+): LocationInput {
+  rejectUnknownFields(body, fields);
+  return {
+    parentId: optionalBigIntId(body, "parentId"),
+    code: code(body),
+    name: requiredText(body, "name"),
+    hierarchyType: hierarchyType(body),
+    locationType: locationType(body),
+    maxVolume: nullableDecimal(body, "maxVolume"),
+    maxWeight: nullableDecimal(body, "maxWeight"),
+    status: status(body),
+    isActive: requiredBoolean(body, "isActive"),
+  };
+}
+export function parseUpdateLocation(
+  body: Record<string, unknown>,
+): LocationUpdateInput {
+  rejectUnknownFields(body, [...fields, "version"]);
+  const o: LocationUpdateInput = {
+    version: requiredInteger(body, "version", 1, 2147483647),
+  };
+  if (body.parentId !== undefined)
+    o.parentId = optionalBigIntId(body, "parentId");
+  if (body.code !== undefined) o.code = code(body);
+  if (body.name !== undefined) o.name = requiredText(body, "name");
+  if (body.hierarchyType !== undefined) o.hierarchyType = hierarchyType(body);
+  if (body.locationType !== undefined) o.locationType = locationType(body);
+  if (body.maxVolume !== undefined)
+    o.maxVolume = nullableDecimal(body, "maxVolume");
+  if (body.maxWeight !== undefined)
+    o.maxWeight = nullableDecimal(body, "maxWeight");
+  if (body.status !== undefined) o.status = status(body);
+  if (body.isActive !== undefined)
+    o.isActive = requiredBoolean(body, "isActive");
+  if (Object.keys(o).length === 1)
+    throw new ValidationError({
+      body: "Provide at least one field to update.",
+    });
+  return o;
+}

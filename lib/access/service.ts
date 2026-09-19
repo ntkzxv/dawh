@@ -4,11 +4,19 @@ import { requireSession } from "@/lib/auth/session";
 import { dbPool } from "@/lib/core/db/pool";
 import { AccountStatusError, ApiError } from "@/lib/core/http/errors";
 import { getEmployeeProfile } from "@/lib/profiles/service";
-import type { AccessContext, FacilityScope, FacilityScopeType } from "@/lib/access/types";
+import type {
+  AccessContext,
+  FacilityScope,
+  FacilityScopeType,
+} from "@/lib/access/types";
 
 export class ProfileIncompleteError extends ApiError {
   constructor() {
-    super(403, "PROFILE_INCOMPLETE", "Complete your employee profile before using WMS modules.");
+    super(
+      403,
+      "PROFILE_INCOMPLETE",
+      "Complete your employee profile before using WMS modules.",
+    );
     this.name = "ProfileIncompleteError";
   }
 }
@@ -45,7 +53,9 @@ export type AccessRequirement = {
   facilityScope?: FacilityScopeType;
 };
 
-export async function getAccessContext(request: Request): Promise<AccessContext> {
+export async function getAccessContext(
+  request: Request,
+): Promise<AccessContext> {
   const session = await requireSession(request);
   const userId = session.user.id;
 
@@ -54,23 +64,24 @@ export async function getAccessContext(request: Request): Promise<AccessContext>
      FROM public.organizations
      WHERE is_active = true
      ORDER BY created_at, id
-     LIMIT 2`
+     LIMIT 2`,
   );
 
   if (organizations.rowCount !== 1) {
     throw new ApiError(
       503,
       "ORGANIZATION_CONFIGURATION_ERROR",
-      "The backend requires exactly one active organization."
+      "The backend requires exactly one active organization.",
     );
   }
 
   const organization = organizations.rows[0];
 
-  const [profile, rolePermissions, facilityScopes, accountStatusResult] = await Promise.all([
-    getEmployeeProfile(userId),
-    dbPool.query<RolePermissionRow>(
-      `SELECT DISTINCT r.code AS role_code, p.code AS permission_code
+  const [profile, rolePermissions, facilityScopes, accountStatusResult] =
+    await Promise.all([
+      getEmployeeProfile(userId),
+      dbPool.query<RolePermissionRow>(
+        `SELECT DISTINCT r.code AS role_code, p.code AS permission_code
        FROM public.user_role_assignments AS assignment
        JOIN public.roles AS r ON r.id = assignment.role_id AND r.is_active = true
        LEFT JOIN public.role_permissions AS mapping ON mapping.role_id = r.id
@@ -79,10 +90,10 @@ export async function getAccessContext(request: Request): Promise<AccessContext>
          AND assignment.revoked_at IS NULL
          AND (assignment.valid_from IS NULL OR assignment.valid_from <= now())
          AND (assignment.valid_until IS NULL OR assignment.valid_until > now())`,
-      [userId]
-    ),
-    dbPool.query<FacilityScopeRow>(
-      `SELECT scope.facility_id, scope.scope_type
+        [userId],
+      ),
+      dbPool.query<FacilityScopeRow>(
+        `SELECT scope.facility_id, scope.scope_type
        FROM public.user_facility_scopes AS scope
        JOIN public.facilities AS facility ON facility.id = scope.facility_id
        WHERE scope.user_id = $1
@@ -90,19 +101,21 @@ export async function getAccessContext(request: Request): Promise<AccessContext>
          AND facility.is_active = true
          AND (scope.valid_from IS NULL OR scope.valid_from <= now())
          AND (scope.valid_until IS NULL OR scope.valid_until > now())`,
-      [userId, organization.id]
-    ),
-    dbPool.query<AccountStatusRow>(
-      `SELECT status
+        [userId, organization.id],
+      ),
+      dbPool.query<AccountStatusRow>(
+        `SELECT status
        FROM public.user_access_controls
        WHERE user_id = $1`,
-      [userId]
-    ),
-  ]);
+        [userId],
+      ),
+    ]);
 
   const accountStatus = accountStatusResult.rows[0]?.status ?? "ACTIVE";
   if (accountStatus !== "ACTIVE") throw new AccountStatusError(accountStatus);
-  const roles = [...new Set(rolePermissions.rows.map((row) => row.role_code))].sort();
+  const roles = [
+    ...new Set(rolePermissions.rows.map((row) => row.role_code)),
+  ].sort();
 
   return {
     user: {
@@ -116,24 +129,36 @@ export async function getAccessContext(request: Request): Promise<AccessContext>
     organization,
     profile,
     roles,
-    permissions: [...new Set(rolePermissions.rows.flatMap((row) => (row.permission_code ? [row.permission_code] : [])))].sort(),
-    facilityScopes: facilityScopes.rows.map(
-      (scope): FacilityScope => ({ facilityId: scope.facility_id, scopeType: scope.scope_type })
-    ),
+    permissions: [
+      ...new Set(
+        rolePermissions.rows.flatMap((row) =>
+          row.permission_code ? [row.permission_code] : [],
+        ),
+      ),
+    ].sort(),
+    facilityScopes: facilityScopes.rows.map((scope): FacilityScope => ({
+      facilityId: scope.facility_id,
+      scopeType: scope.scope_type,
+    })),
   };
 }
 
 export async function requireAccess(
   request: Request,
-  requirement: AccessRequirement
+  requirement: AccessRequirement,
 ): Promise<AccessContext> {
   const context = await getAccessContext(request);
 
   if (!context.profile?.is_complete) throw new ProfileIncompleteError();
-  if (!context.permissions.includes(requirement.permission)) throw new AuthorizationError();
+  if (!context.permissions.includes(requirement.permission))
+    throw new AuthorizationError();
   if (
     requirement.facilityId &&
-    !canAccessFacility(context, requirement.facilityId, requirement.facilityScope ?? "READ")
+    !canAccessFacility(
+      context,
+      requirement.facilityId,
+      requirement.facilityScope ?? "READ",
+    )
   ) {
     throw new AuthorizationError("FORBIDDEN_FACILITY_SCOPE");
   }
@@ -144,7 +169,7 @@ export async function requireAccess(
 export function canAccessFacility(
   context: AccessContext,
   facilityId: string,
-  requiredScope: FacilityScopeType
+  requiredScope: FacilityScopeType,
 ): boolean {
   return (
     context.isSystemAdministrator ||
@@ -167,9 +192,11 @@ const scopeRank: Record<FacilityScopeType, number> = {
 export function hasFacilityScope(
   scopes: FacilityScope[],
   facilityId: string,
-  requiredScope: FacilityScopeType
+  requiredScope: FacilityScopeType,
 ): boolean {
   return scopes.some(
-    (scope) => scope.facilityId === facilityId && scopeRank[scope.scopeType] >= scopeRank[requiredScope]
+    (scope) =>
+      scope.facilityId === facilityId &&
+      scopeRank[scope.scopeType] >= scopeRank[requiredScope],
   );
 }

@@ -1,4 +1,38 @@
-import { ValidationError } from "@/lib/core/http/errors";import { rejectUnknownFields,requiredBoolean,requiredInteger,requiredText } from "@/lib/core/validation/fields";import type { BrandInput,BrandUpdateInput } from "@/lib/brands/types";
-function code(b:Record<string,unknown>){const v=requiredText(b,"code").toUpperCase();if(!/^[A-Z0-9][A-Z0-9_-]{0,31}$/.test(v))throw new ValidationError({code:"Use 1-32 uppercase letters, numbers, underscores, or hyphens."});return v;}
-export function parseCreateBrand(b:Record<string,unknown>):BrandInput{rejectUnknownFields(b,["code","name","isActive"]);return{code:code(b),name:requiredText(b,"name"),isActive:requiredBoolean(b,"isActive")};}
-export function parseUpdateBrand(b:Record<string,unknown>):BrandUpdateInput{rejectUnknownFields(b,["code","name","isActive","version"]);const o:BrandUpdateInput={version:requiredInteger(b,"version",1,2147483647)};if(b.code!==undefined)o.code=code(b);if(b.name!==undefined)o.name=requiredText(b,"name");if(b.isActive!==undefined)o.isActive=requiredBoolean(b,"isActive");if(Object.keys(o).length===1)throw new ValidationError({body:"Provide at least one field to update."});return o;}
+import { ValidationError } from "@/lib/core/http/errors";
+import {
+  rejectUnknownFields,
+  requiredBoolean,
+  requiredInteger,
+  requiredText,
+} from "@/lib/core/validation/fields";
+import type { BrandInput, BrandUpdateInput } from "@/lib/brands/types";
+function code(b: Record<string, unknown>) {
+  const v = requiredText(b, "code").toUpperCase();
+  if (!/^[A-Z0-9][A-Z0-9_-]{0,31}$/.test(v))
+    throw new ValidationError({
+      code: "Use 1-32 uppercase letters, numbers, underscores, or hyphens.",
+    });
+  return v;
+}
+export function parseCreateBrand(b: Record<string, unknown>): BrandInput {
+  rejectUnknownFields(b, ["code", "name", "isActive"]);
+  return {
+    code: code(b),
+    name: requiredText(b, "name"),
+    isActive: requiredBoolean(b, "isActive"),
+  };
+}
+export function parseUpdateBrand(b: Record<string, unknown>): BrandUpdateInput {
+  rejectUnknownFields(b, ["code", "name", "isActive", "version"]);
+  const o: BrandUpdateInput = {
+    version: requiredInteger(b, "version", 1, 2147483647),
+  };
+  if (b.code !== undefined) o.code = code(b);
+  if (b.name !== undefined) o.name = requiredText(b, "name");
+  if (b.isActive !== undefined) o.isActive = requiredBoolean(b, "isActive");
+  if (Object.keys(o).length === 1)
+    throw new ValidationError({
+      body: "Provide at least one field to update.",
+    });
+  return o;
+}

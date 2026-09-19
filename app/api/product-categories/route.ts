@@ -1,2 +1,27 @@
-import { requireAccess } from "@/lib/access/service";import { createProductCategory,listProductCategories } from "@/lib/product-categories/service";import { parseCreateProductCategory } from "@/lib/product-categories/validation";import { parseJsonObject } from "@/lib/core/http/body";import { getRequestContext } from "@/lib/core/http/context";import { apiRoute } from "@/lib/core/http/handler";import { jsonOk } from "@/lib/core/http/response";export const runtime="nodejs";
-export const GET=apiRoute(async r=>{const c=await requireAccess(r,{permission:"admin.products.read"});return jsonOk(r,await listProductCategories(c));});export const POST=apiRoute(async r=>{const c=await requireAccess(r,{permission:"admin.products.manage"});return jsonOk(r,await createProductCategory(c,getRequestContext(r),parseCreateProductCategory(await parseJsonObject(r))),201);});
+import { requireAccess } from "@/lib/access/service";
+import {
+  createProductCategory,
+  listProductCategories,
+} from "@/lib/product-categories/service";
+import { parseCreateProductCategory } from "@/lib/product-categories/validation";
+import { parseJsonObject } from "@/lib/core/http/body";
+import { getRequestContext } from "@/lib/core/http/context";
+import { apiRoute } from "@/lib/core/http/handler";
+import { jsonOk } from "@/lib/core/http/response";
+export const runtime = "nodejs";
+export const GET = apiRoute(async (r) => {
+  const c = await requireAccess(r, { permission: "admin.products.read" });
+  return jsonOk(r, await listProductCategories(c));
+});
+export const POST = apiRoute(async (r) => {
+  const c = await requireAccess(r, { permission: "admin.products.manage" });
+  return jsonOk(
+    r,
+    await createProductCategory(
+      c,
+      getRequestContext(r),
+      parseCreateProductCategory(await parseJsonObject(r)),
+    ),
+    201,
+  );
+});

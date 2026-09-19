@@ -8,7 +8,9 @@ export const runtime = "nodejs";
 type UserRouteContext = { params: Promise<{ userId: string }> };
 
 export const GET = apiRoute(async (request, routeContext: UserRouteContext) => {
-  const context = await requireAccess(request, { permission: "admin.users.read" });
+  const context = await requireAccess(request, {
+    permission: "admin.users.read",
+  });
   const { userId } = await routeContext.params;
   return jsonOk(request, await getAdminUser(context, userId));
 });

@@ -10,9 +10,21 @@ export const runtime = "nodejs";
 
 type UserRouteContext = { params: Promise<{ userId: string }> };
 
-export const PATCH = apiRoute(async (request, routeContext: UserRouteContext) => {
-  const context = await requireAccess(request, { permission: "admin.users.manage" });
-  const { userId } = await routeContext.params;
-  const input = parseChangeAccountStatus(await parseJsonObject(request));
-  return jsonOk(request, await changeAccountStatus(context, getRequestContext(request), userId, input));
-});
+export const PATCH = apiRoute(
+  async (request, routeContext: UserRouteContext) => {
+    const context = await requireAccess(request, {
+      permission: "admin.users.manage",
+    });
+    const { userId } = await routeContext.params;
+    const input = parseChangeAccountStatus(await parseJsonObject(request));
+    return jsonOk(
+      request,
+      await changeAccountStatus(
+        context,
+        getRequestContext(request),
+        userId,
+        input,
+      ),
+    );
+  },
+);

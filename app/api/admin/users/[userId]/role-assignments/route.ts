@@ -10,8 +10,14 @@ export const runtime = "nodejs";
 type Context = { params: Promise<{ userId: string }> };
 
 export const POST = apiRoute(async (request, routeContext: Context) => {
-  const context = await requireAccess(request, { permission: "admin.roles.manage" });
+  const context = await requireAccess(request, {
+    permission: "admin.roles.manage",
+  });
   const { userId } = await routeContext.params;
   const input = parseAssignRole(await parseJsonObject(request));
-  return jsonOk(request, await assignRole(context, getRequestContext(request), userId, input), 201);
+  return jsonOk(
+    request,
+    await assignRole(context, getRequestContext(request), userId, input),
+    201,
+  );
 });
