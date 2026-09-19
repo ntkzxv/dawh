@@ -391,14 +391,8 @@ export default function NavbarMain({
           <div
             className={`w-full transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
               isMinimized
-                ? "w-10 h-10 aspect-square mx-auto rounded-xl border flex items-center justify-center " +
-                  (isLight
-                    ? "bg-white border-[#E4E4E7] text-emerald-600 shadow-sm"
-                    : "bg-[#383838] border-[#444444] text-emerald-400 shadow-sm")
-                : "px-3 py-2 rounded-xl border flex items-center gap-2.5 transition-colors shadow-sm " +
-                  (isLight
-                    ? "bg-white border-[#E4E4E7]"
-                    : "bg-[#383838] border-[#444444]")
+                ? "flex items-center justify-center py-1.5"
+                : "px-1.5 py-1 flex items-center gap-2.5"
             }`}
             title={
               serverStatus.sublabel
@@ -407,12 +401,9 @@ export default function NavbarMain({
             }
           >
             {isMinimized ? (
-              <div className="relative flex items-center justify-center">
-                <Database size={17} />
+              <div className="relative flex items-center justify-center w-8 h-8">
                 <span
-                  className={`absolute -top-1 -right-1 w-2 h-2 rounded-full border ${
-                    isLight ? "border-white" : "border-[#383838]"
-                  } ${
+                  className={`w-2.5 h-2.5 rounded-full ${
                     serverStatus.connected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
                   }`}
                 />
@@ -420,27 +411,26 @@ export default function NavbarMain({
             ) : (
               <>
                 <div
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                    isLight ? "bg-emerald-50 text-emerald-600" : "bg-emerald-950/40 text-emerald-400"
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border ${
+                    isLight
+                      ? "bg-emerald-50 border-emerald-200/60"
+                      : "bg-emerald-950/40 border-emerald-500/20"
                   }`}
                 >
-                  <Database size={15} />
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      serverStatus.connected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
+                    }`}
+                  />
                 </div>
                 <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${
-                        serverStatus.connected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
-                      }`}
-                    />
-                    <span
-                      className={`text-[11.5px] font-bold leading-tight truncate ${
-                        isLight ? "text-slate-900" : "text-[#FFFFFF]"
-                      }`}
-                    >
-                      {serverStatus.label}
-                    </span>
-                  </div>
+                  <span
+                    className={`text-[11.5px] font-bold leading-tight truncate ${
+                      isLight ? "text-slate-900" : "text-[#FFFFFF]"
+                    }`}
+                  >
+                    {serverStatus.label}
+                  </span>
                   {serverStatus.sublabel && (
                     <span
                       className={`text-[10px] leading-tight truncate mt-0.5 ${
