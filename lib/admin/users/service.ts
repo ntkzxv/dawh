@@ -143,14 +143,24 @@ export async function listAdminUsersForContext(
            AND (s.valid_from IS NULL OR s.valid_from<=now()) AND (s.valid_until IS NULL OR s.valid_until>now())
        ))
        AND ($5::boolean IS NULL OR (profile.profile_completed_at IS NOT NULL AND profile.facility_id IS NOT NULL)=$5)
-       AND ($6::timestamptz IS NULL OR (u."createdAt",u.id)<($6::timestamptz,$7::text))
-     ORDER BY u."createdAt" DESC,u.id DESC LIMIT $8`,
+       AND ($6::bigint IS NULL OR profile.department_id=$6::bigint)
+       AND ($7::boolean IS NULL OR $7=EXISTS (
+         SELECT 1 FROM public.user_role_assignments assignment
+         JOIN public.roles role ON role.id=assignment.role_id AND role.is_active
+         WHERE assignment.user_id=u.id AND assignment.revoked_at IS NULL
+           AND (assignment.valid_from IS NULL OR assignment.valid_from<=now())
+           AND (assignment.valid_until IS NULL OR assignment.valid_until>now())
+       ))
+       AND ($8::timestamptz IS NULL OR (u."createdAt",u.id)<($8::timestamptz,$9::text))
+     ORDER BY u."createdAt" DESC,u.id DESC LIMIT $10`,
     [
       filters.search,
       filters.status,
       filters.roleCode,
       filters.facilityId,
       filters.profileComplete,
+      filters.departmentId,
+      filters.roleAssigned,
       page.cursor?.timestamp ?? null,
       page.cursor?.id ?? null,
       page.limit + 1,

@@ -9,6 +9,7 @@ import { writeAuditLog } from "@/lib/audit/service";
 import { dbPool } from "@/lib/core/db/pool";
 import { withTransaction } from "@/lib/core/db/transaction";
 import type { RequestContext } from "@/lib/core/http/context";
+import type { PageRequest } from "@/lib/core/http/pagination";
 import {
   ConflictError,
   NotFoundError,
@@ -87,7 +88,7 @@ async function validate(
         "Require minimumQuantity <= reorderPoint <= maximumQuantity and safetyQuantity <= maximumQuantity.",
     });
 }
-export async function listSafetyStock(c: AccessContext) {
+export async function listSafetyStock(c: AccessContext, page: PageRequest) {
   if (
     !c.permissions.includes("admin.products.read") &&
     !c.permissions.includes("product.read")
@@ -97,8 +98,21 @@ export async function listSafetyStock(c: AccessContext) {
   if (ids?.length === 0) return [];
   return (
     await dbPool.query<Row>(
-      `${select} WHERE f.organization_id=$1 AND p.organization_id=$1 AND($2::boolean OR s.facility_id=ANY($3::bigint[]))ORDER BY f.code,p.sku`,
-      [c.organization.id, ids === null, ids ?? []],
+      `${select}
+       WHERE f.organization_id=$1
+         AND p.organization_id=$1
+         AND($2::boolean OR s.facility_id=ANY($3::bigint[]))
+         AND($4::timestamptz IS NULL OR(s.created_at,s.id)<($4::timestamptz,$5::bigint))
+       ORDER BY s.created_at DESC,s.id DESC
+       LIMIT $6`,
+      [
+        c.organization.id,
+        ids === null,
+        ids ?? [],
+        page.cursor?.timestamp ?? null,
+        page.cursor?.id ?? null,
+        page.limit + 1,
+      ],
     )
   ).rows.map(map);
 }

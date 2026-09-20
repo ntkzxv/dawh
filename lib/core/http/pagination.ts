@@ -13,15 +13,34 @@ export type PageRequest = {
   cursor: KeysetCursor | null;
 };
 
-export function parsePageRequest(url: URL): PageRequest {
-  const rawLimit = url.searchParams.get("limit");
-  const limit = rawLimit ? Number(rawLimit) : 50;
+export type CursorIdKind = "bigint" | "text";
 
-  if (!Number.isInteger(limit) || limit < 1 || limit > 200) {
-    throw new ValidationError({ limit: "Use an integer from 1 to 200." });
+export type ParsePageRequestOptions = {
+  /** Query-string key containing the cursor. Defaults to `cursor`. */
+  cursorParam?: string;
+  /** Better Auth user IDs are text; domain records use bigint IDs. */
+  cursorIdKind?: CursorIdKind;
+  defaultLimit?: number;
+  maxLimit?: number;
+};
+
+export function parsePageRequest(
+  url: URL,
+  {
+    cursorParam = "cursor",
+    cursorIdKind = "bigint",
+    defaultLimit = 50,
+    maxLimit = 200,
+  }: ParsePageRequestOptions = {},
+): PageRequest {
+  const rawLimit = url.searchParams.get("limit");
+  const limit = rawLimit ? Number(rawLimit) : defaultLimit;
+
+  if (!Number.isInteger(limit) || limit < 1 || limit > maxLimit) {
+    throw new ValidationError({ limit: `Use an integer from 1 to ${maxLimit}.` });
   }
 
-  const rawCursor = url.searchParams.get("cursor");
+  const rawCursor = url.searchParams.get(cursorParam);
   if (!rawCursor) return { limit, cursor: null };
 
   try {
@@ -30,18 +49,28 @@ export function parsePageRequest(url: URL): PageRequest {
       typeof decoded.timestamp !== "string" ||
       typeof decoded.id !== "string" ||
       Number.isNaN(Date.parse(decoded.timestamp)) ||
-      !isBigIntId(decoded.id)
+      (cursorIdKind === "bigint"
+        ? !isBigIntId(decoded.id)
+        : decoded.id.trim().length === 0 || decoded.id.length > 255)
     ) {
       throw new Error("Invalid cursor");
     }
     return { limit, cursor: decoded };
   } catch {
-    throw new ValidationError({ cursor: "The cursor is invalid." });
+    throw new ValidationError({ [cursorParam]: "The cursor is invalid." });
   }
 }
 
-export function nextCursor<T extends { id: string }>(items: T[], limit: number, timestamp: (item: T) => string) {
+export function encodeCursor(cursor: KeysetCursor): string {
+  return Buffer.from(JSON.stringify(cursor)).toString("base64url");
+}
+
+export function nextCursor<T extends { id: string }>(
+  items: T[],
+  limit: number,
+  timestamp: (item: T) => string,
+) {
   if (items.length <= limit) return null;
   const item = items[limit - 1];
-  return Buffer.from(JSON.stringify({ timestamp: timestamp(item), id: item.id })).toString("base64url");
+  return encodeCursor({ timestamp: timestamp(item), id: item.id });
 }

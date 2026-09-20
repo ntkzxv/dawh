@@ -10,6 +10,7 @@ import { listPermissions, listRoles } from "@/lib/admin/roles/service";
 import type {
   ControlPanelTab,
   ControlPanelTabData,
+  ControlPanelTabQuery,
 } from "@/lib/admin/control-panel/types";
 import { listAuditLogs } from "@/lib/audit/service";
 import { listBrands } from "@/lib/brands/service";
@@ -22,16 +23,37 @@ import { listReasonCodes } from "@/lib/reason-codes/service";
 import { listSafetyStock } from "@/lib/safety-stock/service";
 import { listScopedStockBalances, listStockLedger } from "@/lib/stock/service";
 import { listUnits } from "@/lib/units-of-measure/service";
+import { nextCursor } from "@/lib/core/http/pagination";
+import type { PageMeta } from "@/lib/core/http/response";
 
-const firstPage = { limit: 100, cursor: null };
+const lookupPage = { limit: 200, cursor: null };
+const defaultPage = { limit: 50, cursor: null };
 const facilityFilters = { search: null, facilityType: null, active: null };
 const userFilters = {
   search: null,
   status: null,
   roleCode: null,
+  roleAssigned: null,
   facilityId: null,
+  departmentId: null,
   profileComplete: null,
 };
+
+function pageResult<T extends { id: string }>(
+  rows: T[],
+  limit: number,
+  timestamp: (row: T) => string,
+): { data: T[]; page: PageMeta } {
+  const hasMore = rows.length > limit;
+  return {
+    data: hasMore ? rows.slice(0, limit) : rows,
+    page: {
+      limit,
+      hasMore,
+      nextCursor: hasMore ? nextCursor(rows, limit, timestamp) : null,
+    },
+  };
+}
 
 function requireControlPanelAccess(context: AccessContext): void {
   if (!context.profile?.is_complete) throw new ProfileIncompleteError();
@@ -48,58 +70,66 @@ function requireControlPanelAccess(context: AccessContext): void {
 export async function getControlPanelTab(
   context: AccessContext,
   tab: ControlPanelTab,
+  query: ControlPanelTabQuery = { page: defaultPage },
 ): Promise<ControlPanelTabData> {
   requireControlPanelAccess(context);
+  const page = query.page;
 
   switch (tab) {
     case "users": {
       const [users, roles, facilities, departments] = await Promise.all([
-        listAdminUsersForContext(context, firstPage, userFilters),
+        listAdminUsersForContext(context, page, query.userFilters ?? userFilters),
         listRoles(context),
-        listVisibleFacilities(context, firstPage, facilityFilters),
+        listVisibleFacilities(context, lookupPage, facilityFilters),
         listDepartments(context),
       ]);
+      const userPage = pageResult(users, page.limit, (user) => user.createdAt);
       return {
         tab,
-        users: users.slice(0, firstPage.limit),
+        users: userPage.data,
         roles,
-        facilities: facilities.slice(0, firstPage.limit),
+        facilities: facilities.slice(0, lookupPage.limit),
         departments,
+        page: userPage.page,
       };
     }
     case "roles": {
       const [users, roles, permissions] = await Promise.all([
-        listAdminUsersForContext(context, firstPage, userFilters),
+        listAdminUsersForContext(context, page, query.userFilters ?? userFilters),
         listRoles(context),
         listPermissions(context),
       ]);
+      const userPage = pageResult(users, page.limit, (user) => user.createdAt);
       return {
         tab,
-        users: users.slice(0, firstPage.limit),
+        users: userPage.data,
         roles,
         permissions,
+        page: userPage.page,
       };
     }
     case "scopes": {
       const [users, facilities] = await Promise.all([
-        listAdminUsersForContext(context, firstPage, userFilters),
-        listVisibleFacilities(context, firstPage, facilityFilters),
+        listAdminUsersForContext(context, page, query.userFilters ?? userFilters),
+        listVisibleFacilities(context, lookupPage, facilityFilters),
       ]);
+      const userPage = pageResult(users, page.limit, (user) => user.createdAt);
       return {
         tab,
-        users: users.slice(0, firstPage.limit),
-        facilities: facilities.slice(0, firstPage.limit),
+        users: userPage.data,
+        facilities: facilities.slice(0, lookupPage.limit),
+        page: userPage.page,
       };
     }
     case "organization": {
       const [facilities, departments, locations] = await Promise.all([
-        listVisibleFacilities(context, firstPage, facilityFilters),
+        listVisibleFacilities(context, lookupPage, facilityFilters),
         listDepartments(context),
         listVisibleLocations(context),
       ]);
       return {
         tab,
-        facilities: facilities.slice(0, firstPage.limit),
+        facilities: facilities.slice(0, lookupPage.limit),
         departments,
         locations,
       };
@@ -113,23 +143,27 @@ export async function getControlPanelTab(
             brandId: null,
             trackingMethod: null,
             active: null,
-            page: firstPage,
+            page,
           }),
           listProductCategories(context),
           listBrands(context),
           listUnits(context),
           listReasonCodes(context),
         ]);
+      const productPage = pageResult(products, page.limit, (product) => product.createdAt);
       return {
         tab,
-        products: products.slice(0, firstPage.limit),
+        products: productPage.data,
         categories,
         brands,
         uoms,
         reasonCodes,
+        page: productPage.page,
       };
     }
     case "stock": {
+      const balancePage = query.balancePage ?? page;
+      const ledgerPage = query.ledgerPage ?? page;
       const [balances, ledger] = await Promise.all([
         listScopedStockBalances(context, {
           facilityId: null,
@@ -139,7 +173,7 @@ export async function getControlPanelTab(
           lotId: null,
           serialId: null,
           search: null,
-          page: firstPage,
+          page: balancePage,
         }),
         listStockLedger(context, {
           facilityId: null,
@@ -150,40 +184,46 @@ export async function getControlPanelTab(
           referenceId: null,
           postedFrom: null,
           postedTo: null,
-          page: firstPage,
+          page: ledgerPage,
         }),
       ]);
+      const balanceResult = pageResult(balances, balancePage.limit, (balance) => balance.updatedAt);
+      const ledgerResult = pageResult(ledger, ledgerPage.limit, (line) => line.postedAt);
       return {
         tab,
-        balances: balances.slice(0, firstPage.limit),
-        ledger: ledger.slice(0, firstPage.limit),
+        balances: balanceResult.data,
+        ledger: ledgerResult.data,
+        balancePage: balanceResult.page,
+        ledgerPage: ledgerResult.page,
       };
     }
     case "safety_stock": {
       const [safetyRules, facilities, products] = await Promise.all([
-        listSafetyStock(context),
-        listVisibleFacilities(context, firstPage, facilityFilters),
+        listSafetyStock(context, page),
+        listVisibleFacilities(context, lookupPage, facilityFilters),
         listProducts(context, {
           search: null,
           categoryId: null,
           brandId: null,
           trackingMethod: null,
           active: null,
-          page: firstPage,
+          page: lookupPage,
         }),
       ]);
+      const safetyPage = pageResult(safetyRules, page.limit, (rule) => rule.createdAt);
       return {
         tab,
-        safetyRules,
-        facilities: facilities.slice(0, firstPage.limit),
-        products: products.slice(0, firstPage.limit),
+        safetyRules: safetyPage.data,
+        facilities: facilities.slice(0, lookupPage.limit),
+        products: products.slice(0, lookupPage.limit),
+        page: safetyPage.page,
       };
     }
     case "audit_logs": {
       const logs = await listAuditLogs(context, {
         category: "all",
-        limit: 200,
-        cursor: null,
+        limit: page.limit,
+        cursor: page.cursor,
       });
       return {
         tab,

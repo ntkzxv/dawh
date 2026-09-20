@@ -1,6 +1,10 @@
 import { ValidationError } from "@/lib/core/http/errors";
 import { isBigIntId } from "@/lib/core/ids/bigint";
 import {
+  encodeCursor,
+  parsePageRequest,
+} from "@/lib/core/http/pagination";
+import {
   rejectUnknownFields,
   requiredText,
 } from "@/lib/core/validation/fields";
@@ -17,12 +21,6 @@ export function parseUserQuery(url: URL): {
   page: UserPageRequest;
   filters: UserFilters;
 } {
-  const rawLimit = url.searchParams.get("limit");
-  const limit = rawLimit ? Number(rawLimit) : 50;
-  if (!Number.isInteger(limit) || limit < 1 || limit > 200) {
-    throw new ValidationError({ limit: "Use an integer from 1 to 200." });
-  }
-
   const rawStatus = url.searchParams.get("status");
   const status = rawStatus?.toUpperCase() as AccountStatus | undefined;
   if (status && !statuses.has(status))
@@ -32,39 +30,28 @@ export function parseUserQuery(url: URL): {
   const facilityId = url.searchParams.get("facilityId");
   if (facilityId && !isBigIntId(facilityId))
     throw new ValidationError({ facilityId: "Use a positive integer ID." });
+  const departmentId = url.searchParams.get("departmentId");
+  if (departmentId && !isBigIntId(departmentId))
+    throw new ValidationError({ departmentId: "Use a positive integer ID." });
   const rawComplete = url.searchParams.get("profileComplete");
   if (rawComplete && rawComplete !== "true" && rawComplete !== "false") {
     throw new ValidationError({ profileComplete: "Use true or false." });
   }
-
-  let cursor: UserPageRequest["cursor"] = null;
-  const rawCursor = url.searchParams.get("cursor");
-  if (rawCursor) {
-    try {
-      const value = JSON.parse(
-        Buffer.from(rawCursor, "base64url").toString("utf8"),
-      ) as { timestamp?: unknown; id?: unknown };
-      if (
-        typeof value.timestamp !== "string" ||
-        Number.isNaN(Date.parse(value.timestamp)) ||
-        typeof value.id !== "string" ||
-        !value.id
-      ) {
-        throw new Error("invalid");
-      }
-      cursor = { timestamp: value.timestamp, id: value.id };
-    } catch {
-      throw new ValidationError({ cursor: "The cursor is invalid." });
-    }
+  const rawRoleAssigned = url.searchParams.get("roleAssigned");
+  if (rawRoleAssigned && rawRoleAssigned !== "true" && rawRoleAssigned !== "false") {
+    throw new ValidationError({ roleAssigned: "Use true or false." });
   }
 
   return {
-    page: { limit, cursor },
+    page: parsePageRequest(url, { cursorIdKind: "text" }),
     filters: {
       search: url.searchParams.get("search")?.trim() || null,
       status: status ?? null,
       roleCode: url.searchParams.get("roleCode")?.trim().toUpperCase() || null,
+      roleAssigned:
+        rawRoleAssigned === null ? null : rawRoleAssigned === "true",
       facilityId,
+      departmentId,
       profileComplete: rawComplete === null ? null : rawComplete === "true",
     },
   };
@@ -76,9 +63,7 @@ export function encodeUserCursor(
     "id" | "createdAt"
   >,
 ) {
-  return Buffer.from(
-    JSON.stringify({ timestamp: user.createdAt, id: user.id }),
-  ).toString("base64url");
+  return encodeCursor({ timestamp: user.createdAt, id: user.id });
 }
 
 export function parseChangeAccountStatus(

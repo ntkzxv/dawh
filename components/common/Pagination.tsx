@@ -7,18 +7,109 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-export interface PaginationProps {
+type CommonPaginationProps = {
+  isThai?: boolean;
+  className?: string;
+};
+
+type OffsetPaginationProps = CommonPaginationProps & {
+  mode?: "offset";
   currentPage: number;
   totalPages: number;
   totalItems: number;
   pageSize?: number;
   onPageChange: (page: number) => void;
-  isThai?: boolean;
-  className?: string;
   showTotalItems?: boolean;
+};
+
+type CursorPaginationProps = CommonPaginationProps & {
+  mode: "cursor";
+  pageIndex: number;
+  itemCount: number;
+  hasPrevious: boolean;
+  hasNext: boolean;
+  onPrevious: () => void;
+  onNext: () => void;
+  isLoading?: boolean;
+};
+
+export type PaginationProps = OffsetPaginationProps | CursorPaginationProps;
+
+export default function Pagination(props: PaginationProps) {
+  return props.mode === "cursor" ? (
+    <CursorPagination {...props} />
+  ) : (
+    <OffsetPagination {...props} />
+  );
 }
 
-export default function Pagination({
+function CursorPagination({
+  pageIndex,
+  itemCount,
+  hasPrevious,
+  hasNext,
+  onPrevious,
+  onNext,
+  isLoading = false,
+  isThai = true,
+  className = "",
+}: CursorPaginationProps) {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
+
+  if (itemCount === 0 && !hasPrevious) return null;
+
+  const buttonClass = isLight
+    ? "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100"
+    : "text-zinc-400 hover:text-white hover:bg-white/10";
+
+  return (
+    <div
+      className={`flex flex-col sm:flex-row items-center justify-between gap-4 py-3 select-none text-xs ${className}`}
+    >
+      <div className="text-xs opacity-70">
+        {isThai ? (
+          <>
+            หน้า <span className="font-semibold text-zinc-900 dark:text-white">{pageIndex}</span>
+            {" · "}
+            <span className="font-semibold text-zinc-900 dark:text-white">{itemCount}</span> รายการ
+          </>
+        ) : (
+          <>
+            Page <span className="font-semibold text-zinc-900 dark:text-white">{pageIndex}</span>
+            {" · "}
+            <span className="font-semibold text-zinc-900 dark:text-white">{itemCount}</span> items
+          </>
+        )}
+      </div>
+
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={onPrevious}
+          disabled={!hasPrevious || isLoading}
+          title={isThai ? "ก่อนหน้า" : "Previous Page"}
+          className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-25 ${buttonClass}`}
+        >
+          <ChevronLeft size={16} />
+          <span>{isThai ? "ก่อนหน้า" : "Previous"}</span>
+        </button>
+        <button
+          type="button"
+          onClick={onNext}
+          disabled={!hasNext || isLoading}
+          title={isThai ? "ถัดไป" : "Next Page"}
+          className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-25 ${buttonClass}`}
+        >
+          <span>{isThai ? "ถัดไป" : "Next"}</span>
+          <ChevronRight size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function OffsetPagination({
   currentPage,
   totalPages,
   totalItems,
@@ -27,7 +118,7 @@ export default function Pagination({
   isThai = true,
   className = "",
   showTotalItems = true,
-}: PaginationProps) {
+}: OffsetPaginationProps) {
   const { theme } = useTheme();
   const isLight = theme === "light";
 

@@ -36,7 +36,9 @@ export type UserFilters = {
   search: string | null;
   status: AccountStatus | null;
   roleCode: string | null;
+  roleAssigned: boolean | null;
   facilityId: string | null;
+  departmentId: string | null;
   profileComplete: boolean | null;
 };
 

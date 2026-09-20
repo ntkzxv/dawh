@@ -15,18 +15,24 @@ import {
   Eye,
   Edit,
   X,
-  Lock,
-  UserCheck,
-  UserX,
-  Info,
   ChevronDown,
   RotateCcw,
 } from "lucide-react";
 import { CustomDropdown, Pagination } from "@/components/common";
+import type { ApiPage } from "@/lib/api/client";
+import type { ControlPanelListQuery } from "@/lib/api/control-panel";
 
 interface UserManagementTabProps {
   users: AdminUserRecord[];
   onUpdateUserStatus: (userId: string, status: AdminUserRecord["accountStatus"], reason: string) => void;
+  page: ApiPage;
+  pageIndex: number;
+  isPageLoading?: boolean;
+  onPageChange: (
+    direction: "previous" | "next",
+    filters: ControlPanelListQuery,
+  ) => void;
+  onFiltersChange: (filters: ControlPanelListQuery) => void;
   currentUserId?: string;
   isThai: boolean;
 }
@@ -34,6 +40,11 @@ interface UserManagementTabProps {
 export default function UserManagementTab({
   users,
   onUpdateUserStatus,
+  page,
+  pageIndex,
+  isPageLoading,
+  onPageChange,
+  onFiltersChange,
   currentUserId = "usr-001",
   isThai,
 }: UserManagementTabProps) {
@@ -46,6 +57,7 @@ export default function UserManagementTab({
   const [roleFilter, setRoleFilter] = useState<string>("ALL");
   const [facilityFilter, setFacilityFilter] = useState<string>("ALL");
   const [profileFilter, setProfileFilter] = useState<string>("ALL");
+  const lastFilterKey = useRef<string | null>(null);
 
   // Custom Dropdown Filter State & Ref
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -136,9 +148,6 @@ export default function UserManagementTab({
     ).length;
   }, [users]);
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-
   // Filtered list
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
@@ -168,17 +177,34 @@ export default function UserManagementTab({
     });
   }, [users, searchQuery, statusFilter, roleFilter, facilityFilter, profileFilter]);
 
-  // Reset to first page when search or filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, statusFilter, roleFilter, facilityFilter, profileFilter]);
+  const backendFilters = useMemo<ControlPanelListQuery>(
+    () => ({
+      search: searchQuery.trim() || null,
+      status: statusFilter === "ALL" ? null : statusFilter,
+      roleCode: roleFilter === "ALL" ? null : roleFilter,
+      facilityId: facilityFilter === "ALL" ? null : facilityFilter,
+      profileComplete:
+        profileFilter === "ALL" ? null : profileFilter === "COMPLETE",
+    }),
+    [facilityFilter, profileFilter, roleFilter, searchQuery, statusFilter],
+  );
 
-  // Calculate total pages and paginated items
-  const totalPages = Math.ceil(filteredUsers.length / pageSize) || 1;
-  const paginatedUsers = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredUsers.slice(start, start + pageSize);
-  }, [filteredUsers, currentPage, pageSize]);
+  // Filters are server-side so cursor history is reset with every new query.
+  useEffect(() => {
+    const key = JSON.stringify(backendFilters);
+    if (lastFilterKey.current === null) {
+      lastFilterKey.current = key;
+      return;
+    }
+    if (key === lastFilterKey.current) return;
+    const timer = window.setTimeout(() => {
+      lastFilterKey.current = key;
+      onFiltersChange(backendFilters);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [backendFilters, onFiltersChange]);
+
+  const paginatedUsers = filteredUsers;
 
   // Handle status submit with guards
   const handleStatusSubmit = (e: React.FormEvent) => {
@@ -666,14 +692,17 @@ export default function UserManagementTab({
         </div>
 
         {/* Pagination (Outside Table Card) */}
-        {filteredUsers.length > 0 && (
+        {(filteredUsers.length > 0 || pageIndex > 1) && (
           <div className="mt-4">
             <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={filteredUsers.length}
-              pageSize={10}
-              onPageChange={setCurrentPage}
+              mode="cursor"
+              pageIndex={pageIndex}
+              itemCount={filteredUsers.length}
+              hasPrevious={pageIndex > 1}
+              hasNext={page.hasMore}
+              onPrevious={() => onPageChange("previous", backendFilters)}
+              onNext={() => onPageChange("next", backendFilters)}
+              isLoading={isPageLoading}
               isThai={isThai}
             />
           </div>

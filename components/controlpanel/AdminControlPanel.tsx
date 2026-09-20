@@ -37,7 +37,6 @@ import {
   fetchStockTabData,
   fetchSafetyStockTabData,
   fetchAuditLogsTabData,
-  mapUserSummaryToRecord,
   mapFacilityDtoToRecord,
   mapLocationDtoToRecord,
   mapDepartmentDtoToRecord,
@@ -46,9 +45,10 @@ import {
   mapCategoryDtoToRecord,
   mapBrandDtoToRecord,
   mapReasonCodeDtoToRecord,
+  type ControlPanelListQuery,
 } from "@/lib/api/control-panel";
+import type { ApiPage } from "@/lib/api/client";
 import {
-  listAdminUsers,
   changeAccountStatus,
   assignRole,
   revokeRole,
@@ -96,6 +96,14 @@ import AuditLogTab from "./tabs/AuditLogTab";
 
 import { ShieldAlert } from "lucide-react";
 import type { FacilityScopeType } from "@/lib/access/types";
+
+const CONTROL_PANEL_PAGE_SIZE = 50;
+
+const initialCursorPage: ApiPage = {
+  limit: CONTROL_PANEL_PAGE_SIZE,
+  nextCursor: null,
+  hasMore: false,
+};
 
 export default function AdminControlPanel() {
   const { theme } = useTheme();
@@ -162,7 +170,13 @@ export default function AdminControlPanel() {
 
   // Enterprise Domain States (Empty by default; populated from database only for authorized admins)
   const [users, setUsers] = useState<AdminUserRecord[]>([]);
+  const [usersPage, setUsersPage] = useState<ApiPage>(initialCursorPage);
+  const [usersCurrentCursor, setUsersCurrentCursor] = useState<string | null>(null);
+  const [usersCursorHistory, setUsersCursorHistory] = useState<Array<string | null>>([]);
   const [roles, setRoles] = useState<CanonicalRole[]>([]);
+  const [rolesPage, setRolesPage] = useState<ApiPage>(initialCursorPage);
+  const [rolesCurrentCursor, setRolesCurrentCursor] = useState<string | null>(null);
+  const [rolesCursorHistory, setRolesCursorHistory] = useState<Array<string | null>>([]);
   const [roleHistory, setRoleHistory] = useState<RoleAssignmentHistory[]>([]);
   const [facilities, setFacilities] = useState<FacilityRecord[]>([]);
   const [locations, setLocations] = useState<WarehouseLocationRecord[]>([]);
@@ -266,10 +280,14 @@ export default function AdminControlPanel() {
   // On-Demand Tab Data Fetching from PostgreSQL & Next.js APIs
   // ==========================================================================
   const loadTabData = useCallback(
-    async (targetTab: AdminTabKey, isManualRefresh = false) => {
+    async (
+      targetTab: AdminTabKey,
+      isManualRefresh = false,
+      query: ControlPanelListQuery = {},
+    ): Promise<boolean> => {
       // Avoid refetching if already loaded and not a manual refresh
-      if (!isManualRefresh && loadedTabs.has(targetTab)) {
-        return;
+      if (!isManualRefresh && loadedTabs.has(targetTab) && Object.keys(query).length === 0) {
+        return true;
       }
 
       if (isManualRefresh) {
@@ -280,14 +298,30 @@ export default function AdminControlPanel() {
 
       try {
         if (targetTab === "users") {
-          const data = await fetchUsersTabData();
+          const data = await fetchUsersTabData({
+            limit: CONTROL_PANEL_PAGE_SIZE,
+            ...query,
+          });
           setUsers(data.users);
+          setUsersPage(data.page);
+          if (isManualRefresh) {
+            setUsersCurrentCursor(null);
+            setUsersCursorHistory([]);
+          }
           setRoles((prev) => (prev.length === 0 ? data.roles : prev));
           setFacilities((prev) => (prev.length === 0 ? data.facilities : prev));
           setDepartments((prev) => (prev.length === 0 ? data.departments : prev));
         } else if (targetTab === "roles") {
-          const data = await fetchRolesTabData();
+          const data = await fetchRolesTabData({
+            limit: CONTROL_PANEL_PAGE_SIZE,
+            ...query,
+          });
           setRoles(data.roles);
+          setRolesPage(data.page);
+          if (isManualRefresh) {
+            setRolesCurrentCursor(null);
+            setRolesCursorHistory([]);
+          }
           if (data.users.length > 0) setUsers(data.users);
 
           // Build Role History from active role assignments
@@ -361,18 +395,104 @@ export default function AdminControlPanel() {
               : "Active module records updated.",
           });
         }
+        return true;
       } catch (err: unknown) {
         const errorMsg =
           err instanceof Error ? err.message : "เกิดข้อผิดพลาดในการโหลดข้อมูล";
         notify.error(isThai ? "ไม่สามารถโหลดข้อมูลได้" : "Data Fetch Failed", {
           message: errorMsg,
         });
+        return false;
       } finally {
         setTabLoading(false);
         setIsRefreshing(false);
       }
     },
     [isThai, notify, loadedTabs]
+  );
+
+  const handleUserFiltersChange = useCallback(
+    async (filters: ControlPanelListQuery) => {
+      const loaded = await loadTabData("users", false, {
+        limit: CONTROL_PANEL_PAGE_SIZE,
+        ...filters,
+      });
+      if (loaded) {
+        setUsersCurrentCursor(null);
+        setUsersCursorHistory([]);
+      }
+    },
+    [loadTabData],
+  );
+
+  const handleUserPageChange = useCallback(
+    async (
+      direction: "previous" | "next",
+      filters: ControlPanelListQuery,
+    ) => {
+      const cursor =
+        direction === "next"
+          ? usersPage.nextCursor
+          : (usersCursorHistory.at(-1) ?? null);
+      if (!cursor && direction === "next") return;
+
+      const loaded = await loadTabData("users", false, {
+        limit: usersPage.limit,
+        cursor,
+        ...filters,
+      });
+      if (!loaded) return;
+
+      setUsersCursorHistory((history) =>
+        direction === "next"
+          ? [...history, usersCurrentCursor]
+          : history.slice(0, -1),
+      );
+      setUsersCurrentCursor(cursor);
+    },
+    [loadTabData, usersCursorHistory, usersCurrentCursor, usersPage],
+  );
+
+  const handleRoleFiltersChange = useCallback(
+    async (filters: ControlPanelListQuery) => {
+      const loaded = await loadTabData("roles", false, {
+        limit: CONTROL_PANEL_PAGE_SIZE,
+        ...filters,
+      });
+      if (loaded) {
+        setRolesCurrentCursor(null);
+        setRolesCursorHistory([]);
+      }
+    },
+    [loadTabData],
+  );
+
+  const handleRolePageChange = useCallback(
+    async (
+      direction: "previous" | "next",
+      filters: ControlPanelListQuery,
+    ) => {
+      const cursor =
+        direction === "next"
+          ? rolesPage.nextCursor
+          : (rolesCursorHistory.at(-1) ?? null);
+      if (!cursor && direction === "next") return;
+
+      const loaded = await loadTabData("roles", false, {
+        limit: rolesPage.limit,
+        cursor,
+        ...filters,
+      });
+      if (!loaded) return;
+
+      setRolesCursorHistory((history) =>
+        direction === "next"
+          ? [...history, rolesCurrentCursor]
+          : history.slice(0, -1),
+      );
+      setRolesCurrentCursor(cursor);
+    },
+    [loadTabData, rolesCursorHistory, rolesCurrentCursor, rolesPage],
   );
 
   useEffect(() => {
@@ -411,13 +531,18 @@ export default function AdminControlPanel() {
 
   // Helper to re-fetch specific user list
   const refreshUsers = async () => {
-    try {
-      const res = await listAdminUsers({ limit: 100 });
-      if (res?.data) {
-        setUsers(res.data.map(mapUserSummaryToRecord));
-      }
-    } catch {
-      // Non-blocking
+    const targetTab = activeTab === "roles" || activeTab === "scopes" ? activeTab : "users";
+    const loaded = await loadTabData(targetTab, false, {
+      limit: CONTROL_PANEL_PAGE_SIZE,
+    });
+    if (!loaded) return;
+
+    if (targetTab === "roles") {
+      setRolesCurrentCursor(null);
+      setRolesCursorHistory([]);
+    } else if (targetTab === "users") {
+      setUsersCurrentCursor(null);
+      setUsersCursorHistory([]);
     }
   };
 
@@ -1228,6 +1353,11 @@ export default function AdminControlPanel() {
                   <UserManagementTab
                     users={users}
                     onUpdateUserStatus={handleUpdateUserStatus}
+                    page={usersPage}
+                    pageIndex={usersCursorHistory.length + 1}
+                    isPageLoading={tabLoading}
+                    onPageChange={handleUserPageChange}
+                    onFiltersChange={handleUserFiltersChange}
                     currentUserId={appMe?.user?.id || ""}
                     isThai={isThai}
                   />
@@ -1240,9 +1370,13 @@ export default function AdminControlPanel() {
                     history={roleHistory}
                     onAssignRole={handleAssignRole}
                     onRevokeRole={handleRevokeRole}
+                    page={rolesPage}
+                    pageIndex={rolesCursorHistory.length + 1}
+                    isPageLoading={tabLoading}
+                    onPageChange={handleRolePageChange}
+                    onFiltersChange={handleRoleFiltersChange}
                     isThai={isThai}
                     activeSubTab={activeRoleSubTab}
-                    onSubTabChange={setActiveRoleSubTab}
                   />
                 )}
 

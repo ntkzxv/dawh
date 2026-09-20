@@ -11,6 +11,9 @@ import type { SafetyStockRuleDto } from "@/lib/safety-stock/types";
 import type { StockBalance, StockLedgerLine } from "@/lib/stock/types";
 import type { UnitOfMeasureDto } from "@/lib/units-of-measure/types";
 import type { AuditLogRecord } from "@/lib/audit/types";
+import type { UserFilters } from "@/lib/admin/users/types";
+import type { PageRequest } from "@/lib/core/http/pagination";
+import type { PageMeta } from "@/lib/core/http/response";
 
 export const controlPanelTabs = [
   "users",
@@ -25,6 +28,13 @@ export const controlPanelTabs = [
 
 export type ControlPanelTab = (typeof controlPanelTabs)[number];
 
+export type ControlPanelTabQuery = {
+  page: PageRequest;
+  userFilters?: UserFilters;
+  balancePage?: PageRequest;
+  ledgerPage?: PageRequest;
+};
+
 export type ControlPanelTabData =
   | {
       tab: "users";
@@ -32,17 +42,20 @@ export type ControlPanelTabData =
       roles: RoleDto[];
       facilities: Facility[];
       departments: DepartmentDto[];
+      page: PageMeta;
     }
   | {
       tab: "roles";
       users: AdminUserSummary[];
       roles: RoleDto[];
       permissions: PermissionDto[];
+      page: PageMeta;
     }
   | {
       tab: "scopes";
       users: AdminUserSummary[];
       facilities: Facility[];
+      page: PageMeta;
     }
   | {
       tab: "organization";
@@ -57,20 +70,24 @@ export type ControlPanelTabData =
       brands: BrandDto[];
       uoms: UnitOfMeasureDto[];
       reasonCodes: ReasonCodeDto[];
+      page: PageMeta;
     }
   | {
       tab: "stock";
       balances: StockBalance[];
       ledger: StockLedgerLine[];
+      balancePage: PageMeta;
+      ledgerPage: PageMeta;
     }
   | {
       tab: "safety_stock";
       safetyRules: SafetyStockRuleDto[];
       facilities: Facility[];
       products: Product[];
+      page: PageMeta;
     }
   | {
       tab: "audit_logs";
       logs: AuditLogRecord[];
-      page: { limit: number; nextCursor: string | null; hasMore: boolean };
+      page: PageMeta;
     };

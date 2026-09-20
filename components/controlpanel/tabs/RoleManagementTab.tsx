@@ -10,9 +10,6 @@ import {
   Plus,
   RotateCcw,
   AlertCircle,
-  History,
-  Lock,
-  Calendar,
   AlertTriangle,
   UserCheck,
   Info,
@@ -20,10 +17,11 @@ import {
   Filter,
   Users,
   Building,
-  Layers,
   ChevronDown,
 } from "lucide-react";
 import { CustomDropdown, Pagination } from "@/components/common";
+import type { ApiPage } from "@/lib/api/client";
+import type { ControlPanelListQuery } from "@/lib/api/control-panel";
 
 interface RoleManagementTabProps {
   roles: CanonicalRole[];
@@ -31,9 +29,16 @@ interface RoleManagementTabProps {
   history: RoleAssignmentHistory[];
   onAssignRole: (userId: string, roleId: string, validFrom: string | null, validUntil: string | null) => void;
   onRevokeRole: (userId: string, assignmentId: string, reason: string) => void;
+  page: ApiPage;
+  pageIndex: number;
+  isPageLoading?: boolean;
+  onPageChange: (
+    direction: "previous" | "next",
+    filters: ControlPanelListQuery,
+  ) => void;
+  onFiltersChange: (filters: ControlPanelListQuery) => void;
   isThai: boolean;
   activeSubTab?: RoleSubTabKey;
-  onSubTabChange?: (subTab: RoleSubTabKey) => void;
 }
 
 export default function RoleManagementTab({
@@ -42,9 +47,13 @@ export default function RoleManagementTab({
   history,
   onAssignRole,
   onRevokeRole,
+  page,
+  pageIndex,
+  isPageLoading,
+  onPageChange,
+  onFiltersChange,
   isThai,
   activeSubTab,
-  onSubTabChange,
 }: RoleManagementTabProps) {
   const { theme } = useTheme();
   const isLight = theme === "light";
@@ -62,10 +71,9 @@ export default function RoleManagementTab({
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [deptFacilityFilter, setDeptFacilityFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const filterDropdownRef = useRef<HTMLDivElement>(null);
+  const lastFilterKey = useRef<string | null>(null);
 
   // Close filter dropdown on outside click
   useEffect(() => {
@@ -211,17 +219,48 @@ export default function RoleManagementTab({
     });
   }, [users, searchQuery, roleFilter, deptFacilityFilter, statusFilter]);
 
-  // Reset to first page when search or filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, roleFilter, deptFacilityFilter, statusFilter]);
+  const selectedDepartmentOrFacility = deptFacilityOptions.find(
+    (option) => option.id === deptFacilityFilter,
+  );
+  const backendFilters = useMemo<ControlPanelListQuery>(
+    () => ({
+      search: searchQuery.trim() || null,
+      roleCode:
+        roleFilter === "ALL" || roleFilter === "UNASSIGNED"
+          ? null
+          : roleFilter,
+      roleAssigned: roleFilter === "UNASSIGNED" ? false : null,
+      departmentId:
+        selectedDepartmentOrFacility?.type === "dept"
+          ? selectedDepartmentOrFacility.id
+          : null,
+      facilityId:
+        selectedDepartmentOrFacility?.type === "facility"
+          ? selectedDepartmentOrFacility.id
+          : null,
+      status:
+        statusFilter === "ALL" || statusFilter === "LOCKED"
+          ? null
+          : statusFilter,
+    }),
+    [roleFilter, searchQuery, selectedDepartmentOrFacility, statusFilter],
+  );
 
-  // Calculate total pages and paginated items for role assignments
-  const totalPages = Math.ceil(filteredUsers.length / pageSize) || 1;
-  const paginatedUsers = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredUsers.slice(start, start + pageSize);
-  }, [filteredUsers, currentPage, pageSize]);
+  useEffect(() => {
+    const key = JSON.stringify(backendFilters);
+    if (lastFilterKey.current === null) {
+      lastFilterKey.current = key;
+      return;
+    }
+    if (key === lastFilterKey.current) return;
+    const timer = window.setTimeout(() => {
+      lastFilterKey.current = key;
+      onFiltersChange(backendFilters);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [backendFilters, onFiltersChange]);
+
+  const paginatedUsers = filteredUsers;
 
   // Dropdown options for filter toolbar
   const roleDropdownOptions = useMemo(() => [
@@ -933,14 +972,17 @@ export default function RoleManagementTab({
           </div>
 
           {/* Pagination (Outside Table Card) */}
-          {filteredUsers.length > 0 && (
+          {(filteredUsers.length > 0 || pageIndex > 1) && (
             <div className="mt-4">
               <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={filteredUsers.length}
-                pageSize={10}
-                onPageChange={setCurrentPage}
+                mode="cursor"
+                pageIndex={pageIndex}
+                itemCount={filteredUsers.length}
+                hasPrevious={pageIndex > 1}
+                hasNext={page.hasMore}
+                onPrevious={() => onPageChange("previous", backendFilters)}
+                onNext={() => onPageChange("next", backendFilters)}
+                isLoading={isPageLoading}
                 isThai={isThai}
               />
             </div>

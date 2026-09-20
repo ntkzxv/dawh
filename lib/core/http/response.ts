@@ -1,7 +1,7 @@
 import { ApiError } from "@/lib/core/http/errors";
 import { getRequestId } from "@/lib/core/http/request-id";
 
-type PageMeta = {
+export type PageMeta = {
   limit: number;
   nextCursor: string | null;
   hasMore: boolean;

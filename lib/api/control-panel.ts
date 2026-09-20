@@ -294,14 +294,42 @@ export function mapStockLedgerDtoToRecord(l: StockLedgerLine): StockLedgerRecord
 // ============================================================================
 // Modular Tab Fetchers (On-Demand / Lazy Loading)
 // ============================================================================
-async function fetchControlPanelTab<T extends ControlPanelTab>(tab: T) {
+export type ControlPanelListQuery = {
+  limit?: number;
+  cursor?: string | null;
+  balanceCursor?: string | null;
+  ledgerCursor?: string | null;
+  search?: string | null;
+  status?: string | null;
+  roleCode?: string | null;
+  roleAssigned?: boolean | null;
+  facilityId?: string | null;
+  departmentId?: string | null;
+  profileComplete?: boolean | null;
+};
+
+function toQueryString(query: ControlPanelListQuery): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== null && value !== undefined && value !== "") {
+      params.set(key, String(value));
+    }
+  }
+  const search = params.toString();
+  return search ? `?${search}` : "";
+}
+
+async function fetchControlPanelTab<T extends ControlPanelTab>(
+  tab: T,
+  query: ControlPanelListQuery = {},
+) {
   return apiGet<Extract<ControlPanelTabData, { tab: T }>>(
-    `/api/admin/control-panel/${tab}`,
+    `/api/admin/control-panel/${tab}${toQueryString(query)}`,
   );
 }
 
-export async function fetchUsersTabData() {
-  const { data } = await fetchControlPanelTab("users");
+export async function fetchUsersTabData(query?: ControlPanelListQuery) {
+  const { data } = await fetchControlPanelTab("users", query);
 
   return {
     rawUsers: data.users,
@@ -309,27 +337,30 @@ export async function fetchUsersTabData() {
     roles: data.roles.map(mapRoleDtoToCanonicalRole),
     facilities: data.facilities.map(mapFacilityDtoToRecord),
     departments: data.departments.map(mapDepartmentDtoToRecord),
+    page: data.page,
   };
 }
 
-export async function fetchRolesTabData() {
-  const { data } = await fetchControlPanelTab("roles");
+export async function fetchRolesTabData(query?: ControlPanelListQuery) {
+  const { data } = await fetchControlPanelTab("roles", query);
 
   return {
     roles: data.roles.map(mapRoleDtoToCanonicalRole),
     permissions: data.permissions,
     rawUsers: data.users,
     users: data.users.map(mapUserSummaryToRecord),
+    page: data.page,
   };
 }
 
-export async function fetchScopesTabData() {
-  const { data } = await fetchControlPanelTab("scopes");
+export async function fetchScopesTabData(query?: ControlPanelListQuery) {
+  const { data } = await fetchControlPanelTab("scopes", query);
 
   return {
     rawUsers: data.users,
     users: data.users.map(mapUserSummaryToRecord),
     facilities: data.facilities.map(mapFacilityDtoToRecord),
+    page: data.page,
   };
 }
 
@@ -346,8 +377,8 @@ export async function fetchOrganizationTabData() {
   };
 }
 
-export async function fetchProductsTabData() {
-  const { data } = await fetchControlPanelTab("products");
+export async function fetchProductsTabData(query?: ControlPanelListQuery) {
+  const { data } = await fetchControlPanelTab("products", query);
 
   return {
     rawProducts: data.products,
@@ -360,20 +391,23 @@ export async function fetchProductsTabData() {
     brands: data.brands.map(mapBrandDtoToRecord),
     uoms: data.uoms.map(mapUomDtoToRecord),
     reasonCodes: data.reasonCodes.map(mapReasonCodeDtoToRecord),
+    page: data.page,
   };
 }
 
-export async function fetchStockTabData() {
-  const { data } = await fetchControlPanelTab("stock");
+export async function fetchStockTabData(query?: ControlPanelListQuery) {
+  const { data } = await fetchControlPanelTab("stock", query);
 
   return {
     balances: data.balances.map(mapStockBalanceDtoToRecord),
     ledger: data.ledger.map(mapStockLedgerDtoToRecord),
+    balancePage: data.balancePage,
+    ledgerPage: data.ledgerPage,
   };
 }
 
-export async function fetchSafetyStockTabData() {
-  const { data } = await fetchControlPanelTab("safety_stock");
+export async function fetchSafetyStockTabData(query?: ControlPanelListQuery) {
+  const { data } = await fetchControlPanelTab("safety_stock", query);
 
   const facilityMap = new Map<string, string>();
   data.facilities.forEach((f) => facilityMap.set(f.id, f.name));
@@ -390,10 +424,11 @@ export async function fetchSafetyStockTabData() {
         productMap.get(r.productId) || r.sku
       )
     ),
+    page: data.page,
   };
 }
 
-export async function fetchAuditLogsTabData() {
-  const { data } = await fetchControlPanelTab("audit_logs");
+export async function fetchAuditLogsTabData(query?: ControlPanelListQuery) {
+  const { data } = await fetchControlPanelTab("audit_logs", query);
   return data;
 }
