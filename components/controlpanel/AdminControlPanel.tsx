@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage, setAppLanguage } from "@/utils/language";
@@ -86,17 +85,14 @@ import type { SafetyStockRuleDto } from "@/lib/safety-stock/types";
 import type { UnitOfMeasureDto } from "@/lib/units-of-measure/types";
 
 import SkeletonControlPanelTab from "./SkeletonControlPanel";
-
-// Each inactive panel stays out of the initial client bundle. The parent keeps
-// its existing skeleton and state behavior, so this changes no visual design.
-const UserManagementTab = dynamic(() => import("./tabs/UserManagementTab"));
-const RoleManagementTab = dynamic(() => import("./tabs/RoleManagementTab"));
-const FacilityScopeTab = dynamic(() => import("./tabs/FacilityScopeTab"));
-const OrganizationTab = dynamic(() => import("./tabs/OrganizationTab"));
-const ProductCatalogTab = dynamic(() => import("./tabs/ProductCatalogTab"));
-const StockMonitoringTab = dynamic(() => import("./tabs/StockMonitoringTab"));
-const SafetyStockTab = dynamic(() => import("./tabs/SafetyStockTab"));
-const AuditLogTab = dynamic(() => import("./tabs/AuditLogTab"));
+import UserManagementTab from "./tabs/UserManagementTab";
+import RoleManagementTab from "./tabs/RoleManagementTab";
+import FacilityScopeTab from "./tabs/FacilityScopeTab";
+import OrganizationTab from "./tabs/OrganizationTab";
+import ProductCatalogTab from "./tabs/ProductCatalogTab";
+import StockMonitoringTab from "./tabs/StockMonitoringTab";
+import SafetyStockTab from "./tabs/SafetyStockTab";
+import AuditLogTab from "./tabs/AuditLogTab";
 
 import { ShieldAlert } from "lucide-react";
 import type { FacilityScopeType } from "@/lib/access/types";
@@ -117,6 +113,7 @@ export default function AdminControlPanel() {
   // Sidebar Minimized State (mirrors warehouse layout)
   const [isMinimized, setIsMinimized] = useState(false);
   const [sidebarAnimated, setSidebarAnimated] = useState(false);
+  const [viewportAnimated, setViewportAnimated] = useState(false);
 
   useEffect(() => {
     let animationFrame: number | undefined;
@@ -1113,10 +1110,12 @@ export default function AdminControlPanel() {
         </NavbarMain>
       </motion.div>
 
-      {/* Main Content Viewport - Slide in from Top to Bottom */}
+      {/* Main Content Viewport - Slide in from Top to Bottom (Only on initial load) */}
       <motion.div
         initial={{ y: -45, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
+        onAnimationComplete={() => setViewportAnimated(true)}
+        style={{ transform: viewportAnimated ? "none" : undefined }}
         transition={{
           duration: 0.55,
           delay: 0.08,
