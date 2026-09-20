@@ -589,20 +589,13 @@ export default function NavbarMain({
                     : "max-w-[130px] opacity-100 translate-x-0 duration-350 delay-100"
                 }`}
               >
-                <div className="flex items-center gap-1.5">
-                  <p
-                    className={`text-[13px] font-semibold truncate leading-tight ${
-                      isLight ? "text-slate-900" : "text-[#FFFFFF]"
-                    }`}
-                  >
-                    {userName}
-                  </p>
-                  {isAdmin && (
-                    <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-500 border border-amber-500/30 leading-tight">
-                      Admin
-                    </span>
-                  )}
-                </div>
+                <p
+                  className={`text-[13px] font-semibold truncate leading-tight ${
+                    isLight ? "text-slate-900" : "text-[#FFFFFF]"
+                  }`}
+                >
+                  {userName}
+                </p>
                 <p
                   className={`text-[11.5px] truncate leading-tight mt-0.5 ${
                     isLight ? "text-slate-500" : "text-[#D4D4D8]"
