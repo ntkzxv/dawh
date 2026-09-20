@@ -19,6 +19,7 @@ export const customTheme = {
     sidebar: "#222222",         // Sidebar container & inputs
     cards: "#383838",           // Cards, active tab highlight, modals
     accent: "#FFFFFF",          // Accent (Auth, primary CTAs, progress bars)
+    secondary: "#6366F1",       // Secondary Accent (Active pagination, highlights, interactive chips)
     border: "#444444",          // Dividers, card borders, subtle separators
     text: {
       primary: "#FFFFFF",       // Pure White (Primary Text & Headings)
@@ -31,6 +32,7 @@ export const customTheme = {
     sidebar: "#FFFFFF",         // Pure white sidebar
     cards: "#FFFFFF",           // Clean white cards
     accent: "#222222",          // Dark slate accent
+    secondary: "#6366F1",       // Secondary Accent (Active pagination, highlights, interactive chips)
     border: "#E4E4E7",          // Subtle light zinc border
     text: {
       primary: "#222222",       // Dark slate primary text
@@ -47,6 +49,7 @@ When designing forms, badges, status pills, password strength, or indicators, st
 
 | Status Role | Light Theme (`#F8FAFC`) | Dark / Black Theme (`#2C2C2C`) |
 | :--- | :--- | :--- |
+| **🟣 Secondary Accent / Pagination** | **`#6366F1`**<br>`bg-[#6366F1] text-white font-bold`<br>`shadow-sm rounded-lg` | **`#6366F1`**<br>`bg-[#6366F1] text-white font-bold`<br>`shadow-sm rounded-lg` |
 | **✅ Correct / Valid / Success / Active** | **`#2EC4B6`**<br>`text-[#2EC4B6] font-bold`<br>`bg-[#2EC4B6]/10 border-[#2EC4B6]/30`<br>Bar / Badge fill: `bg-[#2EC4B6]` | **`#2EC4B6`**<br>`text-[#2EC4B6] font-semibold`<br>`bg-[#2EC4B6]/15 border-[#2EC4B6]/30`<br>Bar / Badge fill: `bg-[#2EC4B6]` |
 | **❌ Incorrect / Invalid / Error / Danger** | **`#E74C3C`**<br>`text-[#E74C3C] font-bold`<br>`bg-[#E74C3C]/10 border-[#E74C3C]/30`<br>Bar / Badge fill: `bg-[#E74C3C]` | **`#E71D36`**<br>`text-[#E71D36] font-semibold`<br>`bg-[#E71D36]/15 border-[#E71D36]/30`<br>Bar / Badge fill: `bg-[#E71D36]` |
 | **⚠️ Warning / Fair / Pending / Attention** | **`#FF9F1C`**<br>`text-[#FF9F1C] font-bold`<br>`bg-[#FF9F1C]/10 border-[#FF9F1C]/30`<br>Bar / Badge fill: `bg-[#FF9F1C]` | **`#FF9F1C`**<br>`text-[#FF9F1C] font-semibold`<br>`bg-[#FF9F1C]/15 border-[#FF9F1C]/30`<br>Bar / Badge fill: `bg-[#FF9F1C]` |
