@@ -360,7 +360,9 @@ export default function RoleManagementTab({
               }`}
             >
               <div
-                className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-[#2EC4B6]/15 text-[#2EC4B6]`}
+                className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                  isLight ? "bg-zinc-100 text-zinc-800" : "bg-[#2C2C2C] text-white"
+                }`}
               >
                 <UserCheck size={18} />
               </div>
@@ -368,7 +370,7 @@ export default function RoleManagementTab({
                 <div className="text-[11px] opacity-60 font-medium truncate">
                   {isThai ? "มอบหมายบทบาทแล้ว" : "Assigned Roles"}
                 </div>
-                <div className="text-base font-bold leading-tight mt-0.5 text-[#2EC4B6]">
+                <div className="text-base font-bold leading-tight mt-0.5">
                   {assignedUsersCount} {isThai ? "คน" : ""}
                   <span className="text-[11px] opacity-60 font-normal ml-1">
                     ({totalAssignmentsCount} {isThai ? "สิทธิ์" : "grants"})
