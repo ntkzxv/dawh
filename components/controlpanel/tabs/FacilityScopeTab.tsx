@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useTheme } from "@/context/ThemeContext";
+import { CustomDropdown } from "@/components/common";
 import type { AdminUserRecord, FacilityRecord } from "../types";
 import type { FacilityScopeType } from "@/lib/access/types";
 import {
@@ -73,6 +74,48 @@ export default function FacilityScopeTab({
     scope: AdminUserRecord["facilityScopes"][0];
   } | null>(null);
   const [revokeReason, setRevokeReason] = useState("");
+
+  // Dropdown options
+  const userFilterOptions = useMemo(() => [
+    { value: "ALL", label: isThai ? "ผู้ใช้งานทั้งหมด" : "All Users" },
+    ...users.map((u) => ({
+      value: u.id,
+      label: u.name,
+      subLabel: u.email,
+    })),
+  ], [users, isThai]);
+
+  const facilityFilterOptions = useMemo(() => [
+    { value: "ALL", label: isThai ? "ทุกสาขา/คลัง" : "All Facilities" },
+    ...facilities.map((f) => ({
+      value: f.id,
+      label: `${f.name} (${f.code})`,
+      badge: f.code,
+    })),
+  ], [facilities, isThai]);
+
+  const assignUserOptions = useMemo(() => {
+    return users.map((u) => ({
+      value: u.id,
+      label: u.name,
+      subLabel: u.email,
+    }));
+  }, [users]);
+
+  const assignFacilityOptions = useMemo(() => {
+    return facilities.map((f) => ({
+      value: f.id,
+      label: `${f.name} (${f.code})`,
+      badge: f.code,
+    }));
+  }, [facilities]);
+
+  const scopeTypeOptions = useMemo(() => [
+    { value: "READ" as FacilityScopeType, label: `READ (${isThai ? "อ่านข้อมูลเท่านั้น" : "Read-only"})` },
+    { value: "OPERATE" as FacilityScopeType, label: `OPERATE (${isThai ? "ปฏิบัติการคลัง/รับส่ง" : "Operational"})` },
+    { value: "APPROVE" as FacilityScopeType, label: `APPROVE (${isThai ? "อนุมัติรายการและเอกสาร" : "Approval Authority"})` },
+    { value: "ADMIN" as FacilityScopeType, label: `ADMIN (${isThai ? "ผู้ดูแลและบริหารจัดการสาขา" : "Facility Administrator"})` },
+  ], [isThai]);
 
   // Flattened scopes list for table
   const allScopes = users.flatMap((user) =>
@@ -214,36 +257,26 @@ export default function FacilityScopeTab({
       >
         <div className="flex flex-wrap items-center gap-2 text-xs">
           {/* User Filter */}
-          <select
-            value={selectedUserFilter}
-            onChange={(e) => setSelectedUserFilter(e.target.value)}
-            className={`px-3 py-2 rounded-lg border outline-none ${
-              isLight ? "bg-zinc-50 border-zinc-200" : "bg-[#2C2C2C] border-[#444444] text-white"
-            }`}
-          >
-            <option value="ALL">{isThai ? "ผู้ใช้งานทั้งหมด" : "All Users"}</option>
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.name}
-              </option>
-            ))}
-          </select>
+          <div className="min-w-[170px]">
+            <CustomDropdown
+              value={selectedUserFilter}
+              onChange={setSelectedUserFilter}
+              options={userFilterOptions}
+              searchable={users.length > 5}
+              searchPlaceholder={isThai ? "ค้นหาผู้ใช้..." : "Search user..."}
+            />
+          </div>
 
           {/* Facility Filter */}
-          <select
-            value={selectedFacilityFilter}
-            onChange={(e) => setSelectedFacilityFilter(e.target.value)}
-            className={`px-3 py-2 rounded-lg border outline-none ${
-              isLight ? "bg-zinc-50 border-zinc-200" : "bg-[#2C2C2C] border-[#444444] text-white"
-            }`}
-          >
-            <option value="ALL">{isThai ? "ทุกสาขา/คลัง" : "All Facilities"}</option>
-            {facilities.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name} ({f.code})
-              </option>
-            ))}
-          </select>
+          <div className="min-w-[170px]">
+            <CustomDropdown
+              value={selectedFacilityFilter}
+              onChange={setSelectedFacilityFilter}
+              options={facilityFilterOptions}
+              searchable={facilities.length > 5}
+              searchPlaceholder={isThai ? "ค้นหาสาขา..." : "Search facility..."}
+            />
+          </div>
         </div>
 
         <span className="text-xs opacity-60 font-semibold">
@@ -365,52 +398,33 @@ export default function FacilityScopeTab({
             <form onSubmit={handleAssignSubmit} className="flex flex-col gap-3.5 text-xs">
               <div className="flex flex-col gap-1.5">
                 <label className="font-semibold opacity-80">{isThai ? "ผู้ใช้งานเป้าหมาย" : "Select User"}</label>
-                <select
+                <CustomDropdown
                   value={assignUserId}
-                  onChange={(e) => setAssignUserId(e.target.value)}
-                  className={`w-full px-3 py-2 rounded-lg border text-xs outline-none ${
-                    isLight ? "bg-zinc-100 border-zinc-300" : "bg-[#333333] border-[#444444] text-white"
-                  }`}
-                >
-                  {users.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.name} ({u.email})
-                    </option>
-                  ))}
-                </select>
+                  onChange={setAssignUserId}
+                  options={assignUserOptions}
+                  searchable={users.length > 5}
+                  searchPlaceholder={isThai ? "ค้นหาผู้ใช้..." : "Search user..."}
+                />
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <label className="font-semibold opacity-80">{isThai ? "เลือกสาขาหรือคลังสินค้า" : "Select Facility"}</label>
-                <select
+                <CustomDropdown
                   value={assignFacilityId}
-                  onChange={(e) => setAssignFacilityId(e.target.value)}
-                  className={`w-full px-3 py-2 rounded-lg border text-xs outline-none ${
-                    isLight ? "bg-zinc-100 border-zinc-300" : "bg-[#333333] border-[#444444] text-white"
-                  }`}
-                >
-                  {facilities.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.name} ({f.code})
-                    </option>
-                  ))}
-                </select>
+                  onChange={setAssignFacilityId}
+                  options={assignFacilityOptions}
+                  searchable={facilities.length > 5}
+                  searchPlaceholder={isThai ? "ค้นหาสาขา..." : "Search facility..."}
+                />
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <label className="font-semibold opacity-80">{isThai ? "ระดับสิทธิ์การเข้าถึง" : "Scope Level"}</label>
-                <select
+                <CustomDropdown
                   value={assignScopeType}
-                  onChange={(e) => setAssignScopeType(e.target.value as FacilityScopeType)}
-                  className={`w-full px-3 py-2 rounded-lg border text-xs outline-none ${
-                    isLight ? "bg-zinc-100 border-zinc-300" : "bg-[#333333] border-[#444444] text-white"
-                  }`}
-                >
-                  <option value="READ">READ ({isThai ? "อ่านข้อมูลเท่านั้น" : "Read-only"})</option>
-                  <option value="OPERATE">OPERATE ({isThai ? "ปฏิบัติการคลัง/รับส่ง" : "Operational"})</option>
-                  <option value="APPROVE">APPROVE ({isThai ? "อนุมัติรายการและเอกสาร" : "Approval Authority"})</option>
-                  <option value="ADMIN">ADMIN ({isThai ? "ผู้ดูแลและบริหารจัดการสาขา" : "Facility Administrator"})</option>
-                </select>
+                  onChange={(val) => setAssignScopeType(val as FacilityScopeType)}
+                  options={scopeTypeOptions}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -490,18 +504,11 @@ export default function FacilityScopeTab({
 
               <div className="flex flex-col gap-1.5">
                 <label className="font-semibold opacity-80">{isThai ? "ระดับสิทธิ์ใหม่" : "New Scope Level"}</label>
-                <select
+                <CustomDropdown
                   value={editScopeType}
-                  onChange={(e) => setEditScopeType(e.target.value as FacilityScopeType)}
-                  className={`w-full px-3 py-2 rounded-lg border text-xs outline-none ${
-                    isLight ? "bg-zinc-100 border-zinc-300" : "bg-[#333333] border-[#444444] text-white"
-                  }`}
-                >
-                  <option value="READ">READ</option>
-                  <option value="OPERATE">OPERATE</option>
-                  <option value="APPROVE">APPROVE</option>
-                  <option value="ADMIN">ADMIN</option>
-                </select>
+                  onChange={(val) => setEditScopeType(val as FacilityScopeType)}
+                  options={scopeTypeOptions}
+                />
               </div>
 
               <div className="flex items-center justify-end gap-2 mt-2 pt-3 border-t border-[#444444]/40">

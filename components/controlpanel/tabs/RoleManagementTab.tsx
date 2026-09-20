@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import type { AdminUserRecord, CanonicalRole, RoleAssignmentHistory, RoleSubTabKey } from "../types";
 import {
@@ -58,11 +58,30 @@ export default function RoleManagementTab({
 
   // ==========================================================================
   // Filter & Search States for Role Assignments Tab
-  // ==========================================================================
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [deptFacilityFilter, setDeptFacilityFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const filterDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close filter dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        filterDropdownRef.current &&
+        !filterDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsFilterOpen(false);
+      }
+    }
+    if (isFilterOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isFilterOpen]);
 
   // Modal States
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -526,60 +545,142 @@ export default function RoleManagementTab({
               )}
             </div>
 
-            {/* Right: Dropdown Filters */}
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Filter 1: Role */}
-              <div className="min-w-[160px]">
-                <CustomDropdown
-                  value={roleFilter}
-                  onChange={setRoleFilter}
-                  options={roleDropdownOptions}
-                  searchable={roles.length > 5}
-                  searchPlaceholder={isThai ? "ค้นหาบทบาท..." : "Search role..."}
-                />
-              </div>
-
-              {/* Filter 2: Department / Facility */}
-              {deptFacilityOptions.length > 0 && (
-                <div className="min-w-[170px]">
-                  <CustomDropdown
-                    value={deptFacilityFilter}
-                    onChange={setDeptFacilityFilter}
-                    options={deptFacilityDropdownOptions}
-                    searchable={deptFacilityOptions.length > 5}
-                    searchPlaceholder={isThai ? "ค้นหาแผนก/สาขา..." : "Search dept/facility..."}
-                  />
-                </div>
-              )}
-
-              {/* Filter 3: Account Status */}
-              <div className="min-w-[130px]">
-                <CustomDropdown
-                  value={statusFilter}
-                  onChange={setStatusFilter}
-                  options={statusDropdownOptions}
-                />
-              </div>
-
-              {/* Clear Filters Button */}
+            {/* Right: Unified Custom Filter Dropdown */}
+            <div className="flex items-center gap-2">
               {activeFiltersCount > 0 && (
                 <button
                   type="button"
                   onClick={handleResetFilters}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer ${
                     isLight
-                      ? "bg-zinc-200 hover:bg-zinc-300 text-zinc-800"
-                      : "bg-[#444444] hover:bg-[#555555] text-white"
+                      ? "bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+                      : "bg-red-950/40 text-red-400 border-red-800/50 hover:bg-red-900/50"
                   }`}
                   title={isThai ? "ล้างตัวกรองทั้งหมด" : "Clear all filters"}
                 >
-                  <RotateCcw size={12} />
-                  <span>{isThai ? "ล้างตัวกรอง" : "Reset"}</span>
-                  <span className="text-[10px] px-1 rounded-full bg-black/10 dark:bg-white/15">
+                  <RotateCcw size={13} />
+                  <span>{isThai ? "ล้างตัวกรอง" : "Clear"}</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-red-500/20 text-red-500 font-bold">
                     {activeFiltersCount}
                   </span>
                 </button>
               )}
+
+              <div className="relative" ref={filterDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsFilterOpen(!isFilterOpen)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-semibold transition-all cursor-pointer select-none ${
+                    isFilterOpen
+                      ? isLight
+                        ? "bg-zinc-900 text-white border-zinc-900 shadow-sm"
+                        : "bg-white text-zinc-900 border-white shadow-sm"
+                      : activeFiltersCount > 0
+                      ? isLight
+                        ? "bg-zinc-100 text-zinc-900 border-zinc-400 font-bold"
+                        : "bg-[#444444] text-white border-zinc-400 font-bold"
+                      : isLight
+                      ? "bg-zinc-50 border-zinc-200 text-zinc-700 hover:bg-zinc-100"
+                      : "bg-[#2C2C2C] border-[#444444] text-zinc-300 hover:bg-[#333333]"
+                  }`}
+                >
+                  <Filter size={14} className={activeFiltersCount > 0 ? "text-[#0D99FF]" : ""} />
+                  <span>{isThai ? "ตัวกรอง" : "Filter"}</span>
+                  {activeFiltersCount > 0 && (
+                    <span
+                      className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                        isFilterOpen
+                          ? isLight
+                            ? "bg-white text-zinc-900"
+                            : "bg-zinc-900 text-white"
+                          : "bg-[#0D99FF] text-white"
+                      }`}
+                    >
+                      {activeFiltersCount}
+                    </span>
+                  )}
+                  <ChevronDown
+                    size={14}
+                    className={`transition-transform duration-200 ${isFilterOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                {/* Dropdown Popup Card */}
+                {isFilterOpen && (
+                  <div
+                    className={`absolute right-0 top-full mt-2 w-[310px] sm:w-[350px] rounded-2xl border p-4 shadow-2xl z-30 flex flex-col gap-3.5 animate-in fade-in zoom-in-95 duration-150 ${
+                      isLight
+                        ? "bg-white border-zinc-200 text-zinc-900"
+                        : "bg-[#282828] border-[#444444] text-white"
+                    }`}
+                  >
+                    {/* Dropdown Header */}
+                    <div className="flex items-center justify-between pb-2 border-b border-[#444444]/30">
+                      <div className="flex items-center gap-1.5 font-bold text-xs">
+                        <Filter size={14} />
+                        <span>{isThai ? "ตัวกรองการกำหนดบทบาท" : "Filter Role Assignments"}</span>
+                        {activeFiltersCount > 0 && (
+                          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#0D99FF]/20 text-[#0D99FF]">
+                            {activeFiltersCount} {isThai ? "ใช้งานอยู่" : "active"}
+                          </span>
+                        )}
+                      </div>
+                      {activeFiltersCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleResetFilters}
+                          className="flex items-center gap-1 text-[11px] text-red-500 hover:underline font-semibold cursor-pointer"
+                        >
+                          <RotateCcw size={11} />
+                          <span>{isThai ? "ล้างทั้งหมด" : "Clear all"}</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* 1. Role Filter */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] font-semibold opacity-70">
+                        {isThai ? "บทบาทสิทธิ์ (Canonical Role)" : "Role Filter"}
+                      </label>
+                      <CustomDropdown
+                        value={roleFilter}
+                        onChange={setRoleFilter}
+                        options={roleDropdownOptions}
+                        searchable={roles.length > 5}
+                        searchPlaceholder={isThai ? "ค้นหาบทบาท..." : "Search role..."}
+                      />
+                    </div>
+
+                    {/* 2. Department & Facility Filter */}
+                    {deptFacilityOptions.length > 0 && (
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[11px] font-semibold opacity-70">
+                          {isThai ? "สังกัดแผนก / สาขา (Scope)" : "Department / Facility Scope"}
+                        </label>
+                        <CustomDropdown
+                          value={deptFacilityFilter}
+                          onChange={setDeptFacilityFilter}
+                          options={deptFacilityDropdownOptions}
+                          searchable={deptFacilityOptions.length > 5}
+                          searchPlaceholder={isThai ? "ค้นหาแผนก/สาขา..." : "Search dept/facility..."}
+                        />
+                      </div>
+                    )}
+
+                    {/* 3. Account Status Filter */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] font-semibold opacity-70">
+                        {isThai ? "สถานะบัญชีผู้ใช้" : "Account Status"}
+                      </label>
+                      <CustomDropdown
+                        value={statusFilter}
+                        onChange={setStatusFilter}
+                        options={statusDropdownOptions}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
