@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import WarehousePageTemplate from "../_components/WarehousePageTemplate";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage } from "@/utils/language";
+import { Pagination } from "@/components/common";
 import {
   Package,
   Layers,
@@ -534,6 +535,11 @@ export default function StockBalancePage() {
     return true;
   });
 
+  // รีเซ็ตหน้ากลับเป็นหน้า 1 เมื่อมีการค้นหาหรือเปลี่ยนตัวกรอง
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
+
   // Calculate pagination
   const totalPages = Math.ceil(filteredData.length / pageSize) || 1;
   const validCurrentPage = Math.min(currentPage, totalPages);
@@ -795,73 +801,26 @@ export default function StockBalancePage() {
               </tbody>
             </table>
           </div>
-
-          {/* Pagination Toolbar */}
-          <div
-            className={`flex flex-wrap items-center justify-between gap-4 px-5 py-3 border-t text-[12.5px] select-none ${
-              isLight ? "border-slate-200 bg-slate-50/50 text-slate-600" : "border-[#444444] bg-[#282828]/50 text-zinc-400"
-            }`}
-          >
-            <div>
-              {isThai
-                ? `แสดง ${filteredData.length === 0 ? 0 : (validCurrentPage - 1) * pageSize + 1} - ${Math.min(
-                    validCurrentPage * pageSize,
-                    filteredData.length
-                  )} จากทั้งหมด ${filteredData.length} รายการ`
-                : `Showing ${filteredData.length === 0 ? 0 : (validCurrentPage - 1) * pageSize + 1} - ${Math.min(
-                    validCurrentPage * pageSize,
-                    filteredData.length
-                  )} of ${filteredData.length} items`}
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                disabled={validCurrentPage <= 1}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                className={`p-1.5 rounded-lg border transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
-                  isLight
-                    ? "border-slate-200 hover:bg-white text-slate-700"
-                    : "border-[#444444] hover:bg-white/10 text-zinc-300"
-                }`}
-              >
-                <ChevronLeft size={15} />
-              </button>
-
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setCurrentPage(p)}
-                  className={`min-w-[28px] h-7 px-2 rounded-lg text-[12px] font-semibold transition-all ${
-                    validCurrentPage === p
-                      ? isLight
-                        ? "bg-slate-900 text-white shadow-xs"
-                        : "bg-[#0D99FF] text-white shadow-xs"
-                      : isLight
-                      ? "hover:bg-slate-200/60 text-slate-700"
-                      : "hover:bg-white/10 text-zinc-300"
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-
-              <button
-                type="button"
-                disabled={validCurrentPage >= totalPages}
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className={`p-1.5 rounded-lg border transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
-                  isLight
-                    ? "border-slate-200 hover:bg-white text-slate-700"
-                    : "border-[#444444] hover:bg-white/10 text-zinc-300"
-                }`}
-              >
-                <ChevronRight size={15} />
-              </button>
-            </div>
-          </div>
         </div>
+
+        {/* Pagination (Outside Table Card) */}
+        {filteredData.length > 0 && (
+          <div className="mt-4">
+            <Pagination
+              currentPage={validCurrentPage}
+              totalPages={totalPages}
+              totalItems={filteredData.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize);
+                setCurrentPage(1);
+              }}
+              pageSizeOptions={[10, 20, 50, 100]}
+              isThai={isThai}
+            />
+          </div>
+        )}
       </div>
 
       {/* Modal / Slide-over ดูรายละเอียดสินค้า */}
