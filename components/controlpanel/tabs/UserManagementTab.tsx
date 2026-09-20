@@ -22,7 +22,7 @@ import {
   ChevronDown,
   RotateCcw,
 } from "lucide-react";
-import { CustomDropdown } from "@/components/common";
+import { CustomDropdown, Pagination } from "@/components/common";
 
 interface UserManagementTabProps {
   users: AdminUserRecord[];
@@ -136,6 +136,9 @@ export default function UserManagementTab({
     ).length;
   }, [users]);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   // Filtered list
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
@@ -164,6 +167,18 @@ export default function UserManagementTab({
       return matchSearch && matchStatus && matchRole && matchFacility && matchProfile;
     });
   }, [users, searchQuery, statusFilter, roleFilter, facilityFilter, profileFilter]);
+
+  // Reset to first page when search or filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, roleFilter, facilityFilter, profileFilter]);
+
+  // Calculate total pages and paginated items
+  const totalPages = Math.ceil(filteredUsers.length / pageSize) || 1;
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredUsers.slice(start, start + pageSize);
+  }, [filteredUsers, currentPage, pageSize]);
 
   // Handle status submit with guards
   const handleStatusSubmit = (e: React.FormEvent) => {
@@ -541,7 +556,7 @@ export default function UserManagementTab({
               {isThai ? "ไม่พบข้อมูลผู้ใช้ที่ตรงกับเงื่อนไข" : "No users matched the search criteria."}
             </div>
           ) : (
-            filteredUsers.map((user) => {
+            paginatedUsers.map((user) => {
               const isCurrentUser = user.id === currentUserId;
               const isSysAdmin = user.roles.some((r) => r.code === "SYSTEM_ADMINISTRATOR");
 
@@ -621,7 +636,7 @@ export default function UserManagementTab({
                       type="button"
                       onClick={() => setSelectedUserForDetail(user)}
                       title={isThai ? "ดูรายละเอียดผู้ใช้" : "View user details"}
-                      className={`p-1.5 rounded-lg transition-colors ${
+                      className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                         isLight ? "hover:bg-zinc-100 text-zinc-700" : "hover:bg-white/10 text-zinc-300"
                       }`}
                     >
@@ -636,7 +651,7 @@ export default function UserManagementTab({
                         setStatusError(null);
                       }}
                       title={isThai ? "เปลี่ยนสถานะบัญชี" : "Change account status"}
-                      className={`p-1.5 rounded-lg transition-colors ${
+                      className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                         isLight ? "hover:bg-zinc-100 text-zinc-700" : "hover:bg-white/10 text-zinc-300"
                       }`}
                     >
@@ -648,6 +663,23 @@ export default function UserManagementTab({
             })
           )}
         </div>
+
+        {/* Pagination */}
+        {filteredUsers.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredUsers.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize);
+              setCurrentPage(1);
+            }}
+            pageSizeOptions={[10, 20, 50, 100]}
+            isThai={isThai}
+          />
+        )}
       </div>
 
       {/* User Detail Drawer / Modal */}

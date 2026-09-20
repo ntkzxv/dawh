@@ -23,7 +23,7 @@ import {
   Layers,
   ChevronDown,
 } from "lucide-react";
-import { CustomDropdown } from "@/components/common";
+import { CustomDropdown, Pagination } from "@/components/common";
 
 interface RoleManagementTabProps {
   roles: CanonicalRole[];
@@ -62,6 +62,8 @@ export default function RoleManagementTab({
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [deptFacilityFilter, setDeptFacilityFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const filterDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -208,6 +210,18 @@ export default function RoleManagementTab({
       return true;
     });
   }, [users, searchQuery, roleFilter, deptFacilityFilter, statusFilter]);
+
+  // Reset to first page when search or filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, roleFilter, deptFacilityFilter, statusFilter]);
+
+  // Calculate total pages and paginated items for role assignments
+  const totalPages = Math.ceil(filteredUsers.length / pageSize) || 1;
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredUsers.slice(start, start + pageSize);
+  }, [filteredUsers, currentPage, pageSize]);
 
   // Dropdown options for filter toolbar
   const roleDropdownOptions = useMemo(() => [
@@ -739,7 +753,7 @@ export default function RoleManagementTab({
                       </td>
                     </tr>
                   ) : (
-                    filteredUsers.map((user) => {
+                    paginatedUsers.map((user) => {
                       const userRoles = user.roles || [];
                       const initials = (user.name || "U")
                         .split(" ")
@@ -917,23 +931,22 @@ export default function RoleManagementTab({
               </table>
             </div>
 
-            {/* Table Footer Count Info */}
-            <div
-              className={`p-3 border-t flex items-center justify-between text-xs opacity-70 ${
-                isLight ? "border-zinc-200 bg-zinc-50" : "border-[#444444] bg-[#333333]/30"
-              }`}
-            >
-              <span>
-                {isThai ? "แสดงพนักงาน: " : "Displaying: "}
-                <strong>{filteredUsers.length}</strong> {isThai ? "จากทั้งหมด " : "of "}
-                <strong>{totalUsersCount}</strong> {isThai ? "คน" : "users"}
-              </span>
-
-              <span className="text-[11px] font-mono">
-                {isThai ? "รวมการถือครองบทบาททั้งหมด: " : "Total Active Grants: "}
-                <strong>{totalAssignmentsCount}</strong>
-              </span>
-            </div>
+            {/* Table Footer with Pagination */}
+            {filteredUsers.length > 0 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredUsers.length}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(newSize) => {
+                  setPageSize(newSize);
+                  setCurrentPage(1);
+                }}
+                pageSizeOptions={[10, 20, 50, 100]}
+                isThai={isThai}
+              />
+            )}
           </div>
         </div>
       )}
