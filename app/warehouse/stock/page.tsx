@@ -482,30 +482,9 @@ export default function StockBalancePage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedDetailItem, setSelectedDetailItem] = useState<StockBalanceItem | null>(null);
 
-  // Pagination state: ปรับจำนวนรายการต่อหน้าอัตโนมัติตามขนาดหน้าจอของผู้ใช้
-  const [pageSize, setPageSize] = useState(10);
+  // Pagination state: กำหนดคงที่ 10 รายการต่อหน้า
+  const pageSize = 10;
   const [currentPage, setCurrentPage] = useState(1);
-
-  // 1. คำนวณขนาด pageSize ตามขนาดหน้าจอ
-  useEffect(() => {
-    const updatePageSize = () => {
-      if (typeof window === "undefined") return;
-      const height = window.innerHeight;
-      if (height >= 1200) {
-        setPageSize(15);
-      } else if (height >= 950) {
-        setPageSize(12);
-      } else if (height >= 750) {
-        setPageSize(10);
-      } else {
-        setPageSize(6);
-      }
-    };
-
-    updatePageSize();
-    window.addEventListener("resize", updatePageSize);
-    return () => window.removeEventListener("resize", updatePageSize);
-  }, []);
 
   // 2. เมื่อเปลี่ยนหน้า (Pagination) ให้เลื่อนหน้าจอกลับขึ้นไปบนสุดอย่างนุ่มนวล
   useEffect(() => {
@@ -810,13 +789,8 @@ export default function StockBalancePage() {
               currentPage={validCurrentPage}
               totalPages={totalPages}
               totalItems={filteredData.length}
-              pageSize={pageSize}
+              pageSize={10}
               onPageChange={setCurrentPage}
-              onPageSizeChange={(newSize) => {
-                setPageSize(newSize);
-                setCurrentPage(1);
-              }}
-              pageSizeOptions={[10, 20, 50, 100]}
               isThai={isThai}
             />
           </div>

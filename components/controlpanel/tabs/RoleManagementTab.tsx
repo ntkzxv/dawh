@@ -939,13 +939,8 @@ export default function RoleManagementTab({
                 currentPage={currentPage}
                 totalPages={totalPages}
                 totalItems={filteredUsers.length}
-                pageSize={pageSize}
+                pageSize={10}
                 onPageChange={setCurrentPage}
-                onPageSizeChange={(newSize) => {
-                  setPageSize(newSize);
-                  setCurrentPage(1);
-                }}
-                pageSizeOptions={[10, 20, 50, 100]}
                 isThai={isThai}
               />
             </div>

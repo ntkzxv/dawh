@@ -6,19 +6,15 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import CustomDropdown from "./CustomDropdown";
 
 export interface PaginationProps {
   currentPage: number;
   totalPages: number;
   totalItems: number;
-  pageSize: number;
+  pageSize?: number;
   onPageChange: (page: number) => void;
-  onPageSizeChange?: (pageSize: number) => void;
-  pageSizeOptions?: number[];
   isThai?: boolean;
   className?: string;
-  showPageSizeSelector?: boolean;
   showTotalItems?: boolean;
 }
 
@@ -26,21 +22,21 @@ export default function Pagination({
   currentPage,
   totalPages,
   totalItems,
-  pageSize,
+  pageSize = 10,
   onPageChange,
-  onPageSizeChange,
-  pageSizeOptions = [10, 20, 50, 100],
   isThai = true,
   className = "",
-  showPageSizeSelector = true,
   showTotalItems = true,
 }: PaginationProps) {
   const { theme } = useTheme();
   const isLight = theme === "light";
 
+  // Fixed 10 items per page by default
+  const effectivePageSize = pageSize || 10;
+
   // Calculate range of items being shown
-  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  const endItem = Math.min(currentPage * pageSize, totalItems);
+  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * effectivePageSize + 1;
+  const endItem = Math.min(currentPage * effectivePageSize, totalItems);
 
   /**
    * Generates page buttons with dots:
@@ -84,13 +80,6 @@ export default function Pagination({
     ];
   }, [totalPages, currentPage]);
 
-  const pageSizeDropdownOptions = useMemo(() => {
-    return pageSizeOptions.map((size) => ({
-      value: String(size),
-      label: isThai ? `${size} รายการ / หน้า` : `${size} / page`,
-    }));
-  }, [pageSizeOptions, isThai]);
-
   if (totalPages <= 0 && totalItems === 0) {
     return null;
   }
@@ -99,8 +88,8 @@ export default function Pagination({
     <div
       className={`flex flex-col sm:flex-row items-center justify-between gap-4 py-3 select-none text-xs ${className}`}
     >
-      {/* Left: Total Items Summary & Page Size Selector */}
-      <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+      {/* Left: Total Items Summary */}
+      <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
         {showTotalItems && (
           <div className="text-xs opacity-70">
             {isThai ? (
@@ -114,22 +103,6 @@ export default function Pagination({
                 <span className="font-semibold text-zinc-900 dark:text-white">{totalItems.toLocaleString()}</span> items
               </>
             )}
-          </div>
-        )}
-
-        {showPageSizeSelector && onPageSizeChange && (
-          <div className="flex items-center gap-1.5 min-w-[130px]">
-            <CustomDropdown<string>
-              value={String(pageSize)}
-              onChange={(val: string) => {
-                const newSize = Number(val);
-                if (newSize > 0) {
-                  onPageSizeChange(newSize);
-                }
-              }}
-              options={pageSizeDropdownOptions}
-              className="text-xs"
-            />
           </div>
         )}
       </div>
