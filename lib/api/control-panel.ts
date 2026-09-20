@@ -288,7 +288,143 @@ export function mapStockLedgerDtoToRecord(l: StockLedgerLine): StockLedgerRecord
 }
 
 // ============================================================================
-// API Fetchers
+// Modular Tab Fetchers (On-Demand / Lazy Loading)
+// ============================================================================
+export async function fetchUsersTabData() {
+  const [usersRes, rolesRes, facilitiesRes, departmentsRes] = await Promise.all([
+    apiGet<AdminUserSummary[]>("/api/admin/users?limit=100").catch(() => ({ data: [] })),
+    apiGet<RoleDto[]>("/api/admin/roles").catch(() => ({ data: [] })),
+    apiGet<Facility[]>("/api/facilities?limit=50").catch(() => ({ data: [] })),
+    apiGet<DepartmentDto[]>("/api/departments").catch(() => ({ data: [] })),
+  ]);
+
+  return {
+    rawUsers: usersRes.data || [],
+    users: (usersRes.data || []).map(mapUserSummaryToRecord),
+    roles: (rolesRes.data || []).map(mapRoleDtoToCanonicalRole),
+    facilities: (facilitiesRes.data || []).map(mapFacilityDtoToRecord),
+    departments: (departmentsRes.data || []).map(mapDepartmentDtoToRecord),
+  };
+}
+
+export async function fetchRolesTabData() {
+  const [rolesRes, permissionsRes, usersRes] = await Promise.all([
+    apiGet<RoleDto[]>("/api/admin/roles").catch(() => ({ data: [] })),
+    apiGet<PermissionDto[]>("/api/admin/permissions").catch(() => ({ data: [] })),
+    apiGet<AdminUserSummary[]>("/api/admin/users?limit=100").catch(() => ({ data: [] })),
+  ]);
+
+  return {
+    roles: (rolesRes.data || []).map(mapRoleDtoToCanonicalRole),
+    permissions: permissionsRes.data || [],
+    rawUsers: usersRes.data || [],
+    users: (usersRes.data || []).map(mapUserSummaryToRecord),
+  };
+}
+
+export async function fetchScopesTabData() {
+  const [usersRes, facilitiesRes] = await Promise.all([
+    apiGet<AdminUserSummary[]>("/api/admin/users?limit=100").catch(() => ({ data: [] })),
+    apiGet<Facility[]>("/api/facilities?limit=50").catch(() => ({ data: [] })),
+  ]);
+
+  return {
+    rawUsers: usersRes.data || [],
+    users: (usersRes.data || []).map(mapUserSummaryToRecord),
+    facilities: (facilitiesRes.data || []).map(mapFacilityDtoToRecord),
+  };
+}
+
+export async function fetchOrganizationTabData() {
+  const [facilitiesRes, departmentsRes] = await Promise.all([
+    apiGet<Facility[]>("/api/facilities?limit=50").catch(() => ({ data: [] })),
+    apiGet<DepartmentDto[]>("/api/departments").catch(() => ({ data: [] })),
+  ]);
+
+  let allLocations: LocationDto[] = [];
+  if (facilitiesRes.data && facilitiesRes.data.length > 0) {
+    const locResults = await Promise.all(
+      facilitiesRes.data.map((f) =>
+        apiGet<LocationDto[]>(`/api/facilities/${encodeURIComponent(f.id)}/locations`).catch(
+          () => ({ data: [] })
+        )
+      )
+    );
+    allLocations = locResults.flatMap((r) => r.data || []);
+  }
+
+  return {
+    rawFacilities: facilitiesRes.data || [],
+    rawDepartments: departmentsRes.data || [],
+    rawLocations: allLocations,
+    facilities: (facilitiesRes.data || []).map(mapFacilityDtoToRecord),
+    departments: (departmentsRes.data || []).map(mapDepartmentDtoToRecord),
+    locations: allLocations.map(mapLocationDtoToRecord),
+  };
+}
+
+export async function fetchProductsTabData() {
+  const [productsRes, categoriesRes, brandsRes, uomsRes, reasonCodesRes] = await Promise.all([
+    apiGet<Product[]>("/api/products?limit=100").catch(() => ({ data: [] })),
+    apiGet<ProductCategoryDto[]>("/api/product-categories").catch(() => ({ data: [] })),
+    apiGet<BrandDto[]>("/api/brands").catch(() => ({ data: [] })),
+    apiGet<UnitOfMeasureDto[]>("/api/units-of-measure").catch(() => ({ data: [] })),
+    apiGet<ReasonCodeDto[]>("/api/reason-codes").catch(() => ({ data: [] })),
+  ]);
+
+  return {
+    rawProducts: productsRes.data || [],
+    rawCategories: categoriesRes.data || [],
+    rawBrands: brandsRes.data || [],
+    rawUoms: uomsRes.data || [],
+    rawReasonCodes: reasonCodesRes.data || [],
+    products: (productsRes.data || []).map(mapProductDtoToRecord),
+    categories: (categoriesRes.data || []).map(mapCategoryDtoToRecord),
+    brands: (brandsRes.data || []).map(mapBrandDtoToRecord),
+    uoms: (uomsRes.data || []).map(mapUomDtoToRecord),
+    reasonCodes: (reasonCodesRes.data || []).map(mapReasonCodeDtoToRecord),
+  };
+}
+
+export async function fetchStockTabData() {
+  const [balancesRes, ledgerRes] = await Promise.all([
+    apiGet<StockBalance[]>("/api/stock/balances?limit=100").catch(() => ({ data: [] })),
+    apiGet<StockLedgerLine[]>("/api/stock/ledger?limit=100").catch(() => ({ data: [] })),
+  ]);
+
+  return {
+    balances: (balancesRes.data || []).map(mapStockBalanceDtoToRecord),
+    ledger: (ledgerRes.data || []).map(mapStockLedgerDtoToRecord),
+  };
+}
+
+export async function fetchSafetyStockTabData() {
+  const [safetyRulesRes, facilitiesRes, productsRes] = await Promise.all([
+    apiGet<SafetyStockRuleDto[]>("/api/safety-stock-rules").catch(() => ({ data: [] })),
+    apiGet<Facility[]>("/api/facilities?limit=50").catch(() => ({ data: [] })),
+    apiGet<Product[]>("/api/products?limit=100").catch(() => ({ data: [] })),
+  ]);
+
+  const facilityMap = new Map<string, string>();
+  (facilitiesRes.data || []).forEach((f) => facilityMap.set(f.id, f.name));
+
+  const productMap = new Map<string, string>();
+  (productsRes.data || []).forEach((p) => productMap.set(p.id, p.nameTh));
+
+  return {
+    rawSafetyRules: safetyRulesRes.data || [],
+    safetyRules: (safetyRulesRes.data || []).map((r) =>
+      mapSafetyRuleDtoToRecord(
+        r,
+        facilityMap.get(r.facilityId) || r.facilityCode,
+        productMap.get(r.productId) || r.sku
+      )
+    ),
+  };
+}
+
+// ============================================================================
+// Legacy All-In-One Fetcher (kept for backward compatibility)
 // ============================================================================
 export async function fetchControlPanelInitialData() {
   const [

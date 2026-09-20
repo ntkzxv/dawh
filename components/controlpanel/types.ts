@@ -24,6 +24,12 @@ export type ProductSubTabKey =
   | "brands_uoms"
   | "reasons";
 
+export type RoleSubTabKey =
+  | "assignments"
+  | "roles"
+  | "matrix"
+  | "history";
+
 export interface AuditLogRecord {
   id: string;
   organizationId: string;

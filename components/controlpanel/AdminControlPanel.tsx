@@ -26,9 +26,16 @@ import type {
   AuditLogRecord,
   AuditLogCategoryKey,
   ProductSubTabKey,
+  RoleSubTabKey,
 } from "./types";
 import {
-  fetchControlPanelInitialData,
+  fetchUsersTabData,
+  fetchRolesTabData,
+  fetchScopesTabData,
+  fetchOrganizationTabData,
+  fetchProductsTabData,
+  fetchStockTabData,
+  fetchSafetyStockTabData,
   mapUserSummaryToRecord,
   mapFacilityDtoToRecord,
   mapLocationDtoToRecord,
@@ -141,6 +148,8 @@ export default function AdminControlPanel() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [lastSynced, setLastSynced] = useState<string | null>(null);
+  const [loadedTabs, setLoadedTabs] = useState<Set<AdminTabKey>>(new Set());
+  const [tabLoading, setTabLoading] = useState<boolean>(false);
 
   const router = useRouter();
 
@@ -175,6 +184,9 @@ export default function AdminControlPanel() {
 
   // Product Master Sub-tab State
   const [activeProductSubTab, setActiveProductSubTab] = useState<ProductSubTabKey>("products");
+
+  // Role Management Sub-tab State
+  const [activeRoleSubTab, setActiveRoleSubTab] = useState<RoleSubTabKey>("assignments");
 
   // RBAC Permission Check
   const isAdmin = useMemo(() => {
@@ -252,96 +264,90 @@ export default function AdminControlPanel() {
   }, [auditLogs]);
 
   // ==========================================================================
-  // Initial Data Fetching from PostgreSQL & Next.js APIs
+  // On-Demand Tab Data Fetching from PostgreSQL & Next.js APIs
   // ==========================================================================
-  const loadAllData = useCallback(
-    async (isManualRefresh = false) => {
+  const loadTabData = useCallback(
+    async (targetTab: AdminTabKey, isManualRefresh = false) => {
+      // Avoid refetching if already loaded and not a manual refresh
+      if (!isManualRefresh && loadedTabs.has(targetTab)) {
+        return;
+      }
+
       if (isManualRefresh) {
         setIsRefreshing(true);
       } else {
-        setIsLoading(true);
+        setTabLoading(true);
       }
 
       try {
-        // Step 1: Verify current session & RBAC privileges
-        let meData: AppMe | null = null;
-        try {
-          const sessionResult = await getAppMe();
-          if (sessionResult?.data) {
-            meData = sessionResult.data;
-            setAppMe(meData);
-          }
-        } catch {
-          setAppMe(null);
-        }
+        if (targetTab === "users") {
+          const data = await fetchUsersTabData();
+          setUsers(data.users);
+          setRoles((prev) => (prev.length === 0 ? data.roles : prev));
+          setFacilities((prev) => (prev.length === 0 ? data.facilities : prev));
+          setDepartments((prev) => (prev.length === 0 ? data.departments : prev));
+        } else if (targetTab === "roles") {
+          const data = await fetchRolesTabData();
+          setRoles(data.roles);
+          if (data.users.length > 0) setUsers(data.users);
 
-        const hasAdminAccess = checkIsAdmin(
-          meData?.roles,
-          meData?.permissions
-        );
-
-        if (!hasAdminAccess) {
-          // If user lacks admin permissions: do NOT load enterprise records & do NOT leak mock data
-          setIsLoading(false);
-          setIsRefreshing(false);
-          return;
-        }
-
-        // Step 2: User is confirmed Admin -> load live enterprise records
-        const payload = await fetchControlPanelInitialData();
-
-        // Store Raw Objects for version tracking
-        setRawFacilities(payload.rawFacilities);
-        setRawLocations(payload.rawLocations);
-        setRawDepartments(payload.rawDepartments);
-        setRawProducts(payload.rawProducts);
-        setRawUoms(payload.rawUoms);
-        setRawSafetyRules(payload.rawSafetyRules);
-
-        // Store Formatted Records (real data from database)
-        setUsers(payload.users || []);
-        setRoles(payload.roles || []);
-        setFacilities(payload.facilities || []);
-        setLocations(payload.locations || []);
-        setDepartments(payload.departments || []);
-        setCategories(payload.categories || []);
-        setBrands(payload.brands || []);
-        setUoms(payload.uoms || []);
-        setReasonCodes(payload.reasonCodes || []);
-        setProducts(payload.products || []);
-        setSafetyRules(payload.safetyRules || []);
-        setBalances(payload.balances || []);
-        setLedger(payload.ledger || []);
-
-        // Load Initial Audit Trail
-        try {
-          const auditRes = await listAuditLogsApi({ limit: 200 });
-          if (auditRes?.data) {
-            setAuditLogs(auditRes.data);
-          }
-        } catch {
-          // Non-blocking
-        }
-
-        // Build Role History from current active role assignments
-        const generatedHistory: RoleAssignmentHistory[] = [];
-        (payload.users || []).forEach((u) => {
-          (u.roles || []).forEach((r) => {
-            generatedHistory.push({
-              id: `hist-${r.assignmentId}`,
-              userId: u.id,
-              userName: u.name || u.email,
-              roleCode: r.code,
-              roleName: r.name,
-              action: "ASSIGN",
-              validFrom: r.validFrom,
-              validUntil: r.validUntil,
-              performedBy: "ผู้ดูแลระบบ (System Admin)",
-              timestamp: u.createdAt,
+          // Build Role History from active role assignments
+          const generatedHistory: RoleAssignmentHistory[] = [];
+          data.users.forEach((u) => {
+            (u.roles || []).forEach((r) => {
+              generatedHistory.push({
+                id: `hist-${r.assignmentId}`,
+                userId: u.id,
+                userName: u.name || u.email,
+                roleCode: r.code,
+                roleName: r.name,
+                action: "ASSIGN",
+                validFrom: r.validFrom,
+                validUntil: r.validUntil,
+                performedBy: "ผู้ดูแลระบบ (System Admin)",
+                timestamp: u.createdAt,
+              });
             });
           });
-        });
-        setRoleHistory(generatedHistory);
+          setRoleHistory(generatedHistory);
+        } else if (targetTab === "scopes") {
+          const data = await fetchScopesTabData();
+          setUsers(data.users);
+          setFacilities(data.facilities);
+        } else if (targetTab === "organization") {
+          const data = await fetchOrganizationTabData();
+          setRawFacilities(data.rawFacilities);
+          setRawDepartments(data.rawDepartments);
+          setRawLocations(data.rawLocations);
+          setFacilities(data.facilities);
+          setDepartments(data.departments);
+          setLocations(data.locations);
+        } else if (targetTab === "products") {
+          const data = await fetchProductsTabData();
+          setRawProducts(data.rawProducts);
+          setRawUoms(data.rawUoms);
+          setProducts(data.products);
+          setCategories(data.categories);
+          setBrands(data.brands);
+          setUoms(data.uoms);
+          setReasonCodes(data.reasonCodes);
+        } else if (targetTab === "stock") {
+          const data = await fetchStockTabData();
+          setBalances(data.balances);
+          setLedger(data.ledger);
+        } else if (targetTab === "safety_stock") {
+          const data = await fetchSafetyStockTabData();
+          setRawSafetyRules(data.rawSafetyRules);
+          setSafetyRules(data.safetyRules);
+        } else if (targetTab === "audit_logs") {
+          const res = await listAuditLogsApi({ limit: 200 });
+          if (res?.data) {
+            setAuditLogs(res.data);
+          }
+        }
+
+        // Add to loaded tabs set
+        setLoadedTabs((prev) => new Set(prev).add(targetTab));
 
         const now = new Date();
         const timeStr = now.toLocaleTimeString(isThai ? "th-TH" : "en-US", {
@@ -352,31 +358,56 @@ export default function AdminControlPanel() {
         setLastSynced(timeStr);
 
         if (isManualRefresh) {
-          notify.success(
-            isThai ? "ซิงค์ข้อมูลสำเร็จ" : "Data Synced",
-            {
-              message: isThai
-                ? "อัปเดตข้อมูลจากฐานข้อมูลล่าสุดเรียบร้อยแล้ว"
-                : "All records updated from the database.",
-            }
-          );
+          notify.success(isThai ? "ซิงค์ข้อมูลสำเร็จ" : "Data Synced", {
+            message: isThai
+              ? "อัปเดตข้อมูลโมดูลปัจจุบันเรียบร้อยแล้ว"
+              : "Active module records updated.",
+          });
         }
       } catch (err: unknown) {
-        const errorMsg = err instanceof Error ? err.message : "เกิดข้อผิดพลาดในการโหลดข้อมูล";
+        const errorMsg =
+          err instanceof Error ? err.message : "เกิดข้อผิดพลาดในการโหลดข้อมูล";
         notify.error(isThai ? "ไม่สามารถโหลดข้อมูลได้" : "Data Fetch Failed", {
           message: errorMsg,
         });
       } finally {
-        setIsLoading(false);
+        setTabLoading(false);
         setIsRefreshing(false);
       }
     },
-    [isThai, notify]
+    [isThai, notify, loadedTabs]
   );
 
   useEffect(() => {
-    loadAllData();
-  }, [loadAllData]);
+    let isMounted = true;
+
+    async function checkAuthAndLoadInitialTab() {
+      setIsLoading(true);
+      try {
+        const sessionResult = await getAppMe();
+        if (sessionResult?.data && isMounted) {
+          const meData = sessionResult.data;
+          setAppMe(meData);
+          const hasAdminAccess = checkIsAdmin(meData.roles, meData.permissions);
+          if (hasAdminAccess) {
+            setIsLoading(false);
+            await loadTabData(activeTab, false);
+            return;
+          }
+        }
+      } catch {
+        if (isMounted) setAppMe(null);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }
+
+    checkAuthAndLoadInitialTab();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Helper to re-fetch specific user list
   const refreshUsers = async () => {
@@ -1031,8 +1062,8 @@ export default function AdminControlPanel() {
           settingsPath="/settings"
           showAccount={false}
           refreshButton={{
-            onClick: () => loadAllData(true),
-            isLoading: isLoading || isRefreshing,
+            onClick: () => loadTabData(activeTab, true),
+            isLoading: isRefreshing || tabLoading,
             label: isThai ? "รีเฟรชข้อมูล" : "Refresh Data",
           }}
           serverStatus={{
@@ -1048,18 +1079,18 @@ export default function AdminControlPanel() {
         >
           <NavbarsubControlPanel
             activeTab={activeTab}
+            activeRoleSubTab={activeRoleSubTab}
             onTabChange={(tab, sub) => {
               setActiveTab(tab);
+              loadTabData(tab, false);
+              if (tab === "roles" && sub) {
+                setActiveRoleSubTab(sub as RoleSubTabKey);
+              }
               if (tab === "products" && sub) {
                 setActiveProductSubTab(sub as ProductSubTabKey);
               }
-              if (tab === "audit_logs") {
-                if (sub) {
-                  setActiveAuditCategory(sub as AuditLogCategoryKey);
-                }
-                if (auditLogs.length === 0) {
-                  refreshAuditLogs();
-                }
+              if (tab === "audit_logs" && sub) {
+                setActiveAuditCategory(sub as AuditLogCategoryKey);
               }
             }}
             activeAuditCategory={activeAuditCategory}
@@ -1116,11 +1147,8 @@ export default function AdminControlPanel() {
               <Loader2 size={32} className="animate-spin text-emerald-500" />
               <span className="text-sm font-bold">
                 {isThai
-                  ? "กำลังโหลดข้อมูลจากฐานข้อมูล..."
-                  : "Fetching live enterprise data..."}
-              </span>
-              <span className={`text-xs ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>
-                {isThai ? "กำลังซิงค์สิทธิ์และข้อมูลโครงสร้างระบบ" : "Synchronizing RBAC & topologies..."}
+                  ? "กำลังตรวจสอบสิทธิ์การใช้งาน..."
+                  : "Verifying administrator privileges..."}
               </span>
             </div>
           ) : !isAdmin ? (
@@ -1195,7 +1223,25 @@ export default function AdminControlPanel() {
 
               {/* Active Tab Panel Rendering */}
               <div className="w-full relative min-h-[400px]">
-                {activeTab === "users" && (
+                {tabLoading && !loadedTabs.has(activeTab) ? (
+                  <div
+                    className={`w-full py-28 rounded-2xl border flex flex-col items-center justify-center gap-3 transition-colors ${
+                      isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
+                    }`}
+                  >
+                    <Loader2 size={32} className="animate-spin text-emerald-500" />
+                    <span className="text-sm font-bold">
+                      {isThai ? "กำลังโหลดข้อมูล..." : "Loading tab records..."}
+                    </span>
+                    <span className={`text-xs ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>
+                      {isThai
+                        ? "กำลังดึงข้อมูลเฉพาะโมดูลที่เลือกจากฐานข้อมูล (On-Demand)"
+                        : "Fetching active module data from database..."}
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    {activeTab === "users" && (
                   <UserManagementTab
                     users={users}
                     onUpdateUserStatus={handleUpdateUserStatus}
@@ -1212,6 +1258,8 @@ export default function AdminControlPanel() {
                     onAssignRole={handleAssignRole}
                     onRevokeRole={handleRevokeRole}
                     isThai={isThai}
+                    activeSubTab={activeRoleSubTab}
+                    onSubTabChange={setActiveRoleSubTab}
                   />
                 )}
 
@@ -1288,6 +1336,8 @@ export default function AdminControlPanel() {
                     onSelectCategory={setActiveAuditCategory}
                     isThai={isThai}
                   />
+                )}
+                  </>
                 )}
               </div>
             </>

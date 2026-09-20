@@ -14,6 +14,7 @@ import {
   Layers,
   Scale,
   FileQuestion,
+  UserCheck,
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage } from "@/utils/language";
@@ -21,14 +22,19 @@ import type {
   AdminTabKey,
   AuditLogCategoryKey,
   ProductSubTabKey,
+  RoleSubTabKey,
 } from "@/components/controlpanel/types";
 import { motion, AnimatePresence } from "framer-motion";
 
 export interface NavbarsubControlPanelProps {
   activeTab?: AdminTabKey;
-  onTabChange?: (tab: AdminTabKey, category?: AuditLogCategoryKey | ProductSubTabKey) => void;
+  onTabChange?: (
+    tab: AdminTabKey,
+    category?: AuditLogCategoryKey | ProductSubTabKey | RoleSubTabKey
+  ) => void;
   activeAuditCategory?: AuditLogCategoryKey;
   activeProductSubTab?: ProductSubTabKey;
+  activeRoleSubTab?: RoleSubTabKey;
   isMinimized?: boolean;
   lang?: "th" | "en";
   counts?: Partial<Record<AdminTabKey, number>> & { audit_logs?: number };
@@ -66,6 +72,32 @@ const CONTROL_PANEL_ITEMS: MenuGroup[] = [
     titleTh: "บทบาทและสิทธิ์",
     titleEn: "Role Management",
     icon: Shield,
+    children: [
+      {
+        id: "assignments",
+        titleTh: "การมอบหมายบทบาท",
+        titleEn: "Role Assignments",
+        icon: UserCheck,
+      },
+      {
+        id: "roles",
+        titleTh: "บทบาทมาตรฐาน",
+        titleEn: "Canonical Roles",
+        icon: Shield,
+      },
+      {
+        id: "matrix",
+        titleTh: "ตารางสิทธิ์",
+        titleEn: "Permission Matrix",
+        icon: Scale,
+      },
+      {
+        id: "history",
+        titleTh: "ประวัติการมอบหมาย",
+        titleEn: "Assignment History",
+        icon: ScrollText,
+      },
+    ],
   },
   {
     id: "scopes",
@@ -174,6 +206,7 @@ export default function NavbarsubControlPanel({
   onTabChange,
   activeAuditCategory = "all",
   activeProductSubTab = "products",
+  activeRoleSubTab = "assignments",
   isMinimized = false,
   lang: propLang,
   counts = {},
@@ -188,6 +221,7 @@ export default function NavbarsubControlPanel({
 
   // Track accordion expand state for dropdown groups
   const [expandedDropdowns, setExpandedDropdowns] = useState<Record<string, boolean>>({
+    roles: activeTab === "roles",
     products: activeTab === "products",
     audit: activeTab === "audit_logs",
   });
@@ -200,7 +234,9 @@ export default function NavbarsubControlPanel({
 
   // Auto-expand accordion when activeTab changes
   useEffect(() => {
-    if (activeTab === "products") {
+    if (activeTab === "roles") {
+      setExpandedDropdowns((prev) => ({ ...prev, roles: true }));
+    } else if (activeTab === "products") {
       setExpandedDropdowns((prev) => ({ ...prev, products: true }));
     } else if (activeTab === "audit_logs") {
       setExpandedDropdowns((prev) => ({ ...prev, audit: true }));
@@ -258,7 +294,9 @@ export default function NavbarsubControlPanel({
         [itemId]: !prev[itemId],
       }));
       if (itemTabKey && activeTab !== itemTabKey) {
-        if (itemTabKey === "products") {
+        if (itemTabKey === "roles") {
+          onTabChange?.("roles", activeRoleSubTab ?? "assignments");
+        } else if (itemTabKey === "products") {
           onTabChange?.("products", activeProductSubTab);
         } else if (itemTabKey === "audit_logs") {
           onTabChange?.("audit_logs", activeAuditCategory);
@@ -270,7 +308,9 @@ export default function NavbarsubControlPanel({
   };
 
   const handleSubItemClick = (groupId: string, subId: string) => {
-    if (groupId === "products") {
+    if (groupId === "roles") {
+      onTabChange?.("roles", subId as RoleSubTabKey);
+    } else if (groupId === "products") {
       onTabChange?.("products", subId as ProductSubTabKey);
     } else if (groupId === "audit") {
       onTabChange?.("audit_logs", subId as AuditLogCategoryKey);
@@ -279,6 +319,9 @@ export default function NavbarsubControlPanel({
   };
 
   const isSubItemActive = (groupId: string, subId: string): boolean => {
+    if (groupId === "roles") {
+      return activeTab === "roles" && (activeRoleSubTab ?? "assignments") === subId;
+    }
     if (groupId === "products") {
       return activeTab === "products" && activeProductSubTab === subId;
     }
