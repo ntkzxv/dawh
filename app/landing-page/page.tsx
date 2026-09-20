@@ -482,7 +482,7 @@ export default function DawhLandingPage() {
                     scale: [1, 1.08, 1],
                   }}
                   transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute -top-16 -right-16 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none -z-10"
+                  className="absolute -top-16 -right-16 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -z-10"
                 />
 
                 {/* Mock Dashboard Header */}
@@ -494,7 +494,7 @@ export default function DawhLandingPage() {
                       animate={{ y: [0, -3, 0] }}
                       transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                       className={`w-11 h-11 rounded-2xl border p-0.5 shadow-xs flex items-center justify-center ${
-                        isDark ? "bg-blue-950/50 border-blue-800/40 text-blue-300" : "bg-blue-50 border-blue-200/60 text-blue-700"
+                        isDark ? "bg-indigo-950/50 border-indigo-800/40 text-indigo-300" : "bg-indigo-50 border-indigo-200/60 text-indigo-700"
                       }`}
                     >
                       <Building2 className="w-5 h-5" />
@@ -503,11 +503,11 @@ export default function DawhLandingPage() {
                       <div className="flex items-center gap-2">
                         <span className={`font-bold text-sm ${isDark ? "text-white" : "text-slate-900"}`}>{t.dashboard.hubTitle}</span>
                         <span className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
-                          isDark ? "bg-blue-950/80 text-blue-300 border border-blue-800/40" : "bg-blue-100 text-blue-700"
+                          isDark ? "bg-indigo-950/80 text-indigo-300 border border-indigo-800/40" : "bg-indigo-100 text-indigo-700"
                         }`}>
                           <span className="relative flex h-1.5 w-1.5">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-indigo-500"></span>
                           </span>
                           {t.dashboard.roleBadge}
                         </span>
@@ -523,7 +523,7 @@ export default function DawhLandingPage() {
                     <span className={`px-3 py-1 rounded-xl text-xs font-semibold flex items-center gap-1.5 ${
                       isDark ? "bg-[#383838] text-white shadow-xs border border-[#555555]" : "bg-white shadow-xs text-slate-800 border border-slate-200/70"
                     }`}>
-                      <Box className="w-3.5 h-3.5 text-blue-500" />
+                      <Box className="w-3.5 h-3.5 text-indigo-500" />
                       <span>{t.dashboard.modules.erp}</span>
                     </span>
                     <span className={`px-3 py-1 rounded-xl text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors ${
@@ -572,9 +572,9 @@ export default function DawhLandingPage() {
                       <div className={`flex items-center gap-1 text-xs font-semibold p-1 rounded-xl border shadow-xs ${
                         isDark ? "bg-[#282828] border-[#444444] text-[#A1A1AA]" : "bg-white border-slate-200/80"
                       }`}>
-                        <span className="px-2.5 py-1 rounded-lg bg-blue-600 text-white">{t.dashboard.chart.tab7d}</span>
-                        <span className="px-2.5 py-1 rounded-lg hover:text-blue-400 cursor-pointer transition-colors">{t.dashboard.chart.tab30d}</span>
-                        <span className="px-2.5 py-1 rounded-lg hover:text-blue-400 cursor-pointer transition-colors">{t.dashboard.chart.tabFy}</span>
+                        <span className="px-2.5 py-1 rounded-lg bg-indigo-600 text-white">{t.dashboard.chart.tab7d}</span>
+                        <span className="px-2.5 py-1 rounded-lg hover:text-indigo-400 cursor-pointer transition-colors">{t.dashboard.chart.tab30d}</span>
+                        <span className="px-2.5 py-1 rounded-lg hover:text-indigo-400 cursor-pointer transition-colors">{t.dashboard.chart.tabFy}</span>
                       </div>
                     </div>
 
@@ -583,12 +583,12 @@ export default function DawhLandingPage() {
                       <svg className="w-full h-full overflow-visible" viewBox="0 0 500 150" preserveAspectRatio="none">
                         <defs>
                           <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.25" />
-                            <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.0" />
+                            <stop offset="0%" stopColor="#6366F1" stopOpacity="0.25" />
+                            <stop offset="100%" stopColor="#6366F1" stopOpacity="0.0" />
                           </linearGradient>
                           <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
-                            <stop offset="0%" stopColor="#3B82F6" />
-                            <stop offset="100%" stopColor="#60A5FA" />
+                            <stop offset="0%" stopColor="#6366F1" />
+                            <stop offset="100%" stopColor="#818CF8" />
                           </linearGradient>
                         </defs>
                         {/* Background Grid Lines */}
@@ -612,7 +612,7 @@ export default function DawhLandingPage() {
                           <line
                             y1="10"
                             y2="145"
-                            stroke="#3B82F6"
+                            stroke="#6366F1"
                             strokeWidth="1.5"
                             strokeDasharray="3 3"
                             strokeOpacity="0.4"
@@ -620,7 +620,7 @@ export default function DawhLandingPage() {
                           <line
                             y1="25"
                             y2="85"
-                            stroke="#60A5FA"
+                            stroke="#818CF8"
                             strokeWidth="2.5"
                             strokeLinecap="round"
                             strokeOpacity="0.8"
@@ -647,7 +647,7 @@ export default function DawhLandingPage() {
                           key={idx}
                           className={
                             idx === t.dashboard.chart.days.length - 1
-                              ? "text-blue-500 font-bold"
+                              ? "text-indigo-500 font-bold"
                               : isDark
                               ? "text-[#A1A1AA]"
                               : "text-slate-400"
@@ -757,7 +757,7 @@ export default function DawhLandingPage() {
                       <motion.a 
                         href="#features" 
                         whileHover={{ x: 3 }}
-                        className="font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer flex items-center gap-1 group"
+                        className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer flex items-center gap-1 group"
                       >
                         {t.dashboard.queue.inspectQueue} <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
                       </motion.a>
@@ -922,7 +922,7 @@ export default function DawhLandingPage() {
                       <span className={`font-bold ${isDark ? "text-white" : "text-slate-900"}`}>48%</span>
                     </div>
                     <div className={`h-2.5 w-full rounded-full overflow-hidden ${isDark ? "bg-[#282828]" : "bg-slate-100"}`}>
-                      <div className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full w-[48%]" />
+                      <div className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full w-[48%]" />
                     </div>
                     <span className={`text-[11px] mt-1 block ${isDark ? "text-[#A1A1AA]" : "text-slate-400"}`}>{t.analytics.overview.bkkSub}</span>
                   </div>
@@ -935,7 +935,7 @@ export default function DawhLandingPage() {
                       <span className={`font-bold ${isDark ? "text-white" : "text-slate-900"}`}>28%</span>
                     </div>
                     <div className={`h-2.5 w-full rounded-full overflow-hidden ${isDark ? "bg-[#282828]" : "bg-slate-100"}`}>
-                      <div className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full w-[28%]" />
+                      <div className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full w-[28%]" />
                     </div>
                     <span className={`text-[11px] mt-1 block ${isDark ? "text-[#A1A1AA]" : "text-slate-400"}`}>{t.analytics.overview.cnxSub}</span>
                   </div>
@@ -948,7 +948,7 @@ export default function DawhLandingPage() {
                       <span className={`font-bold ${isDark ? "text-white" : "text-slate-900"}`}>18%</span>
                     </div>
                     <div className={`h-2.5 w-full rounded-full overflow-hidden ${isDark ? "bg-[#282828]" : "bg-slate-100"}`}>
-                      <div className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full w-[18%]" />
+                      <div className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full w-[18%]" />
                     </div>
                     <span className={`text-[11px] mt-1 block ${isDark ? "text-[#A1A1AA]" : "text-slate-400"}`}>{t.analytics.overview.hdySub}</span>
                   </div>
@@ -961,7 +961,7 @@ export default function DawhLandingPage() {
                       <span className={`font-bold ${isDark ? "text-white" : "text-slate-900"}`}>6%</span>
                     </div>
                     <div className={`h-2.5 w-full rounded-full overflow-hidden ${isDark ? "bg-[#282828]" : "bg-slate-100"}`}>
-                      <div className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full w-[6%]" />
+                      <div className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full w-[6%]" />
                     </div>
                     <span className={`text-[11px] mt-1 block ${isDark ? "text-[#A1A1AA]" : "text-slate-400"}`}>{t.analytics.overview.eecSub}</span>
                   </div>
@@ -978,7 +978,7 @@ export default function DawhLandingPage() {
                       <span className={`font-bold ${isDark ? "text-white" : "text-slate-900"}`}>44%</span>
                     </div>
                     <div className={`h-2.5 w-full rounded-full overflow-hidden ${isDark ? "bg-[#282828]" : "bg-slate-100"}`}>
-                      <div className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full w-[44%]" />
+                      <div className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full w-[44%]" />
                     </div>
                     <span className={`text-[11px] mt-1 block ${isDark ? "text-[#A1A1AA]" : "text-slate-400"}`}>{t.analytics.warehouse.fmcgSub}</span>
                   </div>
@@ -991,7 +991,7 @@ export default function DawhLandingPage() {
                       <span className={`font-bold ${isDark ? "text-white" : "text-slate-900"}`}>28%</span>
                     </div>
                     <div className={`h-2.5 w-full rounded-full overflow-hidden ${isDark ? "bg-[#282828]" : "bg-slate-100"}`}>
-                      <div className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full w-[28%]" />
+                      <div className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full w-[28%]" />
                     </div>
                     <span className={`text-[11px] mt-1 block ${isDark ? "text-[#A1A1AA]" : "text-slate-400"}`}>{t.analytics.warehouse.machinerySub}</span>
                   </div>
@@ -1004,7 +1004,7 @@ export default function DawhLandingPage() {
                       <span className={`font-bold ${isDark ? "text-white" : "text-slate-900"}`}>20%</span>
                     </div>
                     <div className={`h-2.5 w-full rounded-full overflow-hidden ${isDark ? "bg-[#282828]" : "bg-slate-100"}`}>
-                      <div className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full w-[20%]" />
+                      <div className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full w-[20%]" />
                     </div>
                     <span className={`text-[11px] mt-1 block ${isDark ? "text-[#A1A1AA]" : "text-slate-400"}`}>{t.analytics.warehouse.techSub}</span>
                   </div>
@@ -1017,7 +1017,7 @@ export default function DawhLandingPage() {
                       <span className={`font-bold ${isDark ? "text-white" : "text-slate-900"}`}>8%</span>
                     </div>
                     <div className={`h-2.5 w-full rounded-full overflow-hidden ${isDark ? "bg-[#282828]" : "bg-slate-100"}`}>
-                      <div className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full w-[8%]" />
+                      <div className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full w-[8%]" />
                     </div>
                     <span className={`text-[11px] mt-1 block ${isDark ? "text-[#A1A1AA]" : "text-slate-400"}`}>{t.analytics.warehouse.transitSub}</span>
                   </div>
@@ -1034,7 +1034,7 @@ export default function DawhLandingPage() {
                       <span className={`font-bold ${isDark ? "text-white" : "text-slate-900"}`}>76%</span>
                     </div>
                     <div className={`h-2.5 w-full rounded-full overflow-hidden ${isDark ? "bg-[#282828]" : "bg-slate-100"}`}>
-                      <div className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full w-[76%]" />
+                      <div className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full w-[76%]" />
                     </div>
                     <span className={`text-[11px] mt-1 block ${isDark ? "text-[#A1A1AA]" : "text-slate-400"}`}>{t.analytics.datacenter.activeSub}</span>
                   </div>
@@ -1047,7 +1047,7 @@ export default function DawhLandingPage() {
                       <span className={`font-bold ${isDark ? "text-white" : "text-slate-900"}`}>14%</span>
                     </div>
                     <div className={`h-2.5 w-full rounded-full overflow-hidden ${isDark ? "bg-[#282828]" : "bg-slate-100"}`}>
-                      <div className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full w-[14%]" />
+                      <div className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full w-[14%]" />
                     </div>
                     <span className={`text-[11px] mt-1 block ${isDark ? "text-[#A1A1AA]" : "text-slate-400"}`}>{t.analytics.datacenter.settleSub}</span>
                   </div>
@@ -1060,7 +1060,7 @@ export default function DawhLandingPage() {
                       <span className={`font-bold ${isDark ? "text-white" : "text-slate-900"}`}>7%</span>
                     </div>
                     <div className={`h-2.5 w-full rounded-full overflow-hidden ${isDark ? "bg-[#282828]" : "bg-slate-100"}`}>
-                      <div className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full w-[7%]" />
+                      <div className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full w-[7%]" />
                     </div>
                     <span className={`text-[11px] mt-1 block ${isDark ? "text-[#A1A1AA]" : "text-slate-400"}`}>{t.analytics.datacenter.reminderSub}</span>
                   </div>
@@ -1073,7 +1073,7 @@ export default function DawhLandingPage() {
                       <span className={`font-bold ${isDark ? "text-white" : "text-slate-900"}`}>3%</span>
                     </div>
                     <div className={`h-2.5 w-full rounded-full overflow-hidden ${isDark ? "bg-[#282828]" : "bg-slate-100"}`}>
-                      <div className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full w-[3%]" />
+                      <div className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full w-[3%]" />
                     </div>
                     <span className={`text-[11px] mt-1 block ${isDark ? "text-[#A1A1AA]" : "text-slate-400"}`}>{t.analytics.datacenter.recoverySub}</span>
                   </div>
@@ -1090,7 +1090,7 @@ export default function DawhLandingPage() {
                       <span className={`font-bold ${isDark ? "text-white" : "text-slate-900"}`}>100%</span>
                     </div>
                     <div className={`h-2.5 w-full rounded-full overflow-hidden ${isDark ? "bg-[#282828]" : "bg-slate-100"}`}>
-                      <div className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full w-[100%]" />
+                      <div className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full w-[100%]" />
                     </div>
                     <span className={`text-[11px] mt-1 block ${isDark ? "text-[#A1A1AA]" : "text-slate-400"}`}>{t.analytics.audit.ledgerSub}</span>
                   </div>
@@ -1103,7 +1103,7 @@ export default function DawhLandingPage() {
                       <span className={`font-bold ${isDark ? "text-white" : "text-slate-900"}`}>99.4%</span>
                     </div>
                     <div className={`h-2.5 w-full rounded-full overflow-hidden ${isDark ? "bg-[#282828]" : "bg-slate-100"}`}>
-                      <div className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full w-[99%]" />
+                      <div className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full w-[99%]" />
                     </div>
                     <span className={`text-[11px] mt-1 block ${isDark ? "text-[#A1A1AA]" : "text-slate-400"}`}>{t.analytics.audit.etaxSub}</span>
                   </div>
@@ -1116,7 +1116,7 @@ export default function DawhLandingPage() {
                       <span className={`font-bold ${isDark ? "text-white" : "text-slate-900"}`}>100%</span>
                     </div>
                     <div className={`h-2.5 w-full rounded-full overflow-hidden ${isDark ? "bg-[#282828]" : "bg-slate-100"}`}>
-                      <div className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full w-[100%]" />
+                      <div className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full w-[100%]" />
                     </div>
                     <span className={`text-[11px] mt-1 block ${isDark ? "text-[#A1A1AA]" : "text-slate-400"}`}>{t.analytics.audit.cryptoSub}</span>
                   </div>
@@ -1129,7 +1129,7 @@ export default function DawhLandingPage() {
                       <span className={`font-bold ${isDark ? "text-white" : "text-slate-900"}`}>98.9%</span>
                     </div>
                     <div className={`h-2.5 w-full rounded-full overflow-hidden ${isDark ? "bg-[#282828]" : "bg-slate-100"}`}>
-                      <div className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full w-[98%]" />
+                      <div className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full w-[98%]" />
                     </div>
                     <span className={`text-[11px] mt-1 block ${isDark ? "text-[#A1A1AA]" : "text-slate-400"}`}>{t.analytics.audit.bankSub}</span>
                   </div>
@@ -1183,7 +1183,7 @@ export default function DawhLandingPage() {
             <div>
               <div className="flex items-center justify-between mb-5 sm:mb-6">
                 <span className={`text-[11px] font-extrabold tracking-widest uppercase px-3 py-1 rounded-full ${
-                  isDark ? "bg-blue-950/80 text-blue-300 border border-blue-800/40" : "bg-blue-100 text-blue-700"
+                  isDark ? "bg-indigo-950/80 text-indigo-300 border border-indigo-800/40" : "bg-indigo-100 text-indigo-700"
                 }`}>
                   {t.features.card1Badge}
                 </span>
@@ -1247,7 +1247,7 @@ export default function DawhLandingPage() {
             <div>
               <div className="flex items-center justify-between mb-5 sm:mb-6">
                 <span className={`text-[11px] font-extrabold tracking-widest uppercase px-3 py-1 rounded-full ${
-                  isDark ? "bg-blue-950/80 text-blue-300 border border-blue-800/40" : "bg-blue-100 text-blue-700"
+                  isDark ? "bg-indigo-950/80 text-indigo-300 border border-indigo-800/40" : "bg-indigo-100 text-indigo-700"
                 }`}>
                   {t.features.card2Badge}
                 </span>
@@ -1294,7 +1294,7 @@ export default function DawhLandingPage() {
             <div>
               <div className="flex items-center justify-between mb-5 sm:mb-6">
                 <span className={`text-[11px] font-extrabold tracking-widest uppercase px-3 py-1 rounded-full ${
-                  isDark ? "bg-blue-950/80 text-blue-300 border border-blue-800/40" : "bg-blue-100 text-blue-700"
+                  isDark ? "bg-indigo-950/80 text-indigo-300 border border-indigo-800/40" : "bg-indigo-100 text-indigo-700"
                 }`}>
                   {t.features.card3Badge}
                 </span>
@@ -1340,7 +1340,7 @@ export default function DawhLandingPage() {
             <div>
               <div className="flex items-center justify-between mb-5 sm:mb-6">
                 <span className={`text-[11px] font-extrabold tracking-widest uppercase px-3 py-1 rounded-full ${
-                  isDark ? "bg-blue-950/80 text-blue-300 border border-blue-800/40" : "bg-blue-100 text-blue-700"
+                  isDark ? "bg-indigo-950/80 text-indigo-300 border border-indigo-800/40" : "bg-indigo-100 text-indigo-700"
                 }`}>
                   {t.features.card4Badge}
                 </span>
@@ -1430,12 +1430,12 @@ export default function DawhLandingPage() {
                 <button
                   onClick={() => setActiveFaq(isOpen ? null : index)}
                   className={`w-full text-left p-6 sm:p-7 flex items-center justify-between gap-4 font-bold text-base sm:text-lg transition-colors ${
-                    isDark ? "text-white hover:text-blue-400" : "text-slate-900 hover:text-blue-600"
+                    isDark ? "text-white hover:text-indigo-400" : "text-slate-900 hover:text-indigo-600"
                   }`}
                 >
                   <span>{faq.q}</span>
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                    isOpen ? "bg-blue-600 text-white" : isDark ? "bg-[#282828] text-[#E4E4E7]" : "bg-slate-100 text-slate-600"
+                    isOpen ? "bg-indigo-600 text-white" : isDark ? "bg-[#282828] text-[#E4E4E7]" : "bg-slate-100 text-slate-600"
                   }`}>
                     {isOpen ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                   </div>
@@ -1472,17 +1472,17 @@ export default function DawhLandingPage() {
           whileInView={{ opacity: 1, y: 0, scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
-          className="relative rounded-[32px] sm:rounded-[42px] bg-gradient-to-br from-[#1E3A8A] via-[#2563EB] to-[#3B82F6] text-white p-7 sm:p-14 overflow-hidden shadow-xl"
+          className="relative rounded-[32px] sm:rounded-[42px] bg-gradient-to-br from-[#312E81] via-[#4F46E5] to-[#6366F1] text-white p-7 sm:p-14 overflow-hidden shadow-xl"
         >
           {/* Ambient Glowing Blobs */}
           <div className="absolute -top-20 -right-20 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-blue-400/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-indigo-400/20 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative z-10 max-w-2xl mx-auto text-center">
             <h2 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-5 leading-tight">
               {t.cta.heading}
             </h2>
-            <p className="text-sm sm:text-lg text-blue-100 mb-8 max-w-xl mx-auto leading-relaxed">
+            <p className="text-sm sm:text-lg text-indigo-100 mb-8 max-w-xl mx-auto leading-relaxed">
               {t.cta.subtitle}
             </p>
 
@@ -1495,14 +1495,14 @@ export default function DawhLandingPage() {
               />
               <Link
                 href="/auth/login"
-                className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-white text-blue-700 font-extrabold text-xs sm:text-sm hover:bg-neutral-100 hover:scale-105 active:scale-95 transition-all shrink-0 shadow-md text-center cursor-pointer"
+                className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-white text-indigo-700 font-extrabold text-xs sm:text-sm hover:bg-neutral-100 hover:scale-105 active:scale-95 transition-all shrink-0 shadow-md text-center cursor-pointer"
               >
                 {t.cta.button}
               </Link>
             </div>
 
             {/* Guarantee Bullets */}
-            <div className="flex flex-wrap items-center justify-center gap-5 text-[11px] sm:text-xs text-blue-200">
+            <div className="flex flex-wrap items-center justify-center gap-5 text-[11px] sm:text-xs text-indigo-200">
               <span className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-300" /> {t.cta.bullet1}</span>
               <span className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-300" /> {t.cta.bullet2}</span>
               <span className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-300" /> {t.cta.bullet3}</span>
@@ -1566,11 +1566,11 @@ export default function DawhLandingPage() {
             <div>
               <h4 className={`text-xs font-bold uppercase tracking-wider mb-4 ${isDark ? "text-[#A1A1AA]" : "text-slate-500"}`}>{t.footer.colProduct}</h4>
               <ul className={`space-y-2.5 text-sm ${isDark ? "text-[#A1A1AA]" : "text-slate-600"}`}>
-                <li><a href="#features" className="hover:text-blue-500 transition-colors">HP Datacenter</a></li>
-                <li><a href="#features" className="hover:text-blue-500 transition-colors">Warehouse ERP</a></li>
-                <li><a href="#analytics" className="hover:text-blue-500 transition-colors">Reports & Auditing</a></li>
-                <li><a href="#features" className="hover:text-blue-500 transition-colors">API Gateway</a></li>
-                <li><a href="#pricing" className="hover:text-blue-500 transition-colors">Enterprise Security</a></li>
+                <li><a href="#features" className="hover:text-indigo-500 transition-colors">HP Datacenter</a></li>
+                <li><a href="#features" className="hover:text-indigo-500 transition-colors">Warehouse ERP</a></li>
+                <li><a href="#analytics" className="hover:text-indigo-500 transition-colors">Reports & Auditing</a></li>
+                <li><a href="#features" className="hover:text-indigo-500 transition-colors">API Gateway</a></li>
+                <li><a href="#pricing" className="hover:text-indigo-500 transition-colors">Enterprise Security</a></li>
               </ul>
             </div>
 
@@ -1578,20 +1578,20 @@ export default function DawhLandingPage() {
             <div>
               <h4 className={`text-xs font-bold uppercase tracking-wider mb-4 ${isDark ? "text-[#A1A1AA]" : "text-slate-500"}`}>{t.footer.colOrg}</h4>
               <ul className={`space-y-2.5 text-sm ${isDark ? "text-[#A1A1AA]" : "text-slate-600"}`}>
-                <li><a href="#about" className="hover:text-blue-500 transition-colors">{t.footer.aboutUs}</a></li>
+                <li><a href="#about" className="hover:text-indigo-500 transition-colors">{t.footer.aboutUs}</a></li>
                 <li>
-                  <a href="#careers" className="hover:text-blue-500 transition-colors flex items-center gap-1.5">
+                  <a href="#careers" className="hover:text-indigo-500 transition-colors flex items-center gap-1.5">
                     {t.footer.careers}
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                      isDark ? "bg-blue-950/80 text-blue-300" : "bg-blue-100 text-blue-700"
+                      isDark ? "bg-indigo-950/80 text-indigo-300" : "bg-indigo-100 text-indigo-700"
                     }`}>
                       {t.footer.hiring}
                     </span>
                   </a>
                 </li>
-                <li><a href="#press" className="hover:text-blue-500 transition-colors">{t.footer.network}</a></li>
-                <li><a href="#blog" className="hover:text-blue-500 transition-colors">{t.footer.caseStudies}</a></li>
-                <li><a href="#contact" className="hover:text-blue-500 transition-colors">{t.footer.contactSales}</a></li>
+                <li><a href="#press" className="hover:text-indigo-500 transition-colors">{t.footer.network}</a></li>
+                <li><a href="#blog" className="hover:text-indigo-500 transition-colors">{t.footer.caseStudies}</a></li>
+                <li><a href="#contact" className="hover:text-indigo-500 transition-colors">{t.footer.contactSales}</a></li>
               </ul>
             </div>
 
@@ -1599,11 +1599,11 @@ export default function DawhLandingPage() {
             <div>
               <h4 className={`text-xs font-bold uppercase tracking-wider mb-4 ${isDark ? "text-[#A1A1AA]" : "text-slate-500"}`}>{t.footer.colLegal}</h4>
               <ul className={`space-y-2.5 text-sm ${isDark ? "text-[#A1A1AA]" : "text-slate-600"}`}>
-                <li><a href="#privacy" className="hover:text-blue-500 transition-colors">{t.footer.privacy}</a></li>
-                <li><a href="#terms" className="hover:text-blue-500 transition-colors">{t.footer.terms}</a></li>
-                <li><a href="#security" className="hover:text-blue-500 transition-colors">{t.footer.security}</a></li>
-                <li><a href="#api" className="hover:text-blue-500 transition-colors">{t.footer.status}</a></li>
-                <li><a href="#cookie" className="hover:text-blue-500 transition-colors">{t.footer.compliance}</a></li>
+                <li><a href="#privacy" className="hover:text-indigo-500 transition-colors">{t.footer.privacy}</a></li>
+                <li><a href="#terms" className="hover:text-indigo-500 transition-colors">{t.footer.terms}</a></li>
+                <li><a href="#security" className="hover:text-indigo-500 transition-colors">{t.footer.security}</a></li>
+                <li><a href="#api" className="hover:text-indigo-500 transition-colors">{t.footer.status}</a></li>
+                <li><a href="#cookie" className="hover:text-indigo-500 transition-colors">{t.footer.compliance}</a></li>
               </ul>
             </div>
           </div>

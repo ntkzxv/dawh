@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import WarehousePageTemplate from "../_components/WarehousePageTemplate";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage } from "@/utils/language";
-import { Pagination } from "@/components/common";
+import { Pagination, CustomDropdown } from "@/components/common";
 import {
   Package,
   Layers,
@@ -479,8 +479,14 @@ export default function StockBalancePage() {
 
   const [statusFilter, setStatusFilter] = useState<string>("ทั้งหมด");
   const [searchQuery, setSearchQuery] = useState("");
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedDetailItem, setSelectedDetailItem] = useState<StockBalanceItem | null>(null);
+
+  const statusOptions = React.useMemo(() => [
+    { value: "ทั้งหมด", label: isThai ? "ทั้งหมด (ทุกสถานะ)" : "All Status" },
+    { value: "มีสินค้า", label: isThai ? "มีสินค้า (In Stock)" : "In Stock", badge: isThai ? "พร้อมจำหน่าย" : "Available" },
+    { value: "กำลังเติมสต็อก", label: isThai ? "กำลังเติมสต็อก" : "Replenishing", badge: isThai ? "รอดำเนินการ" : "Pending" },
+    { value: "ขาดสต็อก", label: isThai ? "ขาดสต็อก (Out of Stock)" : "Out of Stock", badge: isThai ? "หมด" : "Depleted" },
+  ], [isThai]);
 
   // Pagination state: กำหนดคงที่ 10 รายการต่อหน้า
   const pageSize = 10;
@@ -544,26 +550,27 @@ export default function StockBalancePage() {
       titleTh="ยอดสินค้าคงคลังและสถานะสต็อก"
       routePath="/warehouse/stock"
       iconName="package"
+      fullBleed
       metrics={[
         {
           title: isThai ? "สินค้าทั้งหมด" : "Total Products (SKU)",
           value: `${totalSkuCount.toLocaleString()} รายการ`,
           sub: isThai ? `รวม ${totalUnits.toLocaleString()} ชิ้นในระบบ` : `${totalUnits.toLocaleString()} total units`,
-          color: "text-sky-400",
+          color: "#6366F1",
           iconName: "package",
         },
         {
           title: isThai ? "มูลค่าคลังรวม" : "Total Inventory Value",
           value: `฿${totalValuation.toLocaleString()}`,
           sub: isThai ? "ประเมินตามต้นทุนเฉลี่ย" : "Based on weighted avg cost",
-          color: "text-amber-400",
+          color: "#FF9F1C",
           iconName: "layers",
         },
         {
           title: isThai ? "สินค้าพร้อมจำหน่าย" : "Available Stock",
           value: `${inStockUnits.toLocaleString()} ชิ้น`,
           sub: isThai ? "สถานะพร้อมหยิบและจัดส่งทันที" : "Ready for dispatch",
-          color: "text-emerald-400",
+          color: "#2EC4B6",
           iconName: "box",
         },
         {
@@ -572,14 +579,14 @@ export default function StockBalancePage() {
           sub: isThai
             ? `คลังกลาง ${bkkQty} · บางนา ${bangnaQty} · ชลบุรี ${chonburiQty}`
             : `HQ: ${bkkQty} · Bangna: ${bangnaQty} · Chonburi: ${chonburiQty}`,
-          color: "text-purple-400",
+          color: "#818CF8",
           iconName: "branches",
         },
       ]}
     >
-      <div className="space-y-6">
+      <div className="flex-1 w-full min-w-0 flex flex-col items-start p-4 sm:p-6 lg:p-8 gap-6 self-stretch">
         {/* Controls: Search, Filter, Action */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="w-full flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-3">
             {/* Search Box */}
             <div
@@ -587,76 +594,40 @@ export default function StockBalancePage() {
                 isLight ? "bg-white border-[#E4E4E7]" : "bg-[#282828] border-[#444444]"
               }`}
             >
-              <Search size={15} className="text-zinc-400" />
+              <Search size={15} className={isLight ? "text-slate-400" : "text-zinc-400"} />
               <input
                 type="text"
                 placeholder={isThai ? "ค้นหา SKU, ชื่อสินค้า, คลัง, ที่ตั้ง..." : "Search SKU, Name, Warehouse..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-transparent border-none outline-none text-[13px] w-[180px] sm:w-[240px] placeholder:text-zinc-500"
+                className={`bg-transparent border-none outline-none text-[13px] w-[180px] sm:w-[240px] ${
+                  isLight ? "text-slate-900 placeholder:text-slate-400" : "text-white placeholder:text-zinc-500"
+                }`}
               />
             </div>
 
-            {/* Filter Dropdown */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setIsFilterOpen(!isFilterOpen)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border h-[38px] text-[13px] font-medium transition-colors ${
-                  isLight
-                    ? "bg-white border-[#E4E4E7] text-slate-700 hover:bg-slate-50"
-                    : "bg-[#282828] border-[#444444] text-zinc-200 hover:bg-white/5"
-                }`}
-              >
-                <Filter size={14} className="text-zinc-400" />
-                <span>
-                  {isThai ? "ตัวกรอง" : "Filter"}: {statusFilter}
-                </span>
-                <ChevronDown size={13} className="text-zinc-400" />
-              </button>
-
-              {isFilterOpen && (
-                <div
-                  className={`absolute left-0 mt-1.5 w-44 rounded-xl border p-1 shadow-lg z-20 ${
-                    isLight
-                      ? "bg-white border-[#E4E4E7] text-slate-800"
-                      : "bg-[#282828] border-[#444444] text-zinc-200"
-                  }`}
-                >
-                  {["ทั้งหมด", "มีสินค้า", "กำลังเติมสต็อก", "ขาดสต็อก"].map((tab) => (
-                    <button
-                      key={tab}
-                      type="button"
-                      onClick={() => {
-                        setStatusFilter(tab);
-                        setIsFilterOpen(false);
-                      }}
-                      className={`w-full text-left px-3 py-1.5 rounded-lg text-[12.5px] transition-colors ${
-                        statusFilter === tab
-                          ? isLight
-                            ? "bg-slate-100 text-sky-600 font-semibold"
-                            : "bg-white/10 text-sky-400 font-semibold"
-                          : isLight
-                          ? "hover:bg-slate-50 text-slate-700"
-                          : "hover:bg-white/5 text-zinc-300"
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            {/* Filter Dropdown using Central CustomDropdown */}
+            <CustomDropdown
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={statusOptions}
+              icon={<Filter size={14} className={isLight ? "text-slate-500" : "text-zinc-400"} />}
+              triggerClassName={`h-[38px] rounded-xl text-[13px] font-medium ${
+                isLight
+                  ? "bg-white border-[#E4E4E7] text-slate-700 hover:bg-slate-50"
+                  : "bg-[#282828] border-[#444444] text-zinc-200 hover:bg-white/5"
+              }`}
+            />
           </div>
 
           <div className="flex items-center gap-2">
             <button
               type="button"
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-[13px] font-medium transition-colors ${
-                isLight ? "bg-white border-[#E4E4E7] hover:bg-slate-50" : "bg-[#282828] border-[#444444] hover:bg-white/5"
+                isLight ? "bg-white border-[#E4E4E7] text-slate-700 hover:bg-slate-50" : "bg-[#282828] border-[#444444] text-zinc-200 hover:bg-white/5"
               }`}
             >
-              <RefreshCw size={13} className="text-zinc-400" />
+              <RefreshCw size={13} className={isLight ? "text-slate-500" : "text-zinc-400"} />
               <span>{isThai ? "รีเฟรชข้อมูลสต็อก" : "Refresh Stock"}</span>
             </button>
           </div>
@@ -664,34 +635,34 @@ export default function StockBalancePage() {
 
         {/* Stock Ledger / Balance Table */}
         <div
-          className={`rounded-2xl border overflow-hidden ${
-            isLight ? "bg-white border-[#E4E4E7] shadow-sm" : "bg-[#383838] border-[#444444]"
+          className={`w-full rounded-[12px] border overflow-hidden ${
+            isLight ? "bg-white border-[#E4E4E7] shadow-xs" : "bg-[#383838] border-[#444444]"
           }`}
         >
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[13px] border-collapse min-w-[700px]">
               <thead>
                 <tr
-                  className={`border-b text-[12px] font-semibold text-zinc-400 select-none ${
-                    isLight ? "bg-slate-50 border-slate-200" : "bg-[#282828] border-[#444444]"
+                  className={`h-[42px] border-b text-[12px] font-semibold text-white select-none ${
+                    isLight ? "bg-slate-900 border-slate-800" : "bg-[#282828] border-[#444444]"
                   }`}
                 >
-                  <th className="py-3 px-4">{isThai ? "รหัสสินค้า" : "SKU & Product"}</th>
-                  <th className="py-3 px-4">{isThai ? "คลังและที่ตั้ง" : "Warehouse & Location"}</th>
-                  <th className="py-3 px-4 text-right">{isThai ? "จำนวนสินค้า" : "Quantity"}</th>
-                  <th className="py-3 px-4 text-center">{isThai ? "สถานะสต็อก" : "Stock Status"}</th>
-                  <th className="py-3 pl-2 pr-6 text-center w-14"></th>
+                  <th className="py-2.5 px-4">{isThai ? "รหัสสินค้า" : "SKU & Product"}</th>
+                  <th className="py-2.5 px-4">{isThai ? "คลังและที่ตั้ง" : "Warehouse & Location"}</th>
+                  <th className="py-2.5 px-4 text-right">{isThai ? "จำนวนสินค้า" : "Quantity"}</th>
+                  <th className="py-2.5 px-4 text-center">{isThai ? "สถานะสต็อก" : "Stock Status"}</th>
+                  <th className="py-2.5 pl-2 pr-6 text-center w-14"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className={`divide-y ${isLight ? "divide-slate-200" : "divide-white/5"}`}>
                 {paginatedData.map((row) => {
                   let statusBadgeBg = "rgba(46, 196, 182, 0.12)";
                   let statusBadgeColor = "#2EC4B6";
                   let statusText = isThai ? "มีสินค้าในสต็อก" : "In Stock";
 
                   if (row.status === "replenishing") {
-                    statusBadgeBg = "rgba(13, 153, 255, 0.12)";
-                    statusBadgeColor = "#0D99FF";
+                    statusBadgeBg = "rgba(99, 102, 241, 0.12)";
+                    statusBadgeColor = "#6366F1";
                     statusText = isThai ? "กำลังเติมสต็อก" : "Replenishing";
                   } else if (row.status === "out_of_stock") {
                     statusBadgeBg = "rgba(231, 29, 54, 0.12)";
@@ -712,36 +683,44 @@ export default function StockBalancePage() {
                     >
                       {/* รหัสสินค้า */}
                       <td className="py-3.5 px-4">
-                        <div className="font-mono font-semibold text-[#0D99FF] text-[12.5px]">
+                        <div className={`font-mono font-semibold text-[12.5px] ${isLight ? "text-slate-800" : "text-zinc-200"}`}>
                           {row.sku}
                         </div>
-                        <div className="font-medium text-[13px] text-white/90 truncate max-w-[240px]">
+                        <div className={`font-medium text-[13px] truncate max-w-[240px] ${
+                          isLight ? "text-slate-900" : "text-white/90"
+                        }`}>
                           {isThai ? row.nameTh : row.nameEn}
                         </div>
-                        <div className="text-[11px] text-zinc-500">{row.category}</div>
+                        <div className={`text-[11px] ${isLight ? "text-slate-500" : "text-zinc-500"}`}>{row.category}</div>
                       </td>
 
                       {/* คลังและที่ตั้ง */}
                       <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-1.5 font-medium text-white/90">
-                          <Building2 size={13} className="text-zinc-400" />
+                        <div className={`flex items-center gap-1.5 font-medium ${
+                          isLight ? "text-slate-800" : "text-white/90"
+                        }`}>
+                          <Building2 size={13} className={isLight ? "text-slate-500" : "text-zinc-400"} />
                           <span>{row.warehouse}</span>
                         </div>
-                        <div className="text-[11.5px] font-mono text-zinc-400 mt-0.5">
+                        <div className={`text-[11.5px] font-mono mt-0.5 ${
+                          isLight ? "text-slate-500" : "text-zinc-400"
+                        }`}>
                           พิกัด {row.location}
                         </div>
                       </td>
 
                       {/* จำนวนสินค้า */}
                       <td className="py-3.5 px-4 text-right">
-                        <div className="font-mono font-bold text-white text-[14px]">
+                        <div className={`font-mono font-bold text-[14px] ${
+                          isLight ? "text-slate-900" : "text-white"
+                        }`}>
                           {row.onHand > 0 ? (
                             <>
-                              <span className="text-emerald-400">{row.onHand.toLocaleString()}</span>{" "}
-                              <span className="text-[11px] font-normal text-zinc-400">{row.unit}</span>
+                              <span className={isLight ? "text-emerald-600" : "text-emerald-400"}>{row.onHand.toLocaleString()}</span>{" "}
+                              <span className={`text-[11px] font-normal ${isLight ? "text-slate-500" : "text-zinc-400"}`}>{row.unit}</span>
                             </>
                           ) : (
-                            <span className="text-rose-400 font-semibold">{isThai ? "หมดสต็อก" : "0"}</span>
+                            <span className={isLight ? "text-rose-600 font-semibold" : "text-rose-400 font-semibold"}>{isThai ? "หมดสต็อก" : "0"}</span>
                           )}
                         </div>
                       </td>
@@ -784,7 +763,7 @@ export default function StockBalancePage() {
 
         {/* Pagination (Outside Table Card) */}
         {filteredData.length > 0 && (
-          <div className="mt-4">
+          <div className="w-full mt-2">
             <Pagination
               currentPage={validCurrentPage}
               totalPages={totalPages}
@@ -805,10 +784,12 @@ export default function StockBalancePage() {
               isLight ? "bg-white border-slate-200 text-slate-800" : "bg-[#282828] border-[#444444] text-zinc-100"
             }`}
           >
-            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+            <div className={`flex items-center justify-between pb-4 border-b ${
+              isLight ? "border-slate-200" : "border-white/10"
+            }`}>
               <div className="flex items-center gap-2">
-                <MoreHorizontal size={18} className="text-[#0D99FF]" />
-                <h3 className="font-bold text-[16px]">
+                <MoreHorizontal size={18} className={isLight ? "text-slate-800" : "text-white"} />
+                <h3 className={`font-bold text-[16px] ${isLight ? "text-slate-900" : "text-white"}`}>
                   {isThai ? "รายละเอียดสินค้าคงคลัง" : "Stock Item Details"}
                 </h3>
               </div>
@@ -825,79 +806,79 @@ export default function StockBalancePage() {
 
             <div className="py-4 space-y-4 text-[13px]">
               <div>
-                <span className="text-[11px] font-semibold text-zinc-500 uppercase">
+                <span className={`text-[11px] font-semibold uppercase ${isLight ? "text-slate-500" : "text-zinc-500"}`}>
                   {isThai ? "รหัสสินค้า / SKU" : "SKU"}
                 </span>
-                <p className="font-mono text-[#0D99FF] text-[15px] font-bold mt-0.5">
+                <p className={`font-mono text-[15px] font-bold mt-0.5 ${isLight ? "text-slate-900" : "text-white"}`}>
                   {selectedDetailItem.sku}
                 </p>
               </div>
 
               <div>
-                <span className="text-[11px] font-semibold text-zinc-500 uppercase">
+                <span className={`text-[11px] font-semibold uppercase ${isLight ? "text-slate-500" : "text-zinc-500"}`}>
                   {isThai ? "ชื่อสินค้า" : "Product Name"}
                 </span>
-                <p className="font-semibold text-[14.5px] mt-0.5">
+                <p className={`font-semibold text-[14.5px] mt-0.5 ${isLight ? "text-slate-900" : "text-white"}`}>
                   {isThai ? selectedDetailItem.nameTh : selectedDetailItem.nameEn}
                 </p>
-                <p className="text-[12px] text-zinc-400">{selectedDetailItem.category}</p>
+                <p className={`text-[12px] ${isLight ? "text-slate-500" : "text-zinc-400"}`}>{selectedDetailItem.category}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-2 border-t border-white/10">
+              <div className={`grid grid-cols-2 gap-4 pt-2 border-t ${isLight ? "border-slate-200" : "border-white/10"}`}>
                 <div>
-                  <span className="text-[11px] font-semibold text-zinc-500 uppercase">
+                  <span className={`text-[11px] font-semibold uppercase ${isLight ? "text-slate-500" : "text-zinc-500"}`}>
                     {isThai ? "คลังสินค้า" : "Warehouse"}
                   </span>
-                  <p className="font-medium mt-0.5">{selectedDetailItem.warehouse}</p>
+                  <p className={`font-medium mt-0.5 ${isLight ? "text-slate-800" : "text-zinc-200"}`}>{selectedDetailItem.warehouse}</p>
                 </div>
                 <div>
-                  <span className="text-[11px] font-semibold text-zinc-500 uppercase">
+                  <span className={`text-[11px] font-semibold uppercase ${isLight ? "text-slate-500" : "text-zinc-500"}`}>
                     {isThai ? "พิกัดที่ตั้ง (Bin)" : "Location Bin"}
                   </span>
-                  <p className="font-mono font-medium mt-0.5">{selectedDetailItem.location}</p>
+                  <p className={`font-mono font-medium mt-0.5 ${isLight ? "text-slate-800" : "text-zinc-200"}`}>{selectedDetailItem.location}</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-2 border-t border-white/10">
+              <div className={`grid grid-cols-2 gap-4 pt-2 border-t ${isLight ? "border-slate-200" : "border-white/10"}`}>
                 <div>
-                  <span className="text-[11px] font-semibold text-zinc-500 uppercase">
+                  <span className={`text-[11px] font-semibold uppercase ${isLight ? "text-slate-500" : "text-zinc-500"}`}>
                     {isThai ? "ยอดคงคลังพร้อมใช้" : "On-Hand Stock"}
                   </span>
-                  <p className="font-mono text-[16px] font-bold text-emerald-400 mt-0.5">
+                  <p className={`font-mono text-[16px] font-bold mt-0.5 ${isLight ? "text-emerald-600" : "text-emerald-400"}`}>
                     {selectedDetailItem.onHand.toLocaleString()} {selectedDetailItem.unit}
                   </p>
                 </div>
                 <div>
-                  <span className="text-[11px] font-semibold text-zinc-500 uppercase">
+                  <span className={`text-[11px] font-semibold uppercase ${isLight ? "text-slate-500" : "text-zinc-500"}`}>
                     {isThai ? "สต็อกขั้นต่ำที่ปลอดภัย" : "Safety Stock"}
                   </span>
-                  <p className="font-mono text-[16px] font-medium text-zinc-300 mt-0.5">
+                  <p className={`font-mono text-[16px] font-medium mt-0.5 ${isLight ? "text-slate-800" : "text-zinc-300"}`}>
                     {selectedDetailItem.safetyStock.toLocaleString()} {selectedDetailItem.unit}
                   </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-2 border-t border-white/10">
+              <div className={`grid grid-cols-2 gap-4 pt-2 border-t ${isLight ? "border-slate-200" : "border-white/10"}`}>
                 <div>
-                  <span className="text-[11px] font-semibold text-zinc-500 uppercase">
+                  <span className={`text-[11px] font-semibold uppercase ${isLight ? "text-slate-500" : "text-zinc-500"}`}>
                     {isThai ? "กำลังเติมสต็อก (In-Transit)" : "Replenishing"}
                   </span>
-                  <p className="font-mono font-bold text-blue-400 mt-0.5">
+                  <p className={`font-mono font-bold mt-0.5 ${isLight ? "text-indigo-600" : "text-indigo-400"}`}>
                     {selectedDetailItem.incoming > 0 ? `+${selectedDetailItem.incoming.toLocaleString()}` : "-"}
                   </p>
                 </div>
                 <div>
-                  <span className="text-[11px] font-semibold text-zinc-500 uppercase">
+                  <span className={`text-[11px] font-semibold uppercase ${isLight ? "text-slate-500" : "text-zinc-500"}`}>
                     {isThai ? "ยอดขาดสต็อก (Shortage)" : "Shortage"}
                   </span>
-                  <p className="font-mono font-bold text-rose-400 mt-0.5">
+                  <p className={`font-mono font-bold mt-0.5 ${isLight ? "text-rose-600" : "text-rose-400"}`}>
                     {selectedDetailItem.shortage > 0 ? `-${selectedDetailItem.shortage.toLocaleString()}` : "-"}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-white/10 flex justify-end">
+            <div className={`pt-4 border-t flex justify-end ${isLight ? "border-slate-200" : "border-white/10"}`}>
               <button
                 type="button"
                 onClick={() => setSelectedDetailItem(null)}

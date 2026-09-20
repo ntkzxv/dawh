@@ -222,8 +222,8 @@ function NotificationToastCard({
     badgeBg = isLight ? "rgba(217, 119, 6, 0.14)" : "rgba(245, 158, 11, 0.18)";
     actionText = isLight ? "#FFFFFF" : "#000000";
   } else if (item.type === "info") {
-    accentColor = isLight ? "#2563EB" : "#3B82F6";
-    badgeBg = isLight ? "rgba(37, 99, 235, 0.12)" : "rgba(59, 130, 246, 0.18)";
+    accentColor = isLight ? "#6366F1" : "#818CF8";
+    badgeBg = isLight ? "rgba(99, 102, 241, 0.12)" : "rgba(99, 102, 241, 0.18)";
     actionText = "#FFFFFF";
   } else if (item.type === "normal") {
     accentColor = isLight ? "#222222" : "#FFFFFF";

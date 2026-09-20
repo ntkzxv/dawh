@@ -387,7 +387,7 @@ export default function UserManagementTab({
                   : "bg-[#2C2C2C] border-[#444444] text-zinc-300 hover:bg-[#333333]"
               }`}
             >
-              <Filter size={14} className={activeFilterCount > 0 ? "text-[#0D99FF]" : ""} />
+              <Filter size={14} className={activeFilterCount > 0 ? "text-[#6366F1]" : ""} />
               <span>{isThai ? "ตัวกรอง" : "Filter"}</span>
               {activeFilterCount > 0 && (
                 <span
@@ -396,7 +396,7 @@ export default function UserManagementTab({
                       ? isLight
                         ? "bg-white text-zinc-900"
                         : "bg-zinc-900 text-white"
-                      : "bg-[#0D99FF] text-white"
+                      : "bg-[#6366F1] text-white"
                   }`}
                 >
                   {activeFilterCount}
@@ -421,7 +421,7 @@ export default function UserManagementTab({
                   <Filter size={14} />
                   <span>{isThai ? "ตัวกรองข้อมูลผู้ใช้" : "Filter Users"}</span>
                   {activeFilterCount > 0 && (
-                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#0D99FF]/20 text-[#0D99FF]">
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#6366F1]/20 text-[#6366F1]">
                       {activeFilterCount} {isThai ? "ใช้งานอยู่" : "active"}
                     </span>
                   )}
@@ -608,7 +608,7 @@ export default function UserManagementTab({
                       <div className="flex items-center gap-1.5 font-semibold">
                         <span className={isLight ? "text-zinc-900" : "text-white"}>{user.name}</span>
                         {isCurrentUser && (
-                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-500/10 text-blue-500 font-bold">
+                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#6366F1]/10 text-[#6366F1] font-bold">
                             {isThai ? "บัญชีคุณ" : "YOU"}
                           </span>
                         )}
@@ -831,7 +831,7 @@ export default function UserManagementTab({
                       <div className="flex items-center gap-2">
                         <span className="font-mono font-bold">{scope.facilityCode}</span>
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          scope.scopeType === "ADMIN" ? "bg-purple-500/20 text-purple-400" : "bg-blue-500/20 text-blue-400"
+                          scope.scopeType === "ADMIN" ? "bg-purple-500/20 text-purple-400" : "bg-indigo-500/20 text-indigo-400"
                         }`}>
                           {scope.scopeType}
                         </span>

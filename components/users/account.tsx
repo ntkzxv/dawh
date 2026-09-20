@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import {
   MapPin,
   Lock,
@@ -125,6 +126,14 @@ function FormCustomSelect({
   icon,
 }: FormCustomSelectProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const selectedIndex = options.findIndex((o) => o.value === value);
   const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null);
   const activeHighlightedIndex =
@@ -135,18 +144,70 @@ function FormCustomSelect({
       : 0;
   const selectedOption = options.find((o) => o.value === value);
 
+  const updatePosition = useCallback(() => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    const spaceBelow = viewportHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const openUpward = spaceBelow < 220 && spaceAbove > spaceBelow;
+
+    const style: React.CSSProperties = {
+      position: "fixed",
+      zIndex: 99999,
+      left: `${Math.max(8, Math.min(rect.left, viewportWidth - rect.width - 8))}px`,
+      width: `${rect.width}px`,
+      maxWidth: `${Math.min(viewportWidth - 16, rect.width)}px`,
+    };
+
+    if (openUpward) {
+      style.bottom = `${Math.max(8, viewportHeight - rect.top + 6)}px`;
+      style.transformOrigin = "bottom";
+    } else {
+      style.top = `${Math.max(8, rect.bottom + 6)}px`;
+      style.transformOrigin = "top";
+    }
+
+    setMenuStyle(style);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      updatePosition();
+    }
+  }, [isOpen, updatePosition]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleScroll = (e: Event) => {
+      if (menuRef.current?.contains(e.target as Node)) return;
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        if (rect.bottom < 0 || rect.top > window.innerHeight) {
+          onToggle();
+          return;
+        }
+      }
+      updatePosition();
+    };
+
+    window.addEventListener("scroll", handleScroll, true);
+    window.addEventListener("resize", updatePosition);
+    return () => {
+      window.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [isOpen, onToggle, updatePosition]);
+
   const handleToggle = () => {
     const nextWillOpen = !isOpen;
     setHighlightedIndex(null);
-    onToggle();
-    if (nextWillOpen && containerRef.current) {
-      setTimeout(() => {
-        containerRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-        });
-      }, 70);
+    if (nextWillOpen) {
+      updatePosition();
     }
+    onToggle();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -241,14 +302,20 @@ function FormCustomSelect({
         />
       </button>
 
-      {isOpen && (
-        <div
-          className={`absolute top-full left-0 right-0 mt-1.5 z-50 max-h-[220px] overflow-y-auto rounded-xl border shadow-2xl backdrop-blur-md flex flex-col p-1.5 gap-1 animate-in fade-in zoom-in-95 duration-150 ${
-            isLight
-              ? "bg-white/95 border-[#E4E4E7] shadow-xl text-[#222222]"
-              : "bg-[#2B2B2B]/95 border-[#444444] shadow-2xl text-[#FFFFFF]"
-          }`}
-        >
+      {isOpen &&
+        mounted &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={menuRef}
+            data-custom-dropdown={id}
+            style={menuStyle}
+            className={`max-h-[220px] overflow-y-auto dropdown-scrollbar pr-1.5 rounded-xl border shadow-2xl backdrop-blur-md flex flex-col p-1.5 gap-1 animate-in fade-in zoom-in-95 duration-150 ${
+              isLight
+                ? "bg-white/95 border-[#E4E4E7] shadow-xl text-[#222222]"
+                : "bg-[#2B2B2B]/95 border-[#444444] shadow-2xl text-[#FFFFFF]"
+            }`}
+          >
           {options.map((opt, idx) => {
             const isSelected = opt.value === value;
             const isHighlighted = idx === activeHighlightedIndex;
@@ -315,7 +382,8 @@ function FormCustomSelect({
               </button>
             );
           })}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

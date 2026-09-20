@@ -260,7 +260,7 @@ export default function ProductCatalogTab({
                         isLight ? "hover:bg-zinc-50" : "hover:bg-white/[0.03]"
                       }`}
                     >
-                      <td className="p-3 font-mono font-bold text-[#0D99FF]">{p.sku}</td>
+                      <td className="p-3 font-mono font-bold text-[#6366F1]">{p.sku}</td>
                       <td className="p-3">
                         <div className="font-semibold">{isThai ? p.nameTh : p.nameEn}</div>
                         <div className="text-[11px] opacity-60">{isThai ? p.nameEn : p.nameTh}</div>
@@ -279,7 +279,7 @@ export default function ProductCatalogTab({
                         <button
                           type="button"
                           onClick={() => setSelectedProductForUnits(p)}
-                          className="flex items-center gap-1 font-semibold text-[11px] text-blue-500 hover:underline"
+                          className="flex items-center gap-1 font-semibold text-[11px] text-[#6366F1] hover:underline"
                         >
                           <Barcode size={13} />
                           <span>{p.units.length} units, {p.barcodes.length} codes</span>
@@ -467,7 +467,7 @@ export default function ProductCatalogTab({
                       <Barcode size={16} />
                       <span className="font-mono font-bold">{bc.barcode}</span>
                       {bc.isPrimary && (
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-400 font-bold">
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#6366F1]/20 text-[#6366F1] font-bold">
                           PRIMARY
                         </span>
                       )}

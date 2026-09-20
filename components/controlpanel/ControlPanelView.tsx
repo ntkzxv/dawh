@@ -11,6 +11,7 @@ import {
   ModuleStatus,
   ALL_AVAILABLE_MODULES,
 } from "@/components/users";
+import { CustomDropdown } from "@/components/common";
 import {
   Check,
   ExternalLink,
@@ -109,6 +110,22 @@ export default function ControlPanelView() {
   // Time Dropdown Options
   const HOURS_OPTIONS = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
   const MINUTES_OPTIONS = ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"];
+
+  const hourDropdownOptions = useMemo(
+    () => HOURS_OPTIONS.map((h) => ({ value: h, label: h })),
+    []
+  );
+  const minuteDropdownOptions = useMemo(
+    () => MINUTES_OPTIONS.map((m) => ({ value: m, label: m })),
+    []
+  );
+  const periodDropdownOptions = useMemo(
+    () => [
+      { value: "AM", label: "AM" },
+      { value: "PM", label: "PM" },
+    ],
+    []
+  );
 
   const parseTimeString = (timeStr: string) => {
     const parts = timeStr.trim().split(/[:\s]+/);
@@ -1378,58 +1395,40 @@ export default function ControlPanelView() {
                       {/* Hour Dropdown */}
                       <div className="flex flex-col gap-1">
                         <span className="text-[10px] text-zinc-500">{isThai ? "ชั่วโมง" : "Hour"}</span>
-                        <select
+                        <CustomDropdown
                           value={startTimeParts.hour}
-                          onChange={(e) => updateStartTime(e.target.value, startTimeParts.minute, startTimeParts.period)}
-                          className={`w-full px-2.5 py-2 rounded-xl border text-xs font-mono font-medium outline-none cursor-pointer ${
-                            isLight
-                              ? "bg-zinc-50 border-zinc-300 text-zinc-900 focus:border-zinc-900"
-                              : "bg-[#1C1C1C] border-[#444444] text-white focus:border-white"
-                          }`}
-                        >
-                          {HOURS_OPTIONS.map((h) => (
-                            <option key={h} value={h} className={isLight ? "bg-white text-zinc-900" : "bg-[#202020] text-white"}>
-                              {h}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(h) => updateStartTime(h, startTimeParts.minute, startTimeParts.period)}
+                          options={hourDropdownOptions}
+                          size="sm"
+                          className="w-full"
+                          triggerClassName="h-[36px] font-mono"
+                        />
                       </div>
 
                       {/* Minute Dropdown */}
                       <div className="flex flex-col gap-1">
                         <span className="text-[10px] text-zinc-500">{isThai ? "นาที" : "Minute"}</span>
-                        <select
+                        <CustomDropdown
                           value={startTimeParts.minute}
-                          onChange={(e) => updateStartTime(startTimeParts.hour, e.target.value, startTimeParts.period)}
-                          className={`w-full px-2.5 py-2 rounded-xl border text-xs font-mono font-medium outline-none cursor-pointer ${
-                            isLight
-                              ? "bg-zinc-50 border-zinc-300 text-zinc-900 focus:border-zinc-900"
-                              : "bg-[#1C1C1C] border-[#444444] text-white focus:border-white"
-                          }`}
-                        >
-                          {MINUTES_OPTIONS.map((m) => (
-                            <option key={m} value={m} className={isLight ? "bg-white text-zinc-900" : "bg-[#202020] text-white"}>
-                              {m}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(m) => updateStartTime(startTimeParts.hour, m, startTimeParts.period)}
+                          options={minuteDropdownOptions}
+                          size="sm"
+                          className="w-full"
+                          triggerClassName="h-[36px] font-mono"
+                        />
                       </div>
 
                       {/* AM/PM Dropdown */}
                       <div className="flex flex-col gap-1">
                         <span className="text-[10px] text-zinc-500">{isThai ? "ช่วงเวลา" : "Period"}</span>
-                        <select
+                        <CustomDropdown
                           value={startTimeParts.period}
-                          onChange={(e) => updateStartTime(startTimeParts.hour, startTimeParts.minute, e.target.value)}
-                          className={`w-full px-2.5 py-2 rounded-xl border text-xs font-mono font-medium outline-none cursor-pointer ${
-                            isLight
-                              ? "bg-zinc-50 border-zinc-300 text-zinc-900 focus:border-zinc-900"
-                              : "bg-[#1C1C1C] border-[#444444] text-white focus:border-white"
-                          }`}
-                        >
-                          <option value="AM" className={isLight ? "bg-white text-zinc-900" : "bg-[#202020] text-white"}>AM</option>
-                          <option value="PM" className={isLight ? "bg-white text-zinc-900" : "bg-[#202020] text-white"}>PM</option>
-                        </select>
+                          onChange={(p) => updateStartTime(startTimeParts.hour, startTimeParts.minute, p)}
+                          options={periodDropdownOptions}
+                          size="sm"
+                          className="w-full"
+                          triggerClassName="h-[36px] font-mono"
+                        />
                       </div>
                     </div>
                   </div>
@@ -1449,58 +1448,40 @@ export default function ControlPanelView() {
                       {/* Hour Dropdown */}
                       <div className="flex flex-col gap-1">
                         <span className="text-[10px] text-zinc-500">{isThai ? "ชั่วโมง" : "Hour"}</span>
-                        <select
+                        <CustomDropdown
                           value={endTimeParts.hour}
-                          onChange={(e) => updateEndTime(e.target.value, endTimeParts.minute, endTimeParts.period)}
-                          className={`w-full px-2.5 py-2 rounded-xl border text-xs font-mono font-medium outline-none cursor-pointer ${
-                            isLight
-                              ? "bg-zinc-50 border-zinc-300 text-zinc-900 focus:border-zinc-900"
-                              : "bg-[#1C1C1C] border-[#444444] text-white focus:border-white"
-                          }`}
-                        >
-                          {HOURS_OPTIONS.map((h) => (
-                            <option key={h} value={h} className={isLight ? "bg-white text-zinc-900" : "bg-[#202020] text-white"}>
-                              {h}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(h) => updateEndTime(h, endTimeParts.minute, endTimeParts.period)}
+                          options={hourDropdownOptions}
+                          size="sm"
+                          className="w-full"
+                          triggerClassName="h-[36px] font-mono"
+                        />
                       </div>
 
                       {/* Minute Dropdown */}
                       <div className="flex flex-col gap-1">
                         <span className="text-[10px] text-zinc-500">{isThai ? "นาที" : "Minute"}</span>
-                        <select
+                        <CustomDropdown
                           value={endTimeParts.minute}
-                          onChange={(e) => updateEndTime(endTimeParts.hour, e.target.value, endTimeParts.period)}
-                          className={`w-full px-2.5 py-2 rounded-xl border text-xs font-mono font-medium outline-none cursor-pointer ${
-                            isLight
-                              ? "bg-zinc-50 border-zinc-300 text-zinc-900 focus:border-zinc-900"
-                              : "bg-[#1C1C1C] border-[#444444] text-white focus:border-white"
-                          }`}
-                        >
-                          {MINUTES_OPTIONS.map((m) => (
-                            <option key={m} value={m} className={isLight ? "bg-white text-zinc-900" : "bg-[#202020] text-white"}>
-                              {m}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(m) => updateEndTime(endTimeParts.hour, m, endTimeParts.period)}
+                          options={minuteDropdownOptions}
+                          size="sm"
+                          className="w-full"
+                          triggerClassName="h-[36px] font-mono"
+                        />
                       </div>
 
                       {/* AM/PM Dropdown */}
                       <div className="flex flex-col gap-1">
                         <span className="text-[10px] text-zinc-500">{isThai ? "ช่วงเวลา" : "Period"}</span>
-                        <select
+                        <CustomDropdown
                           value={endTimeParts.period}
-                          onChange={(e) => updateEndTime(endTimeParts.hour, endTimeParts.minute, e.target.value)}
-                          className={`w-full px-2.5 py-2 rounded-xl border text-xs font-mono font-medium outline-none cursor-pointer ${
-                            isLight
-                              ? "bg-zinc-50 border-zinc-300 text-zinc-900 focus:border-zinc-900"
-                              : "bg-[#1C1C1C] border-[#444444] text-white focus:border-white"
-                          }`}
-                        >
-                          <option value="AM" className={isLight ? "bg-white text-zinc-900" : "bg-[#202020] text-white"}>AM</option>
-                          <option value="PM" className={isLight ? "bg-white text-zinc-900" : "bg-[#202020] text-white"}>PM</option>
-                        </select>
+                          onChange={(p) => updateEndTime(endTimeParts.hour, endTimeParts.minute, p)}
+                          options={periodDropdownOptions}
+                          size="sm"
+                          className="w-full"
+                          triggerClassName="h-[36px] font-mono"
+                        />
                       </div>
                     </div>
                   </div>

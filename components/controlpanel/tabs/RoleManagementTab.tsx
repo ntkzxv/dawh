@@ -19,9 +19,10 @@ import {
   Building,
   ChevronDown,
 } from "lucide-react";
-import { CustomDropdown, Pagination } from "@/components/common";
+import { CustomDropdown, Pagination, DatePicker } from "@/components/common";
 import type { ApiPage } from "@/lib/api/client";
 import type { ControlPanelListQuery } from "@/lib/api/control-panel";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface RoleManagementTabProps {
   roles: CanonicalRole[];
@@ -429,22 +430,6 @@ export default function RoleManagementTab({
             </p>
           </div>
         </div>
-
-        {/* Global Action Button (shown in assignments and roles views) */}
-        {(currentSubTab === "assignments" || currentSubTab === "roles") && (
-          <button
-            type="button"
-            onClick={() => openAssignModalForUser()}
-            className={`flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm shrink-0 cursor-pointer ${
-              isLight
-                ? "bg-[#222222] hover:bg-black text-white"
-                : "bg-white hover:bg-zinc-200 text-zinc-900 border border-white"
-            }`}
-          >
-            <Plus size={14} />
-            <span>{isThai ? "มอบหมายบทบาทใหม่" : "Assign Role"}</span>
-          </button>
-        )}
       </div>
 
       {/* ==================================================================== */}
@@ -453,13 +438,13 @@ export default function RoleManagementTab({
       {currentSubTab === "assignments" && (
         <div className="flex flex-col gap-4 w-full">
           {/* Summary Metric Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {/* Card 1: Total Users */}
-            <div
-              className={`p-3.5 rounded-xl border flex items-center gap-3 transition-colors ${
-                isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
-              }`}
-            >
+          <div
+            className={`grid grid-cols-2 lg:grid-cols-4 py-2 ${
+              isLight ? "divide-zinc-200" : "divide-[#444444]"
+            } divide-y sm:divide-y-0 sm:divide-x`}
+          >
+            {/* Metric 1: Total Users */}
+            <div className="flex items-center gap-3 px-3 py-2 sm:py-0 sm:first:pl-1">
               <div
                 className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
                   isLight ? "bg-zinc-100 text-zinc-800" : "bg-[#2C2C2C] text-white"
@@ -477,12 +462,8 @@ export default function RoleManagementTab({
               </div>
             </div>
 
-            {/* Card 2: Users with Roles */}
-            <div
-              className={`p-3.5 rounded-xl border flex items-center gap-3 transition-colors ${
-                isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
-              }`}
-            >
+            {/* Metric 2: Users with Roles */}
+            <div className="flex items-center gap-3 px-3 py-2 sm:py-0">
               <div
                 className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-[#2EC4B6]/15 text-[#2EC4B6]`}
               >
@@ -501,12 +482,8 @@ export default function RoleManagementTab({
               </div>
             </div>
 
-            {/* Card 3: Unassigned Users */}
-            <div
-              className={`p-3.5 rounded-xl border flex items-center gap-3 transition-colors ${
-                isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
-              }`}
-            >
+            {/* Metric 3: Unassigned Users */}
+            <div className="flex items-center gap-3 px-3 py-2 sm:py-0">
               <div
                 className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
                   isLight
@@ -530,12 +507,8 @@ export default function RoleManagementTab({
               </div>
             </div>
 
-            {/* Card 4: System Administrators */}
-            <div
-              className={`p-3.5 rounded-xl border flex items-center gap-3 transition-colors ${
-                isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
-              }`}
-            >
+            {/* Metric 4: System Administrators */}
+            <div className="flex items-center gap-3 px-3 py-2 sm:py-0 sm:last:pr-1">
               <div
                 className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
                   isLight
@@ -566,36 +539,52 @@ export default function RoleManagementTab({
               isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
             }`}
           >
-            {/* Left: Search input */}
-            <div className="relative flex-1 min-w-[240px]">
-              <Search
-                size={15}
-                className="absolute left-3 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none"
-              />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={
-                  isThai
-                    ? "ค้นหาด้วยชื่อ, อีเมล, รหัส หรือชื่อบทบาท..."
-                    : "Search by name, email, employee ID, or role..."
-                }
-                className={`w-full pl-9 pr-8 py-2 rounded-lg text-xs outline-none transition-colors ${
+            {/* Left: Search input & Assign Role Button */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1">
+              <div className="relative flex-1 min-w-[240px]">
+                <Search
+                  size={15}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none"
+                />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={
+                    isThai
+                      ? "ค้นหาด้วยชื่อ, อีเมล, รหัส หรือชื่อบทบาท..."
+                      : "Search by name, email, employee ID, or role..."
+                  }
+                  className={`w-full pl-9 pr-8 py-2 rounded-lg text-xs outline-none transition-colors ${
+                    isLight
+                      ? "bg-zinc-100 border border-zinc-200 focus:border-zinc-800 text-zinc-900"
+                      : "bg-[#2C2C2C] border border-[#555555] focus:border-white text-white"
+                  }`}
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-black/10 dark:hover:bg-white/10 opacity-60 hover:opacity-100"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+
+              {/* Assign Role Button next to search */}
+              <button
+                type="button"
+                onClick={() => openAssignModalForUser()}
+                className={`flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all shadow-sm shrink-0 cursor-pointer ${
                   isLight
-                    ? "bg-zinc-100 border border-zinc-200 focus:border-zinc-800 text-zinc-900"
-                    : "bg-[#2C2C2C] border border-[#555555] focus:border-white text-white"
+                    ? "bg-[#6366F1] hover:bg-[#4F46E5] text-white"
+                    : "bg-[#6366F1] hover:bg-[#4F46E5] text-white"
                 }`}
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-black/10 dark:hover:bg-white/10 opacity-60 hover:opacity-100"
-                >
-                  <X size={13} />
-                </button>
-              )}
+              >
+                <Plus size={14} />
+                <span>{isThai ? "มอบหมายบทบาทใหม่" : "Assign Role"}</span>
+              </button>
             </div>
 
             {/* Right: Unified Custom Filter Dropdown */}
@@ -637,7 +626,7 @@ export default function RoleManagementTab({
                       : "bg-[#2C2C2C] border-[#444444] text-zinc-300 hover:bg-[#333333]"
                   }`}
                 >
-                  <Filter size={14} className={activeFiltersCount > 0 ? "text-[#0D99FF]" : ""} />
+                  <Filter size={14} className={activeFiltersCount > 0 ? "text-[#6366F1]" : ""} />
                   <span>{isThai ? "ตัวกรอง" : "Filter"}</span>
                   {activeFiltersCount > 0 && (
                     <span
@@ -646,7 +635,7 @@ export default function RoleManagementTab({
                           ? isLight
                             ? "bg-white text-zinc-900"
                             : "bg-zinc-900 text-white"
-                          : "bg-[#0D99FF] text-white"
+                          : "bg-[#6366F1] text-white"
                       }`}
                     >
                       {activeFiltersCount}
@@ -673,7 +662,7 @@ export default function RoleManagementTab({
                         <Filter size={14} />
                         <span>{isThai ? "ตัวกรองการกำหนดบทบาท" : "Filter Role Assignments"}</span>
                         {activeFiltersCount > 0 && (
-                          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#0D99FF]/20 text-[#0D99FF]">
+                          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#6366F1]/20 text-[#6366F1]">
                             {activeFiltersCount} {isThai ? "ใช้งานอยู่" : "active"}
                           </span>
                         )}
@@ -768,7 +757,7 @@ export default function RoleManagementTab({
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#444444]/20">
+                <tbody className={`divide-y ${isLight ? "divide-zinc-200" : "divide-[#444444]/20"}`}>
                   {filteredUsers.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="p-10 text-center">
@@ -1002,10 +991,13 @@ export default function RoleManagementTab({
               const assignedCount = users.filter((u) => u.roles?.some((ur) => ur.code === r.code)).length;
 
               return (
-                <div
+                <motion.div
                   key={r.id}
                   onClick={() => setSelectedRoleId(r.id)}
-                  className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
+                  whileHover={{ scale: 1.015, x: 2 }}
+                  whileTap={{ scale: 0.985 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  className={`relative p-3.5 rounded-xl border cursor-pointer transition-colors overflow-hidden ${
                     isSelected
                       ? isLight
                         ? "bg-zinc-100 border-zinc-900 shadow-sm"
@@ -1015,6 +1007,16 @@ export default function RoleManagementTab({
                       : "bg-[#383838] border-[#444444] hover:border-zinc-500"
                   }`}
                 >
+                  {/* Active selection indicator bar */}
+                  {isSelected && (
+                    <motion.div
+                      layoutId="activeRoleBar"
+                      className={`absolute left-0 top-0 bottom-0 w-1 ${
+                        isLight ? "bg-zinc-900" : "bg-white"
+                      }`}
+                      transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                    />
+                  )}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-xs">{r.name}</span>
@@ -1032,7 +1034,7 @@ export default function RoleManagementTab({
                   </div>
                   <div className="text-[11px] font-mono opacity-60 mt-1">{r.code}</div>
                   <p className="text-[11px] opacity-75 mt-2 line-clamp-2">{r.description}</p>
-                </div>
+                </motion.div>
               );
             })}
           </div>
@@ -1186,7 +1188,7 @@ export default function RoleManagementTab({
                   <th className="p-3 text-center">Audit Read</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#444444]/30">
+              <tbody className={`divide-y ${isLight ? "divide-zinc-200" : "divide-[#444444]/30"}`}>
                 {roles.map((r) => (
                   <tr
                     key={r.id}
@@ -1202,49 +1204,49 @@ export default function RoleManagementTab({
                       {r.permissions.includes("admin.users.read") ? (
                         <Check size={14} className="mx-auto text-[#2EC4B6]" />
                       ) : (
-                        <span className="opacity-30">-</span>
+                        <span className={`font-semibold ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>-</span>
                       )}
                     </td>
                     <td className="p-3 text-center">
                       {r.permissions.includes("admin.users.manage") ? (
                         <Check size={14} className="mx-auto text-[#2EC4B6]" />
                       ) : (
-                        <span className="opacity-30">-</span>
+                        <span className={`font-semibold ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>-</span>
                       )}
                     </td>
                     <td className="p-3 text-center">
                       {r.permissions.includes("admin.roles.manage") ? (
                         <Check size={14} className="mx-auto text-[#2EC4B6]" />
                       ) : (
-                        <span className="opacity-30">-</span>
+                        <span className={`font-semibold ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>-</span>
                       )}
                     </td>
                     <td className="p-3 text-center">
                       {r.permissions.includes("stock.read") ? (
                         <Check size={14} className="mx-auto text-[#2EC4B6]" />
                       ) : (
-                        <span className="opacity-30">-</span>
+                        <span className={`font-semibold ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>-</span>
                       )}
                     </td>
                     <td className="p-3 text-center">
                       {r.permissions.includes("stock.adjust") ? (
                         <Check size={14} className="mx-auto text-[#2EC4B6]" />
                       ) : (
-                        <span className="opacity-30">-</span>
+                        <span className={`font-semibold ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>-</span>
                       )}
                     </td>
                     <td className="p-3 text-center">
                       {r.permissions.includes("transfer.approve") ? (
                         <Check size={14} className="mx-auto text-[#2EC4B6]" />
                       ) : (
-                        <span className="opacity-30">-</span>
+                        <span className={`font-semibold ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>-</span>
                       )}
                     </td>
                     <td className="p-3 text-center">
                       {r.permissions.includes("audit.read") ? (
                         <Check size={14} className="mx-auto text-[#2EC4B6]" />
                       ) : (
-                        <span className="opacity-30">-</span>
+                        <span className={`font-semibold ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>-</span>
                       )}
                     </td>
                   </tr>
@@ -1358,7 +1360,7 @@ export default function RoleManagementTab({
                     const avail = roles.find((r) => !existingRoles.has(r.id) && !existingRoles.has(r.code));
                     if (avail) setAssignRoleId(avail.id);
                   }}
-                  searchable={users.length > 5}
+                  searchable={true}
                   searchPlaceholder={isThai ? "ค้นหาชื่อ หรืออีเมล..." : "Search user..."}
                   options={modalUserOptions}
                 />
@@ -1367,20 +1369,20 @@ export default function RoleManagementTab({
               {/* Show Existing Roles of Selected User */}
               {modalTargetUser && (
                 <div
-                  className={`p-2.5 rounded-lg border flex flex-col gap-1.5 ${
+                  className={`p-2.5 rounded-lg border flex items-center justify-between gap-2.5 ${
                     isLight ? "bg-zinc-50 border-zinc-200" : "bg-[#333333]/40 border-[#444444]"
                   }`}
                 >
-                  <span className="text-[11px] font-semibold opacity-75">
+                  <span className="text-[11px] font-semibold opacity-75 shrink-0">
                     {isThai ? "บทบาทปัจจุบันของผู้ใช้นี้:" : "Current Assigned Roles for User:"}
                   </span>
-                  {modalTargetUser.roles?.length === 0 ? (
-                    <span className="text-[11px] opacity-50 italic">
-                      {isThai ? "ยังไม่มีบทบาทที่มอบหมาย" : "No roles currently assigned"}
-                    </span>
-                  ) : (
-                    <div className="flex flex-wrap gap-1">
-                      {modalTargetUser.roles.map((r) => (
+                  <div className="flex items-center justify-end flex-wrap gap-1">
+                    {modalTargetUser.roles?.length === 0 ? (
+                      <span className="text-[11px] opacity-50 italic">
+                        {isThai ? "ยังไม่มีบทบาทที่มอบหมาย" : "No roles currently assigned"}
+                      </span>
+                    ) : (
+                      modalTargetUser.roles.map((r) => (
                         <span
                           key={r.assignmentId || r.roleId}
                           className={`text-[10.5px] px-2 py-0.5 rounded-md font-medium border ${
@@ -1395,9 +1397,9 @@ export default function RoleManagementTab({
                         >
                           {r.name}
                         </span>
-                      ))}
-                    </div>
-                  )}
+                      ))
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -1409,8 +1411,7 @@ export default function RoleManagementTab({
                 <CustomDropdown
                   value={assignRoleId || roles[0]?.id || ""}
                   onChange={(newRoleId) => setAssignRoleId(newRoleId)}
-                  searchable={roles.length > 5}
-                  searchPlaceholder={isThai ? "ค้นหาบทบาท..." : "Search role..."}
+                  searchable={false}
                   options={modalRoleOptions}
                 />
               </div>
@@ -1421,26 +1422,22 @@ export default function RoleManagementTab({
                   <label className="font-semibold opacity-80">
                     {isThai ? "วันเริ่มต้น" : "Valid From"}
                   </label>
-                  <input
-                    type="date"
+                  <DatePicker
                     value={validFrom}
-                    onChange={(e) => setValidFrom(e.target.value)}
-                    className={`w-full px-3 py-2 rounded-lg border text-xs outline-none ${
-                      isLight ? "bg-zinc-100 border-zinc-300" : "bg-[#333333] border-[#444444] text-white"
-                    }`}
+                    onChange={setValidFrom}
+                    isThai={isThai}
+                    placeholder={isThai ? "เลือกวันเริ่มต้น..." : "Select start date..."}
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="font-semibold opacity-80">
                     {isThai ? "วันสิ้นสุด (ถ้ามี)" : "Valid Until"}
                   </label>
-                  <input
-                    type="date"
+                  <DatePicker
                     value={validUntil}
-                    onChange={(e) => setValidUntil(e.target.value)}
-                    className={`w-full px-3 py-2 rounded-lg border text-xs outline-none ${
-                      isLight ? "bg-zinc-100 border-zinc-300" : "bg-[#333333] border-[#444444] text-white"
-                    }`}
+                    onChange={setValidUntil}
+                    isThai={isThai}
+                    placeholder={isThai ? "ไม่ระบุ (ตลอดชีพ)..." : "Indefinite..."}
                   />
                 </div>
               </div>

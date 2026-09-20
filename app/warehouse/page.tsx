@@ -25,7 +25,7 @@ export default function WarehouseOverviewPage() {
           value: "148 units",
           sub: "8 shipments pending QC",
           iconName: "inbound",
-          color: "#3B82F6",
+          color: "#6366F1",
         },
         {
           title: "Dispatch Outbound",

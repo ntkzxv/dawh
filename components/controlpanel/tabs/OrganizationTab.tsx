@@ -349,7 +349,7 @@ export default function OrganizationTab({
                       className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
                         fac.type === "CENTRAL_WAREHOUSE"
                           ? "bg-purple-500/20 text-purple-400"
-                          : "bg-blue-500/20 text-blue-400"
+                          : "bg-indigo-500/20 text-indigo-400"
                       }`}
                     >
                       {fac.type === "CENTRAL_WAREHOUSE" ? (isThai ? "คลังศูนย์กลาง" : "Central Hub") : (isThai ? "หน่วยสาขา" : "Branch")}

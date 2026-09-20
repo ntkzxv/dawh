@@ -66,7 +66,6 @@ export default function NavbarsubWarehouse({
       dashboard: "Dashboard",
       warehouseTab: "Warehouse",
       logisticsTab: "Logistics",
-      intelSystem: "Intelligence",
       wallets: "Wallets",
       p_master: "Product Master",
       stock: "Inventory Stock",
@@ -75,14 +74,12 @@ export default function NavbarsubWarehouse({
       b_warehouse: "Branch Warehouse",
       supplier: "Suppliers",
       transfer: "Stock Transfer",
-      ai_warehouse: "AI Analysis",
-      alert: "Alert System",
+      transfer_status: "Status & Audit Board",
     },
     th: {
       dashboard: "ภาพรวมคลังสินค้า",
       warehouseTab: "คลังสินค้า",
       logisticsTab: "โลจิสติกส์",
-      intelSystem: "ระบบวิเคราะห์อัจฉริยะ",
       wallets: "กระเป๋าบัญชี",
       p_master: "ข้อมูลสินค้าหลัก",
       stock: "สต็อกคงเหลือ",
@@ -91,8 +88,7 @@ export default function NavbarsubWarehouse({
       b_warehouse: "คลังแยกสาขา",
       supplier: "ผู้ผลิต/คู่ค้า",
       transfer: "โอนย้ายสินค้า",
-      ai_warehouse: "AI วิเคราะห์คลัง",
-      alert: "ระบบแจ้งเตือน",
+      transfer_status: "กระดานสถานะโอนย้าย",
     },
   };
 
@@ -149,27 +145,14 @@ export default function NavbarsubWarehouse({
           icon: ArrowLeftRight,
         },
         {
+          label: t.transfer_status,
+          path: "/warehouse/transfer/audit",
+          icon: Activity,
+        },
+        {
           label: t.m_log,
           path: "/warehouse/movements",
           icon: History,
-        },
-      ],
-    },
-    {
-      id: "intel",
-      title: t.intelSystem,
-      icon: Activity,
-      children: [
-        {
-          label: t.ai_warehouse,
-          path: "/warehouse/analysis",
-          icon: Sparkles,
-        },
-        {
-          label: t.alert,
-          path: "/warehouse/alerts",
-          badge: 2,
-          icon: AlertTriangle,
         },
       ],
     },

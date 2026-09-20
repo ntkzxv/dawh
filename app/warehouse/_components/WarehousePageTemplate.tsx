@@ -83,6 +83,7 @@ export interface WarehousePageTemplateProps {
   metrics?: WarehouseMetricItem[];
   children?: React.ReactNode;
   fullBleed?: boolean;
+  headerActions?: React.ReactNode;
 }
 
 // Keep track of whether user has already entered warehouse module in current session
@@ -97,6 +98,7 @@ export default function WarehousePageTemplate({
   metrics,
   children,
   fullBleed = false,
+  headerActions,
 }: WarehousePageTemplateProps) {
   const { theme } = useTheme();
   const isLight = theme === "light";
@@ -124,7 +126,7 @@ export default function WarehousePageTemplate({
         initial={shouldAnimateTopbar ? { x: -40, opacity: 0 } : false}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className={`h-[72px] px-6 sm:px-10 flex items-center border-b shrink-0 transition-colors z-10 ${
+        className={`h-[72px] px-6 sm:px-10 flex items-center justify-between border-b shrink-0 transition-colors z-10 ${
           isLight ? "bg-white border-[#E4E4E7]" : "bg-[#222222] border-[#444444]"
         }`}
       >
@@ -136,6 +138,12 @@ export default function WarehousePageTemplate({
         >
           {displayTitle}
         </h1>
+
+        {headerActions && (
+          <div className="flex items-center gap-3">
+            {headerActions}
+          </div>
+        )}
       </motion.header>
 
       {/* Page Content Body (Scrollable below Navbar - Scrollbar hugs right edge of screen) */}
@@ -151,7 +159,7 @@ export default function WarehousePageTemplate({
 
         {/* Metrics Bar with Dividers (Collapsible) */}
         {metrics && metrics.length > 0 && (
-          <div className="w-full space-y-2">
+          <div className={`w-full space-y-2 ${fullBleed ? "px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6" : ""}`}>
             <div className="flex items-center justify-end">
               <button
                 type="button"
@@ -204,24 +212,26 @@ export default function WarehousePageTemplate({
                               {metric.title}
                             </span>
                             <div
-                              className="flex h-8 w-8 items-center justify-center rounded-lg"
-                              style={{
-                                backgroundColor: `${metric.color}20`,
-                                color: metric.color,
-                              }}
+                              className={`flex items-center justify-center select-none ${
+                                isLight ? "text-slate-900" : "text-white"
+                              }`}
                             >
                               {metric.icon
                                 ? (React.isValidElement(metric.icon)
                                     ? metric.icon
-                                    : React.createElement(metric.icon as React.ComponentType<{ size?: number }>, { size: 16 }))
-                                : renderWarehouseIconByName(metric.iconName, 16)}
+                                    : React.createElement(metric.icon as React.ComponentType<{ size?: number }>, { size: 18 }))
+                                : renderWarehouseIconByName(metric.iconName, 18)}
                             </div>
                           </div>
                           <div>
-                            <h3 className="text-[25px] font-bold leading-none">
+                            <h3 className={`text-[25px] font-bold leading-none ${
+                              isLight ? "text-slate-900" : "text-white"
+                            }`}>
                               {metric.value}
                             </h3>
-                            <p className="text-[11.5px] text-[#999999] mt-2 truncate">
+                            <p className={`text-[11.5px] mt-2 truncate ${
+                              isLight ? "text-slate-500" : "text-[#999999]"
+                            }`}>
                               {metric.sub}
                             </p>
                           </div>

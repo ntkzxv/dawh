@@ -96,6 +96,7 @@ export default function RootLayout({
         <link rel="icon" href={ICON_URL} sizes="any" type="image/png" />
         <link rel="shortcut icon" href={ICON_URL} />
         <link rel="apple-touch-icon" href={ICON_URL} />
+        <link rel="preload" href="/assets/dawh_longnospace_logo.png" as="image" type="image/png" />
         <title>dawh</title>
       </head>
       <body className="min-h-full flex flex-col bg-[#181818] text-white antialiased transition-colors duration-300">

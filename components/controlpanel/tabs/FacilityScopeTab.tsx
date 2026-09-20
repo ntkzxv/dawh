@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { useTheme } from "@/context/ThemeContext";
-import { CustomDropdown } from "@/components/common";
+import { CustomDropdown, DatePicker } from "@/components/common";
 import type { AdminUserRecord, FacilityRecord } from "../types";
 import type { FacilityScopeType } from "@/lib/access/types";
 import {
@@ -184,7 +184,7 @@ export default function FacilityScopeTab({
       case "APPROVE":
         return <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/20 text-emerald-400">APPROVE</span>;
       case "OPERATE":
-        return <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-blue-500/20 text-blue-400">OPERATE</span>;
+        return <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-500/20 text-indigo-400">OPERATE</span>;
       case "READ":
         return <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-zinc-500/20 text-zinc-400">READ</span>;
     }
@@ -231,15 +231,15 @@ export default function FacilityScopeTab({
       {/* Access Verification Formula Explainer Box */}
       <div
         className={`p-4 rounded-xl border text-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3 ${
-          isLight ? "bg-blue-50/50 border-blue-200 text-blue-950" : "bg-blue-950/20 border-blue-500/30 text-blue-200"
+          isLight ? "bg-indigo-50/50 border-indigo-200 text-indigo-950" : "bg-indigo-950/20 border-indigo-500/30 text-indigo-200"
         }`}
       >
         <div className="flex items-center gap-2 font-semibold">
-          <Layers size={16} className="text-blue-500 shrink-0" />
+          <Layers size={16} className="text-[#6366F1] shrink-0" />
           <span>{isThai ? "หลักเกณฑ์การตรวจสอบสิทธิ์ครบวงจร:" : "Effective Authorization Formula:"}</span>
         </div>
         <div className="flex flex-wrap items-center gap-1.5 font-mono text-[11px]">
-          <span className="px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20">Role Permissions</span>
+          <span className="px-2 py-0.5 rounded bg-[#6366F1]/10 border border-[#6366F1]/20">Role Permissions</span>
           <span>+</span>
           <span className="px-2 py-0.5 rounded bg-purple-500/10 border border-purple-500/20">Facility Scopes</span>
           <span>+</span>
@@ -430,24 +430,20 @@ export default function FacilityScopeTab({
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <label className="font-semibold opacity-80">{isThai ? "วันเริ่มต้น" : "Valid From"}</label>
-                  <input
-                    type="date"
+                  <DatePicker
                     value={validFrom}
-                    onChange={(e) => setValidFrom(e.target.value)}
-                    className={`w-full px-3 py-2 rounded-lg border text-xs outline-none ${
-                      isLight ? "bg-zinc-100 border-zinc-300" : "bg-[#333333] border-[#444444] text-white"
-                    }`}
+                    onChange={setValidFrom}
+                    isThai={isThai}
+                    placeholder={isThai ? "เลือกวันเริ่มต้น..." : "Select start date..."}
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="font-semibold opacity-80">{isThai ? "วันสิ้นสุด (ถ้ามี)" : "Valid Until"}</label>
-                  <input
-                    type="date"
+                  <DatePicker
                     value={validUntil}
-                    onChange={(e) => setValidUntil(e.target.value)}
-                    className={`w-full px-3 py-2 rounded-lg border text-xs outline-none ${
-                      isLight ? "bg-zinc-100 border-zinc-300" : "bg-[#333333] border-[#444444] text-white"
-                    }`}
+                    onChange={setValidUntil}
+                    isThai={isThai}
+                    placeholder={isThai ? "ไม่ระบุ (ตลอดชีพ)..." : "Indefinite..."}
                   />
                 </div>
               </div>

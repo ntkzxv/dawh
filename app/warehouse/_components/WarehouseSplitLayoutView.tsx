@@ -25,6 +25,7 @@ import {
   MapPin,
   Sparkles,
   Search,
+  MoreHorizontal,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -324,8 +325,8 @@ export default function WarehouseSplitLayoutView() {
             <div
               className={`box-border flex flex-row items-center px-3.5 py-1.5 gap-2.5 h-[36px] rounded-[8px] border text-[13px] w-full sm:w-[280px] md:w-[340px] transition-colors ${
                 isLight
-                  ? "bg-white border-[#E4E4E7] text-[#222222] focus-within:border-[#0D99FF] shadow-xs"
-                  : "bg-[#383838] border-[#444444] text-[#F8FAFC] focus-within:border-[#0D99FF]"
+                  ? "bg-white border-[#E4E4E7] text-[#222222] focus-within:border-slate-900 shadow-xs"
+                  : "bg-[#383838] border-[#444444] text-[#F8FAFC] focus-within:border-white"
               }`}
             >
               <Search size={15} className="text-[#A1A1AA] shrink-0" />
@@ -387,7 +388,7 @@ export default function WarehouseSplitLayoutView() {
                   : "bg-[#383838] border-[#444444] text-[#F8FAFC] hover:bg-[#444444]"
               }`}
             >
-              <UploadCloud size={14} className="text-[#F8FAFC] shrink-0" />
+              <UploadCloud size={14} className={`shrink-0 ${isLight ? "text-slate-700" : "text-[#F8FAFC]"}`} />
               <span>{isThai ? "ส่งออก" : "Export"}</span>
             </button>
 
@@ -400,147 +401,174 @@ export default function WarehouseSplitLayoutView() {
                   : "bg-[#383838] border-[#444444] text-[#F8FAFC] hover:bg-[#444444]"
               }`}
             >
-              <Download size={14} className="text-[#F8FAFC] shrink-0" />
+              <Download size={14} className={`shrink-0 ${isLight ? "text-slate-700" : "text-[#F8FAFC]"}`} />
               <span>{isThai ? "นำเข้า" : "Import"}</span>
             </button>
 
-            {/* btn-add (#0D99FF) */}
+            {/* btn-add (Theme-adaptive Black/White Primary CTA) */}
             <button
               type="button"
-              className="flex flex-row items-center px-4 py-2 gap-1.5 h-[36px] rounded-[8px] bg-[#0D99FF] text-[#F8FAFC] text-[13px] font-semibold hover:bg-[#0084E3] transition-colors cursor-pointer outline-none shadow-sm"
+              className={`flex flex-row items-center px-4 py-2 gap-1.5 h-[36px] rounded-[8px] text-[13px] font-semibold transition-colors cursor-pointer outline-none shadow-xs ${
+                isLight
+                  ? "bg-slate-900 hover:bg-black text-white"
+                  : "bg-white hover:bg-zinc-200 text-black"
+              }`}
             >
-              <Plus size={14} className="text-[#F8FAFC] shrink-0" />
+              <Plus size={14} className={`shrink-0 ${isLight ? "text-white" : "text-black"}`} />
               <span>{isThai ? "เพิ่มสินค้า" : "Add Product"}</span>
             </button>
           </div>
         </div>
 
-        {/* inventory-table-container: Product Master & SKU Catalog */}
+        {/* inventory-table: Product Master & SKU Catalog (Rounded & Bordered matching Stock Table) */}
         <div
-          className={`w-full box-border rounded-[14px] border p-4 sm:p-5 transition-colors overflow-hidden ${
-            isLight
-              ? "bg-white border-[#E4E4E7] shadow-sm"
-              : "bg-[#383838] border-[#444444]"
+          className={`w-full rounded-[12px] border overflow-hidden ${
+            isLight ? "bg-white border-[#E4E4E7] shadow-xs" : "bg-[#383838] border-[#444444]"
           }`}
         >
-          <div className="w-full overflow-x-auto">
-            <div className="min-w-[940px] w-full flex flex-col items-start p-0">
-              {/* row-header */}
-              <div
-                className={`w-full flex flex-row items-center px-4 py-2.5 gap-4 h-[38px] rounded-[8px] text-[12px] font-semibold text-[#A1A1AA] select-none ${
-                  isLight ? "bg-[#F1F5F9]" : "bg-[#2C2C2C]"
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-[13px] border-collapse min-w-[940px]">
+            <thead>
+              <tr
+                className={`h-[42px] border-b text-[12px] font-semibold text-white select-none ${
+                  isLight
+                    ? "bg-slate-900 border-slate-800"
+                    : "bg-[#282828] border-[#444444]"
                 }`}
               >
-                <div className="w-[125px] shrink-0 text-left">
-                  {isThai ? "รหัส SKU" : "SKU"}
-                </div>
-                <div className="flex-1 min-w-[240px] text-left">
-                  {isThai ? "ชื่อสินค้า" : "Product Name"}
-                </div>
-                <div className="w-[140px] shrink-0 text-left">
-                  {isThai ? "หมวดหมู่" : "Category"}
-                </div>
-                <div className="w-[120px] shrink-0 text-left">
-                  {isThai ? "คงเหลือในคลัง" : "Stock On Hand"}
-                </div>
-                <div className="w-[85px] shrink-0 text-left">
-                  {isThai ? "หน่วยนับ" : "Unit"}
-                </div>
-                <div className="w-[110px] shrink-0 text-left pl-2">
-                  {isThai ? "ที่ตั้งหลัก" : "Location"}
-                </div>
-                <div className="w-[110px] shrink-0 text-left">
-                  {isThai ? "วันที่ปรับปรุง" : "Updated Date"}
-                </div>
-              </div>
-
-              {/* table rows */}
-              {filteredItems.map((item, idx) => {
+                <th className="py-2.5 px-4">{isThai ? "รหัสสินค้า & SKU" : "SKU & Product"}</th>
+                <th className="py-2.5 px-4">{isThai ? "หมวดหมู่" : "Category"}</th>
+                <th className="py-2.5 px-4 text-right">{isThai ? "คงเหลือในคลัง" : "Stock On Hand"}</th>
+                <th className="py-2.5 px-4">{isThai ? "หน่วยนับ" : "Unit"}</th>
+                <th className="py-2.5 px-4">{isThai ? "ที่ตั้งหลัก" : "Location"}</th>
+                <th className="py-2.5 px-4">{isThai ? "วันที่ปรับปรุง" : "Updated Date"}</th>
+                <th className="py-2.5 pl-2 pr-4 text-center w-12"></th>
+              </tr>
+            </thead>
+            <tbody className={`divide-y ${isLight ? "divide-slate-200" : "divide-white/5"}`}>
+              {filteredItems.map((item) => {
                 const isSelected = selectedItem?.id === item.id;
 
                 return (
-                  <div
+                  <tr
                     key={item.id}
                     onClick={() => setSelectedItem(item)}
-                    className={`w-full box-border flex flex-row items-center px-4 py-3 gap-4 min-h-[56px] border-b transition-all duration-200 cursor-pointer select-none ${
-                      isLight
-                        ? isSelected
-                          ? "bg-slate-100/90 border-slate-300"
-                          : "border-[#E4E4E7] hover:bg-slate-50"
-                        : isSelected
-                        ? "bg-white/[0.06] border-[#555555]"
-                        : "border-[#444444] hover:bg-white/[0.03]"
-                    } ${idx % 2 === 1 ? (isLight ? "bg-slate-50/40" : "bg-white/[0.01]") : ""}`}
+                    className={`transition-colors cursor-pointer select-none ${
+                      isSelected
+                        ? isLight
+                          ? "bg-slate-100/90"
+                          : "bg-white/[0.08]"
+                        : isLight
+                        ? "hover:bg-slate-50"
+                        : "hover:bg-white/[0.03]"
+                    }`}
                   >
-                    {/* SKU (Geist Mono, 12.5px) */}
-                    <div
-                      className="w-[125px] shrink-0 text-[12.5px] font-mono font-medium"
-                      style={{ fontFamily: "var(--font-geist-mono), monospace" }}
-                    >
-                      <span className={isLight ? "text-slate-800" : "text-[#0D99FF]"}>
+                    {/* รหัสสินค้า & SKU */}
+                    <td className="py-3.5 px-4">
+                      <div className={`font-mono font-semibold text-[12.5px] ${isLight ? "text-slate-800" : "text-zinc-200"}`}>
                         {item.sku}
-                      </span>
-                    </div>
-
-                    {/* Product Name (Geist, 13.5px) - ample room for long titles */}
-                    <div className="flex-1 min-w-[240px] text-[13.5px] font-medium leading-[18px]">
-                      <span className={`line-clamp-1 ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}>
+                      </div>
+                      <div
+                        className={`font-medium text-[13.5px] line-clamp-1 max-w-[280px] ${
+                          isLight ? "text-slate-900" : "text-white/90"
+                        }`}
+                      >
                         {isThai ? item.nameTh : item.nameEn}
-                      </span>
-                      <span className="block text-[11.5px] text-[#A1A1AA] font-normal truncate mt-0.5">
+                      </div>
+                      <div className={`text-[11px] ${isLight ? "text-slate-500" : "text-zinc-500"}`}>
                         {item.brand}
-                      </span>
-                    </div>
+                      </div>
+                    </td>
 
-                    {/* Category (Geist, 12px, #A1A1AA) */}
-                    <div className="w-[140px] shrink-0 text-[12.5px] text-[#A1A1AA] truncate">
-                      {isThai ? item.categoryTh : item.categoryEn}
-                    </div>
-
-                    {/* Stock On Hand / จำนวนคงเหลือ */}
-                    <div className="w-[120px] shrink-0 text-[13px] font-mono font-semibold">
-                      <span className={item.onHand <= item.reorderPoint ? "text-amber-400" : isLight ? "text-slate-800" : "text-white"}>
-                        {item.onHand.toLocaleString()}
+                    {/* หมวดหมู่ */}
+                    <td className="py-3.5 px-4">
+                      <span className={`text-[12.5px] ${isLight ? "text-slate-600" : "text-zinc-400"}`}>
+                        {isThai ? item.categoryTh : item.categoryEn}
                       </span>
-                      <span className="text-[11.5px] font-normal text-zinc-400 ml-1">
-                        {item.stockUnit}
-                      </span>
-                    </div>
+                    </td>
 
-                    {/* Unit */}
-                    <div className="w-[85px] shrink-0 text-[12px] text-[#A1A1AA]">
-                      <span className="font-medium text-white/90">{item.stockUnit}</span>
-                      {item.secondaryUnit && (
-                        <span className="block text-[11px] text-zinc-500 mt-0.5">
-                          {item.secondaryUnit}
+                    {/* คงเหลือในคลัง */}
+                    <td className="py-3.5 px-4 text-right">
+                      <div className="font-mono font-bold text-[14px]">
+                        <span
+                          className={
+                            item.onHand <= item.reorderPoint
+                              ? "text-amber-500 font-semibold"
+                              : isLight
+                              ? "text-emerald-600 font-semibold"
+                              : "text-emerald-400 font-semibold"
+                          }
+                        >
+                          {item.onHand.toLocaleString()}
+                        </span>{" "}
+                        <span className={`text-[11px] font-normal ${isLight ? "text-slate-500" : "text-zinc-400"}`}>
+                          {item.stockUnit}
                         </span>
-                      )}
-                    </div>
+                      </div>
+                    </td>
 
-                    {/* Location (Geist Mono, 12.5px) */}
-                    <div
-                      className="w-[110px] shrink-0 text-[12.5px] pl-2 font-mono"
-                      style={{ fontFamily: "var(--font-geist-mono), monospace" }}
-                    >
-                      <span className={isLight ? "text-slate-700 font-medium" : "text-[#F8FAFC]"}>
+                    {/* หน่วยนับ */}
+                    <td className="py-3.5 px-4">
+                      <div className={`text-[12px] font-medium ${isLight ? "text-slate-800" : "text-white/90"}`}>
+                        {item.stockUnit}
+                      </div>
+                      {item.secondaryUnit && (
+                        <div className={`text-[11px] ${isLight ? "text-slate-500" : "text-zinc-500"}`}>
+                          {item.secondaryUnit}
+                        </div>
+                      )}
+                    </td>
+
+                    {/* ที่ตั้งหลัก */}
+                    <td className="py-3.5 px-4">
+                      <span
+                        className={`text-[12.5px] font-mono font-medium ${
+                          isLight ? "text-slate-700" : "text-zinc-300"
+                        }`}
+                        style={{ fontFamily: "var(--font-geist-mono), monospace" }}
+                      >
                         {item.location}
                       </span>
-                    </div>
+                    </td>
 
-                    {/* Date / วันที่ปรับปรุง (Geist Mono, 12px) */}
-                    <div
-                      className="w-[110px] shrink-0 text-[12px] font-mono text-zinc-400"
-                      style={{ fontFamily: "var(--font-geist-mono), monospace" }}
-                    >
-                      {item.updatedAt || "-"}
-                    </div>
-                  </div>
+                    {/* วันที่ปรับปรุง */}
+                    <td className="py-3.5 px-4">
+                      <span
+                        className={`text-[12px] font-mono ${
+                          isLight ? "text-slate-500" : "text-zinc-400"
+                        }`}
+                        style={{ fontFamily: "var(--font-geist-mono), monospace" }}
+                      >
+                        {item.updatedAt || "-"}
+                      </span>
+                    </td>
+
+                    {/* ไอคอน 3 จุด ดูรายละเอียด */}
+                    <td className="py-3.5 pl-2 pr-4 text-center">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedItem(item);
+                        }}
+                        title={isThai ? "ดูรายละเอียดเพิ่มเติม" : "View Details"}
+                        className={`p-1 transition-colors inline-flex items-center justify-center cursor-pointer ${
+                          isLight
+                            ? "text-slate-400 hover:text-slate-900"
+                            : "text-zinc-500 hover:text-zinc-200"
+                        }`}
+                      >
+                        <MoreHorizontal size={17} />
+                      </button>
+                    </td>
+                  </tr>
                 );
               })}
-            </div>
-          </div>
+            </tbody>
+          </table>
         </div>
       </div>
+    </div>
 
       {/* ========================================================= */}
       {/* 📌 [DETAIL DRAWER]: Popup Overlay เด้งมาทับด้านข้าง ไม่บีบตาราง */}
@@ -599,7 +627,7 @@ export default function WarehouseSplitLayoutView() {
               {/* item-info: SKU, Name, Description */}
               <div className="w-full flex flex-col items-start gap-1.5">
                 <div className="w-full flex items-center justify-between text-[11.5px] font-mono">
-                  <span className="font-semibold text-[#0D99FF]">
+                  <span className={`font-semibold ${isLight ? "text-slate-900" : "text-white"}`}>
                     {selectedItem.sku}
                   </span>
                   <span className="text-[#A1A1AA] flex items-center gap-1">
@@ -622,10 +650,10 @@ export default function WarehouseSplitLayoutView() {
               {/* 📌 Storage Bins Multi-Location (DESIGN.md 5 & 19.3) */}
               <div className="w-full flex flex-col gap-2 text-[12.5px]">
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-zinc-300">
+                  <span className={`font-semibold ${isLight ? "text-slate-800" : "text-zinc-300"}`}>
                     {isThai ? "ตำแหน่งจัดเก็บตามพิกัด" : "Storage Locations"}
                   </span>
-                  <span className="text-[11px] text-zinc-400 font-mono">
+                  <span className={`text-[11px] font-mono ${isLight ? "text-slate-500" : "text-zinc-400"}`}>
                     {selectedItem.locationsList.length} Bins
                   </span>
                 </div>
@@ -662,7 +690,7 @@ export default function WarehouseSplitLayoutView() {
                             >
                               {loc.bin}
                             </span>
-                            <span className="text-[11px] text-zinc-400 font-normal">{loc.zone}</span>
+                            <span className={`text-[11px] font-normal ${isLight ? "text-slate-500" : "text-zinc-400"}`}>{loc.zone}</span>
                           </div>
                           <span
                             className={`font-mono font-bold ${
@@ -685,19 +713,19 @@ export default function WarehouseSplitLayoutView() {
               <div className="w-full flex flex-col items-start gap-2 text-[12.5px] pt-1">
                 {/* Brand */}
                 <div className="w-full flex flex-row justify-between items-start">
-                  <span className="text-[#A1A1AA]">
+                  <span className={isLight ? "text-slate-500" : "text-[#A1A1AA]"}>
                     {isThai ? "แบรนด์/ผู้ผลิต" : "Brand / Maker"}
                   </span>
-                  <span className="font-medium text-right">{selectedItem.brand}</span>
+                  <span className={`font-medium text-right ${isLight ? "text-slate-900" : "text-zinc-100"}`}>{selectedItem.brand}</span>
                 </div>
 
                 {/* Unit Conversion */}
                 {selectedItem.conversionRate && (
                   <div className="w-full flex flex-row justify-between items-start">
-                    <span className="text-[#A1A1AA]">
+                    <span className={isLight ? "text-slate-500" : "text-[#A1A1AA]"}>
                       {isThai ? "อัตราแปลงหน่วยนับ" : "Unit Conversion"}
                     </span>
-                    <span className="font-medium text-right text-zinc-300">
+                    <span className={`font-medium text-right ${isLight ? "text-slate-800" : "text-zinc-300"}`}>
                       {selectedItem.conversionRate}
                     </span>
                   </div>
@@ -705,11 +733,11 @@ export default function WarehouseSplitLayoutView() {
 
                 {/* Unit Price & Stock Valuation */}
                 <div className="w-full flex flex-row justify-between items-start">
-                  <span className="text-[#A1A1AA]">
+                  <span className={isLight ? "text-slate-500" : "text-[#A1A1AA]"}>
                     {isThai ? "ราคาต้นทุนเฉลี่ย" : "Unit Cost"}
                   </span>
                   <span
-                    className="font-medium text-right font-mono"
+                    className={`font-medium text-right font-mono ${isLight ? "text-slate-900" : "text-zinc-100"}`}
                     style={{ fontFamily: "var(--font-geist-mono), monospace" }}
                   >
                     {selectedItem.priceThb.toLocaleString()} {isThai ? "บาท" : "THB"}
@@ -717,7 +745,7 @@ export default function WarehouseSplitLayoutView() {
                 </div>
 
                 <div className="w-full flex flex-row justify-between items-start">
-                  <span className="text-[#A1A1AA]">
+                  <span className={isLight ? "text-slate-500" : "text-[#A1A1AA]"}>
                     {isThai ? "มูลค่าสต็อกรวม" : "Total Valuation"}
                   </span>
                   <span
@@ -731,10 +759,10 @@ export default function WarehouseSplitLayoutView() {
                 {/* Lot & Expiry */}
                 {selectedItem.lotNumber && (
                   <div className="w-full flex flex-row justify-between items-start">
-                    <span className="text-[#A1A1AA]">
+                    <span className={isLight ? "text-slate-500" : "text-[#A1A1AA]"}>
                       {isThai ? "ล็อตสินค้า / หมดอายุ" : "Lot / Expiry"}
                     </span>
-                    <span className="font-medium text-right font-mono text-zinc-300">
+                    <span className={`font-medium text-right font-mono ${isLight ? "text-slate-800" : "text-zinc-300"}`}>
                       {selectedItem.lotNumber} {selectedItem.expiryDate ? `· ${selectedItem.expiryDate}` : ""}
                     </span>
                   </div>
@@ -753,7 +781,7 @@ export default function WarehouseSplitLayoutView() {
                   }`}
                   title={isThai ? "เปิดดูรายละเอียดสินค้าในหน้าเต็ม" : "Open product details page"}
                 >
-                  <ArrowUpRight size={15} className="text-[#0D99FF] shrink-0" />
+                  <ArrowUpRight size={15} className={`shrink-0 ${isLight ? "text-slate-700" : "text-zinc-300"}`} />
                   <span>{isThai ? "ดูรายละเอียดเพิ่มเติม" : "More Details"}</span>
                 </button>
               </div>

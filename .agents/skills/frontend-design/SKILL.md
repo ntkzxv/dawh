@@ -53,7 +53,7 @@ When designing forms, badges, status pills, password strength, or indicators, st
 | **✅ Correct / Valid / Success / Active** | **`#2EC4B6`**<br>`text-[#2EC4B6] font-bold`<br>`bg-[#2EC4B6]/10 border-[#2EC4B6]/30`<br>Bar / Badge fill: `bg-[#2EC4B6]` | **`#2EC4B6`**<br>`text-[#2EC4B6] font-semibold`<br>`bg-[#2EC4B6]/15 border-[#2EC4B6]/30`<br>Bar / Badge fill: `bg-[#2EC4B6]` |
 | **❌ Incorrect / Invalid / Error / Danger** | **`#E74C3C`**<br>`text-[#E74C3C] font-bold`<br>`bg-[#E74C3C]/10 border-[#E74C3C]/30`<br>Bar / Badge fill: `bg-[#E74C3C]` | **`#E71D36`**<br>`text-[#E71D36] font-semibold`<br>`bg-[#E71D36]/15 border-[#E71D36]/30`<br>Bar / Badge fill: `bg-[#E71D36]` |
 | **⚠️ Warning / Fair / Pending / Attention** | **`#FF9F1C`**<br>`text-[#FF9F1C] font-bold`<br>`bg-[#FF9F1C]/10 border-[#FF9F1C]/30`<br>Bar / Badge fill: `bg-[#FF9F1C]` | **`#FF9F1C`**<br>`text-[#FF9F1C] font-semibold`<br>`bg-[#FF9F1C]/15 border-[#FF9F1C]/30`<br>Bar / Badge fill: `bg-[#FF9F1C]` |
-| **ℹ️ Info / Active / Primary Brand** | **`#0D99FF`**<br>`text-[#0D99FF] font-bold`<br>`bg-[#0D99FF]/10 border-[#0D99FF]/30`<br>Bar / Badge fill: `bg-[#0D99FF]` | **`#0D99FF`**<br>`text-[#0D99FF] font-semibold`<br>`bg-[#0D99FF]/15 border-[#0D99FF]/30`<br>Bar / Badge fill: `bg-[#0D99FF]` |
+| **ℹ️ Info / Active / Secondary Brand** | **`#6366F1`**<br>`text-[#6366F1] font-bold`<br>`bg-[#6366F1]/10 border-[#6366F1]/30`<br>Bar / Badge fill: `bg-[#6366F1]` | **`#6366F1`**<br>`text-[#6366F1] font-semibold`<br>`bg-[#6366F1]/15 border-[#6366F1]/30`<br>Bar / Badge fill: `bg-[#6366F1]` |
 
 ### 3. 3-Tier White Color Hierarchy (Dark Theme Rules)
 

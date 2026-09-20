@@ -21,7 +21,7 @@ import { HeaderNavbar, MobileNavbar } from "@/components/navbar";
 import { ProfileGuardModal } from "@/components/auth";
 import { EmployeeProfile } from "@/types/user";
 import { useAppLanguage } from "@/utils/language";
-import { getDawhLogo } from "@/config/brand";
+import { getDawhLogo, DAWH_LONGNOSPACE_DATA_URI } from "@/config/brand";
 import { useNotification } from "@/context/NotificationContext";
 import {
   DynamicWorkspaceLayout,
@@ -482,18 +482,17 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
     <AnimatePresence mode="wait">
       <motion.div
         key="workspace-view"
-        initial={{ opacity: 0 }}
+        initial={false}
         animate={{ opacity: 1 }}
-        exit={{ opacity: 0, transition: { duration: 0.25 } }}
-        transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+        exit={{ opacity: 0, transition: { duration: 0.2 } }}
         className={`relative min-h-dvh w-full flex flex-col justify-between overflow-x-hidden ${
           isLight
             ? "bg-[#F8FAFC] text-slate-900 selection:bg-[#222222] selection:text-white"
             : "bg-[#222222] text-white selection:bg-white/25 selection:text-white"
         } transition-colors duration-300 font-sans`}
       >
-        {/* 1. TWO-TONE SPLIT BACKGROUND (Login Page Theme Background) */}
-        <div className="absolute inset-0 flex flex-col pointer-events-none z-0">
+        {/* 1. TWO-TONE SPLIT BACKGROUND (Zero-latency Inlined Mask) */}
+        <div className="absolute inset-0 flex flex-col pointer-events-none z-0 select-none">
           <div
             className={`w-full h-[52%] relative overflow-hidden transition-colors duration-300 ${
               isLight ? "bg-[#EEF2F6]" : "bg-[#1A1A1A]"
@@ -505,8 +504,8 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
                   className="w-full h-full transition-colors duration-300"
                   style={{
                     backgroundColor: isLight ? "#FFFFFF" : "#282828",
-                    WebkitMaskImage: `url(${getDawhLogo(theme, "longNoSpace")})`,
-                    maskImage: `url(${getDawhLogo(theme, "longNoSpace")})`,
+                    WebkitMaskImage: `url("${DAWH_LONGNOSPACE_DATA_URI}")`,
+                    maskImage: `url("${DAWH_LONGNOSPACE_DATA_URI}")`,
                     WebkitMaskSize: "contain",
                     maskSize: "contain",
                     WebkitMaskRepeat: "no-repeat",
@@ -534,8 +533,8 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
               className="absolute bottom-0 right-0 h-full w-full pointer-events-none select-none transition-colors duration-300"
               style={{
                 backgroundColor: isLight ? "#EEF2F6" : "#1A1A1A",
-                WebkitMaskImage: `url(${getDawhLogo(theme, "longNoSpace")})`,
-                maskImage: `url(${getDawhLogo(theme, "longNoSpace")})`,
+                WebkitMaskImage: `url("${DAWH_LONGNOSPACE_DATA_URI}")`,
+                maskImage: `url("${DAWH_LONGNOSPACE_DATA_URI}")`,
                 WebkitMaskSize: "contain",
                 maskSize: "contain",
                 WebkitMaskRepeat: "no-repeat",

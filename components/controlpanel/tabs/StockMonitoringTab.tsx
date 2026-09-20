@@ -90,7 +90,7 @@ export default function StockMonitoringTab({
           }`}
         >
           <span className="text-xs opacity-60 font-semibold">{isThai ? "ยอดสินค้าคงคลังรวม (On-Hand)" : "Total On-Hand"}</span>
-          <div className="text-2xl font-bold font-mono mt-1 text-[#0D99FF]">{totalOnHand.toLocaleString()}</div>
+          <div className="text-2xl font-bold font-mono mt-1 text-[#6366F1]">{totalOnHand.toLocaleString()}</div>
           <span className="text-[11px] opacity-50">{isThai ? "ทุกคลังและจุดจัดเก็บ" : "Across all facilities"}</span>
         </div>
 
@@ -214,7 +214,7 @@ export default function StockMonitoringTab({
                     <th className="p-3">{isThai ? "สถานะสต็อก" : "Status"}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#444444]/30">
+                <tbody className={`divide-y ${isLight ? "divide-zinc-200" : "divide-[#444444]/30"}`}>
                   {filteredBalances.map((b) => (
                     <tr
                       key={b.id}
@@ -222,11 +222,11 @@ export default function StockMonitoringTab({
                         isLight ? "hover:bg-zinc-50" : "hover:bg-white/[0.03]"
                       }`}
                     >
-                      <td className="p-3 font-mono font-bold text-[#0D99FF]">{b.sku}</td>
-                      <td className="p-3 font-semibold">{b.productName}</td>
+                      <td className="p-3 font-mono font-bold text-[#6366F1]">{b.sku}</td>
+                      <td className={`p-3 font-semibold ${isLight ? "text-zinc-900" : "text-white"}`}>{b.productName}</td>
                       <td className="p-3 font-mono font-bold opacity-80">{b.facilityCode}</td>
                       <td className="p-3 font-mono text-[11px]">{b.locationCode}</td>
-                      <td className="p-3 text-right font-mono font-bold">{b.onHand}</td>
+                      <td className={`p-3 text-right font-mono font-bold ${isLight ? "text-zinc-900" : "text-white"}`}>{b.onHand}</td>
                       <td className="p-3 text-right font-mono text-[#FF9F1C]">{b.reserved}</td>
                       <td className="p-3 text-right font-mono font-bold text-[#2EC4B6]">{b.available}</td>
                       <td className="p-3">
@@ -253,30 +253,31 @@ export default function StockMonitoringTab({
 
       {/* 2. Ledger Sub-tab */}
       {activeSubTab === "ledger" && (
-        <div
-          className={`rounded-xl border overflow-hidden ${
-            isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
-          }`}
-        >
-          <div className="overflow-x-auto [scrollbar-width:thin]">
-            <table className="w-full text-xs text-left">
-              <thead
-                className={`text-[11px] font-bold uppercase ${
-                  isLight ? "bg-[#F4F4F5] text-zinc-600" : "bg-[#333333] text-zinc-300"
-                }`}
-              >
-                <tr>
-                  <th className="p-3">{isThai ? "วันเวลา" : "Timestamp"}</th>
-                  <th className="p-3">{isThai ? "สาขา" : "Facility"}</th>
-                  <th className="p-3">{isThai ? "เอกสารอ้างอิง" : "Ref Doc"}</th>
-                  <th className="p-3">{isThai ? "ประเภทธุรกรรม" : "Type"}</th>
-                  <th className="p-3">SKU</th>
-                  <th className="p-3 text-right">{isThai ? "จำนวนที่เปลี่ยน" : "Qty Change"}</th>
-                  <th className="p-3 text-right">{isThai ? "ยอดคงเหลือหลังทำรายการ" : "Balance"}</th>
-                  <th className="p-3">{isThai ? "ผู้บันทึก" : "Operator"}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#444444]/30">
+        <div className="flex flex-col gap-4">
+          <div
+            className={`rounded-xl border overflow-hidden ${
+              isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
+            }`}
+          >
+            <div className="overflow-x-auto [scrollbar-width:thin]">
+              <table className="w-full text-xs text-left">
+                <thead
+                  className={`text-[11px] font-bold uppercase ${
+                    isLight ? "bg-[#F4F4F5] text-zinc-600" : "bg-[#333333] text-zinc-300"
+                  }`}
+                >
+                  <tr>
+                    <th className="p-3">{isThai ? "วัน-เวลา" : "Timestamp"}</th>
+                    <th className="p-3">{isThai ? "สาขา" : "Facility"}</th>
+                    <th className="p-3">{isThai ? "เอกสารอ้างอิง" : "Ref Doc"}</th>
+                    <th className="p-3">{isThai ? "ประเภทธุรกรรม" : "Type"}</th>
+                    <th className="p-3">SKU</th>
+                    <th className="p-3 text-right">{isThai ? "จำนวนที่เปลี่ยน" : "Qty Change"}</th>
+                    <th className="p-3 text-right">{isThai ? "ยอดคงเหลือหลังทำรายการ" : "Balance"}</th>
+                    <th className="p-3">{isThai ? "ผู้บันทึก" : "Operator"}</th>
+                  </tr>
+                </thead>
+                <tbody className={`divide-y ${isLight ? "divide-zinc-200" : "divide-[#444444]/30"}`}>
                 {ledger.map((l) => (
                   <tr
                     key={l.id}
@@ -286,7 +287,7 @@ export default function StockMonitoringTab({
                   >
                     <td className="p-3 font-mono opacity-80">{new Date(l.timestamp).toLocaleString()}</td>
                     <td className="p-3 font-mono font-bold opacity-80">{l.facilityCode}</td>
-                    <td className="p-3 font-mono text-[#0D99FF]">{l.referenceDoc}</td>
+                    <td className="p-3 font-mono text-[#6366F1]">{l.referenceDoc}</td>
                     <td className="p-3">
                       <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-500/15">
                         {l.transactionType}
@@ -307,6 +308,7 @@ export default function StockMonitoringTab({
               </tbody>
             </table>
           </div>
+        </div>
         </div>
       )}
 
@@ -336,7 +338,7 @@ export default function StockMonitoringTab({
 
                   <div className="mt-4 p-3 rounded-xl border bg-zinc-500/5 flex items-center justify-between">
                     <span className="text-xs opacity-80">{isThai ? "ยอดรวมสินค้าคงคลังในสาขานี้:" : "Facility Total Stock:"}</span>
-                    <span className="font-mono font-bold text-base text-[#0D99FF]">{facTotal.toLocaleString()} pcs</span>
+                    <span className="font-mono font-bold text-base text-[#6366F1]">{facTotal.toLocaleString()} pcs</span>
                   </div>
                 </div>
 

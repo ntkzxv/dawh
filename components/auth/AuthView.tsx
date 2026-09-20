@@ -30,6 +30,7 @@ import { translations } from "@/translations";
 import { Users, ArrowLeft, History, Lock, KeyRound, Search, Trash2, Clock, Sparkles, Delete } from "lucide-react";
 import { useAppLanguage, setAppLanguage } from "@/utils/language";
 import { storePendingRegistrationProfile } from "@/lib/auth/pending-profile";
+import { DatePicker } from "@/components/common";
 
 export type AuthMode = "signin" | "signup";
 export type Language = "TH" | "EN";
@@ -1764,27 +1765,17 @@ export function UserAuthView({
                             {lang === "TH" ? "(ขั้นต่ำ 18 ปีบริบูรณ์)" : "(18+ Required)"}
                           </span>
                         </div>
-                        <div
-                          className={`flex h-[40px] w-full items-center gap-2 rounded-[10px] border px-3 transition-all duration-200 ${getFieldClass(
-                            "birthDate"
-                          )}`}
-                        >
-                          <input
-                            id="signup-birthDate"
-                            type="date"
-                            value={birthDate}
-                            onChange={(e) => {
-                              setBirthDate(e.target.value);
-                              clearError("birthDate");
-                            }}
-                            className={`w-full bg-transparent text-[13px] leading-[17px] outline-none ${
-                              isLight
-                                ? "text-[#222222] placeholder-[#888888]"
-                                : "text-white placeholder-[#666666]"
-                            }`}
-                            style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
-                          />
-                        </div>
+                        <DatePicker
+                          value={birthDate}
+                          onChange={(val) => {
+                            setBirthDate(val);
+                            clearError("birthDate");
+                          }}
+                          isThai={lang === "TH"}
+                          placeholder={lang === "TH" ? "เลือกวันเดือนปีเกิด..." : "Select birth date..."}
+                          maxDate={new Date().toISOString().split("T")[0]}
+                          triggerClassName={`h-[40px] rounded-[10px] text-[13px] ${getFieldClass("birthDate")}`}
+                        />
                       </div>
 
                       <div className="flex flex-col gap-1">

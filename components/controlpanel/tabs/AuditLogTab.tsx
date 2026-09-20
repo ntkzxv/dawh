@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { useTheme } from "@/context/ThemeContext";
-import { CustomDropdown } from "@/components/common";
+import { CustomDropdown, DatePicker } from "@/components/common";
 import type { AuditLogCategoryKey, AuditLogRecord } from "../types";
 import {
   Search,
@@ -47,6 +47,7 @@ export default function AuditLogTab({
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedEntityFilter, setSelectedEntityFilter] = useState<string>("ALL");
+  const [filterDate, setFilterDate] = useState<string>("");
   const [inspectingLog, setInspectingLog] = useState<AuditLogRecord | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
@@ -131,6 +132,12 @@ export default function AuditLogTab({
         return false;
       }
 
+      // Date Filter
+      if (filterDate) {
+        const logDate = log.occurredAt.slice(0, 10);
+        if (logDate !== filterDate) return false;
+      }
+
       // Text Search
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -148,7 +155,7 @@ export default function AuditLogTab({
 
       return true;
     });
-  }, [logs, selectedCategory, selectedEntityFilter, searchQuery]);
+  }, [logs, selectedCategory, selectedEntityFilter, filterDate, searchQuery]);
 
 
   const copyToClipboard = (text: string, key: string) => {
@@ -185,8 +192,8 @@ export default function AuditLogTab({
     }
     if (action.includes("update") || action.includes("change")) {
       return isLight
-        ? "bg-blue-50 text-blue-700 border-blue-200"
-        : "bg-blue-950/40 text-blue-300 border-blue-800/40";
+        ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+        : "bg-indigo-950/40 text-indigo-300 border-indigo-800/40";
     }
     return isLight
       ? "bg-zinc-100 text-zinc-700 border-zinc-200"
@@ -237,7 +244,18 @@ export default function AuditLogTab({
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center flex-wrap gap-2.5">
+          {/* Date Filter */}
+          <div className="w-[160px] sm:w-[180px]">
+            <DatePicker
+              value={filterDate}
+              onChange={setFilterDate}
+              isThai={isThai}
+              placeholder={isThai ? "กรองตามวันที่..." : "Filter date..."}
+              clearable={true}
+            />
+          </div>
+
           {/* Entity Type Filter */}
           <div className="min-w-[170px]">
             <CustomDropdown
@@ -318,8 +336,8 @@ export default function AuditLogTab({
                       className={`transition-colors hover:bg-zinc-50/70 dark:hover:bg-zinc-700/30 ${
                         inspectingLog?.id === log.id
                           ? isLight
-                            ? "bg-blue-50/50"
-                            : "bg-blue-950/20"
+                            ? "bg-indigo-50/50"
+                            : "bg-indigo-950/20"
                           : ""
                       }`}
                     >

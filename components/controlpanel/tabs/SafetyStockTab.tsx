@@ -255,7 +255,7 @@ export default function SafetyStockTab({
                       isLight ? "hover:bg-zinc-50" : "hover:bg-white/[0.03]"
                     }`}
                   >
-                    <td className="p-3 font-mono font-bold text-[#0D99FF]">{r.productSku}</td>
+                    <td className="p-3 font-mono font-bold text-[#6366F1]">{r.productSku}</td>
                     <td className="p-3 font-semibold">{r.productName}</td>
                     <td className="p-3 font-mono font-bold opacity-80">{r.facilityCode}</td>
                     <td className="p-3 text-right font-mono">{r.minQty}</td>
