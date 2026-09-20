@@ -360,9 +360,7 @@ export default function RoleManagementTab({
               }`}
             >
               <div
-                className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                  isLight ? "bg-zinc-100 text-zinc-800" : "bg-[#2C2C2C] text-white"
-                }`}
+                className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-[#2EC4B6]/15 text-[#2EC4B6]`}
               >
                 <UserCheck size={18} />
               </div>
@@ -370,7 +368,7 @@ export default function RoleManagementTab({
                 <div className="text-[11px] opacity-60 font-medium truncate">
                   {isThai ? "มอบหมายบทบาทแล้ว" : "Assigned Roles"}
                 </div>
-                <div className="text-base font-bold leading-tight mt-0.5">
+                <div className="text-base font-bold leading-tight mt-0.5 text-[#2EC4B6]">
                   {assignedUsersCount} {isThai ? "คน" : ""}
                   <span className="text-[11px] opacity-60 font-normal ml-1">
                     ({totalAssignmentsCount} {isThai ? "สิทธิ์" : "grants"})
@@ -382,22 +380,14 @@ export default function RoleManagementTab({
             {/* Card 3: Unassigned Users */}
             <div
               className={`p-3.5 rounded-xl border flex items-center gap-3 transition-colors ${
-                unassignedUsersCount > 0
-                  ? isLight
-                    ? "bg-amber-50/60 border-amber-200"
-                    : "bg-amber-950/20 border-amber-800/40"
-                  : isLight
-                  ? "bg-white border-[#E4E4E7]"
-                  : "bg-[#383838] border-[#444444]"
+                isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
               }`}
             >
               <div
                 className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                  unassignedUsersCount > 0
-                    ? "bg-[#FF9F1C]/20 text-[#FF9F1C]"
-                    : isLight
-                    ? "bg-zinc-100 text-zinc-500"
-                    : "bg-[#2C2C2C] text-zinc-400"
+                  isLight
+                    ? "bg-zinc-100 text-zinc-600"
+                    : "bg-[#2C2C2C] text-zinc-300"
                 }`}
               >
                 <AlertCircle size={18} />
@@ -408,7 +398,7 @@ export default function RoleManagementTab({
                 </div>
                 <div
                   className={`text-base font-bold leading-tight mt-0.5 ${
-                    unassignedUsersCount > 0 ? "text-[#FF9F1C]" : ""
+                    isLight ? "text-zinc-900" : "text-white"
                   }`}
                 >
                   {unassignedUsersCount} {isThai ? "คน" : ""}
@@ -423,7 +413,11 @@ export default function RoleManagementTab({
               }`}
             >
               <div
-                className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-amber-500/15 text-amber-500`}
+                className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                  isLight
+                    ? "bg-zinc-100 text-zinc-800"
+                    : "bg-[#2C2C2C] text-zinc-200"
+                }`}
               >
                 <Shield size={18} />
               </div>
@@ -431,7 +425,11 @@ export default function RoleManagementTab({
                 <div className="text-[11px] opacity-60 font-medium truncate">
                   {isThai ? "ผู้ดูแลระบบสูงสุด" : "System Admins"}
                 </div>
-                <div className="text-base font-bold leading-tight mt-0.5 text-amber-500">
+                <div
+                  className={`text-base font-bold leading-tight mt-0.5 ${
+                    isLight ? "text-zinc-900" : "text-white"
+                  }`}
+                >
                   {activeSystemAdmins.length} {isThai ? "คน" : ""}
                 </div>
               </div>
@@ -719,8 +717,14 @@ export default function RoleManagementTab({
                           {/* 4. Assigned Roles */}
                           <td className="p-3.5">
                             {userRoles.length === 0 ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] border border-dashed border-amber-500/40 text-amber-500 bg-amber-500/10">
-                                <AlertCircle size={12} />
+                              <span
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] border border-dashed transition-colors ${
+                                  isLight
+                                    ? "border-zinc-300 bg-zinc-100/70 text-zinc-500"
+                                    : "border-[#555555] bg-[#2C2C2C] text-zinc-400"
+                                }`}
+                              >
+                                <AlertCircle size={12} className={isLight ? "text-zinc-400" : "text-zinc-500"} />
                                 <span>{isThai ? "ยังไม่มีบทบาทที่มอบหมาย" : "No Role Assigned"}</span>
                               </span>
                             ) : (
@@ -735,15 +739,15 @@ export default function RoleManagementTab({
                                       className={`inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-lg text-[11px] font-medium border transition-colors ${
                                         isSysAdmin
                                           ? isLight
-                                            ? "bg-amber-50 text-amber-900 border-amber-300"
-                                            : "bg-amber-950/40 text-amber-300 border-amber-700/50"
+                                            ? "bg-zinc-200/90 text-zinc-900 border-zinc-300 shadow-2xs font-semibold"
+                                            : "bg-white/[0.12] text-white border-white/20 shadow-2xs font-semibold"
                                           : isLight
                                           ? "bg-zinc-100 text-zinc-800 border-zinc-200 hover:border-zinc-300"
                                           : "bg-[#2A2A2A] text-zinc-200 border-[#444444] hover:border-zinc-500"
                                       }`}
                                     >
                                       {isSysAdmin && (
-                                        <Shield size={12} className="text-amber-500 shrink-0" />
+                                        <Shield size={12} className={`${isLight ? "text-zinc-700" : "text-zinc-300"} shrink-0`} />
                                       )}
                                       <span className="font-semibold">{r.name}</span>
 
@@ -854,7 +858,7 @@ export default function RoleManagementTab({
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-xs">{r.name}</span>
                       {r.isSystemAdmin && (
-                        <Shield size={12} className="text-amber-500" />
+                        <Shield size={12} className={isLight ? "text-zinc-600" : "text-zinc-300"} />
                       )}
                     </div>
                     <span
@@ -1227,9 +1231,11 @@ export default function RoleManagementTab({
                           key={r.assignmentId || r.roleId}
                           className={`text-[10.5px] px-2 py-0.5 rounded-md font-medium border ${
                             r.code === "SYSTEM_ADMINISTRATOR"
-                              ? "bg-amber-500/15 border-amber-500/30 text-amber-400"
+                              ? isLight
+                                ? "bg-zinc-200 text-zinc-900 border-zinc-400 font-bold"
+                                : "bg-white/15 text-white border-white/30 font-bold"
                               : isLight
-                              ? "bg-zinc-200 border-zinc-300 text-zinc-800"
+                              ? "bg-zinc-100 border-zinc-300 text-zinc-800"
                               : "bg-[#2C2C2C] border-[#555555] text-zinc-200"
                           }`}
                         >
