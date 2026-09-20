@@ -2,7 +2,11 @@ import "server-only";
 
 import type { Pool, PoolClient } from "pg";
 
-import { AuthorizationError, requireAccess } from "@/lib/access/service";
+import {
+  AuthorizationError,
+  requireAccess,
+  requirePermission,
+} from "@/lib/access/service";
 import type { AccessContext } from "@/lib/access/types";
 import type {
   AdminUserSummary,
@@ -115,6 +119,16 @@ export async function listAdminUsers(
   const context = await requireAccess(request, {
     permission: "admin.users.read",
   });
+
+  return { context, users: await listAdminUsersForContext(context, page, filters) };
+}
+
+export async function listAdminUsersForContext(
+  context: AccessContext,
+  page: UserPageRequest,
+  filters: UserFilters,
+): Promise<AdminUserSummary[]> {
+  requirePermission(context, "admin.users.read");
   const result = await dbPool.query<UserRow>(
     `${selectUser}
      WHERE ($1::text IS NULL OR u.email ILIKE '%' || $1 || '%' OR u.name ILIKE '%' || $1 || '%' OR profile.username ILIKE '%' || $1 || '%')
@@ -142,7 +156,7 @@ export async function listAdminUsers(
       page.limit + 1,
     ],
   );
-  return { context, users: result.rows.map(mapUser) };
+  return result.rows.map(mapUser);
 }
 
 export async function getAdminUser(

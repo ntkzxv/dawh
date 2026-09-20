@@ -1,25 +1,26 @@
 import { requireAccess } from "@/lib/access/service";
-import { ValidationError } from "@/lib/core/http/errors";
 import { apiRoute } from "@/lib/core/http/handler";
 import { jsonOk } from "@/lib/core/http/response";
-import { isBigIntId } from "@/lib/core/ids/bigint";
+import { parseRouteBigIntId } from "@/lib/core/ids/bigint";
 import { listNetworkStock } from "@/lib/stock/service";
 export const runtime = "nodejs";
 export const GET = apiRoute(async (request) => {
   const url = new URL(request.url),
     facilityId = url.searchParams.get("facilityId"),
     productId = url.searchParams.get("productId");
-  if (facilityId && !isBigIntId(facilityId))
-    throw new ValidationError({ facilityId: "Use a positive integer ID." });
-  if (productId && !isBigIntId(productId))
-    throw new ValidationError({ productId: "Use a positive integer ID." });
+  const parsedFacilityId = facilityId
+    ? parseRouteBigIntId(facilityId, "facilityId")
+    : null;
+  const parsedProductId = productId
+    ? parseRouteBigIntId(productId, "productId")
+    : null;
   const context = await requireAccess(request, {
     permission: "stock.read",
-    facilityId: facilityId ?? undefined,
+    facilityId: parsedFacilityId ?? undefined,
     facilityScope: "READ",
   });
   return jsonOk(
     request,
-    await listNetworkStock(context, facilityId, productId),
+    await listNetworkStock(context, parsedFacilityId, parsedProductId),
   );
 });

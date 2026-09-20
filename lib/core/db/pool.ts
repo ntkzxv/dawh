@@ -13,8 +13,24 @@ const globalForDatabase = globalThis as typeof globalThis & {
 const rawDatabaseUrl = process.env.DATABASE_URL ?? "";
 const isLocalDatabase = /(?:localhost|127\.0\.0\.1|\[::1\])/.test(rawDatabaseUrl);
 const connectionString = rawDatabaseUrl.replace(/[?&]sslmode=[^&]+/, "");
-const configuredPoolSize = Number(process.env.DATABASE_POOL_MAX ?? "1");
-const poolSize = Number.isInteger(configuredPoolSize) && configuredPoolSize > 0 ? configuredPoolSize : 1;
+function readPositiveInt(value: string | undefined, fallback: number): number {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+const poolSize = readPositiveInt(process.env.DATABASE_POOL_MAX, 1);
+const idleTimeoutMillis = readPositiveInt(
+  process.env.DATABASE_POOL_IDLE_TIMEOUT_MS,
+  10_000,
+);
+const connectionTimeoutMillis = readPositiveInt(
+  process.env.DATABASE_POOL_CONNECTION_TIMEOUT_MS,
+  5_000,
+);
+const queryTimeoutMillis = readPositiveInt(
+  process.env.DATABASE_QUERY_TIMEOUT_MS,
+  15_000,
+);
 const certificateAuthority = process.env.DATABASE_SSL_CA?.replaceAll("\\n", "\n").trim();
 const ssl = isLocalDatabase
   ? false
@@ -27,6 +43,9 @@ export const dbPool =
   new Pool({
     connectionString: connectionString || "postgresql://invalid:invalid@127.0.0.1:5432/invalid",
     max: poolSize,
+    idleTimeoutMillis,
+    connectionTimeoutMillis,
+    query_timeout: queryTimeoutMillis,
     ssl,
   });
 

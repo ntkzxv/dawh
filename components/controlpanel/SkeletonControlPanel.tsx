@@ -62,7 +62,11 @@ function SkeletonKpiRow({ count = 4 }: { count?: number }) {
   const isLight = theme === "light";
 
   return (
-    <div className={`grid grid-cols-2 lg:grid-cols-${count} gap-3 w-full`}>
+    <div
+      className={`grid grid-cols-2 gap-3 w-full ${
+        count === 3 ? "lg:grid-cols-3" : "lg:grid-cols-4"
+      }`}
+    >
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}

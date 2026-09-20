@@ -166,6 +166,36 @@ export async function requireAccess(
   return context;
 }
 
+/** Authorization helpers for domain services that already have an AccessContext. */
+export function requirePermission(
+  context: AccessContext,
+  permission: string,
+): AccessContext {
+  if (!context.permissions.includes(permission)) throw new AuthorizationError();
+  return context;
+}
+
+export function requireAnyPermission(
+  context: AccessContext,
+  permissions: readonly string[],
+): AccessContext {
+  if (!permissions.some((permission) => context.permissions.includes(permission))) {
+    throw new AuthorizationError();
+  }
+  return context;
+}
+
+export function requireFacilityAccess(
+  context: AccessContext,
+  facilityId: string,
+  requiredScope: FacilityScopeType,
+): AccessContext {
+  if (!canAccessFacility(context, facilityId, requiredScope)) {
+    throw new AuthorizationError("FORBIDDEN_FACILITY_SCOPE");
+  }
+  return context;
+}
+
 export function canAccessFacility(
   context: AccessContext,
   facilityId: string,

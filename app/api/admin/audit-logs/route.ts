@@ -2,7 +2,8 @@ import { getAccessContext } from "@/lib/access/service";
 import { listAuditLogs } from "@/lib/audit/service";
 import type { AuditLogCategory } from "@/lib/audit/types";
 import { apiRoute } from "@/lib/core/http/handler";
-import { jsonOk } from "@/lib/core/http/response";
+import { jsonCollection } from "@/lib/core/http/response";
+import { parsePageRequest } from "@/lib/core/http/pagination";
 
 export const runtime = "nodejs";
 
@@ -13,17 +14,22 @@ export const GET = apiRoute(async (request) => {
   const entityType = url.searchParams.get("entityType") || undefined;
   const action = url.searchParams.get("action") || undefined;
   const search = url.searchParams.get("search") || undefined;
-  const limit = url.searchParams.has("limit") ? Number(url.searchParams.get("limit")) : 100;
-  const offset = url.searchParams.has("offset") ? Number(url.searchParams.get("offset")) : 0;
+  const page = parsePageRequest(url);
+  const facilityId = url.searchParams.get("facilityId") || undefined;
 
   const logs = await listAuditLogs(context, {
     category,
     entityType,
     action,
     search,
-    limit,
-    offset,
+    facilityId,
+    limit: page.limit,
+    cursor: page.cursor,
   });
 
-  return jsonOk(request, logs);
+  return jsonCollection(request, logs.data, {
+    limit: logs.limit,
+    nextCursor: logs.nextCursor,
+    hasMore: logs.hasMore,
+  });
 });

@@ -3,10 +3,15 @@ import "server-only";
 import type { PoolClient } from "pg";
 
 import { isBigIntId } from "@/lib/core/ids/bigint";
+import { requireAnyPermission } from "@/lib/access/service";
+import { ValidationError } from "@/lib/core/http/errors";
 import { dbPool } from "@/lib/core/db/pool";
-import { AuthorizationError } from "@/lib/access/service";
 import type { AccessContext } from "@/lib/access/types";
-import type { AuditInput, AuditLogFilters, AuditLogRecord } from "@/lib/audit/types";
+import type {
+  AuditInput,
+  AuditLogFilters,
+  AuditLogPage,
+} from "@/lib/audit/types";
 
 const sensitiveKey = /password|token|secret|authorization|cookie|databaseurl/i;
 
@@ -58,16 +63,8 @@ export async function writeAuditLog(
 export async function listAuditLogs(
   context: AccessContext,
   filters: AuditLogFilters = {},
-): Promise<AuditLogRecord[]> {
-  const isAllowed =
-    context.permissions.includes("audit.read") ||
-    context.roles.includes("SYSTEM_ADMINISTRATOR") ||
-    context.roles.includes("AUDITOR") ||
-    context.roles.some((r) => r.toUpperCase().includes("ADMIN"));
-
-  if (!isAllowed) {
-    throw new AuthorizationError();
-  }
+): Promise<AuditLogPage> {
+  requireAnyPermission(context, ["audit.read", "admin.users.read"]);
 
   const values: unknown[] = [context.organization.id];
   const conditions: string[] = ["a.organization_id = $1"];
@@ -107,8 +104,13 @@ export async function listAuditLogs(
   }
 
   if (filters.facilityId) {
+    if (!isBigIntId(filters.facilityId)) {
+      throw new ValidationError({
+        facilityId: "Use a positive integer ID.",
+      });
+    }
     values.push(filters.facilityId);
-    conditions.push(`a.facility_id = $${values.length}::uuid`);
+    conditions.push(`a.facility_id = $${values.length}::bigint`);
   }
 
   if (filters.actorUserId) {
@@ -125,12 +127,21 @@ export async function listAuditLogs(
   }
 
   const limit = Math.min(Math.max(Number(filters.limit) || 100, 1), 500);
-  values.push(limit);
-  const limitIdx = values.length;
+  if (filters.cursor) {
+    if (
+      Number.isNaN(Date.parse(filters.cursor.timestamp)) ||
+      !isBigIntId(filters.cursor.id)
+    ) {
+      throw new ValidationError({ cursor: "The cursor is invalid." });
+    }
+    values.push(filters.cursor.timestamp, filters.cursor.id);
+    conditions.push(
+      `(a.occurred_at,a.id)<($${values.length - 1}::timestamptz,$${values.length}::bigint)`,
+    );
+  }
 
-  const offset = Math.max(Number(filters.offset) || 0, 0);
-  values.push(offset);
-  const offsetIdx = values.length;
+  values.push(limit + 1);
+  const limitIdx = values.length;
 
   const query = `
     SELECT
@@ -155,8 +166,8 @@ export async function listAuditLogs(
     LEFT JOIN public."user" u ON u.id = a.actor_user_id
     LEFT JOIN public.facilities f ON f.id = a.facility_id
     WHERE ${conditions.join(" AND ")}
-    ORDER BY a.occurred_at DESC
-    LIMIT $${limitIdx} OFFSET $${offsetIdx}
+    ORDER BY a.occurred_at DESC,a.id DESC
+    LIMIT $${limitIdx}
   `;
 
   const result = await dbPool.query<{
@@ -179,7 +190,9 @@ export async function listAuditLogs(
     occurred_at: Date;
   }>(query, values);
 
-  return result.rows.map((row) => ({
+  const hasMore = result.rows.length > limit;
+  const rows = hasMore ? result.rows.slice(0, limit) : result.rows;
+  const data = rows.map((row) => ({
     id: row.id,
     organizationId: row.organization_id,
     requestId: row.request_id,
@@ -198,4 +211,17 @@ export async function listAuditLogs(
     userAgent: row.user_agent,
     occurredAt: row.occurred_at.toISOString(),
   }));
+  const last = data.at(-1);
+
+  return {
+    data,
+    limit,
+    hasMore,
+    nextCursor:
+      hasMore && last
+        ? Buffer.from(
+            JSON.stringify({ timestamp: last.occurredAt, id: last.id }),
+          ).toString("base64url")
+        : null,
+  };
 }

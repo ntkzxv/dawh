@@ -2,7 +2,7 @@ import "server-only";
 
 import type { PoolClient } from "pg";
 
-import { AuthorizationError } from "@/lib/access/service";
+import { requirePermission } from "@/lib/access/service";
 import type { AccessContext } from "@/lib/access/types";
 import type {
   AssignRoleInput,
@@ -27,10 +27,6 @@ const canonicalRoles = [
   "CLAIM_OFFICER",
   "AUDITOR",
 ] as const;
-
-function requirePermission(context: AccessContext, permission: string) {
-  if (!context.permissions.includes(permission)) throw new AuthorizationError();
-}
 
 export async function listRoles(context: AccessContext): Promise<RoleDto[]> {
   requirePermission(context, "admin.roles.read");

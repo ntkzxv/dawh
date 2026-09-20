@@ -1,6 +1,11 @@
 import "server-only";
 import type { Pool, PoolClient } from "pg";
-import { AuthorizationError, canAccessFacility } from "@/lib/access/service";
+import {
+  AuthorizationError,
+  canAccessFacility,
+  requirePermission,
+  visibleFacilityIds,
+} from "@/lib/access/service";
 import type { AccessContext } from "@/lib/access/types";
 import { writeAuditLog } from "@/lib/audit/service";
 import { dbPool } from "@/lib/core/db/pool";
@@ -96,6 +101,24 @@ export async function listLocations(c: AccessContext, facilityId: string) {
     );
     if (!facility.rowCount) throw new NotFoundError("Facility");
   }
+  return r.rows.map(map);
+}
+
+/**
+ * Bulk loader for administrative read models. It deliberately avoids issuing
+ * one query per facility when the Control Panel opens the organization tab.
+ */
+export async function listVisibleLocations(c: AccessContext) {
+  requirePermission(c, "admin.facilities.read");
+  const ids = visibleFacilityIds(c);
+  if (ids?.length === 0) return [];
+
+  const r = await dbPool.query<Row>(
+    `${select} WHERE f.organization_id=$1
+       AND ($2::boolean OR l.facility_id=ANY($3::bigint[]))
+     ORDER BY f.code,l.path,l.id`,
+    [c.organization.id, ids === null, ids ?? []],
+  );
   return r.rows.map(map);
 }
 export async function getLocation(

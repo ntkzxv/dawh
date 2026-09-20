@@ -43,7 +43,17 @@ export function jsonError(request: Request, error: ApiError) {
 
 export function jsonUnexpectedError(request: Request, error: unknown) {
   const requestId = getRequestId(request);
-  console.error("Unhandled API error", { requestId, error });
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(
+    JSON.stringify({
+      level: "error",
+      event: "api.unhandled_error",
+      requestId,
+      method: request.method,
+      path: new URL(request.url).pathname,
+      message,
+    }),
+  );
 
   return Response.json(
     {

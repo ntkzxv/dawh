@@ -1,9 +1,10 @@
 import "server-only";
 import type { Pool, PoolClient } from "pg";
-import { AuthorizationError } from "@/lib/access/service";
+import { requirePermission } from "@/lib/access/service";
 import type { AccessContext } from "@/lib/access/types";
 import { writeAuditLog } from "@/lib/audit/service";
 import { dbPool } from "@/lib/core/db/pool";
+import { rethrowUniqueViolation } from "@/lib/core/db/errors";
 import { withTransaction } from "@/lib/core/db/transaction";
 import type { RequestContext } from "@/lib/core/http/context";
 import { ConflictError, NotFoundError } from "@/lib/core/http/errors";
@@ -35,16 +36,8 @@ function map(r: Row): DepartmentDto {
     updatedAt: r.updated_at.toISOString(),
   };
 }
-function permission(c: AccessContext, p: string) {
-  if (!c.permissions.includes(p)) throw new AuthorizationError();
-}
-function duplicate(e: unknown): never {
-  if ((e as { code?: string }).code === "23505")
-    throw new ConflictError("CONFLICT", "The department code already exists.");
-  throw e;
-}
 export async function listDepartments(c: AccessContext) {
-  permission(c, "admin.facilities.read");
+  requirePermission(c, "admin.facilities.read");
   const r = await dbPool.query<Row>(
     `SELECT * FROM public.departments WHERE organization_id=$1 ORDER BY code`,
     [c.organization.id],
@@ -56,7 +49,7 @@ export async function getDepartment(
   id: string,
   executor: Executor = dbPool,
 ) {
-  permission(c, "admin.facilities.read");
+  requirePermission(c, "admin.facilities.read");
   const r = await executor.query<Row>(
     `SELECT * FROM public.departments WHERE id=$1 AND organization_id=$2`,
     [id, c.organization.id],
@@ -69,7 +62,7 @@ export async function createDepartment(
   rc: RequestContext,
   input: DepartmentInput,
 ) {
-  permission(c, "admin.facilities.manage");
+  requirePermission(c, "admin.facilities.manage");
   try {
     return await withTransaction(async (client) => {
       const r = await client.query<Row>(
@@ -91,7 +84,7 @@ export async function createDepartment(
       return dto;
     });
   } catch (e) {
-    return duplicate(e);
+    return rethrowUniqueViolation(e, "The department code already exists.");
   }
 }
 export async function updateDepartment(
@@ -100,7 +93,7 @@ export async function updateDepartment(
   id: string,
   input: DepartmentUpdateInput,
 ) {
-  permission(c, "admin.facilities.manage");
+  requirePermission(c, "admin.facilities.manage");
   try {
     return await withTransaction(async (client) => {
       const before = await getDepartment(c, id, client);
@@ -138,6 +131,6 @@ export async function updateDepartment(
       return dto;
     });
   } catch (e) {
-    return duplicate(e);
+    return rethrowUniqueViolation(e, "The department code already exists.");
   }
 }

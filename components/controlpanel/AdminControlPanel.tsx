@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage, setAppLanguage } from "@/utils/language";
 import { useNotification } from "@/context/NotificationContext";
-import { HeaderNavbar, MobileNavbar, NavbarMain, NavbarsubControlPanel } from "@/components/navbar";
+import { HeaderNavbar, NavbarMain, NavbarsubControlPanel } from "@/components/navbar";
 import { motion } from "framer-motion";
 import type {
   AdminTabKey,
@@ -36,6 +37,7 @@ import {
   fetchProductsTabData,
   fetchStockTabData,
   fetchSafetyStockTabData,
+  fetchAuditLogsTabData,
   mapUserSummaryToRecord,
   mapFacilityDtoToRecord,
   mapLocationDtoToRecord,
@@ -54,7 +56,6 @@ import {
   assignFacilityScope,
   updateFacilityScope,
   revokeFacilityScope,
-  listAuditLogsApi,
 } from "@/lib/api/admin";
 import {
   listFacilities,
@@ -76,7 +77,6 @@ import {
   createSafetyStockRule,
   updateSafetyStockRule,
 } from "@/lib/api/products";
-import { listStockBalances, listStockLedger } from "@/lib/api/stock";
 import { getAppMe, checkIsAdmin, type AppMe } from "@/lib/api/session";
 import type { Facility } from "@/lib/facilities/types";
 import type { LocationDto } from "@/lib/locations/types";
@@ -85,26 +85,20 @@ import type { Product } from "@/lib/products/types";
 import type { SafetyStockRuleDto } from "@/lib/safety-stock/types";
 import type { UnitOfMeasureDto } from "@/lib/units-of-measure/types";
 
-import UserManagementTab from "./tabs/UserManagementTab";
-import RoleManagementTab from "./tabs/RoleManagementTab";
-import FacilityScopeTab from "./tabs/FacilityScopeTab";
-import OrganizationTab from "./tabs/OrganizationTab";
-import ProductCatalogTab from "./tabs/ProductCatalogTab";
-import StockMonitoringTab from "./tabs/StockMonitoringTab";
-import SafetyStockTab from "./tabs/SafetyStockTab";
-import AuditLogTab from "./tabs/AuditLogTab";
 import SkeletonControlPanelTab from "./SkeletonControlPanel";
 
-import {
-  Users,
-  Shield,
-  Building2,
-  Building,
-  Package,
-  Activity,
-  ShieldAlert,
-  RotateCw,
-} from "lucide-react";
+// Each inactive panel stays out of the initial client bundle. The parent keeps
+// its existing skeleton and state behavior, so this changes no visual design.
+const UserManagementTab = dynamic(() => import("./tabs/UserManagementTab"));
+const RoleManagementTab = dynamic(() => import("./tabs/RoleManagementTab"));
+const FacilityScopeTab = dynamic(() => import("./tabs/FacilityScopeTab"));
+const OrganizationTab = dynamic(() => import("./tabs/OrganizationTab"));
+const ProductCatalogTab = dynamic(() => import("./tabs/ProductCatalogTab"));
+const StockMonitoringTab = dynamic(() => import("./tabs/StockMonitoringTab"));
+const SafetyStockTab = dynamic(() => import("./tabs/SafetyStockTab"));
+const AuditLogTab = dynamic(() => import("./tabs/AuditLogTab"));
+
+import { ShieldAlert } from "lucide-react";
 import type { FacilityScopeType } from "@/lib/access/types";
 
 export default function AdminControlPanel() {
@@ -125,14 +119,22 @@ export default function AdminControlPanel() {
   const [sidebarAnimated, setSidebarAnimated] = useState(false);
 
   useEffect(() => {
+    let animationFrame: number | undefined;
+
     try {
       const saved = localStorage.getItem("dawh_sidebar_minimized");
       if (saved !== null) {
-        setIsMinimized(JSON.parse(saved));
+        animationFrame = requestAnimationFrame(() => {
+          setIsMinimized(JSON.parse(saved));
+        });
       }
     } catch {
       // Non-blocking
     }
+
+    return () => {
+      if (animationFrame !== undefined) cancelAnimationFrame(animationFrame);
+    };
   }, []);
 
   const handleMinimizedChange = (minimized: boolean) => {
@@ -340,10 +342,8 @@ export default function AdminControlPanel() {
           setRawSafetyRules(data.rawSafetyRules);
           setSafetyRules(data.safetyRules);
         } else if (targetTab === "audit_logs") {
-          const res = await listAuditLogsApi({ limit: 200 });
-          if (res?.data) {
-            setAuditLogs(res.data);
-          }
+          const data = await fetchAuditLogsTabData();
+          setAuditLogs(data.logs);
         }
 
         // Add to loaded tabs set
@@ -407,6 +407,9 @@ export default function AdminControlPanel() {
     return () => {
       isMounted = false;
     };
+    // `activeTab` starts as "users" and all later tab changes use the tab handler.
+    // This is intentionally a one-time session bootstrap, not a subscription.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Helper to re-fetch specific user list
@@ -464,10 +467,8 @@ export default function AdminControlPanel() {
   const refreshAuditLogs = async () => {
     try {
       setIsAuditLoading(true);
-      const res = await listAuditLogsApi({ limit: 200 });
-      if (res?.data) {
-        setAuditLogs(res.data);
-      }
+      const data = await fetchAuditLogsTabData();
+      setAuditLogs(data.logs);
     } catch {
       // Non-blocking
     } finally {

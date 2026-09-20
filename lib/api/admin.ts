@@ -57,4 +57,3 @@ export function revokeFacilityScope(userId: string, scopeId: string, version: nu
 export function listAuditLogsApi(params: Record<string, string | number | boolean | null | undefined> = {}) {
   return apiGet<import("@/lib/audit/types").AuditLogRecord[]>(`/api/admin/audit-logs${query(params)}`);
 }
-

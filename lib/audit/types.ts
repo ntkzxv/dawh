@@ -47,5 +47,12 @@ export type AuditLogFilters = {
   facilityId?: string;
   search?: string;
   limit?: number;
-  offset?: number;
+  cursor?: { timestamp: string; id: string } | null;
+};
+
+export type AuditLogPage = {
+  data: AuditLogRecord[];
+  limit: number;
+  nextCursor: string | null;
+  hasMore: boolean;
 };
