@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useTheme } from "@/context/ThemeContext";
+import { CustomDropdown } from "@/components/common";
 import type { FacilityRecord, WarehouseLocationRecord, DepartmentRecord, LocationType } from "../types";
 import {
   Building,
@@ -88,6 +89,56 @@ export default function OrganizationTab({
     manager: "",
     isActive: true,
   });
+
+  // Dropdown Options
+  const facilityFilterOptions = useMemo(() => [
+    { value: "ALL", label: isThai ? "ทุกสาขา/คลัง" : "All Facilities" },
+    ...facilities.map((f) => ({
+      value: f.id,
+      label: `${f.name} (${f.code})`,
+      badge: f.code,
+    })),
+  ], [facilities, isThai]);
+
+  const facilityTypeOptions = useMemo(() => [
+    { value: "CENTRAL_WAREHOUSE" as FacilityRecord["type"], label: isThai ? "คลังสินค้าศูนย์กลาง (CENTRAL_WAREHOUSE)" : "CENTRAL_WAREHOUSE" },
+    { value: "BRANCH" as FacilityRecord["type"], label: isThai ? "หน่วยสาขา (BRANCH)" : "BRANCH" },
+  ], [isThai]);
+
+  const modalFacilityOptions = useMemo(() => [
+    ...facilities.map((f) => ({
+      value: f.id,
+      label: `${f.name} (${f.code})`,
+      badge: f.code,
+    })),
+  ], [facilities]);
+
+  const locationTypeOptions: { value: LocationType; label: string }[] = [
+    { value: "Zone", label: "Zone" },
+    { value: "Aisle", label: "Aisle" },
+    { value: "Rack", label: "Rack" },
+    { value: "Shelf", label: "Shelf" },
+    { value: "Bin", label: "Bin" },
+    { value: "Receiving", label: "Receiving" },
+    { value: "Storage", label: "Storage" },
+    { value: "Picking", label: "Picking" },
+    { value: "Packing", label: "Packing" },
+    { value: "Dispatch", label: "Dispatch" },
+    { value: "Quarantine", label: "Quarantine" },
+    { value: "Damaged", label: "Damaged" },
+    { value: "Return", label: "Return" },
+  ];
+
+  const parentLocationOptions = useMemo(() => [
+    { value: "", label: isThai ? "-- เป็นพิกัดระดับบนสุด (Root Level 1) --" : "-- Root Level --" },
+    ...locations
+      .filter((l) => l.facilityId === locationForm.facilityId)
+      .map((l) => ({
+        value: l.id,
+        label: `${l.code} - ${l.name}`,
+        badge: l.type,
+      })),
+  ], [locations, locationForm.facilityId, isThai]);
 
   // Filtered locations
   const filteredLocations = locations.filter(
@@ -376,20 +427,15 @@ export default function OrganizationTab({
           >
             <div className="flex items-center gap-2">
               <span className="font-semibold opacity-70">{isThai ? "กรองตามสาขา/คลัง:" : "Filter by Facility:"}</span>
-              <select
-                value={selectedFacilityForLocs}
-                onChange={(e) => setSelectedFacilityForLocs(e.target.value)}
-                className={`px-3 py-1.5 rounded-lg border outline-none ${
-                  isLight ? "bg-zinc-50 border-zinc-200" : "bg-[#2C2C2C] border-[#444444] text-white"
-                }`}
-              >
-                <option value="ALL">{isThai ? "ทุกสาขา/คลัง" : "All Facilities"}</option>
-                {facilities.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.name} ({f.code})
-                  </option>
-                ))}
-              </select>
+              <div className="min-w-[180px]">
+                <CustomDropdown
+                  value={selectedFacilityForLocs}
+                  onChange={setSelectedFacilityForLocs}
+                  options={facilityFilterOptions}
+                  searchable={facilities.length > 5}
+                  searchPlaceholder={isThai ? "ค้นหาสาขา..." : "Search facility..."}
+                />
+              </div>
             </div>
             <span className="opacity-60">{filteredLocations.length} {isThai ? "ตำแหน่งพื้นที่" : "locations found"}</span>
           </div>
@@ -584,16 +630,11 @@ export default function OrganizationTab({
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="font-semibold opacity-80">{isThai ? "ประเภทสถานประกอบการ" : "Type"}</label>
-                  <select
-                    value={facilityForm.type}
-                    onChange={(e) => setFacilityForm({ ...facilityForm, type: e.target.value as FacilityRecord["type"] })}
-                    className={`w-full px-3 py-2 rounded-lg border text-xs outline-none ${
-                      isLight ? "bg-zinc-100 border-zinc-300" : "bg-[#333333] border-[#444444] text-white"
-                    }`}
-                  >
-                    <option value="CENTRAL_WAREHOUSE">{isThai ? "คลังสินค้าศูนย์กลาง" : "CENTRAL_WAREHOUSE"}</option>
-                    <option value="BRANCH">{isThai ? "หน่วยสาขา" : "BRANCH"}</option>
-                  </select>
+                  <CustomDropdown
+                    value={facilityForm.type || "BRANCH"}
+                    onChange={(val) => setFacilityForm({ ...facilityForm, type: val as FacilityRecord["type"] })}
+                    options={facilityTypeOptions}
+                  />
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="font-semibold opacity-80">{isThai ? "ผู้จัดการสาขา" : "Manager"}</label>
@@ -693,19 +734,13 @@ export default function OrganizationTab({
             <form onSubmit={handleLocationSubmit} className="flex flex-col gap-3 text-xs">
               <div className="flex flex-col gap-1">
                 <label className="font-semibold opacity-80">{isThai ? "สาขา/คลังที่ตั้ง" : "Facility"}</label>
-                <select
-                  value={locationForm.facilityId}
-                  onChange={(e) => setLocationForm({ ...locationForm, facilityId: e.target.value })}
-                  className={`w-full px-3 py-2 rounded-lg border text-xs outline-none ${
-                    isLight ? "bg-zinc-100 border-zinc-300" : "bg-[#333333] border-[#444444] text-white"
-                  }`}
-                >
-                  {facilities.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.name} ({f.code})
-                    </option>
-                  ))}
-                </select>
+                <CustomDropdown
+                  value={locationForm.facilityId || facilities[0]?.id || ""}
+                  onChange={(val) => setLocationForm({ ...locationForm, facilityId: val })}
+                  options={modalFacilityOptions}
+                  searchable={facilities.length > 5}
+                  searchPlaceholder={isThai ? "ค้นหาสาขา..." : "Search facility..."}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -724,27 +759,11 @@ export default function OrganizationTab({
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="font-semibold opacity-80">{isThai ? "ประเภทพิกัด" : "Location Type"}</label>
-                  <select
-                    value={locationForm.type}
-                    onChange={(e) => setLocationForm({ ...locationForm, type: e.target.value as LocationType })}
-                    className={`w-full px-3 py-2 rounded-lg border text-xs outline-none ${
-                      isLight ? "bg-zinc-100 border-zinc-300" : "bg-[#333333] border-[#444444] text-white"
-                    }`}
-                  >
-                    <option value="Zone">Zone</option>
-                    <option value="Aisle">Aisle</option>
-                    <option value="Rack">Rack</option>
-                    <option value="Shelf">Shelf</option>
-                    <option value="Bin">Bin</option>
-                    <option value="Receiving">Receiving</option>
-                    <option value="Storage">Storage</option>
-                    <option value="Picking">Picking</option>
-                    <option value="Packing">Packing</option>
-                    <option value="Dispatch">Dispatch</option>
-                    <option value="Quarantine">Quarantine</option>
-                    <option value="Damaged">Damaged</option>
-                    <option value="Return">Return</option>
-                  </select>
+                  <CustomDropdown
+                    value={locationForm.type || "Zone"}
+                    onChange={(val) => setLocationForm({ ...locationForm, type: val as LocationType })}
+                    options={locationTypeOptions}
+                  />
                 </div>
               </div>
 
@@ -764,22 +783,13 @@ export default function OrganizationTab({
 
               <div className="flex flex-col gap-1">
                 <label className="font-semibold opacity-80">{isThai ? "ตำแหน่งแม่ (Parent Hierarchy)" : "Parent Location"}</label>
-                <select
+                <CustomDropdown
                   value={locationForm.parentId || ""}
-                  onChange={(e) => setLocationForm({ ...locationForm, parentId: e.target.value || null })}
-                  className={`w-full px-3 py-2 rounded-lg border text-xs outline-none ${
-                    isLight ? "bg-zinc-100 border-zinc-300" : "bg-[#333333] border-[#444444] text-white"
-                  }`}
-                >
-                  <option value="">{isThai ? "-- เป็นพิกัดระดับบนสุด (Root Level 1) --" : "-- Root Level --"}</option>
-                  {locations
-                    .filter((l) => l.facilityId === locationForm.facilityId && l.id !== editingLocation?.id)
-                    .map((l) => (
-                      <option key={l.id} value={l.id}>
-                        {l.code} ({l.name}) - Level {l.depth}
-                      </option>
-                    ))}
-                </select>
+                  onChange={(val) => setLocationForm({ ...locationForm, parentId: val || null })}
+                  options={parentLocationOptions}
+                  searchable={parentLocationOptions.length > 5}
+                  searchPlaceholder={isThai ? "ค้นหาตำแหน่ง..." : "Search parent location..."}
+                />
               </div>
 
               <div className="flex items-center justify-end gap-2 mt-2 pt-3 border-t border-[#444444]/40">

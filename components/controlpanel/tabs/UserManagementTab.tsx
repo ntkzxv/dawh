@@ -22,6 +22,7 @@ import {
   ChevronDown,
   RotateCcw,
 } from "lucide-react";
+import { CustomDropdown } from "@/components/common";
 
 interface UserManagementTabProps {
   users: AdminUserRecord[];
@@ -93,6 +94,31 @@ export default function UserManagementTab({
     });
     return Array.from(map.values());
   }, [users]);
+
+  // Dropdown options
+  const roleFilterOptions = useMemo(() => [
+    { value: "ALL", label: isThai ? "ทุกบทบาทสิทธิ์" : "All Roles" },
+    { value: "SYSTEM_ADMINISTRATOR", label: isThai ? "ผู้ดูแลระบบสูงสุด" : "System Administrator" },
+    { value: "WAREHOUSE_MANAGER", label: isThai ? "ผู้จัดการคลังสินค้า" : "Warehouse Manager" },
+    { value: "STOCK_CONTROLLER", label: isThai ? "เจ้าหน้าที่ควบคุมสต็อก" : "Stock Controller" },
+    { value: "PICKER_PACKER", label: isThai ? "พนักงานหยิบแพ็ค" : "Picker & Packer" },
+    { value: "CLAIM_OFFICER", label: isThai ? "เจ้าหน้าที่เคลม" : "Claim Officer" },
+  ], [isThai]);
+
+  const facilityFilterOptions = useMemo(() => [
+    { value: "ALL", label: isThai ? "ทุกสาขา/คลัง" : "All Facilities" },
+    ...uniqueFacilities.map((fac) => ({
+      value: fac.id,
+      label: `${fac.code} - ${fac.name}`,
+      badge: fac.code,
+    })),
+  ], [uniqueFacilities, isThai]);
+
+  const accountStatusOptions = useMemo(() => [
+    { value: "ACTIVE", label: isThai ? "ใช้งานปกติ (ACTIVE)" : "ACTIVE" },
+    { value: "SUSPENDED", label: isThai ? "ระงับชั่วคราว (SUSPENDED)" : "SUSPENDED" },
+    { value: "TERMINATED", label: isThai ? "ยุติการใช้งานถาวร (TERMINATED)" : "TERMINATED" },
+  ], [isThai]);
 
   // Modal States
   const [selectedUserForDetail, setSelectedUserForDetail] = useState<AdminUserRecord | null>(null);
@@ -417,20 +443,11 @@ export default function UserManagementTab({
                 <label className="text-[11px] font-semibold opacity-70">
                   {isThai ? "บทบาทสิทธิ์" : "Canonical Role"}
                 </label>
-                <select
+                <CustomDropdown
                   value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value)}
-                  className={`w-full px-2.5 py-1.5 rounded-lg border text-xs outline-none cursor-pointer ${
-                    isLight ? "bg-zinc-50 border-zinc-200 text-zinc-800" : "bg-[#333333] border-[#444444] text-white"
-                  }`}
-                >
-                  <option value="ALL">{isThai ? "ทุกบทบาทสิทธิ์" : "All Roles"}</option>
-                  <option value="SYSTEM_ADMINISTRATOR">{isThai ? "ผู้ดูแลระบบสูงสุด" : "System Administrator"}</option>
-                  <option value="WAREHOUSE_MANAGER">{isThai ? "ผู้จัดการคลังสินค้า" : "Warehouse Manager"}</option>
-                  <option value="STOCK_CONTROLLER">{isThai ? "เจ้าหน้าที่ควบคุมสต็อก" : "Stock Controller"}</option>
-                  <option value="PICKER_PACKER">{isThai ? "พนักงานหยิบแพ็ค" : "Picker & Packer"}</option>
-                  <option value="CLAIM_OFFICER">{isThai ? "เจ้าหน้าที่เคลม" : "Claim Officer"}</option>
-                </select>
+                  onChange={setRoleFilter}
+                  options={roleFilterOptions}
+                />
               </div>
 
               {/* 3. Facility Filter */}
@@ -438,20 +455,13 @@ export default function UserManagementTab({
                 <label className="text-[11px] font-semibold opacity-70">
                   {isThai ? "สังกัดสาขา/คลัง" : "Facility Scope"}
                 </label>
-                <select
+                <CustomDropdown
                   value={facilityFilter}
-                  onChange={(e) => setFacilityFilter(e.target.value)}
-                  className={`w-full px-2.5 py-1.5 rounded-lg border text-xs outline-none cursor-pointer ${
-                    isLight ? "bg-zinc-50 border-zinc-200 text-zinc-800" : "bg-[#333333] border-[#444444] text-white"
-                  }`}
-                >
-                  <option value="ALL">{isThai ? "ทุกสาขา/คลัง" : "All Facilities"}</option>
-                  {uniqueFacilities.map((fac) => (
-                    <option key={fac.id} value={fac.id}>
-                      {fac.code} - {fac.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setFacilityFilter}
+                  options={facilityFilterOptions}
+                  searchable={uniqueFacilities.length > 5}
+                  searchPlaceholder={isThai ? "ค้นหาสาขา..." : "Search facility..."}
+                />
               </div>
 
               {/* 4. Profile Completion */}
@@ -833,17 +843,11 @@ export default function UserManagementTab({
                 <label className="font-semibold opacity-80">
                   {isThai ? "เลือกสถานะบัญชีใหม่" : "New Account Status"}
                 </label>
-                <select
+                <CustomDropdown
                   value={newStatus}
-                  onChange={(e) => setNewStatus(e.target.value as AdminUserRecord["accountStatus"])}
-                  className={`w-full px-3 py-2 rounded-lg border text-xs outline-none ${
-                    isLight ? "bg-zinc-100 border-zinc-300" : "bg-[#333333] border-[#444444] text-white"
-                  }`}
-                >
-                  <option value="ACTIVE">{isThai ? "ใช้งานปกติ (ACTIVE)" : "ACTIVE"}</option>
-                  <option value="SUSPENDED">{isThai ? "ระงับชั่วคราว (SUSPENDED)" : "SUSPENDED"}</option>
-                  <option value="TERMINATED">{isThai ? "ยุติการใช้งานถาวร (TERMINATED)" : "TERMINATED"}</option>
-                </select>
+                  onChange={(val) => setNewStatus(val as AdminUserRecord["accountStatus"])}
+                  options={accountStatusOptions}
+                />
               </div>
 
               <div className="flex flex-col gap-1.5">

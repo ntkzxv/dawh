@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { useTheme } from "@/context/ThemeContext";
+import { CustomDropdown } from "@/components/common";
 import type { AuditLogCategoryKey, AuditLogRecord } from "../types";
 import {
   Search,
@@ -71,6 +72,14 @@ export default function AuditLogTab({
     });
     return Array.from(set).sort();
   }, [logs]);
+
+  const entityTypeOptions = useMemo(() => [
+    { value: "ALL", label: isThai ? "ทุกประเภทเอนทิตี" : "All Entity Types" },
+    ...entityTypes.map((et) => ({
+      value: et,
+      label: et,
+    })),
+  ], [entityTypes, isThai]);
 
   // Filter logs by selectedCategory and search
   const filteredLogs = useMemo(() => {
@@ -230,24 +239,15 @@ export default function AuditLogTab({
 
         <div className="flex items-center gap-2.5">
           {/* Entity Type Filter */}
-          <div className="flex items-center gap-2">
-            <Filter size={14} className={isLight ? "text-zinc-500" : "text-zinc-400"} />
-            <select
+          <div className="min-w-[170px]">
+            <CustomDropdown
               value={selectedEntityFilter}
-              onChange={(e) => setSelectedEntityFilter(e.target.value)}
-              className={`px-3 py-2 rounded-xl text-xs border font-medium transition-colors outline-none cursor-pointer ${
-                isLight
-                  ? "bg-zinc-50 border-zinc-200 text-zinc-800"
-                  : "bg-[#2A2A2A] border-[#444444] text-zinc-200"
-              }`}
-            >
-              <option value="ALL">{isThai ? "ทุกประเภทเอนทิตี" : "All Entity Types"}</option>
-              {entityTypes.map((et) => (
-                <option key={et} value={et}>
-                  {et}
-                </option>
-              ))}
-            </select>
+              onChange={setSelectedEntityFilter}
+              options={entityTypeOptions}
+              icon={<Filter size={13} className={isLight ? "text-zinc-500" : "text-zinc-400"} />}
+              searchable={entityTypes.length > 5}
+              searchPlaceholder={isThai ? "ค้นหาประเภท..." : "Search type..."}
+            />
           </div>
 
           {/* Refresh Button */}

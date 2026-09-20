@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useTheme } from "@/context/ThemeContext";
+import { CustomDropdown } from "@/components/common";
 import type { StockBalanceRecord, StockLedgerRecord, FacilityRecord } from "../types";
 import {
   Activity,
@@ -35,6 +36,15 @@ export default function StockMonitoringTab({
   const [activeSubTab, setActiveSubTab] = useState<"balances" | "ledger" | "network">("balances");
   const [facilityFilter, setFacilityFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const facilityDropdownOptions = useMemo(() => [
+    { value: "ALL", label: isThai ? "ทุกสาขา/คลัง" : "All Facilities" },
+    ...facilities.map((f) => ({
+      value: f.code,
+      label: `${f.code} - ${f.name}`,
+      badge: f.code,
+    })),
+  ], [facilities, isThai]);
 
   const filteredBalances = balances.filter((b) => {
     const matchFacility = facilityFilter === "ALL" || b.facilityCode === facilityFilter;
@@ -154,20 +164,15 @@ export default function StockMonitoringTab({
             }`}
           >
             <div className="flex items-center gap-2">
-              <select
-                value={facilityFilter}
-                onChange={(e) => setFacilityFilter(e.target.value)}
-                className={`px-3 py-1.5 rounded-lg border outline-none ${
-                  isLight ? "bg-zinc-50 border-zinc-200" : "bg-[#2C2C2C] border-[#444444] text-white"
-                }`}
-              >
-                <option value="ALL">{isThai ? "ทุกสาขา/คลัง" : "All Facilities"}</option>
-                {facilities.map((f) => (
-                  <option key={f.id} value={f.code}>
-                    {f.code} - {f.name}
-                  </option>
-                ))}
-              </select>
+              <div className="min-w-[170px]">
+                <CustomDropdown
+                  value={facilityFilter}
+                  onChange={setFacilityFilter}
+                  options={facilityDropdownOptions}
+                  searchable={facilities.length > 5}
+                  searchPlaceholder={isThai ? "ค้นหาสาขา..." : "Search facility..."}
+                />
+              </div>
 
               <div className="relative">
                 <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-40" />

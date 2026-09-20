@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useTheme } from "@/context/ThemeContext";
+import { CustomDropdown } from "@/components/common";
 import type {
   ProductRecord,
   ProductCategoryRecord,
@@ -85,6 +86,41 @@ export default function ProductCatalogTab({
     storageCondition: "Dry Ambient",
     isActive: true,
   });
+
+  // Dropdown Options
+  const categoryOptions = useMemo(() => {
+    return categories.map((c) => ({
+      value: c.id,
+      label: c.nameEn,
+      subLabel: c.code,
+    }));
+  }, [categories]);
+
+  const brandOptions = useMemo(() => {
+    return brands.map((b) => ({
+      value: b.id,
+      label: b.name,
+      subLabel: b.code,
+    }));
+  }, [brands]);
+
+  const uomOptions = useMemo(() => {
+    return uoms.map((u) => ({
+      value: u.code,
+      label: `${u.code} (${u.symbol})`,
+    }));
+  }, [uoms]);
+
+  const trackingMethodOptions = useMemo(() => [
+    { value: "NONE" as ProductRecord["trackingMethod"], label: "NONE" },
+    { value: "LOT" as ProductRecord["trackingMethod"], label: "LOT" },
+    { value: "SERIAL" as ProductRecord["trackingMethod"], label: "SERIAL" },
+  ], []);
+
+  const pickingStrategyOptions = useMemo(() => [
+    { value: "FIFO" as ProductRecord["pickingStrategy"], label: "FIFO" },
+    { value: "FEFO" as ProductRecord["pickingStrategy"], label: "FEFO" },
+  ], []);
 
   const filteredProducts = products.filter((p) => {
     const q = productSearch.toLowerCase().trim();
@@ -520,84 +556,53 @@ export default function ProductCatalogTab({
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="font-semibold opacity-80">{isThai ? "หมวดหมู่สินค้า" : "Category"}</label>
-                  <select
-                    value={productForm.categoryId}
-                    onChange={(e) => setProductForm({ ...productForm, categoryId: e.target.value })}
-                    className={`w-full px-3 py-2 rounded-lg border text-xs outline-none ${
-                      isLight ? "bg-zinc-100 border-zinc-300" : "bg-[#333333] border-[#444444] text-white"
-                    }`}
-                  >
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.nameEn}
-                      </option>
-                    ))}
-                  </select>
+                  <CustomDropdown
+                    value={productForm.categoryId || categories[0]?.id || ""}
+                    onChange={(val) => setProductForm({ ...productForm, categoryId: val })}
+                    options={categoryOptions}
+                    searchable={categories.length > 5}
+                    searchPlaceholder={isThai ? "ค้นหาหมวดหมู่..." : "Search category..."}
+                  />
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <label className="font-semibold opacity-80">{isThai ? "แบรนด์ผู้ผลิต" : "Brand"}</label>
-                  <select
-                    value={productForm.brandId}
-                    onChange={(e) => setProductForm({ ...productForm, brandId: e.target.value })}
-                    className={`w-full px-3 py-2 rounded-lg border text-xs outline-none ${
-                      isLight ? "bg-zinc-100 border-zinc-300" : "bg-[#333333] border-[#444444] text-white"
-                    }`}
-                  >
-                    {brands.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
+                  <CustomDropdown
+                    value={productForm.brandId || brands[0]?.id || ""}
+                    onChange={(val) => setProductForm({ ...productForm, brandId: val })}
+                    options={brandOptions}
+                    searchable={brands.length > 5}
+                    searchPlaceholder={isThai ? "ค้นหาแบรนด์..." : "Search brand..."}
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="font-semibold opacity-80">{isThai ? "หน่วยนับหลัก" : "Base Unit"}</label>
-                  <select
-                    value={productForm.baseUnit}
-                    onChange={(e) => setProductForm({ ...productForm, baseUnit: e.target.value })}
-                    className={`w-full px-3 py-2 rounded-lg border text-xs outline-none ${
-                      isLight ? "bg-zinc-100 border-zinc-300" : "bg-[#333333] border-[#444444] text-white"
-                    }`}
-                  >
-                    {uoms.map((u) => (
-                      <option key={u.id} value={u.code}>
-                        {u.code} ({u.symbol})
-                      </option>
-                    ))}
-                  </select>
+                  <CustomDropdown
+                    value={productForm.baseUnit || uoms[0]?.code || "PCS"}
+                    onChange={(val) => setProductForm({ ...productForm, baseUnit: val })}
+                    options={uomOptions}
+                  />
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <label className="font-semibold opacity-80">{isThai ? "วิธีติดตามสินค้า" : "Tracking"}</label>
-                  <select
-                    value={productForm.trackingMethod}
-                    onChange={(e) => setProductForm({ ...productForm, trackingMethod: e.target.value as ProductRecord["trackingMethod"] })}
-                    className={`w-full px-3 py-2 rounded-lg border text-xs outline-none ${
-                      isLight ? "bg-zinc-100 border-zinc-300" : "bg-[#333333] border-[#444444] text-white"
-                    }`}
-                  >
-                    <option value="NONE">NONE</option>
-                    <option value="LOT">LOT</option>
-                    <option value="SERIAL">SERIAL</option>
-                  </select>
+                  <CustomDropdown
+                    value={productForm.trackingMethod || "NONE"}
+                    onChange={(val) => setProductForm({ ...productForm, trackingMethod: val as ProductRecord["trackingMethod"] })}
+                    options={trackingMethodOptions}
+                  />
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <label className="font-semibold opacity-80">{isThai ? "กลยุทธ์การหยิบ" : "Picking"}</label>
-                  <select
-                    value={productForm.pickingStrategy}
-                    onChange={(e) => setProductForm({ ...productForm, pickingStrategy: e.target.value as ProductRecord["pickingStrategy"] })}
-                    className={`w-full px-3 py-2 rounded-lg border text-xs outline-none ${
-                      isLight ? "bg-zinc-100 border-zinc-300" : "bg-[#333333] border-[#444444] text-white"
-                    }`}
-                  >
-                    <option value="FIFO">FIFO</option>
-                    <option value="FEFO">FEFO</option>
-                  </select>
+                  <CustomDropdown
+                    value={productForm.pickingStrategy || "FIFO"}
+                    onChange={(val) => setProductForm({ ...productForm, pickingStrategy: val as ProductRecord["pickingStrategy"] })}
+                    options={pickingStrategyOptions}
+                  />
                 </div>
               </div>
 

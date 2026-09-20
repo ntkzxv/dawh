@@ -23,6 +23,7 @@ import {
   Layers,
   ChevronDown,
 } from "lucide-react";
+import { CustomDropdown } from "@/components/common";
 
 interface RoleManagementTabProps {
   roles: CanonicalRole[];
@@ -189,6 +190,42 @@ export default function RoleManagementTab({
     });
   }, [users, searchQuery, roleFilter, deptFacilityFilter, statusFilter]);
 
+  // Dropdown options for filter toolbar
+  const roleDropdownOptions = useMemo(() => [
+    { value: "ALL", label: isThai ? "ทุกบทบาท (ทั้งหมด)" : "All Roles" },
+    { value: "UNASSIGNED", label: isThai ? "ยังไม่กำหนดบทบาท" : "Unassigned Only" },
+    ...roles.map((r) => ({
+      value: r.code,
+      label: r.name,
+      badge: r.code,
+    })),
+  ], [roles, isThai]);
+
+  const deptFacilityDropdownOptions = useMemo(() => [
+    { value: "ALL", label: isThai ? "ทุกแผนกและสาขา" : "All Depts & Facilities" },
+    ...deptFacilityOptions.map((opt) => ({
+      value: opt.id,
+      label: opt.label,
+      badge: opt.type === "dept" ? (isThai ? "แผนก" : "Dept") : (isThai ? "สาขา" : "Facility"),
+    })),
+  ], [deptFacilityOptions, isThai]);
+
+  const statusDropdownOptions = useMemo(() => [
+    { value: "ALL", label: isThai ? "ทุกสถานะ" : "All Status" },
+    { value: "ACTIVE", label: isThai ? "ใช้งานปกติ" : "Active" },
+    { value: "SUSPENDED", label: isThai ? "ระงับชั่วคราว" : "Suspended" },
+    { value: "LOCKED", label: isThai ? "ถูกล็อค" : "Locked" },
+  ], [isThai]);
+
+  // Dropdown options for Assign Role Modal
+  const modalUserOptions = useMemo(() => {
+    return users.map((u) => ({
+      value: u.id,
+      label: u.name,
+      subLabel: `${u.email}${u.username ? ` (@${u.username})` : ""}`,
+    }));
+  }, [users]);
+
   // Open modal with preselected user
   const openAssignModalForUser = (user?: AdminUserRecord) => {
     const targetUser = user || users[0];
@@ -255,6 +292,21 @@ export default function RoleManagementTab({
     () => users.find((u) => u.id === assignUserId) || users[0],
     [users, assignUserId]
   );
+
+  const modalRoleOptions = useMemo(() => {
+    return roles.map((r) => {
+      const alreadyHas = modalTargetUser?.roles?.some(
+        (ur) => ur.code === r.code || ur.roleId === r.id
+      );
+      return {
+        value: r.id,
+        label: r.name,
+        subLabel: `${r.code}${alreadyHas ? (isThai ? " • มีสิทธิ์นี้แล้ว" : " • Already Assigned") : ""}`,
+        badge: alreadyHas ? (isThai ? "ถือครองแล้ว" : "Assigned") : undefined,
+        disabled: alreadyHas,
+      };
+    });
+  }, [roles, modalTargetUser, isThai]);
 
   return (
     <div className="flex flex-col gap-5 w-full">
@@ -477,79 +529,35 @@ export default function RoleManagementTab({
             {/* Right: Dropdown Filters */}
             <div className="flex flex-wrap items-center gap-2">
               {/* Filter 1: Role */}
-              <div className="relative min-w-[150px]">
-                <select
+              <div className="min-w-[160px]">
+                <CustomDropdown
                   value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value)}
-                  className={`w-full appearance-none pl-3 pr-8 py-2 rounded-lg text-xs font-medium outline-none cursor-pointer ${
-                    isLight
-                      ? "bg-zinc-100 border border-zinc-200 text-zinc-800"
-                      : "bg-[#2C2C2C] border border-[#555555] text-white"
-                  }`}
-                >
-                  <option value="ALL">{isThai ? "ทุกบทบาท (ทั้งหมด)" : "All Roles"}</option>
-                  <option value="UNASSIGNED">
-                    {isThai ? "⚠️ ยังไม่กำหนดบทบาท" : "⚠️ Unassigned Only"}
-                  </option>
-                  {roles.map((r) => (
-                    <option key={r.id} value={r.code}>
-                      {r.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown
-                  size={14}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none"
+                  onChange={setRoleFilter}
+                  options={roleDropdownOptions}
+                  searchable={roles.length > 5}
+                  searchPlaceholder={isThai ? "ค้นหาบทบาท..." : "Search role..."}
                 />
               </div>
 
               {/* Filter 2: Department / Facility */}
               {deptFacilityOptions.length > 0 && (
-                <div className="relative min-w-[150px]">
-                  <select
+                <div className="min-w-[170px]">
+                  <CustomDropdown
                     value={deptFacilityFilter}
-                    onChange={(e) => setDeptFacilityFilter(e.target.value)}
-                    className={`w-full appearance-none pl-3 pr-8 py-2 rounded-lg text-xs font-medium outline-none cursor-pointer ${
-                      isLight
-                        ? "bg-zinc-100 border border-zinc-200 text-zinc-800"
-                        : "bg-[#2C2C2C] border border-[#555555] text-white"
-                    }`}
-                  >
-                    <option value="ALL">
-                      {isThai ? "ทุกแผนกและสาขา" : "All Depts & Facilities"}
-                    </option>
-                    {deptFacilityOptions.map((opt) => (
-                      <option key={`${opt.type}-${opt.id}`} value={opt.id}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown
-                    size={14}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none"
+                    onChange={setDeptFacilityFilter}
+                    options={deptFacilityDropdownOptions}
+                    searchable={deptFacilityOptions.length > 5}
+                    searchPlaceholder={isThai ? "ค้นหาแผนก/สาขา..." : "Search dept/facility..."}
                   />
                 </div>
               )}
 
               {/* Filter 3: Account Status */}
-              <div className="relative min-w-[120px]">
-                <select
+              <div className="min-w-[130px]">
+                <CustomDropdown
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className={`w-full appearance-none pl-3 pr-8 py-2 rounded-lg text-xs font-medium outline-none cursor-pointer ${
-                    isLight
-                      ? "bg-zinc-100 border border-zinc-200 text-zinc-800"
-                      : "bg-[#2C2C2C] border border-[#555555] text-white"
-                  }`}
-                >
-                  <option value="ALL">{isThai ? "ทุกสถานะ" : "All Status"}</option>
-                  <option value="ACTIVE">{isThai ? "ใช้งานปกติ" : "Active"}</option>
-                  <option value="SUSPENDED">{isThai ? "ระงับชั่วคราว" : "Suspended"}</option>
-                  <option value="LOCKED">{isThai ? "ถูกล็อค" : "Locked"}</option>
-                </select>
-                <ChevronDown
-                  size={14}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 opacity-50 pointer-events-none"
+                  onChange={setStatusFilter}
+                  options={statusDropdownOptions}
                 />
               </div>
 
@@ -1188,26 +1196,19 @@ export default function RoleManagementTab({
                 <label className="font-semibold opacity-80">
                   {isThai ? "เลือกผู้ใช้งาน" : "Select User"}
                 </label>
-                <select
+                <CustomDropdown
                   value={assignUserId || users[0]?.id || ""}
-                  onChange={(e) => {
-                    const newUid = e.target.value;
+                  onChange={(newUid) => {
                     setAssignUserId(newUid);
                     const targetU = users.find((u) => u.id === newUid);
                     const existingRoles = new Set(targetU?.roles?.map((r) => r.roleId || r.code));
                     const avail = roles.find((r) => !existingRoles.has(r.id) && !existingRoles.has(r.code));
                     if (avail) setAssignRoleId(avail.id);
                   }}
-                  className={`w-full px-3 py-2 rounded-lg border text-xs outline-none cursor-pointer ${
-                    isLight ? "bg-zinc-100 border-zinc-300" : "bg-[#333333] border-[#444444] text-white"
-                  }`}
-                >
-                  {users.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.name} ({u.email})
-                    </option>
-                  ))}
-                </select>
+                  searchable={users.length > 5}
+                  searchPlaceholder={isThai ? "ค้นหาชื่อ หรืออีเมล..." : "Search user..."}
+                  options={modalUserOptions}
+                />
               </div>
 
               {/* Show Existing Roles of Selected User */}
@@ -1252,25 +1253,13 @@ export default function RoleManagementTab({
                 <label className="font-semibold opacity-80">
                   {isThai ? "เลือกบทบาทที่จะมอบหมาย" : "Select Role to Assign"}
                 </label>
-                <select
+                <CustomDropdown
                   value={assignRoleId || roles[0]?.id || ""}
-                  onChange={(e) => setAssignRoleId(e.target.value)}
-                  className={`w-full px-3 py-2 rounded-lg border text-xs outline-none cursor-pointer ${
-                    isLight ? "bg-zinc-100 border-zinc-300" : "bg-[#333333] border-[#444444] text-white"
-                  }`}
-                >
-                  {roles.map((r) => {
-                    const alreadyHas = modalTargetUser?.roles?.some(
-                      (ur) => ur.code === r.code || ur.roleId === r.id
-                    );
-
-                    return (
-                      <option key={r.id} value={r.id} disabled={alreadyHas}>
-                        {r.name} ({r.code}){alreadyHas ? ` - [${isThai ? "มีสิทธิ์นี้แล้ว" : "Already Assigned"}]` : ""}
-                      </option>
-                    );
-                  })}
-                </select>
+                  onChange={(newRoleId) => setAssignRoleId(newRoleId)}
+                  searchable={roles.length > 5}
+                  searchPlaceholder={isThai ? "ค้นหาบทบาท..." : "Search role..."}
+                  options={modalRoleOptions}
+                />
               </div>
 
               {/* Validity Dates */}

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useTheme } from "@/context/ThemeContext";
+import { CustomDropdown } from "@/components/common";
 import type { SafetyStockRuleRecord, FacilityRecord, ProductRecord } from "../types";
 import {
   ShieldAlert,
@@ -45,6 +46,32 @@ export default function SafetyStockTab({
   const [maxQty, setMaxQty] = useState(100);
   const [reorderPoint, setReorderPoint] = useState(25);
   const [safetyQty, setSafetyQty] = useState(15);
+
+  // Dropdown options
+  const facilityFilterOptions = useMemo(() => [
+    { value: "ALL", label: isThai ? "ทุกสาขา/คลัง" : "All Facilities" },
+    ...facilities.map((f) => ({
+      value: f.id,
+      label: `${f.name} (${f.code})`,
+      badge: f.code,
+    })),
+  ], [facilities, isThai]);
+
+  const formFacilityOptions = useMemo(() => [
+    ...facilities.map((f) => ({
+      value: f.id,
+      label: `${f.name} (${f.code})`,
+      badge: f.code,
+    })),
+  ], [facilities]);
+
+  const formProductOptions = useMemo(() => [
+    ...products.map((p) => ({
+      value: p.id,
+      label: `${p.sku} - ${isThai ? p.nameTh : p.nameEn}`,
+      badge: p.sku,
+    })),
+  ], [products, isThai]);
 
   const filteredRules = rules.filter(
     (r) => selectedFacility === "ALL" || r.facilityId === selectedFacility
@@ -176,20 +203,15 @@ export default function SafetyStockTab({
       >
         <div className="flex items-center gap-2">
           <span className="opacity-70 font-semibold">{isThai ? "กรองตามสาขา/คลัง:" : "Facility Filter:"}</span>
-          <select
-            value={selectedFacility}
-            onChange={(e) => setSelectedFacility(e.target.value)}
-            className={`px-3 py-1.5 rounded-lg border outline-none ${
-              isLight ? "bg-zinc-50 border-zinc-200" : "bg-[#2C2C2C] border-[#444444] text-white"
-            }`}
-          >
-            <option value="ALL">{isThai ? "ทุกสาขา/คลัง" : "All Facilities"}</option>
-            {facilities.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name} ({f.code})
-              </option>
-            ))}
-          </select>
+          <div className="min-w-[180px]">
+            <CustomDropdown
+              value={selectedFacility}
+              onChange={setSelectedFacility}
+              options={facilityFilterOptions}
+              searchable={facilities.length > 5}
+              searchPlaceholder={isThai ? "ค้นหาสาขา..." : "Search facility..."}
+            />
+          </div>
         </div>
 
         <span className="opacity-60">{filteredRules.length} {isThai ? "เกณฑ์ที่กำหนด" : "rules active"}</span>
@@ -311,36 +333,24 @@ export default function SafetyStockTab({
             <form onSubmit={handleSubmit} className="flex flex-col gap-3 text-xs">
               <div className="flex flex-col gap-1">
                 <label className="font-semibold opacity-80">{isThai ? "เลือกสาขา/คลัง" : "Facility"}</label>
-                <select
+                <CustomDropdown
                   value={formFacilityId}
-                  onChange={(e) => setFormFacilityId(e.target.value)}
-                  className={`w-full px-3 py-2 rounded-lg border text-xs outline-none ${
-                    isLight ? "bg-zinc-100 border-zinc-300" : "bg-[#333333] border-[#444444] text-white"
-                  }`}
-                >
-                  {facilities.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.name} ({f.code})
-                    </option>
-                  ))}
-                </select>
+                  onChange={setFormFacilityId}
+                  options={formFacilityOptions}
+                  searchable={facilities.length > 5}
+                  searchPlaceholder={isThai ? "ค้นหาสาขา..." : "Search facility..."}
+                />
               </div>
 
               <div className="flex flex-col gap-1">
                 <label className="font-semibold opacity-80">{isThai ? "เลือกสินค้า SKU" : "Product SKU"}</label>
-                <select
+                <CustomDropdown
                   value={formProductId}
-                  onChange={(e) => setFormProductId(e.target.value)}
-                  className={`w-full px-3 py-2 rounded-lg border text-xs outline-none ${
-                    isLight ? "bg-zinc-100 border-zinc-300" : "bg-[#333333] border-[#444444] text-white"
-                  }`}
-                >
-                  {products.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.sku} - {isThai ? p.nameTh : p.nameEn}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setFormProductId}
+                  options={formProductOptions}
+                  searchable={products.length > 5}
+                  searchPlaceholder={isThai ? "ค้นหาสินค้า..." : "Search product..."}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
