@@ -93,6 +93,7 @@ import ProductCatalogTab from "./tabs/ProductCatalogTab";
 import StockMonitoringTab from "./tabs/StockMonitoringTab";
 import SafetyStockTab from "./tabs/SafetyStockTab";
 import AuditLogTab from "./tabs/AuditLogTab";
+import SkeletonControlPanelTab from "./SkeletonControlPanel";
 
 import {
   Users,
@@ -103,7 +104,6 @@ import {
   Activity,
   ShieldAlert,
   RotateCw,
-  Loader2,
 } from "lucide-react";
 import type { FacilityScopeType } from "@/lib/access/types";
 
@@ -1139,18 +1139,11 @@ export default function AdminControlPanel() {
         <div className="flex-1 w-full min-h-0 flex flex-col items-center py-6 px-4 sm:px-6 lg:px-8">
           <div className="w-full max-w-[1240px] flex flex-col items-stretch gap-5">
           {isLoading ? (
-            <div
-              className={`w-full py-28 rounded-2xl border flex flex-col items-center justify-center gap-3 transition-colors ${
-                isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
-              }`}
-            >
-              <Loader2 size={32} className="animate-spin text-emerald-500" />
-              <span className="text-sm font-bold">
-                {isThai
-                  ? "กำลังตรวจสอบสิทธิ์การใช้งาน..."
-                  : "Verifying administrator privileges..."}
-              </span>
-            </div>
+            <SkeletonControlPanelTab
+              activeTab={activeTab}
+              activeRoleSubTab={activeRoleSubTab}
+              activeProductSubTab={activeProductSubTab}
+            />
           ) : !isAdmin ? (
             /* Access Denied View: Non-admin users see NO data */
             <div
@@ -1224,21 +1217,11 @@ export default function AdminControlPanel() {
               {/* Active Tab Panel Rendering */}
               <div className="w-full relative min-h-[400px]">
                 {tabLoading && !loadedTabs.has(activeTab) ? (
-                  <div
-                    className={`w-full py-28 rounded-2xl border flex flex-col items-center justify-center gap-3 transition-colors ${
-                      isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
-                    }`}
-                  >
-                    <Loader2 size={32} className="animate-spin text-emerald-500" />
-                    <span className="text-sm font-bold">
-                      {isThai ? "กำลังโหลดข้อมูล..." : "Loading tab records..."}
-                    </span>
-                    <span className={`text-xs ${isLight ? "text-zinc-500" : "text-zinc-400"}`}>
-                      {isThai
-                        ? "กำลังดึงข้อมูลเฉพาะโมดูลที่เลือกจากฐานข้อมูล (On-Demand)"
-                        : "Fetching active module data from database..."}
-                    </span>
-                  </div>
+                  <SkeletonControlPanelTab
+                    activeTab={activeTab}
+                    activeRoleSubTab={activeRoleSubTab}
+                    activeProductSubTab={activeProductSubTab}
+                  />
                 ) : (
                   <>
                     {activeTab === "users" && (
