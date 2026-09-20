@@ -662,25 +662,27 @@ export default function UserManagementTab({
               );
             })
           )}
+          </div>
         </div>
 
-        {/* Pagination */}
+        {/* Pagination (Outside Table Card) */}
         {filteredUsers.length > 0 && (
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={filteredUsers.length}
-            pageSize={pageSize}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={(newSize) => {
-              setPageSize(newSize);
-              setCurrentPage(1);
-            }}
-            pageSizeOptions={[10, 20, 50, 100]}
-            isThai={isThai}
-          />
+          <div className="mt-4">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredUsers.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize);
+                setCurrentPage(1);
+              }}
+              pageSizeOptions={[10, 20, 50, 100]}
+              isThai={isThai}
+            />
+          </div>
         )}
-      </div>
 
       {/* User Detail Drawer / Modal */}
       {selectedUserForDetail && (

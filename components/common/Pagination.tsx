@@ -5,8 +5,6 @@ import { useTheme } from "@/context/ThemeContext";
 import {
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
 } from "lucide-react";
 import CustomDropdown from "./CustomDropdown";
 
@@ -22,7 +20,6 @@ export interface PaginationProps {
   className?: string;
   showPageSizeSelector?: boolean;
   showTotalItems?: boolean;
-  siblingCount?: number;
 }
 
 export default function Pagination({
@@ -37,7 +34,6 @@ export default function Pagination({
   className = "",
   showPageSizeSelector = true,
   showTotalItems = true,
-  siblingCount = 1,
 }: PaginationProps) {
   const { theme } = useTheme();
   const isLight = theme === "light";
@@ -46,48 +42,47 @@ export default function Pagination({
   const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const endItem = Math.min(currentPage * pageSize, totalItems);
 
-  // Generate page numbers with ellipsis
-  const paginationRange = useMemo(() => {
-    const totalPageNumbers = siblingCount * 2 + 5; // siblingCount + first + last + current + 2*dots
-
-    if (totalPageNumbers >= totalPages) {
+  /**
+   * Generates page buttons with dots:
+   * When totalPages <= 7: shows all pages [1, 2, 3, 4, 5, 6, 7]
+   * When currentPage near start: [1, 2, 3, 4, 5, "...", totalPages]
+   * When currentPage near end: [1, "...", totalPages-4, totalPages-3, totalPages-2, totalPages-1, totalPages]
+   * When currentPage in middle: [1, "...", currentPage-1, currentPage, currentPage+1, "...", totalPages]
+   */
+  const paginationRange = useMemo<(number | string)[]>(() => {
+    if (totalPages <= 7) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
 
-    const leftSiblingIndex = Math.max(currentPage - siblingCount, 1);
-    const rightSiblingIndex = Math.min(currentPage + siblingCount, totalPages);
-
-    const shouldShowLeftDots = leftSiblingIndex > 2;
-    const shouldShowRightDots = rightSiblingIndex < totalPages - 2;
-
-    const firstPageIndex = 1;
-    const lastPageIndex = totalPages;
-
-    if (!shouldShowLeftDots && shouldShowRightDots) {
-      const leftItemCount = 3 + 2 * siblingCount;
-      const leftRange = Array.from({ length: leftItemCount }, (_, i) => i + 1);
-      return [...leftRange, "...", totalPages];
+    // Near start: 1, 2, 3, 4, 5, "...", totalPages
+    if (currentPage <= 4) {
+      return [1, 2, 3, 4, 5, "...", totalPages];
     }
 
-    if (shouldShowLeftDots && !shouldShowRightDots) {
-      const rightItemCount = 3 + 2 * siblingCount;
-      const rightRange = Array.from(
-        { length: rightItemCount },
-        (_, i) => totalPages - rightItemCount + i + 1
-      );
-      return [firstPageIndex, "...", ...rightRange];
+    // Near end: 1, "...", totalPages-4, totalPages-3, totalPages-2, totalPages-1, totalPages
+    if (currentPage >= totalPages - 3) {
+      return [
+        1,
+        "...",
+        totalPages - 4,
+        totalPages - 3,
+        totalPages - 2,
+        totalPages - 1,
+        totalPages,
+      ];
     }
 
-    if (shouldShowLeftDots && shouldShowRightDots) {
-      const middleRange = Array.from(
-        { length: rightSiblingIndex - leftSiblingIndex + 1 },
-        (_, i) => leftSiblingIndex + i
-      );
-      return [firstPageIndex, "...", ...middleRange, "...", lastPageIndex];
-    }
-
-    return [];
-  }, [totalPages, siblingCount, currentPage]);
+    // Middle: 1, "...", currentPage-1, currentPage, currentPage+1, "...", totalPages
+    return [
+      1,
+      "...",
+      currentPage - 1,
+      currentPage,
+      currentPage + 1,
+      "...",
+      totalPages,
+    ];
+  }, [totalPages, currentPage]);
 
   const pageSizeDropdownOptions = useMemo(() => {
     return pageSizeOptions.map((size) => ({
@@ -102,11 +97,7 @@ export default function Pagination({
 
   return (
     <div
-      className={`flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t text-xs transition-colors select-none ${
-        isLight
-          ? "border-[#E4E4E7] bg-white text-zinc-700"
-          : "border-[#444444] bg-[#2C2C2C] text-zinc-300"
-      } ${className}`}
+      className={`flex flex-col sm:flex-row items-center justify-between gap-4 py-3 select-none text-xs ${className}`}
     >
       {/* Left: Total Items Summary & Page Size Selector */}
       <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
@@ -143,46 +134,31 @@ export default function Pagination({
         )}
       </div>
 
-      {/* Right: Page Navigation Buttons */}
-      <div className="flex items-center gap-1">
-        {/* First Page */}
-        <button
-          type="button"
-          onClick={() => onPageChange(1)}
-          disabled={currentPage <= 1}
-          title={isThai ? "หน้าแรก" : "First Page"}
-          className={`p-1.5 rounded-lg border transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 ${
-            isLight
-              ? "border-zinc-200 hover:bg-zinc-100 text-zinc-700 disabled:hover:bg-transparent"
-              : "border-[#444444] hover:bg-[#383838] text-zinc-300 disabled:hover:bg-transparent"
-          }`}
-        >
-          <ChevronsLeft size={14} />
-        </button>
-
-        {/* Previous Page */}
+      {/* Right: Clean Minimal Page Navigation */}
+      <div className="flex items-center gap-1.5">
+        {/* Previous Page Arrow */}
         <button
           type="button"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage <= 1}
           title={isThai ? "ก่อนหน้า" : "Previous Page"}
-          className={`p-1.5 rounded-lg border transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 ${
+          className={`p-2 rounded-lg transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-25 ${
             isLight
-              ? "border-zinc-200 hover:bg-zinc-100 text-zinc-700 disabled:hover:bg-transparent"
-              : "border-[#444444] hover:bg-[#383838] text-zinc-300 disabled:hover:bg-transparent"
+              ? "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100"
+              : "text-zinc-400 hover:text-white hover:bg-white/10"
           }`}
         >
-          <ChevronLeft size={14} />
+          <ChevronLeft size={18} />
         </button>
 
-        {/* Numbered Page Buttons */}
+        {/* Numbered Page Buttons & Dots */}
         <div className="flex items-center gap-1">
           {paginationRange.map((pageNumber, idx) => {
             if (pageNumber === "...") {
               return (
                 <span
                   key={`ellipsis-${idx}`}
-                  className="px-2 py-1 text-xs opacity-50 select-none"
+                  className="px-2 py-1 text-sm font-medium opacity-40 select-none"
                 >
                   &#8230;
                 </span>
@@ -197,14 +173,12 @@ export default function Pagination({
                 key={page}
                 type="button"
                 onClick={() => onPageChange(page)}
-                className={`min-w-[30px] h-[30px] px-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center ${
+                className={`min-w-[32px] h-[32px] px-2 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center justify-center ${
                   isActive
-                    ? isLight
-                      ? "bg-zinc-900 text-white shadow-sm border border-zinc-900 font-bold"
-                      : "bg-white text-zinc-900 shadow-sm border border-white font-bold"
+                    ? "bg-[#6366F1] text-white font-bold shadow-sm"
                     : isLight
-                    ? "border border-zinc-200 text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900"
-                    : "border border-[#444444] text-zinc-300 hover:bg-[#383838] hover:text-white"
+                    ? "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100"
+                    : "text-zinc-400 hover:text-white hover:bg-white/10"
                 }`}
               >
                 {page}
@@ -213,34 +187,19 @@ export default function Pagination({
           })}
         </div>
 
-        {/* Next Page */}
+        {/* Next Page Arrow */}
         <button
           type="button"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage >= totalPages}
           title={isThai ? "ถัดไป" : "Next Page"}
-          className={`p-1.5 rounded-lg border transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 ${
+          className={`p-2 rounded-lg transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-25 ${
             isLight
-              ? "border-zinc-200 hover:bg-zinc-100 text-zinc-700 disabled:hover:bg-transparent"
-              : "border-[#444444] hover:bg-[#383838] text-zinc-300 disabled:hover:bg-transparent"
+              ? "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100"
+              : "text-zinc-400 hover:text-white hover:bg-white/10"
           }`}
         >
-          <ChevronRight size={14} />
-        </button>
-
-        {/* Last Page */}
-        <button
-          type="button"
-          onClick={() => onPageChange(totalPages)}
-          disabled={currentPage >= totalPages}
-          title={isThai ? "หน้าสุดท้าย" : "Last Page"}
-          className={`p-1.5 rounded-lg border transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 ${
-            isLight
-              ? "border-zinc-200 hover:bg-zinc-100 text-zinc-700 disabled:hover:bg-transparent"
-              : "border-[#444444] hover:bg-[#383838] text-zinc-300 disabled:hover:bg-transparent"
-          }`}
-        >
-          <ChevronsRight size={14} />
+          <ChevronRight size={18} />
         </button>
       </div>
     </div>

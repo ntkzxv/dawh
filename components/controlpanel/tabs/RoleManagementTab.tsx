@@ -930,9 +930,11 @@ export default function RoleManagementTab({
                 </tbody>
               </table>
             </div>
+          </div>
 
-            {/* Table Footer with Pagination */}
-            {filteredUsers.length > 0 && (
+          {/* Pagination (Outside Table Card) */}
+          {filteredUsers.length > 0 && (
+            <div className="mt-4">
               <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}
@@ -946,8 +948,8 @@ export default function RoleManagementTab({
                 pageSizeOptions={[10, 20, 50, 100]}
                 isThai={isThai}
               />
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
