@@ -15,6 +15,7 @@ import {
   Scale,
   FileQuestion,
   UserCheck,
+  LayoutGrid,
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage } from "@/utils/language";
@@ -159,6 +160,13 @@ const CONTROL_PANEL_ITEMS: MenuGroup[] = [
     titleTh: "เกณฑ์สต็อกปลอดภัย",
     titleEn: "Safety Stock Rules",
     icon: ShieldAlert,
+  },
+  {
+    id: "workspace",
+    tabKey: "workspace",
+    titleTh: "Workspace Setting",
+    titleEn: "Workspace Setting",
+    icon: LayoutGrid,
   },
   {
     id: "audit",

@@ -1,7 +1,8 @@
 export { default as WorkspaceView } from "./workspace";
 export { default as AccountView } from "./account";
-export { default as SettingsView } from "./account";
-export type { AccountViewProps, SettingsViewProps } from "./account";
+export { default as SettingsView } from "./settings";
+export type { AccountViewProps } from "./account";
+export type { SettingsViewProps, SettingsTabType } from "./settings";
 export { AvatarCropModal } from "./AvatarCropModal";
 export {
   DynamicWorkspaceLayout,

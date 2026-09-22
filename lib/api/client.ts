@@ -6,6 +6,8 @@ export type ApiPage = {
   limit: number;
   nextCursor: string | null;
   hasMore: boolean;
+  total?: number;
+  page?: number;
 };
 
 export type ApiEnvelope<T> = {

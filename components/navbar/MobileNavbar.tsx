@@ -19,6 +19,7 @@ import {
   Layers,
   Settings,
   Monitor,
+  User,
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage, setAppLanguage } from "@/utils/language";
@@ -480,15 +481,15 @@ export default function MobileNavbar({
                   onClick={() => {
                     setIsAccountSheetOpen(false);
                     navigateWithLoading(
-                      "/settings",
-                      isThai ? "กำลังเปิดการตั้งค่าบัญชี..." : "Opening Settings...",
-                      isThai ? "กำลังโหลดข้อมูลส่วนตัวและความปลอดภัย..." : "Loading profile..."
+                      "/account",
+                      isThai ? "กำลังเปิดข้อมูลบัญชีพนักงาน..." : "Opening Profile...",
+                      isThai ? "กำลังโหลดข้อมูลส่วนบุคคล..." : "Loading employee records..."
                     );
                   }}
                   className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#333333] hover:bg-[#3E3E3E] text-white text-xs font-semibold border border-[#444444] transition-all cursor-pointer"
                 >
-                  <Settings size={14} />
-                  <span>{isThai ? "การตั้งค่าบัญชี" : "Account Settings"}</span>
+                  <User size={14} />
+                  <span>{isThai ? "ข้อมูลพนักงาน" : "Profile"}</span>
                 </button>
 
                 <button
@@ -496,17 +497,34 @@ export default function MobileNavbar({
                   onClick={() => {
                     setIsAccountSheetOpen(false);
                     navigateWithLoading(
-                      "/workspace",
-                      isThai ? "กำลังเปิดศูนย์รวมระบบ..." : "Opening Workspace...",
-                      isThai ? "กำลังโหลดระบบงาน..." : "Loading workspace..."
+                      "/settings",
+                      isThai ? "กำลังเปิดการตั้งค่าระบบ..." : "Opening Settings...",
+                      isThai ? "กำลังโหลดการตั้งค่าและระบบ..." : "Loading settings..."
                     );
                   }}
                   className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#333333] hover:bg-[#3E3E3E] text-white text-xs font-semibold border border-[#444444] transition-all cursor-pointer"
                 >
-                  <Home size={14} />
-                  <span>{isThai ? "ศูนย์รวมระบบ" : "Workspace"}</span>
+                  <Settings size={14} />
+                  <span>{isThai ? "การตั้งค่าระบบ" : "Settings"}</span>
                 </button>
               </div>
+
+              {/* Workspace Navigation */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAccountSheetOpen(false);
+                  navigateWithLoading(
+                    "/workspace",
+                    isThai ? "กำลังเปิดศูนย์รวมระบบ..." : "Opening Workspace...",
+                    isThai ? "กำลังโหลดระบบงาน..." : "Loading workspace..."
+                  );
+                }}
+                className="w-full flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#282828] hover:bg-[#333333] text-zinc-200 text-xs font-semibold border border-[#444444] transition-all cursor-pointer"
+              >
+                <Home size={14} />
+                <span>{isThai ? "ศูนย์รวมระบบ (Workspace)" : "Workspace"}</span>
+              </button>
 
               {/* Control Panel Access */}
               {userProfile.isAdmin && (

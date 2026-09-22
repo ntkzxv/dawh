@@ -18,7 +18,7 @@ import {
   ChevronDown,
   RotateCcw,
 } from "lucide-react";
-import { CustomDropdown, Pagination } from "@/components/common";
+import { CustomDropdown, Pagination, DataTable } from "@/components/common";
 import type { ApiPage } from "@/lib/api/client";
 import type { ControlPanelListQuery } from "@/lib/api/control-panel";
 
@@ -557,139 +557,146 @@ export default function UserManagementTab({
         </div>
       </div>
 
-      {/* Users Data Table */}
-      <div
-        className={`rounded-xl border overflow-hidden transition-colors shadow-sm ${
-          isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
-        }`}
-      >
-        <div className="overflow-x-auto [scrollbar-width:thin]">
-          <div
-            className={`flex flex-row items-center px-4 py-2.5 min-w-[880px] text-[12px] font-bold select-none ${
-              isLight ? "bg-[#F4F4F5] text-[#444444]" : "bg-[#333333] text-[#E4E4E7]"
-            }`}
-          >
-            <div className="flex-1 min-w-[200px]">{isThai ? "ชื่อผู้ใช้และบัญชี" : "User Identity"}</div>
-            <div className="w-[180px] flex-none">{isThai ? "อีเมลยืนยัน" : "Email"}</div>
-            <div className="w-[130px] flex-none">{isThai ? "สถานะบัญชี" : "Status"}</div>
-            <div className="w-[150px] flex-none">{isThai ? "บทบาทหลัก" : "Role"}</div>
-            <div className="w-[160px] flex-none">{isThai ? "สังกัดสาขา/คลัง" : "Facility Scope"}</div>
-            <div className="w-[90px] flex-none text-right">{isThai ? "จัดการ" : "Actions"}</div>
-          </div>
-
-          {filteredUsers.length === 0 ? (
-            <div className="p-8 text-center text-xs opacity-60">
-              {isThai ? "ไม่พบข้อมูลผู้ใช้ที่ตรงกับเงื่อนไข" : "No users matched the search criteria."}
-            </div>
-          ) : (
-            paginatedUsers.map((user) => {
+      {/* Users Data Table using shared DataTable */}
+      <DataTable<AdminUserRecord>
+        data={paginatedUsers}
+        keyExtractor={(user) => user.id}
+        minWidth="880px"
+        emptyTitle={
+          isThai ? "ไม่พบข้อมูลผู้ใช้ที่ตรงกับเงื่อนไข" : "No users matched the search criteria"
+        }
+        columns={[
+          {
+            key: "identity",
+            header: isThai ? "ชื่อผู้ใช้และบัญชี" : "User Identity",
+            className: "min-w-[200px]",
+            render: (user) => {
               const isCurrentUser = user.id === currentUserId;
               const isSysAdmin = user.roles.some((r) => r.code === "SYSTEM_ADMINISTRATOR");
 
               return (
-                <div
-                  key={user.id}
-                  className={`flex flex-row items-center px-4 py-3 min-w-[880px] border-t text-[12px] transition-colors duration-100 ${
-                    isLight
-                      ? "border-[#E4E4E7] hover:bg-zinc-50"
-                      : "border-[#444444] hover:bg-white/[0.03]"
-                  }`}
-                >
-                  {/* User Identity */}
-                  <div className="flex-1 min-w-[200px] flex items-center gap-2.5">
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs uppercase ${
-                        isLight ? "bg-zinc-200 text-zinc-800" : "bg-[#2C2C2C] text-white"
-                      }`}
-                    >
-                      {user.name.slice(0, 2)}
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs uppercase ${
+                      isLight ? "bg-zinc-200 text-zinc-800" : "bg-[#2C2C2C] text-white"
+                    }`}
+                  >
+                    {user.name.slice(0, 2)}
+                  </div>
+                  <div className="truncate">
+                    <div className="flex items-center gap-1.5 font-semibold">
+                      <span className={isLight ? "text-zinc-900" : "text-white"}>{user.name}</span>
+                      {isCurrentUser && (
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#6366F1]/10 text-[#6366F1] font-bold">
+                          {isThai ? "บัญชีคุณ" : "YOU"}
+                        </span>
+                      )}
+                      {isSysAdmin && (
+                        <span title="System Administrator">
+                          <Shield size={12} className="text-amber-500" />
+                        </span>
+                      )}
                     </div>
-                    <div className="truncate">
-                      <div className="flex items-center gap-1.5 font-semibold">
-                        <span className={isLight ? "text-zinc-900" : "text-white"}>{user.name}</span>
-                        {isCurrentUser && (
-                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#6366F1]/10 text-[#6366F1] font-bold">
-                            {isThai ? "บัญชีคุณ" : "YOU"}
-                          </span>
-                        )}
-                        {isSysAdmin && (
-                          <span title="System Administrator">
-                            <Shield size={12} className="text-amber-500" />
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-[11px] opacity-60">@{user.username || "unassigned"}</div>
-                    </div>
-                  </div>
-
-                  {/* Email & Verified status */}
-                  <div className="w-[180px] flex-none truncate flex items-center gap-1.5">
-                    <span className="truncate opacity-80">{user.email}</span>
-                    {user.emailVerified ? (
-                      <span title="Email Verified">
-                        <CheckCircle2 size={13} className="text-[#2EC4B6] shrink-0" />
-                      </span>
-                    ) : (
-                      <span title="Unverified Email">
-                        <XCircle size={13} className="text-zinc-400 shrink-0" />
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Account Status Badge */}
-                  <div className="w-[130px] flex-none">{getStatusBadge(user.accountStatus)}</div>
-
-                  {/* Roles */}
-                  <div className="w-[150px] flex-none truncate">
-                    {user.roles.length > 0 ? (
-                      <span className="font-medium opacity-90 truncate">
-                        {user.roles.map((r) => r.name).join(", ")}
-                      </span>
-                    ) : (
-                      <span className="opacity-40 italic">{isThai ? "ไม่มีบทบาท" : "None"}</span>
-                    )}
-                  </div>
-
-                  {/* Facility & Department */}
-                  <div className="w-[160px] flex-none truncate">
-                    <div className="font-medium truncate opacity-90">{user.facility?.code || "GLOBAL"}</div>
-                    <div className="text-[11px] opacity-50 truncate">{user.department?.name || "-"}</div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="w-[90px] flex-none flex items-center justify-end gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedUserForDetail(user)}
-                      title={isThai ? "ดูรายละเอียดผู้ใช้" : "View user details"}
-                      className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                        isLight ? "hover:bg-zinc-100 text-zinc-700" : "hover:bg-white/10 text-zinc-300"
-                      }`}
-                    >
-                      <Eye size={15} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setStatusModalUser(user);
-                        setNewStatus(user.accountStatus);
-                        setStatusReason(user.statusReason || "");
-                        setStatusError(null);
-                      }}
-                      title={isThai ? "เปลี่ยนสถานะบัญชี" : "Change account status"}
-                      className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                        isLight ? "hover:bg-zinc-100 text-zinc-700" : "hover:bg-white/10 text-zinc-300"
-                      }`}
-                    >
-                      <Edit size={15} />
-                    </button>
+                    <div className="text-[11px] opacity-60">@{user.username || "unassigned"}</div>
                   </div>
                 </div>
               );
-            })
-          )}
-          </div>
-        </div>
+            },
+          },
+          {
+            key: "email",
+            header: isThai ? "อีเมลยืนยัน" : "Email",
+            className: "w-[180px]",
+            render: (user) => (
+              <div className="truncate flex items-center gap-1.5">
+                <span className="truncate opacity-80">{user.email}</span>
+                {user.emailVerified ? (
+                  <span title="Email Verified">
+                    <CheckCircle2 size={13} className="text-[#2EC4B6] shrink-0" />
+                  </span>
+                ) : (
+                  <span title="Unverified Email">
+                    <XCircle size={13} className="text-zinc-400 shrink-0" />
+                  </span>
+                )}
+              </div>
+            ),
+          },
+          {
+            key: "status",
+            header: isThai ? "สถานะบัญชี" : "Status",
+            className: "w-[130px]",
+            render: (user) => getStatusBadge(user.accountStatus),
+          },
+          {
+            key: "role",
+            header: isThai ? "บทบาทหลัก" : "Role",
+            className: "w-[150px]",
+            render: (user) =>
+              user.roles.length > 0 ? (
+                <span className="font-medium opacity-90 truncate block">
+                  {user.roles.map((r) => r.name).join(", ")}
+                </span>
+              ) : (
+                <span className="opacity-40 italic">{isThai ? "ไม่มีบทบาท" : "None"}</span>
+              ),
+          },
+          {
+            key: "facility",
+            header: isThai ? "สังกัดสาขา/คลัง" : "Facility Scope",
+            className: "w-[160px]",
+            render: (user) => (
+              <div>
+                <div className="font-medium truncate opacity-90">
+                  {user.facility?.code || "GLOBAL"}
+                </div>
+                <div className="text-[11px] opacity-50 truncate">
+                  {user.department?.name || "-"}
+                </div>
+              </div>
+            ),
+          },
+          {
+            key: "actions",
+            header: isThai ? "จัดการ" : "Actions",
+            align: "right",
+            className: "w-[90px]",
+            render: (user) => (
+              <div className="flex items-center justify-end gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setSelectedUserForDetail(user)}
+                  title={isThai ? "ดูรายละเอียดผู้ใช้" : "View user details"}
+                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                    isLight
+                      ? "hover:bg-zinc-100 text-zinc-700"
+                      : "hover:bg-white/10 text-zinc-300"
+                  }`}
+                >
+                  <Eye size={15} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusModalUser(user);
+                    setNewStatus(user.accountStatus);
+                    setStatusReason(user.statusReason || "");
+                    setStatusError(null);
+                  }}
+                  title={isThai ? "เปลี่ยนสถานะบัญชี" : "Change account status"}
+                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                    isLight
+                      ? "hover:bg-zinc-100 text-zinc-700"
+                      : "hover:bg-white/10 text-zinc-300"
+                  }`}
+                >
+                  <Edit size={15} />
+                </button>
+              </div>
+            ),
+          },
+        ]}
+      />
 
         {/* Pagination (Outside Table Card) */}
         {(filteredUsers.length > 0 || pageIndex > 1) && (

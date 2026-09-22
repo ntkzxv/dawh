@@ -6,6 +6,7 @@ export type AdminTabKey =
   | "roles"
   | "scopes"
   | "organization"
+  | "workspace"
   | "products"
   | "stock"
   | "safety_stock"

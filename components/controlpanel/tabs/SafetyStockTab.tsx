@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { useTheme } from "@/context/ThemeContext";
-import { CustomDropdown } from "@/components/common";
+import { CustomDropdown, DataTable } from "@/components/common";
 import type { SafetyStockRuleRecord, FacilityRecord, ProductRecord } from "../types";
 import {
   ShieldAlert,
@@ -217,97 +217,125 @@ export default function SafetyStockTab({
         <span className="opacity-60">{filteredRules.length} {isThai ? "เกณฑ์ที่กำหนด" : "rules active"}</span>
       </div>
 
-      {/* Rules Table */}
-      <div
-        className={`rounded-xl border overflow-hidden ${
-          isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
-        }`}
-      >
-        <div className="overflow-x-auto [scrollbar-width:thin]">
-          <table className="w-full text-xs text-left">
-            <thead
-              className={`text-[11px] font-bold uppercase ${
-                isLight ? "bg-[#F4F4F5] text-zinc-600" : "bg-[#333333] text-zinc-300"
-              }`}
-            >
-              <tr>
-                <th className="p-3">SKU</th>
-                <th className="p-3">{isThai ? "ชื่อสินค้า" : "Product"}</th>
-                <th className="p-3">{isThai ? "สาขา/คลัง" : "Facility"}</th>
-                <th className="p-3 text-right">{isThai ? "ขั้นต่ำ (Min)" : "Min"}</th>
-                <th className="p-3 text-right">{isThai ? "จุดสั่งซื้อ (Reorder)" : "Reorder Point"}</th>
-                <th className="p-3 text-right">{isThai ? "สำรองฉุกเฉิน (Safety)" : "Safety Qty"}</th>
-                <th className="p-3 text-right">{isThai ? "ขั้นสูง (Max)" : "Max"}</th>
-                <th className="p-3 text-right">{isThai ? "ยอดคงเหลือจริง" : "Current Balance"}</th>
-                <th className="p-3">{isThai ? "สถานะการแจ้งเตือน" : "Alert Status"}</th>
-                <th className="p-3 text-right">{isThai ? "จัดการ" : "Action"}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#444444]/30">
-              {filteredRules.map((r) => {
-                const isCritical = r.currentBalance <= r.safetyQty;
-                const isWarning = !isCritical && r.currentBalance <= r.reorderPoint;
-
+      {/* Rules Table using shared DataTable */}
+      <DataTable<SafetyStockRuleRecord>
+        data={filteredRules}
+        keyExtractor={(r) => r.id}
+        minWidth="900px"
+        emptyTitle={isThai ? "ไม่พบเกณฑ์ความปลอดภัยสต็อก" : "No safety stock rules found"}
+        columns={[
+          {
+            key: "sku",
+            header: "SKU",
+            render: (r) => (
+              <span className="font-mono font-bold text-[#6366F1]">{r.productSku}</span>
+            ),
+          },
+          {
+            key: "productName",
+            header: isThai ? "ชื่อสินค้า" : "Product",
+            render: (r) => <span className="font-semibold">{r.productName}</span>,
+          },
+          {
+            key: "facilityCode",
+            header: isThai ? "สาขา/คลัง" : "Facility",
+            render: (r) => <span className="font-mono font-bold opacity-80">{r.facilityCode}</span>,
+          },
+          {
+            key: "minQty",
+            header: isThai ? "ขั้นต่ำ (Min)" : "Min",
+            align: "right",
+            render: (r) => <span className="font-mono">{r.minQty}</span>,
+          },
+          {
+            key: "reorderPoint",
+            header: isThai ? "จุดสั่งซื้อ (Reorder)" : "Reorder Point",
+            align: "right",
+            render: (r) => (
+              <span className="font-mono font-bold text-[#FF9F1C]">{r.reorderPoint}</span>
+            ),
+          },
+          {
+            key: "safetyQty",
+            header: isThai ? "สำรองฉุกเฉิน (Safety)" : "Safety Qty",
+            align: "right",
+            render: (r) => (
+              <span className="font-mono font-bold text-red-400">{r.safetyQty}</span>
+            ),
+          },
+          {
+            key: "maxQty",
+            header: isThai ? "ขั้นสูง (Max)" : "Max",
+            align: "right",
+            render: (r) => <span className="font-mono">{r.maxQty}</span>,
+          },
+          {
+            key: "currentBalance",
+            header: isThai ? "ยอดคงเหลือจริง" : "Current Balance",
+            align: "right",
+            render: (r) => (
+              <span className="font-mono font-bold text-base">{r.currentBalance}</span>
+            ),
+          },
+          {
+            key: "status",
+            header: isThai ? "สถานะการแจ้งเตือน" : "Alert Status",
+            render: (r) => {
+              const isCritical = r.currentBalance <= r.safetyQty;
+              const isWarning = !isCritical && r.currentBalance <= r.reorderPoint;
+              if (isCritical) {
                 return (
-                  <tr
-                    key={r.id}
-                    className={`transition-colors ${
-                      isLight ? "hover:bg-zinc-50" : "hover:bg-white/[0.03]"
-                    }`}
-                  >
-                    <td className="p-3 font-mono font-bold text-[#6366F1]">{r.productSku}</td>
-                    <td className="p-3 font-semibold">{r.productName}</td>
-                    <td className="p-3 font-mono font-bold opacity-80">{r.facilityCode}</td>
-                    <td className="p-3 text-right font-mono">{r.minQty}</td>
-                    <td className="p-3 text-right font-mono font-bold text-[#FF9F1C]">{r.reorderPoint}</td>
-                    <td className="p-3 text-right font-mono font-bold text-red-400">{r.safetyQty}</td>
-                    <td className="p-3 text-right font-mono">{r.maxQty}</td>
-                    <td className="p-3 text-right font-mono font-bold text-base">{r.currentBalance}</td>
-                    <td className="p-3">
-                      {isCritical ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#E71D36]/20 text-[#E71D36] flex items-center gap-1 w-fit">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#E71D36]" />
-                          {isThai ? "วิกฤต (ต่ำกว่าสำรอง)" : "CRITICAL"}
-                        </span>
-                      ) : isWarning ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#FF9F1C]/20 text-[#FF9F1C] flex items-center gap-1 w-fit">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#FF9F1C]" />
-                          {isThai ? "ควรสั่งซื้อเพิ่ม" : "REORDER"}
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#2EC4B6]/20 text-[#2EC4B6] flex items-center gap-1 w-fit">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#2EC4B6]" />
-                          {isThai ? "ปกติ" : "OPTIMAL"}
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-3 text-right">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingRule(r);
-                          setFormFacilityId(r.facilityId);
-                          setFormProductId(r.productId);
-                          setMinQty(r.minQty);
-                          setMaxQty(r.maxQty);
-                          setReorderPoint(r.reorderPoint);
-                          setSafetyQty(r.safetyQty);
-                          setIsModalOpen(true);
-                        }}
-                        className={`p-1.5 rounded ${
-                          isLight ? "hover:bg-zinc-100 text-zinc-700" : "hover:bg-white/10 text-zinc-300"
-                        }`}
-                      >
-                        <Edit size={14} />
-                      </button>
-                    </td>
-                  </tr>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#E71D36]/20 text-[#E71D36] flex items-center gap-1 w-fit">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#E71D36]" />
+                    {isThai ? "วิกฤต (ต่ำกว่าสำรอง)" : "CRITICAL"}
+                  </span>
                 );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+              }
+              if (isWarning) {
+                return (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#FF9F1C]/20 text-[#FF9F1C] flex items-center gap-1 w-fit">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#FF9F1C]" />
+                    {isThai ? "ควรสั่งซื้อเพิ่ม" : "REORDER"}
+                  </span>
+                );
+              }
+              return (
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#2EC4B6]/20 text-[#2EC4B6] flex items-center gap-1 w-fit">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#2EC4B6]" />
+                  {isThai ? "ปกติ" : "OPTIMAL"}
+                </span>
+              );
+            },
+          },
+          {
+            key: "actions",
+            header: isThai ? "จัดการ" : "Action",
+            align: "right",
+            render: (r) => (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingRule(r);
+                  setFormFacilityId(r.facilityId);
+                  setFormProductId(r.productId);
+                  setMinQty(r.minQty);
+                  setMaxQty(r.maxQty);
+                  setReorderPoint(r.reorderPoint);
+                  setSafetyQty(r.safetyQty);
+                  setIsModalOpen(true);
+                }}
+                className={`p-1.5 rounded ${
+                  isLight
+                    ? "hover:bg-zinc-100 text-zinc-700"
+                    : "hover:bg-white/10 text-zinc-300"
+                }`}
+              >
+                <Edit size={14} />
+              </button>
+            ),
+          },
+        ]}
+      />
 
       {/* Modal: Add/Edit Safety Stock Rule */}
       {isModalOpen && (

@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { useTheme } from "@/context/ThemeContext";
-import { CustomDropdown } from "@/components/common";
+import { CustomDropdown, DataTable } from "@/components/common";
 import type { FacilityRecord, WarehouseLocationRecord, DepartmentRecord, LocationType } from "../types";
 import {
   Building,
@@ -440,79 +440,88 @@ export default function OrganizationTab({
             <span className="opacity-60">{filteredLocations.length} {isThai ? "ตำแหน่งพื้นที่" : "locations found"}</span>
           </div>
 
-          <div
-            className={`rounded-xl border overflow-hidden ${
-              isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
-            }`}
-          >
-            <div className="overflow-x-auto [scrollbar-width:thin]">
-              <table className="w-full text-xs text-left">
-                <thead
-                  className={`text-[11px] font-bold uppercase ${
-                    isLight ? "bg-[#F4F4F5] text-zinc-600" : "bg-[#333333] text-zinc-300"
-                  }`}
-                >
-                  <tr>
-                    <th className="p-3">{isThai ? "รหัสพิกัดจัดเก็บ" : "Location Code"}</th>
-                    <th className="p-3">{isThai ? "ชื่อพื้นที่" : "Name"}</th>
-                    <th className="p-3">{isThai ? "ประเภทพิกัด" : "Type"}</th>
-                    <th className="p-3">{isThai ? "ระดับความลึก" : "Hierarchy Depth"}</th>
-                    <th className="p-3">{isThai ? "เส้นทางอ้างอิง" : "Full Path"}</th>
-                    <th className="p-3">{isThai ? "สถานะการใช้งาน" : "Status"}</th>
-                    <th className="p-3 text-right">{isThai ? "จัดการ" : "Action"}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#444444]/30">
-                  {filteredLocations.map((loc) => (
-                    <tr
-                      key={loc.id}
-                      className={`transition-colors ${
-                        isLight ? "hover:bg-zinc-50" : "hover:bg-white/[0.03]"
-                      }`}
-                    >
-                      <td className="p-3 font-mono font-bold">{loc.code}</td>
-                      <td className="p-3 font-semibold">{loc.name}</td>
-                      <td className="p-3">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-500/15">
-                          {loc.type}
-                        </span>
-                      </td>
-                      <td className="p-3 font-mono">Level {loc.depth}</td>
-                      <td className="p-3 font-mono text-[11px] opacity-70">{loc.path}</td>
-                      <td className="p-3">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            loc.status === "ACTIVE"
-                              ? "bg-[#2EC4B6]/20 text-[#2EC4B6]"
-                              : loc.status === "BLOCKED"
-                              ? "bg-red-500/20 text-red-400"
-                              : "bg-amber-500/20 text-amber-400"
-                          }`}
-                        >
-                          {loc.status}
-                        </span>
-                      </td>
-                      <td className="p-3 text-right">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingLocation(loc);
-                            setLocationForm(loc);
-                            setIsAddLocationOpen(true);
-                          }}
-                          className={`p-1.5 rounded ${
-                            isLight ? "hover:bg-zinc-100 text-zinc-700" : "hover:bg-white/10 text-zinc-300"
-                          }`}
-                        >
-                          <Edit size={14} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <DataTable<WarehouseLocationRecord>
+            data={filteredLocations}
+            keyExtractor={(loc) => loc.id}
+            minWidth="800px"
+            emptyTitle={
+              isThai
+                ? "ไม่พบตำแหน่งพื้นที่ตามเงื่อนไข"
+                : "No warehouse locations found"
+            }
+            columns={[
+              {
+                key: "code",
+                header: isThai ? "รหัสพิกัดจัดเก็บ" : "Location Code",
+                render: (loc) => <span className="font-mono font-bold">{loc.code}</span>,
+              },
+              {
+                key: "name",
+                header: isThai ? "ชื่อพื้นที่" : "Name",
+                render: (loc) => <span className="font-semibold">{loc.name}</span>,
+              },
+              {
+                key: "type",
+                header: isThai ? "ประเภทพิกัด" : "Type",
+                render: (loc) => (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-500/15">
+                    {loc.type}
+                  </span>
+                ),
+              },
+              {
+                key: "depth",
+                header: isThai ? "ระดับความลึก" : "Hierarchy Depth",
+                render: (loc) => <span className="font-mono">Level {loc.depth}</span>,
+              },
+              {
+                key: "path",
+                header: isThai ? "เส้นทางอ้างอิง" : "Full Path",
+                render: (loc) => (
+                  <span className="font-mono text-[11px] opacity-70">{loc.path}</span>
+                ),
+              },
+              {
+                key: "status",
+                header: isThai ? "สถานะการใช้งาน" : "Status",
+                render: (loc) => (
+                  <span
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      loc.status === "ACTIVE"
+                        ? "bg-[#2EC4B6]/20 text-[#2EC4B6]"
+                        : loc.status === "BLOCKED"
+                        ? "bg-red-500/20 text-red-400"
+                        : "bg-amber-500/20 text-amber-400"
+                    }`}
+                  >
+                    {loc.status}
+                  </span>
+                ),
+              },
+              {
+                key: "actions",
+                header: isThai ? "จัดการ" : "Action",
+                align: "right",
+                render: (loc) => (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingLocation(loc);
+                      setLocationForm(loc);
+                      setIsAddLocationOpen(true);
+                    }}
+                    className={`p-1.5 rounded ${
+                      isLight
+                        ? "hover:bg-zinc-100 text-zinc-700"
+                        : "hover:bg-white/10 text-zinc-300"
+                    }`}
+                  >
+                    <Edit size={14} />
+                  </button>
+                ),
+              },
+            ]}
+          />
         </div>
       )}
 

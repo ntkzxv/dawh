@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { useTheme } from "@/context/ThemeContext";
-import { CustomDropdown } from "@/components/common";
+import { CustomDropdown, DataTable } from "@/components/common";
 import type { StockBalanceRecord, StockLedgerRecord, FacilityRecord } from "../types";
 import {
   Activity,
@@ -191,124 +191,155 @@ export default function StockMonitoringTab({
             <span className="opacity-60">{filteredBalances.length} {isThai ? "รายการสต็อก" : "stock lines"}</span>
           </div>
 
-          <div
-            className={`rounded-xl border overflow-hidden ${
-              isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
-            }`}
-          >
-            <div className="overflow-x-auto [scrollbar-width:thin]">
-              <table className="w-full text-xs text-left">
-                <thead
-                  className={`text-[11px] font-bold uppercase ${
-                    isLight ? "bg-[#F4F4F5] text-zinc-600" : "bg-[#333333] text-zinc-300"
-                  }`}
-                >
-                  <tr>
-                    <th className="p-3">SKU</th>
-                    <th className="p-3">{isThai ? "ชื่อสินค้า" : "Product"}</th>
-                    <th className="p-3">{isThai ? "สาขา/คลัง" : "Facility"}</th>
-                    <th className="p-3">{isThai ? "พิกัดจัดเก็บ" : "Location"}</th>
-                    <th className="p-3 text-right">{isThai ? "ยอดรวม" : "On-Hand"}</th>
-                    <th className="p-3 text-right">{isThai ? "ยอดจอง" : "Reserved"}</th>
-                    <th className="p-3 text-right">{isThai ? "พร้อมจ่าย" : "Available"}</th>
-                    <th className="p-3">{isThai ? "สถานะสต็อก" : "Status"}</th>
-                  </tr>
-                </thead>
-                <tbody className={`divide-y ${isLight ? "divide-zinc-200" : "divide-[#444444]/30"}`}>
-                  {filteredBalances.map((b) => (
-                    <tr
-                      key={b.id}
-                      className={`transition-colors ${
-                        isLight ? "hover:bg-zinc-50" : "hover:bg-white/[0.03]"
-                      }`}
-                    >
-                      <td className="p-3 font-mono font-bold text-[#6366F1]">{b.sku}</td>
-                      <td className={`p-3 font-semibold ${isLight ? "text-zinc-900" : "text-white"}`}>{b.productName}</td>
-                      <td className="p-3 font-mono font-bold opacity-80">{b.facilityCode}</td>
-                      <td className="p-3 font-mono text-[11px]">{b.locationCode}</td>
-                      <td className={`p-3 text-right font-mono font-bold ${isLight ? "text-zinc-900" : "text-white"}`}>{b.onHand}</td>
-                      <td className="p-3 text-right font-mono text-[#FF9F1C]">{b.reserved}</td>
-                      <td className="p-3 text-right font-mono font-bold text-[#2EC4B6]">{b.available}</td>
-                      <td className="p-3">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            b.status === "USABLE"
-                              ? "bg-[#2EC4B6]/20 text-[#2EC4B6]"
-                              : b.status === "QUARANTINE"
-                              ? "bg-amber-500/20 text-amber-400"
-                              : "bg-red-500/20 text-red-400"
-                          }`}
-                        >
-                          {b.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <DataTable<StockBalanceRecord>
+            data={filteredBalances}
+            keyExtractor={(b) => b.id}
+            minWidth="800px"
+            emptyTitle={isThai ? "ไม่พบยอดคงเหลือสินค้า" : "No stock balances found"}
+            columns={[
+              {
+                key: "sku",
+                header: "SKU",
+                render: (b) => (
+                  <span className="font-mono font-bold text-[#6366F1]">{b.sku}</span>
+                ),
+              },
+              {
+                key: "productName",
+                header: isThai ? "ชื่อสินค้า" : "Product",
+                render: (b) => (
+                  <span className={`font-semibold ${isLight ? "text-zinc-900" : "text-white"}`}>
+                    {b.productName}
+                  </span>
+                ),
+              },
+              {
+                key: "facilityCode",
+                header: isThai ? "สาขา/คลัง" : "Facility",
+                render: (b) => <span className="font-mono font-bold opacity-80">{b.facilityCode}</span>,
+              },
+              {
+                key: "locationCode",
+                header: isThai ? "พิกัดจัดเก็บ" : "Location",
+                render: (b) => <span className="font-mono text-[11px]">{b.locationCode}</span>,
+              },
+              {
+                key: "onHand",
+                header: isThai ? "ยอดรวม" : "On-Hand",
+                align: "right",
+                render: (b) => (
+                  <span className={`font-mono font-bold ${isLight ? "text-zinc-900" : "text-white"}`}>
+                    {b.onHand}
+                  </span>
+                ),
+              },
+              {
+                key: "reserved",
+                header: isThai ? "ยอดจอง" : "Reserved",
+                align: "right",
+                render: (b) => <span className="font-mono text-[#FF9F1C]">{b.reserved}</span>,
+              },
+              {
+                key: "available",
+                header: isThai ? "พร้อมจ่าย" : "Available",
+                align: "right",
+                render: (b) => (
+                  <span className="font-mono font-bold text-[#2EC4B6]">{b.available}</span>
+                ),
+              },
+              {
+                key: "status",
+                header: isThai ? "สถานะสต็อก" : "Status",
+                render: (b) => (
+                  <span
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      b.status === "USABLE"
+                        ? "bg-[#2EC4B6]/20 text-[#2EC4B6]"
+                        : "bg-[#FF9F1C]/20 text-[#FF9F1C]"
+                    }`}
+                  >
+                    {b.status}
+                  </span>
+                ),
+              },
+            ]}
+          />
         </div>
       )}
 
       {/* 2. Ledger Sub-tab */}
       {activeSubTab === "ledger" && (
         <div className="flex flex-col gap-4">
-          <div
-            className={`rounded-xl border overflow-hidden ${
-              isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
-            }`}
-          >
-            <div className="overflow-x-auto [scrollbar-width:thin]">
-              <table className="w-full text-xs text-left">
-                <thead
-                  className={`text-[11px] font-bold uppercase ${
-                    isLight ? "bg-[#F4F4F5] text-zinc-600" : "bg-[#333333] text-zinc-300"
-                  }`}
-                >
-                  <tr>
-                    <th className="p-3">{isThai ? "วัน-เวลา" : "Timestamp"}</th>
-                    <th className="p-3">{isThai ? "สาขา" : "Facility"}</th>
-                    <th className="p-3">{isThai ? "เอกสารอ้างอิง" : "Ref Doc"}</th>
-                    <th className="p-3">{isThai ? "ประเภทธุรกรรม" : "Type"}</th>
-                    <th className="p-3">SKU</th>
-                    <th className="p-3 text-right">{isThai ? "จำนวนที่เปลี่ยน" : "Qty Change"}</th>
-                    <th className="p-3 text-right">{isThai ? "ยอดคงเหลือหลังทำรายการ" : "Balance"}</th>
-                    <th className="p-3">{isThai ? "ผู้บันทึก" : "Operator"}</th>
-                  </tr>
-                </thead>
-                <tbody className={`divide-y ${isLight ? "divide-zinc-200" : "divide-[#444444]/30"}`}>
-                {ledger.map((l) => (
-                  <tr
-                    key={l.id}
-                    className={`transition-colors ${
-                      isLight ? "hover:bg-zinc-50" : "hover:bg-white/[0.03]"
+          <DataTable<StockLedgerRecord>
+            data={ledger}
+            keyExtractor={(l) => l.id}
+            minWidth="800px"
+            emptyTitle={isThai ? "ไม่พบบัญชีคุมสต็อก" : "No ledger records found"}
+            columns={[
+              {
+                key: "timestamp",
+                header: isThai ? "วัน-เวลา" : "Timestamp",
+                render: (l) => (
+                  <span className="font-mono opacity-80">
+                    {new Date(l.timestamp).toLocaleString()}
+                  </span>
+                ),
+              },
+              {
+                key: "facilityCode",
+                header: isThai ? "สาขา" : "Facility",
+                render: (l) => (
+                  <span className="font-mono font-bold opacity-80">{l.facilityCode}</span>
+                ),
+              },
+              {
+                key: "referenceDoc",
+                header: isThai ? "เอกสารอ้างอิง" : "Ref Doc",
+                render: (l) => (
+                  <span className="font-mono text-[#6366F1]">{l.referenceDoc}</span>
+                ),
+              },
+              {
+                key: "transactionType",
+                header: isThai ? "ประเภทธุรกรรม" : "Type",
+                render: (l) => (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-500/15">
+                    {l.transactionType}
+                  </span>
+                ),
+              },
+              {
+                key: "sku",
+                header: "SKU",
+                render: (l) => <span className="font-mono font-bold">{l.sku}</span>,
+              },
+              {
+                key: "qtyChange",
+                header: isThai ? "จำนวนที่เปลี่ยน" : "Qty Change",
+                align: "right",
+                render: (l) => (
+                  <span
+                    className={`font-mono font-bold ${
+                      l.qtyChange > 0 ? "text-[#2EC4B6]" : "text-[#E71D36]"
                     }`}
                   >
-                    <td className="p-3 font-mono opacity-80">{new Date(l.timestamp).toLocaleString()}</td>
-                    <td className="p-3 font-mono font-bold opacity-80">{l.facilityCode}</td>
-                    <td className="p-3 font-mono text-[#6366F1]">{l.referenceDoc}</td>
-                    <td className="p-3">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-500/15">
-                        {l.transactionType}
-                      </span>
-                    </td>
-                    <td className="p-3 font-mono font-bold">{l.sku}</td>
-                    <td
-                      className={`p-3 text-right font-mono font-bold ${
-                        l.qtyChange > 0 ? "text-[#2EC4B6]" : "text-[#E71D36]"
-                      }`}
-                    >
-                      {l.qtyChange > 0 ? `+${l.qtyChange}` : l.qtyChange}
-                    </td>
-                    <td className="p-3 text-right font-mono font-bold">{l.balanceAfter}</td>
-                    <td className="p-3 opacity-80">{l.operatorName}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                    {l.qtyChange > 0 ? `+${l.qtyChange}` : l.qtyChange}
+                  </span>
+                ),
+              },
+              {
+                key: "balanceAfter",
+                header: isThai ? "ยอดคงเหลือหลังทำรายการ" : "Balance",
+                align: "right",
+                render: (l) => <span className="font-mono font-bold">{l.balanceAfter}</span>,
+              },
+              {
+                key: "operatorName",
+                header: isThai ? "ผู้บันทึก" : "Operator",
+                render: (l) => <span className="opacity-80">{l.operatorName}</span>,
+              },
+            ]}
+          />
         </div>
       )}
 

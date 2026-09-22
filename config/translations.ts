@@ -43,7 +43,8 @@ export const translations = {
 
     // Alerts & Errors
     successAlert: "Staff account created successfully! Redirecting to portal...",
-    invalidCredentials: "Invalid username or password. Please try again.",
+    invalidCredentials: "Incorrect email, username, or password",
+    missingCredentials: "Please enter your email/username and password",
     passwordMismatch: "Passwords do not match.",
     networkError: "Connection error occurred. Please try again.",
     registrationError: "Registration error occurred. Please try again.",
@@ -114,7 +115,8 @@ export const translations = {
 
     // Alerts & Errors
     successAlert: "สร้างบัญชีพนักงานสำเร็จ! กำลังนำคุณเข้าสู่ระบบ...",
-    invalidCredentials: "อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง",
+    invalidCredentials: "อีเมลหรือชื่อผู้ใช้หรือรหัสผ่านผิด",
+    missingCredentials: "กรุณากรอกอีเมลหรือชื่อผู้ใช้และรหัสผ่าน",
     passwordMismatch: "รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน",
     networkError: "เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง",
     registrationError: "เกิดข้อผิดพลาดในการลงทะเบียน กรุณาลองใหม่อีกครั้ง",

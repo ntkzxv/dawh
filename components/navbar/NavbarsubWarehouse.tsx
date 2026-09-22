@@ -126,6 +126,7 @@ export default function NavbarsubWarehouse({
           label: t.supplier,
           path: "/warehouse/suppliers",
           icon: Users,
+          badge: normalizedLang === "en" ? "v2" : "เร็วๆ นี้",
         },
       ],
     },

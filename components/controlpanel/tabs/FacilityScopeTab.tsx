@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useTheme } from "@/context/ThemeContext";
-import { CustomDropdown, DatePicker } from "@/components/common";
+import { CustomDropdown, DatePicker, DataTable } from "@/components/common";
 import type { AdminUserRecord, FacilityRecord } from "../types";
 import type { FacilityScopeType } from "@/lib/access/types";
 import {
@@ -15,7 +15,10 @@ import {
   Info,
   CheckCircle,
   Shield,
-  Layers,
+  Search,
+  RotateCcw,
+  Filter,
+  ChevronDown,
 } from "lucide-react";
 
 interface FacilityScopeTabProps {
@@ -52,8 +55,30 @@ export default function FacilityScopeTab({
   const { theme } = useTheme();
   const isLight = theme === "light";
 
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedUserFilter, setSelectedUserFilter] = useState<string>("ALL");
   const [selectedFacilityFilter, setSelectedFacilityFilter] = useState<string>("ALL");
+  const [selectedScopeTypeFilter, setSelectedScopeTypeFilter] = useState<string>("ALL");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const filterDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close filter dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        filterDropdownRef.current &&
+        !filterDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsFilterOpen(false);
+      }
+    }
+    if (isFilterOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isFilterOpen]);
 
   // Modals
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -94,6 +119,32 @@ export default function FacilityScopeTab({
     })),
   ], [facilities, isThai]);
 
+  const scopeFilterOptions = useMemo(() => [
+    { value: "ALL", label: isThai ? "ทุกระดับสิทธิ์" : "All Scope Levels" },
+    { value: "READ", label: isThai ? "READ (อ่านเท่านั้น)" : "READ (Read-only)" },
+    { value: "OPERATE", label: isThai ? "OPERATE (ปฏิบัติการ)" : "OPERATE (Operational)" },
+    { value: "APPROVE", label: isThai ? "APPROVE (อนุมัติ)" : "APPROVE (Approval)" },
+    { value: "ADMIN", label: isThai ? "ADMIN (ผู้ดูแล)" : "ADMIN (Administrator)" },
+  ], [isThai]);
+
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (searchQuery.trim()) count++;
+    if (selectedUserFilter !== "ALL") count++;
+    if (selectedFacilityFilter !== "ALL") count++;
+    if (selectedScopeTypeFilter !== "ALL") count++;
+    return count;
+  }, [searchQuery, selectedUserFilter, selectedFacilityFilter, selectedScopeTypeFilter]);
+
+  const hasActiveFilters = activeFiltersCount > 0;
+
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setSelectedUserFilter("ALL");
+    setSelectedFacilityFilter("ALL");
+    setSelectedScopeTypeFilter("ALL");
+  };
+
   const assignUserOptions = useMemo(() => {
     return users.map((u) => ({
       value: u.id,
@@ -129,7 +180,18 @@ export default function FacilityScopeTab({
     const matchUser = selectedUserFilter === "ALL" || user.id === selectedUserFilter;
     const matchFacility =
       selectedFacilityFilter === "ALL" || scope.facilityId === selectedFacilityFilter;
-    return matchUser && matchFacility;
+    const matchScopeType =
+      selectedScopeTypeFilter === "ALL" || scope.scopeType === selectedScopeTypeFilter;
+
+    const q = searchQuery.trim().toLowerCase();
+    const matchSearch =
+      !q ||
+      user.name.toLowerCase().includes(q) ||
+      user.email.toLowerCase().includes(q) ||
+      scope.facilityCode.toLowerCase().includes(q) ||
+      (facilities.find((f) => f.id === scope.facilityId)?.name || "").toLowerCase().includes(q);
+
+    return matchUser && matchFacility && matchScopeType && matchSearch;
   });
 
   const handleAssignSubmit = (e: React.FormEvent) => {
@@ -193,7 +255,7 @@ export default function FacilityScopeTab({
   return (
     <div className="flex flex-col gap-5 w-full">
       {/* Top Banner Notice */}
-      <div className="flex items-start sm:items-center justify-between py-2 px-1">
+      <div className="flex items-center justify-between py-2 px-1">
         <div className="flex items-center gap-3">
           <div
             className={`w-9 h-9 rounded-lg flex items-center justify-center ${
@@ -213,165 +275,306 @@ export default function FacilityScopeTab({
             </p>
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={() => setIsAssignModalOpen(true)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm ${
-            isLight
-              ? "bg-[#222222] hover:bg-black text-white"
-              : "bg-[#2C2C2C] hover:bg-[#333333] text-white border border-[#444444]"
-          }`}
-        >
-          <Plus size={14} />
-          <span>{isThai ? "เพิ่มขอบเขตสาขา" : "Add Scope"}</span>
-        </button>
       </div>
 
-      {/* Access Verification Formula Explainer Box */}
+      {/* Unified Filter & Action Toolbar */}
       <div
-        className={`p-4 rounded-xl border text-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3 ${
-          isLight ? "bg-indigo-50/50 border-indigo-200 text-indigo-950" : "bg-indigo-950/20 border-indigo-500/30 text-indigo-200"
-        }`}
-      >
-        <div className="flex items-center gap-2 font-semibold">
-          <Layers size={16} className="text-[#6366F1] shrink-0" />
-          <span>{isThai ? "หลักเกณฑ์การตรวจสอบสิทธิ์ครบวงจร:" : "Effective Authorization Formula:"}</span>
-        </div>
-        <div className="flex flex-wrap items-center gap-1.5 font-mono text-[11px]">
-          <span className="px-2 py-0.5 rounded bg-[#6366F1]/10 border border-[#6366F1]/20">Role Permissions</span>
-          <span>+</span>
-          <span className="px-2 py-0.5 rounded bg-purple-500/10 border border-purple-500/20">Facility Scopes</span>
-          <span>+</span>
-          <span className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">Account Status</span>
-          <span>+</span>
-          <span className="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">Profile Completion</span>
-        </div>
-      </div>
-
-      {/* Filter Bar */}
-      <div
-        className={`p-4 rounded-xl border flex flex-wrap gap-3 items-center justify-between transition-colors ${
+        className={`p-3.5 sm:p-4 rounded-xl border flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between transition-colors shadow-sm ${
           isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
         }`}
       >
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          {/* User Filter */}
-          <div className="min-w-[170px]">
-            <CustomDropdown
-              value={selectedUserFilter}
-              onChange={setSelectedUserFilter}
-              options={userFilterOptions}
-              searchable={users.length > 5}
-              searchPlaceholder={isThai ? "ค้นหาผู้ใช้..." : "Search user..."}
+        {/* Left Side: Search + Unified Filter Popover + Clear */}
+        <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
+          {/* Quick Search Input */}
+          <div className="relative flex-1 min-w-[200px] sm:min-w-[260px] max-w-full sm:max-w-[360px]">
+            <Search
+              size={15}
+              className={`absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
+                isLight ? "text-zinc-400" : "text-zinc-400"
+              }`}
             />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={isThai ? "ค้นหาชื่อ, อีเมล, รหัสสาขา..." : "Search user, email, facility..."}
+              className={`w-full pl-9 pr-8 py-2 rounded-lg text-xs outline-none transition-all ${
+                isLight
+                  ? "bg-zinc-100/90 border border-zinc-200 focus:border-zinc-800 text-zinc-900 placeholder:text-zinc-400 focus:bg-white"
+                  : "bg-[#2C2C2C] border border-[#555555] focus:border-zinc-300 text-white placeholder:text-zinc-400"
+              }`}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-black/10 dark:hover:bg-white/10 opacity-60 hover:opacity-100 transition-opacity"
+                title={isThai ? "ล้างการค้นหา" : "Clear search"}
+              >
+                <X size={13} />
+              </button>
+            )}
           </div>
 
-          {/* Facility Filter */}
-          <div className="min-w-[170px]">
-            <CustomDropdown
-              value={selectedFacilityFilter}
-              onChange={setSelectedFacilityFilter}
-              options={facilityFilterOptions}
-              searchable={facilities.length > 5}
-              searchPlaceholder={isThai ? "ค้นหาสาขา..." : "Search facility..."}
-            />
+          {/* Unified Filter Button & Dropdown Popover */}
+          <div className="relative" ref={filterDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-semibold transition-all cursor-pointer select-none ${
+                isFilterOpen
+                  ? isLight
+                    ? "bg-zinc-900 text-white border-zinc-900 shadow-sm"
+                    : "bg-white text-zinc-900 border-white shadow-sm"
+                  : activeFiltersCount > 0
+                  ? isLight
+                    ? "bg-zinc-100 text-zinc-900 border-zinc-400 font-bold"
+                    : "bg-[#444444] text-white border-zinc-400 font-bold"
+                  : isLight
+                  ? "bg-zinc-50 border-zinc-200 text-zinc-700 hover:bg-zinc-100"
+                  : "bg-[#2C2C2C] border-[#444444] text-zinc-300 hover:bg-[#333333]"
+              }`}
+            >
+              <Filter size={14} className={activeFiltersCount > 0 ? "text-[#6366F1]" : ""} />
+              <span>{isThai ? "ตัวกรอง" : "Filter"}</span>
+              {activeFiltersCount > 0 && (
+                <span
+                  className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    isFilterOpen
+                      ? isLight
+                        ? "bg-white text-zinc-900"
+                        : "bg-zinc-900 text-white"
+                      : "bg-[#6366F1] text-white"
+                  }`}
+                >
+                  {activeFiltersCount}
+                </span>
+              )}
+              <ChevronDown
+                size={14}
+                className={`transition-transform duration-200 ${isFilterOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            {/* Dropdown Popup Card */}
+            {isFilterOpen && (
+              <div
+                className={`absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-[310px] sm:w-[350px] rounded-2xl border p-4 shadow-2xl z-30 flex flex-col gap-3.5 animate-in fade-in zoom-in-95 duration-150 ${
+                  isLight
+                    ? "bg-white border-zinc-200 text-zinc-900"
+                    : "bg-[#282828] border-[#444444] text-white"
+                }`}
+              >
+                {/* Popover Header */}
+                <div className="flex items-center justify-between pb-2 border-b border-[#444444]/30">
+                  <div className="flex items-center gap-1.5 font-bold text-xs">
+                    <Filter size={14} />
+                    <span>{isThai ? "ตัวกรองขอบเขตสาขา" : "Filter Facility Scopes"}</span>
+                    {activeFiltersCount > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#6366F1]/20 text-[#6366F1]">
+                        {activeFiltersCount} {isThai ? "ใช้งานอยู่" : "active"}
+                      </span>
+                    )}
+                  </div>
+                  {hasActiveFilters && (
+                    <button
+                      type="button"
+                      onClick={handleResetFilters}
+                      className="flex items-center gap-1 text-[11px] text-red-500 hover:underline font-semibold cursor-pointer"
+                    >
+                      <RotateCcw size={11} />
+                      <span>{isThai ? "ล้างทั้งหมด" : "Clear all"}</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* 1. User Filter */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-semibold opacity-70">
+                    {isThai ? "ผู้ใช้งาน" : "User"}
+                  </label>
+                  <CustomDropdown
+                    value={selectedUserFilter}
+                    onChange={setSelectedUserFilter}
+                    options={userFilterOptions}
+                    searchable={users.length > 5}
+                    searchPlaceholder={isThai ? "ค้นหาผู้ใช้..." : "Search user..."}
+                    size="md"
+                  />
+                </div>
+
+                {/* 2. Facility Filter */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-semibold opacity-70">
+                    {isThai ? "สาขา/คลังสินค้า" : "Facility / Warehouse"}
+                  </label>
+                  <CustomDropdown
+                    value={selectedFacilityFilter}
+                    onChange={setSelectedFacilityFilter}
+                    options={facilityFilterOptions}
+                    searchable={facilities.length > 5}
+                    searchPlaceholder={isThai ? "ค้นหาสาขา..." : "Search facility..."}
+                    size="md"
+                  />
+                </div>
+
+                {/* 3. Scope Level Filter */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-semibold opacity-70">
+                    {isThai ? "ระดับสิทธิ์ขอบเขต" : "Scope Level"}
+                  </label>
+                  <CustomDropdown
+                    value={selectedScopeTypeFilter}
+                    onChange={setSelectedScopeTypeFilter}
+                    options={scopeFilterOptions}
+                    size="md"
+                  />
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Clear Filters Button (When any filter is active) */}
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer select-none ${
+                isLight
+                  ? "bg-red-50 text-red-600 border-red-200 hover:bg-red-100 shadow-sm"
+                  : "bg-red-950/40 text-red-400 border-red-800/50 hover:bg-red-900/50 shadow-sm"
+              }`}
+              title={isThai ? "ล้างตัวกรองทั้งหมด" : "Clear all filters"}
+            >
+              <RotateCcw size={13} />
+              <span>{isThai ? "ล้างตัวกรอง" : "Clear Filter"}</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-500 font-bold leading-none">
+                {activeFiltersCount}
+              </span>
+            </button>
+          )}
         </div>
 
-        <span className="text-xs opacity-60 font-semibold">
-          {filteredScopes.length} {isThai ? "รายการสิทธิ์ที่กำหนด" : "active scopes"}
-        </span>
+        {/* Right Side: Results Counter & Add Scope Button */}
+        <div className="flex items-center justify-between lg:justify-end gap-3 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-[#444444]/20">
+          <span className="text-xs opacity-60 font-semibold whitespace-nowrap">
+            {filteredScopes.length} {isThai ? "รายการสิทธิ์" : "active scopes"}
+          </span>
+
+          <button
+            type="button"
+            onClick={() => setIsAssignModalOpen(true)}
+            className={`flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all shadow-sm shrink-0 cursor-pointer ${
+              isLight
+                ? "bg-[#222222] hover:bg-black text-white active:scale-95"
+                : "bg-white hover:bg-zinc-200 text-zinc-900 active:scale-95 font-semibold"
+            }`}
+          >
+            <Plus size={14} />
+            <span>{isThai ? "เพิ่มขอบเขตสาขา" : "Add Scope"}</span>
+          </button>
+        </div>
       </div>
 
       {/* Scopes Table */}
-      <div
-        className={`rounded-xl border overflow-hidden ${
-          isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
-        }`}
-      >
-        <div className="overflow-x-auto [scrollbar-width:thin]">
-          <table className="w-full text-xs text-left">
-            <thead
-              className={`text-[11px] font-bold uppercase ${
-                isLight ? "bg-[#F4F4F5] text-zinc-600" : "bg-[#333333] text-zinc-300"
-              }`}
-            >
-              <tr>
-                <th className="p-3">{isThai ? "ผู้ใช้งาน" : "User"}</th>
-                <th className="p-3">{isThai ? "สาขา/คลังที่ได้รับมอบหมาย" : "Facility Assigned"}</th>
-                <th className="p-3">{isThai ? "ระดับสิทธิ์ขอบเขต" : "Scope Level"}</th>
-                <th className="p-3">{isThai ? "เวอร์ชันล็อก" : "Version"}</th>
-                <th className="p-3">{isThai ? "ระยะเวลาเริ่มต้น/สิ้นสุด" : "Validity Period"}</th>
-                <th className="p-3 text-right">{isThai ? "การดำเนินการ" : "Actions"}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#444444]/30">
-              {filteredScopes.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="p-8 text-center opacity-50 italic">
-                    {isThai ? "ไม่พบขอบเขตสิทธิ์ที่ตรงกับตัวกรอง" : "No facility scopes found."}
-                  </td>
-                </tr>
-              ) : (
-                filteredScopes.map(({ user, scope }) => {
-                  const facility = facilities.find((f) => f.id === scope.facilityId);
-
-                  return (
-                    <tr
-                      key={scope.id}
-                      className={`transition-colors ${
-                        isLight ? "hover:bg-zinc-50" : "hover:bg-white/[0.03]"
-                      }`}
-                    >
-                      <td className="p-3 font-semibold">
-                        <div>{user.name}</div>
-                        <div className="font-mono text-[10px] opacity-60">{user.email}</div>
-                      </td>
-                      <td className="p-3">
-                        <div className="font-semibold">{facility?.name || scope.facilityCode}</div>
-                        <div className="font-mono text-[10px] opacity-60">{scope.facilityCode}</div>
-                      </td>
-                      <td className="p-3">{getScopeBadge(scope.scopeType)}</td>
-                      <td className="p-3 font-mono font-bold opacity-70">v{scope.version}</td>
-                      <td className="p-3 text-[11px] opacity-70">
-                        {scope.validUntil
-                          ? `${scope.validFrom ? new Date(scope.validFrom).toLocaleDateString() : "Now"} - ${new Date(scope.validUntil).toLocaleDateString()}`
-                          : (isThai ? "ไม่มีกำหนดสิ้นสุด" : "Indefinite")}
-                      </td>
-                      <td className="p-3 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingScope({ user, scope });
-                              setEditScopeType(scope.scopeType);
-                            }}
-                            className={`p-1.5 rounded transition-colors ${
-                              isLight ? "hover:bg-zinc-100 text-zinc-700" : "hover:bg-white/10 text-zinc-300"
-                            }`}
-                            title={isThai ? "แก้ไขระดับสิทธิ์" : "Edit Scope"}
-                          >
-                            <Edit size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setRevokingScope({ user, scope })}
-                            className="p-1.5 rounded text-red-500 hover:bg-red-500/10 transition-colors"
-                            title={isThai ? "เพิกถอนขอบเขต" : "Revoke Scope"}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <DataTable<{ user: AdminUserRecord; scope: FacilityScopeTabProps["users"][0]["facilityScopes"][0] }>
+        data={filteredScopes}
+        keyExtractor={({ scope }) => scope.id}
+        minWidth="840px"
+        emptyTitle={
+          isThai ? "ไม่พบขอบเขตสิทธิ์ที่ตรงกับตัวกรอง" : "No facility scopes found"
+        }
+        columns={[
+          {
+            key: "user",
+            header: isThai ? "ผู้ใช้งาน" : "User",
+            render: ({ user }) => (
+              <div className="font-semibold">
+                <div>{user.name}</div>
+                <div className="font-mono text-[10px] opacity-60">{user.email}</div>
+              </div>
+            ),
+          },
+          {
+            key: "facility",
+            header: isThai ? "สาขา/คลังที่ได้รับมอบหมาย" : "Facility Assigned",
+            render: ({ scope }) => {
+              const facility = facilities.find((f) => f.id === scope.facilityId);
+              return (
+                <div>
+                  <div className="font-semibold">
+                    {facility?.name || scope.facilityCode}
+                  </div>
+                  <div className="font-mono text-[10px] opacity-60">
+                    {scope.facilityCode}
+                  </div>
+                </div>
+              );
+            },
+          },
+          {
+            key: "scopeLevel",
+            header: isThai ? "ระดับสิทธิ์ขอบเขต" : "Scope Level",
+            render: ({ scope }) => getScopeBadge(scope.scopeType),
+          },
+          {
+            key: "version",
+            header: isThai ? "เวอร์ชันล็อก" : "Version",
+            render: ({ scope }) => (
+              <span className="font-mono font-bold opacity-70">v{scope.version}</span>
+            ),
+          },
+          {
+            key: "validity",
+            header: isThai ? "ระยะเวลาเริ่มต้น/สิ้นสุด" : "Validity Period",
+            render: ({ scope }) => (
+              <span className="text-[11px] opacity-70">
+                {scope.validUntil
+                  ? `${
+                      scope.validFrom
+                        ? new Date(scope.validFrom).toLocaleDateString()
+                        : "Now"
+                    } - ${new Date(scope.validUntil).toLocaleDateString()}`
+                  : isThai
+                  ? "ไม่มีกำหนดสิ้นสุด"
+                  : "Indefinite"}
+              </span>
+            ),
+          },
+          {
+            key: "actions",
+            header: isThai ? "การดำเนินการ" : "Actions",
+            align: "right",
+            render: ({ user, scope }) => (
+              <div className="flex items-center justify-end gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingScope({ user, scope });
+                    setEditScopeType(scope.scopeType);
+                  }}
+                  className={`p-1.5 rounded transition-colors ${
+                    isLight
+                      ? "hover:bg-zinc-100 text-zinc-700"
+                      : "hover:bg-white/10 text-zinc-300"
+                  }`}
+                  title={isThai ? "แก้ไขระดับสิทธิ์" : "Edit Scope"}
+                >
+                  <Edit size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRevokingScope({ user, scope })}
+                  className="p-1.5 rounded text-red-500 hover:bg-red-500/10 transition-colors"
+                  title={isThai ? "เพิกถอนขอบเขต" : "Revoke Scope"}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ),
+          },
+        ]}
+      />
 
       {/* Modal: Assign Facility Scope */}
       {isAssignModalOpen && (

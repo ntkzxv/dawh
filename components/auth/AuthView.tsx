@@ -18,6 +18,7 @@ import {
   X,
   FileText,
   Globe,
+  AlertCircle,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { authClient, getCurrentSession } from "@/lib/auth-client";
@@ -363,6 +364,7 @@ export function UserAuthView({
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      setErrorMessage(t.missingCredentials);
       return;
     }
 
@@ -400,6 +402,7 @@ export function UserAuthView({
                   ? `ยินดีต้อนรับคุณ ${displayName} เข้าสู่ระบบเรียบร้อยแล้ว`
                   : `Welcome back, ${displayName}`,
               duration: 4000,
+              silent: true,
             })
           );
         } catch {}
@@ -416,12 +419,16 @@ export function UserAuthView({
       }
     } catch (error: unknown) {
       setErrors({ signinEmail: true, signinPassword: true });
-      const msg = error instanceof Error ? error.message : "Invalid login credentials";
-      setErrorMessage(
-        msg === "Invalid login credentials"
-          ? t.invalidCredentials
-          : msg
-      );
+      const rawMsg = error instanceof Error ? error.message : "Invalid login credentials";
+      const isCredentialError =
+        !rawMsg ||
+        rawMsg.toLowerCase().includes("invalid login credentials") ||
+        rawMsg.toLowerCase().includes("invalid email or password") ||
+        rawMsg.toLowerCase().includes("invalid email") ||
+        rawMsg.toLowerCase().includes("invalid credentials") ||
+        rawMsg.toLowerCase().includes("user not found");
+
+      setErrorMessage(isCredentialError ? t.invalidCredentials : rawMsg);
     } finally {
       setIsLoading(false);
     }
@@ -561,11 +568,6 @@ export function UserAuthView({
       if (age < 18 || isNaN(age)) {
         newErrors.birthDate = true;
         setErrors({ ...newErrors, birthDate: true });
-        setErrorMessage(
-          lang === "TH"
-            ? "ผู้สมัครต้องมีอายุอย่างน้อย 18 ปีบริบูรณ์ขึ้นไป"
-            : "You must be at least 18 years old to register."
-        );
         return;
       }
     }
@@ -583,7 +585,6 @@ export function UserAuthView({
 
     if (password !== confirmPassword) {
       setErrors({ confirmPassword: true });
-      setErrorMessage(t.passwordMismatch);
       return;
     }
 
@@ -904,8 +905,8 @@ export function UserAuthView({
             </motion.div>
           )}
 
-          {/* Error Alert */}
-          {errorMessage && (
+          {/* Error Alert (Only shown for non-form subviews like PIN view) */}
+          {errorMessage && mode === "signin" && signInSubView !== "form" && (
             <motion.div
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
@@ -954,6 +955,8 @@ export function UserAuthView({
                           >
                             <input
                               id="signin-email"
+                              name="username"
+                              autoComplete="username"
                               type="text"
                               value={email}
                               onChange={(e) => {
@@ -988,6 +991,8 @@ export function UserAuthView({
                           >
                             <input
                               id="signin-password"
+                              name="password"
+                              autoComplete="current-password"
                               type={showPassword ? "text" : "password"}
                               value={password}
                               onChange={(e) => {
@@ -1014,6 +1019,23 @@ export function UserAuthView({
                               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                             </button>
                           </div>
+
+                          {/* Inline Error Message */}
+                          <AnimatePresence>
+                            {errorMessage && (
+                              <motion.div
+                                initial={{ opacity: 0, y: -4, height: 0 }}
+                                animate={{ opacity: 1, y: 0, height: "auto" }}
+                                exit={{ opacity: 0, y: -4, height: 0 }}
+                                transition={{ duration: 0.18, ease: "easeOut" }}
+                                className="flex items-start gap-1.5 pt-0.5 overflow-hidden text-[12px] font-medium leading-[16px] text-rose-500 dark:text-rose-400"
+                                style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
+                              >
+                                <AlertCircle size={14} className="shrink-0 mt-[1px] text-rose-500 dark:text-rose-400" />
+                                <span>{errorMessage}</span>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
 
                           <div className="flex justify-end pt-0.5">
                             <a

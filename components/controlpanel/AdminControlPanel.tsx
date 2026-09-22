@@ -89,6 +89,7 @@ import UserManagementTab from "./tabs/UserManagementTab";
 import RoleManagementTab from "./tabs/RoleManagementTab";
 import FacilityScopeTab from "./tabs/FacilityScopeTab";
 import OrganizationTab from "./tabs/OrganizationTab";
+import WorkspaceManagementTab from "./tabs/WorkspaceManagementTab";
 import ProductCatalogTab from "./tabs/ProductCatalogTab";
 import StockMonitoringTab from "./tabs/StockMonitoringTab";
 import SafetyStockTab from "./tabs/SafetyStockTab";
@@ -1184,11 +1185,7 @@ export default function AdminControlPanel() {
           hubPath="/workspace"
           settingsPath="/settings"
           showAccount={false}
-          refreshButton={{
-            onClick: () => loadTabData(activeTab, true),
-            isLoading: isRefreshing || tabLoading,
-            label: isThai ? "รีเฟรชข้อมูล" : "Refresh Data",
-          }}
+          showHub={true}
           serverStatus={{
             connected: true,
             label: lastSynced
@@ -1404,6 +1401,10 @@ export default function AdminControlPanel() {
                     onUpdateDepartment={handleUpdateDepartment}
                     isThai={isThai}
                   />
+                )}
+
+                {activeTab === "workspace" && (
+                  <WorkspaceManagementTab isThai={isThai} />
                 )}
 
                 {activeTab === "products" && (

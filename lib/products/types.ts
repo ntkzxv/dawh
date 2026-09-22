@@ -69,4 +69,5 @@ export type ProductFilters = {
   trackingMethod: TrackingMethod | null;
   active: boolean | null;
   page: { limit: number; cursor: KeysetCursor | null };
+  offset?: number;
 };
