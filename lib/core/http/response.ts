@@ -5,6 +5,7 @@ export type PageMeta = {
   limit: number;
   nextCursor: string | null;
   hasMore: boolean;
+  total?: number;
 };
 
 export function jsonOk<T>(request: Request, data: T, status = 200) {

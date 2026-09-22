@@ -3,11 +3,11 @@
 import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ArrowLeft, Wrench, CheckCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppLanguage } from "@/utils/language";
-import { getDawhLogo } from "@/config/brand";
+import { DAWH_LONGNOSPACE_DATA_URI, getDawhLogo } from "@/config/brand";
 import { useNotification } from "@/context/NotificationContext";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function SystemMaintenancePage() {
   const router = useRouter();
@@ -15,8 +15,9 @@ export default function SystemMaintenancePage() {
   const moduleParam = searchParams.get("module");
   const appLang = useAppLanguage();
   const isThai = appLang === "TH";
+  const { theme } = useTheme();
+  const isLight = theme === "light";
   const { notify } = useNotification();
-  const hasNotifiedRef = useRef(false);
   const isCompletedRef = useRef(false);
 
   // Countdown timer simulation (defaults to 02:45:18 per Figma spec)
@@ -26,21 +27,7 @@ export default function SystemMaintenancePage() {
     endTime: "06:00 AM",
   });
 
-  // Display notification on maintenance page load strictly ONCE
-  useEffect(() => {
-    if (!hasNotifiedRef.current) {
-      hasNotifiedRef.current = true;
-      notify.warning(
-        isThai ? "ระบบปิดปรับปรุงชั่วคราว" : "Scheduled Maintenance",
-        {
-          message: isThai
-            ? "ขณะนี้ช่องทางนี้กำลังปิดปรุงอยู่ในขณะนี้ ขออภัยในความไม่สะดวก"
-            : "This module is currently under scheduled maintenance. We apologize for the inconvenience.",
-          duration: 5000,
-        }
-      );
-    }
-  }, [isThai, notify]);
+
 
   useEffect(() => {
     try {
@@ -131,13 +118,13 @@ export default function SystemMaintenancePage() {
     if (!moduleParam) return isThai ? "ระบบพื้นที่ทำงาน" : "System Platform";
     switch (moduleParam) {
       case "warehouse":
-        return isThai ? "จัดการคลังสินค้า (Warehouse ERP)" : "Warehouse ERP";
+        return isThai ? "จัดการคลังสินค้า" : "Warehouse ERP";
       case "datacenter":
-        return isThai ? "สัญญาเช่าซื้อ (HP Datacenter)" : "HP Datacenter";
+        return isThai ? "สัญญาเช่าซื้อ" : "HP Datacenter";
       case "employee":
-        return isThai ? "จัดการพนักงาน (Employee Management)" : "Employee Management";
+        return isThai ? "จัดการพนักงาน" : "Employee Management";
       case "reports":
-        return isThai ? "รายงานและตรวจสอบ (Reports & Auditing)" : "Reports & Auditing";
+        return isThai ? "รายงานและตรวจสอบ" : "Reports & Auditing";
       default:
         return moduleParam.toUpperCase();
     }
@@ -151,76 +138,97 @@ export default function SystemMaintenancePage() {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-        className="min-h-screen w-full flex flex-col justify-between overflow-x-hidden selection:bg-white/20 selection:text-white"
-        style={{
-          backgroundColor: "#2C2C2C",
-          fontFamily: "var(--font-geist-sans), sans-serif",
-        }}
+        className={`relative min-h-screen w-full flex flex-col justify-between items-center overflow-x-hidden overflow-y-auto transition-colors duration-300 ${
+          isLight
+            ? "bg-[#F8FAFC] text-[#222222] selection:bg-slate-900 selection:text-white"
+            : "bg-[#222222] text-white selection:bg-white/20 selection:text-white"
+        }`}
+        style={{ fontFamily: "var(--font-geist-sans), 'Geist', sans-serif" }}
       >
-        {/* HEADER: matching error page header animation */}
+        <div className="absolute inset-0 flex flex-col pointer-events-none z-0 select-none">
+          <div
+            className={`w-full h-[52%] relative overflow-hidden transition-colors duration-300 ${
+              isLight ? "bg-[#EEF2F6]" : "bg-[#1A1A1A]"
+            }`}
+          >
+            <div className="absolute inset-0 pointer-events-none select-none">
+              <div className="absolute -top-4 -left-24 sm:-left-36 md:-left-48 h-1/2 aspect-[1580/528] relative">
+                <div
+                  className="w-full h-full transition-colors duration-300"
+                  style={{
+                    backgroundColor: isLight ? "#FFFFFF" : "#282828",
+                    WebkitMaskImage: `url("${DAWH_LONGNOSPACE_DATA_URI}")`,
+                    maskImage: `url("${DAWH_LONGNOSPACE_DATA_URI}")`,
+                    WebkitMaskSize: "contain",
+                    maskSize: "contain",
+                    WebkitMaskRepeat: "no-repeat",
+                    maskRepeat: "no-repeat",
+                    WebkitMaskPosition: "center",
+                    maskPosition: "center",
+                    transform: "rotate(-180deg)",
+                  }}
+                />
+                <div
+                  className={`absolute top-[61.2%] h-[150vh] left-[76.2%] w-[7%] transition-colors duration-300 ${
+                    isLight ? "bg-[#FFFFFF]" : "bg-[#282828]"
+                  }`}
+                />
+              </div>
+            </div>
+          </div>
+          <div
+            className={`w-full flex-1 relative overflow-hidden transition-colors duration-300 ${
+              isLight ? "bg-[#FFFFFF]" : "bg-[#282828]"
+            }`}
+          >
+            <div
+              className="absolute bottom-0 right-0 h-full w-full pointer-events-none select-none transition-colors duration-300"
+              style={{
+                backgroundColor: isLight ? "#EEF2F6" : "#1A1A1A",
+                WebkitMaskImage: `url("${DAWH_LONGNOSPACE_DATA_URI}")`,
+                maskImage: `url("${DAWH_LONGNOSPACE_DATA_URI}")`,
+                WebkitMaskSize: "contain",
+                maskSize: "contain",
+                WebkitMaskRepeat: "no-repeat",
+                maskRepeat: "no-repeat",
+                WebkitMaskPosition: "right bottom",
+                maskPosition: "right bottom",
+              }}
+            />
+          </div>
+        </div>
+
         <motion.header
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-          className="w-full flex flex-row justify-between items-center px-6 sm:px-12 py-6 border-b border-[#3D3D3D]"
-          style={{ height: "78px" }}
+          className="relative z-10 w-full h-[84px] px-4 sm:px-6 md:px-8 py-6 flex flex-row items-center shrink-0 box-border"
         >
-          {/* Official DAWH Brand Logo */}
           <Link
             href="/workspace"
-            className="flex items-center hover:opacity-90 transition-opacity select-none cursor-pointer"
+            className="flex items-center cursor-pointer hover:opacity-85 transition-opacity select-none"
+            title="DAWH Workspace"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={getDawhLogo("dark", "horizontal")}
+              src={getDawhLogo(theme, "horizontal")}
               alt="DAWH Logo"
-              className="h-[34px] sm:h-[38px] w-auto object-contain select-none"
+              className="h-[42px] sm:h-[48px] w-auto object-contain select-none"
               draggable={false}
             />
           </Link>
-
-          {/* system-badge & back link */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#555555] bg-[#383838]">
-              {secondsRemaining === 0 ? (
-                <CheckCircle size={12} className="text-emerald-400" />
-              ) : (
-                <Wrench size={12} className="text-amber-400" />
-              )}
-              <span
-                className="font-bold text-[12px] leading-[16px] text-[#E4E4E7] tracking-wider uppercase"
-                style={{ fontFamily: "var(--font-geist-sans)" }}
-              >
-                {secondsRemaining === 0
-                  ? isThai
-                    ? "ปรับปรุงเสร็จสิ้น"
-                    : "MAINTENANCE COMPLETED"
-                  : isThai
-                  ? "กำลังปรับปรุงระบบ"
-                  : "SYSTEM MAINTENANCE"}
-              </span>
-            </div>
-
-            <Link
-              href="/workspace"
-              className="hidden sm:flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white transition-colors"
-            >
-              <ArrowLeft size={14} />
-              <span>{isThai ? "กลับหน้าหลัก" : "Return"}</span>
-            </Link>
-          </div>
         </motion.header>
 
-        {/* CONTENT CONTAINER: matching error card scale and staggered transition */}
-        <main className="flex-1 flex flex-col justify-center items-center px-4 sm:px-10 py-8">
-          {/* maintenance-card with matching error-card animation */}
+        <main className="relative z-10 w-full max-w-[1440px] flex-1 flex flex-col justify-center items-center px-4 sm:px-10 py-6 box-border">
           <motion.div
             initial={{ opacity: 0, scale: 0.94, y: 18 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.94, y: -18 }}
             transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
-            className="w-full max-w-[580px] flex flex-col items-center p-8 sm:p-12 rounded-[16px] border border-[#444444] shadow-[0px_12px_32px_rgba(0,0,0,0.3)] gap-8"
-            style={{ backgroundColor: "#383838" }}
+            className={`box-border w-full max-w-[580px] flex flex-col items-center p-8 sm:p-12 gap-6 sm:gap-8 rounded-[20px] backdrop-blur-md transition-colors duration-300 ${
+              isLight
+                ? "bg-white/95 border border-[#E4E4E7] shadow-[0px_12px_32px_rgba(0,0,0,0.06)]"
+                : "bg-[#282828]/95 border border-[#444444] shadow-[0px_12px_32px_rgba(0,0,0,0.25)]"
+            }`}
           >
             {/* countdown-wrapper with staggered transition */}
             <motion.div

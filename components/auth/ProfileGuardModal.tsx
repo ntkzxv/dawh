@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ArrowRight, Settings, X } from "lucide-react";
+import { ArrowRight, Settings, User, X } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { useLoading } from "@/components/loading_screen";
 import { useAppLanguage } from "@/utils/language";
@@ -30,7 +30,7 @@ export function ProfileGuardModal({
     if (onGoToSettings) {
       onGoToSettings();
     } else {
-      navigateWithLoading("/settings");
+      navigateWithLoading("/account?autoOpen=true");
     }
   };
 
@@ -106,8 +106,8 @@ export function ProfileGuardModal({
                 : "var(--font-outfit), sans-serif",
             }}
           >
-            <Settings size={16} />
-            <span>{isThai ? "ไปที่หน้าตั้งค่าข้อมูลส่วนตัว (Settings)" : "Go to Profile Settings"}</span>
+            <User size={16} />
+            <span>{isThai ? "ไปที่หน้ากรอกข้อมูลส่วนตัว (Profile)" : "Go to Profile Registration"}</span>
             <ArrowRight size={16} />
           </button>
         </div>

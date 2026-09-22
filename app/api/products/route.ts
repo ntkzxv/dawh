@@ -4,7 +4,7 @@ import { parseJsonObject } from "@/lib/core/http/body";
 import { getRequestContext } from "@/lib/core/http/context";
 import { apiRoute } from "@/lib/core/http/handler";
 import { jsonCollection, jsonOk } from "@/lib/core/http/response";
-import { createProduct, listProducts } from "@/lib/products/service";
+import { createProduct, listProducts, countProducts } from "@/lib/products/service";
 import {
   parseCreateProduct,
   parseProductFilters,
@@ -17,7 +17,10 @@ export const GET = apiRoute(async (request) => {
 
   const filters = parseProductFilters(new URL(request.url));
   const page = filters.page;
-  const products = await listProducts(context, filters);
+  const [products, total] = await Promise.all([
+    listProducts(context, filters),
+    countProducts(context, filters),
+  ]);
   const hasMore = products.length > page.limit;
   const data = hasMore ? products.slice(0, page.limit) : products;
 
@@ -27,6 +30,7 @@ export const GET = apiRoute(async (request) => {
       ? nextCursor(products, page.limit, (product) => product.createdAt)
       : null,
     hasMore,
+    total,
   });
 });
 

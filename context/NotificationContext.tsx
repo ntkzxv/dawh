@@ -40,6 +40,7 @@ export interface NotificationItem {
   duration?: number; // ms, 0 = stay until dismissed
   action?: NotificationAction;
   onClose?: () => void;
+  silent?: boolean; // if true, no sound will play
 }
 
 export interface NotificationOptions {
@@ -47,6 +48,7 @@ export interface NotificationOptions {
   duration?: number;
   action?: NotificationAction;
   onClose?: () => void;
+  silent?: boolean;
 }
 
 interface NotificationContextType {
@@ -89,6 +91,61 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     setNotifications([]);
   }, []);
 
+  /** Play a synthesized chime via Web Audio API — unique tone per notification type */
+  const playNotificationSound = useCallback((type: NotificationType = "normal") => {
+    if (typeof window === "undefined") return;
+    try {
+      const enabled = localStorage.getItem("dawh_sound_enabled");
+      if (enabled === "false") return;
+      const volRaw = localStorage.getItem("dawh_sound_volume");
+      const vol = volRaw !== null ? parseInt(volRaw, 10) : 70;
+      if (vol === 0) return;
+
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const ctx = new AudioCtx();
+      const amp = (vol / 100) * 0.45;
+      const t = ctx.currentTime;
+
+      const play = (freq: number, endFreq: number, duration: number, startDelay = 0, oscType: OscillatorType = "sine") => {
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0, t + startDelay);
+        g.gain.linearRampToValueAtTime(amp, t + startDelay + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + startDelay + duration);
+        g.connect(ctx.destination);
+
+        const o = ctx.createOscillator();
+        o.type = oscType;
+        o.frequency.setValueAtTime(freq, t + startDelay);
+        o.frequency.exponentialRampToValueAtTime(endFreq, t + startDelay + duration * 0.25);
+        o.connect(g);
+        o.start(t + startDelay);
+        o.stop(t + startDelay + duration);
+        o.onended = () => { try { ctx.close(); } catch { /* ignore */ } };
+      };
+
+      if (type === "success") {
+        // สองโน้ตขึ้น — "ding ding!" สว่างโปร่ง
+        play(660, 880, 0.35, 0);
+        play(880, 1046, 0.45, 0.22);
+      } else if (type === "error") {
+        // โน้ตต่ำลง หนักๆ — "dunk"
+        play(330, 220, 0.55, 0, "triangle");
+      } else if (type === "warning") {
+        // สองโน้ตสั้น เตือน — "ding dong"
+        play(740, 740, 0.25, 0);
+        play(587, 587, 0.35, 0.2);
+      } else if (type === "info") {
+        // โน้ตเดียว เบาสั้น — "pip"
+        play(880, 880, 0.3, 0);
+      } else {
+        // normal — Soft Bell เดิม
+        play(880, 660, 0.9, 0);
+      }
+    } catch {
+      // Web Audio not available — silent fail
+    }
+  }, []);
+
   const showNotification = useCallback(
     (item: Omit<NotificationItem, "id">) => {
       const id = `notif_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -101,10 +158,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       };
 
       setNotifications((prev) => [...prev, newNotif]);
+      if (!item.silent) playNotificationSound(item.type);
       return id;
     },
-    []
+    [playNotificationSound]
   );
+
 
   // Consume deferred notices after page transition and loading screen complete
   useEffect(() => {

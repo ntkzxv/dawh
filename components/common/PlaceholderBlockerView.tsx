@@ -26,6 +26,7 @@ export interface PlaceholderBlockerViewProps {
   returnPath?: string;
   primaryLabel?: string;
   secondaryLabel?: string;
+  bottomNote?: React.ReactNode;
 }
 
 export default function PlaceholderBlockerView({
@@ -44,6 +45,7 @@ export default function PlaceholderBlockerView({
   returnPath = "/workspace",
   primaryLabel,
   secondaryLabel,
+  bottomNote,
 }: PlaceholderBlockerViewProps) {
   const router = useRouter();
   const { navigateWithLoading } = useLoading();
@@ -168,7 +170,7 @@ export default function PlaceholderBlockerView({
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-          className="relative z-10 w-full max-w-[1440px] h-[84px] px-6 sm:px-12 py-6 flex flex-row items-center shrink-0 box-border"
+          className="relative z-10 w-full h-[84px] px-4 sm:px-6 md:px-8 py-6 flex flex-row items-center shrink-0 box-border"
         >
           {/* Official DAWH Brand Logo */}
           <div
@@ -220,30 +222,33 @@ export default function PlaceholderBlockerView({
                 </span>
               ) : (
                 <div className="relative flex items-center justify-center py-2 mb-1">
-                  {/* Dynamic Maintenance/Construction Animation */}
-                  <motion.div
-                    animate={{
-                      rotate: [0, -28, 12, -24, 0],
-                      y: [0, -4, 0],
-                    }}
-                    transition={{
-                      duration: 2.2,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                      repeatDelay: 0.35,
-                    }}
-                    className={`relative flex items-center justify-center select-none ${
-                      isLight ? "text-slate-900" : "text-white"
-                    }`}
-                  >
-                    {icon || (
+                  {icon ? (
+                    // Custom icon: render as-is, no extra animation wrapper
+                    <div className={`relative flex items-center justify-center select-none ${isLight ? "text-slate-900" : "text-white"}`}>
+                      {icon}
+                    </div>
+                  ) : (
+                    // Default Wrench with swing animation
+                    <motion.div
+                      animate={{
+                        rotate: [0, -28, 12, -24, 0],
+                        y: [0, -4, 0],
+                      }}
+                      transition={{
+                        duration: 2.2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        repeatDelay: 0.35,
+                      }}
+                      className={`relative flex items-center justify-center select-none ${isLight ? "text-slate-900" : "text-white"}`}
+                    >
                       <Wrench
                         size={56}
                         strokeWidth={2.2}
                         className={isLight ? "text-slate-900" : "text-white"}
                       />
-                    )}
-                  </motion.div>
+                    </motion.div>
+                  )}
                 </div>
               )}
 
@@ -308,6 +313,18 @@ export default function PlaceholderBlockerView({
                 </span>
               </motion.button>
             </motion.div>
+
+            {/* bottomNote slot */}
+            {bottomNote && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4, delay: 0.35 }}
+                className="w-full flex justify-center"
+              >
+                {bottomNote}
+              </motion.div>
+            )}
           </motion.div>
         </main>
 

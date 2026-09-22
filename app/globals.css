@@ -107,6 +107,41 @@ body.light ::selection,
   color: #FFFFFF;
 }
 
+/* ========================================================================= */
+/* THEME-AWARE BROWSER AUTOFILL STYLING (CHROME / EDGE / SAFARI)            */
+/* ========================================================================= */
+/* Dark Mode Autofill: Blend with dark input card background */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: #FFFFFF !important;
+  caret-color: #FFFFFF !important;
+  -webkit-box-shadow: 0 0 0 1000px #202020 inset !important;
+  box-shadow: 0 0 0 1000px #202020 inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Light Mode Autofill: Blend with light input background */
+html.light input:-webkit-autofill,
+html.light input:-webkit-autofill:hover,
+html.light input:-webkit-autofill:focus,
+html.light input:-webkit-autofill:active,
+body.light input:-webkit-autofill,
+body.light input:-webkit-autofill:hover,
+body.light input:-webkit-autofill:focus,
+body.light input:-webkit-autofill:active,
+[data-theme="light"] input:-webkit-autofill,
+[data-theme="light"] input:-webkit-autofill:hover,
+[data-theme="light"] input:-webkit-autofill:focus,
+[data-theme="light"] input:-webkit-autofill:active {
+  -webkit-text-fill-color: #222222 !important;
+  caret-color: #222222 !important;
+  -webkit-box-shadow: 0 0 0 1000px #F8FAFC inset !important;
+  box-shadow: 0 0 0 1000px #F8FAFC inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 /* Silky-Smooth Theme Color Transitions */
 html,
 body {

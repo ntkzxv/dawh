@@ -494,7 +494,7 @@ export default function HeaderNavbar({
               {/* Account Info Header inside Dropdown (Clickable to /account) */}
               <div
                 onClick={() => {
-                  if (pathname !== "/account" && pathname !== "/settings") {
+                  if (pathname !== "/account") {
                     setIsDropdownOpen(false);
                     handleGuardedNavigate("account", "/account");
                   }
@@ -569,8 +569,8 @@ export default function HeaderNavbar({
 
               {/* Quick Actions List */}
               <div className="space-y-1">
-                {/* Account Settings */}
-                {pathname !== "/account" && pathname !== "/settings" && (
+                {/* Employee Profile */}
+                {pathname !== "/account" && (
                   <button
                     type="button"
                     onClick={() => {
@@ -590,7 +590,7 @@ export default function HeaderNavbar({
                       }`}
                     />
                     <span className="truncate">
-                      {isThai ? "ตั้งค่าโปรไฟล์" : "Profile Settings"}
+                      {isThai ? "โปรไฟล์" : "Profile"}
                     </span>
                   </button>
                 )}
@@ -689,28 +689,30 @@ export default function HeaderNavbar({
                   </span>
                 </button>
 
-                {/* Profile Settings */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsDropdownOpen(false);
-                    if (onNavigate) onNavigate("settings");
-                    else navigateWithLoading("/settings");
-                  }}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-[12px] font-medium transition-all text-left cursor-pointer ${
-                    isLight
-                      ? "text-slate-800 hover:bg-[#F4F4F5] hover:text-slate-950"
-                      : "text-[#F4F4F5] hover:text-[#FFFFFF] hover:bg-white/10"
-                  }`}
-                >
-                  <Settings
-                    size={15}
-                    className={`shrink-0 ${
-                      isLight ? "text-[#222222]" : "text-[#FFFFFF]"
+                {/* Platform Settings */}
+                {pathname !== "/settings" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      if (onNavigate) onNavigate("settings");
+                      else navigateWithLoading("/settings");
+                    }}
+                    className={`w-full flex items-center gap-3 px-3.5 py-2 rounded-xl text-[12px] font-medium transition-all text-left cursor-pointer ${
+                      isLight
+                        ? "text-slate-800 hover:bg-[#F4F4F5] hover:text-slate-950"
+                        : "text-[#F4F4F5] hover:text-[#FFFFFF] hover:bg-white/10"
                     }`}
-                  />
-                  <span className="truncate">{isThai ? "ตั้งค่า" : "Settings"}</span>
-                </button>
+                  >
+                    <Settings
+                      size={15}
+                      className={`shrink-0 ${
+                        isLight ? "text-[#222222]" : "text-[#FFFFFF]"
+                      }`}
+                    />
+                    <span className="truncate">{isThai ? "การตั้งค่า" : "Settings"}</span>
+                  </button>
+                )}
 
                 {/* Log Out */}
                 <button

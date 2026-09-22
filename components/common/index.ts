@@ -7,4 +7,5 @@ export * from "./Pagination";
 export { default as Calendar } from "./Calendar";
 export * from "./Calendar";
 export { default as DatePicker } from "./DatePicker";
-export * from "./DatePicker";
+export { default as DataTable } from "./DataTable";
+export * from "./DataTable";

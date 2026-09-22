@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { useTheme } from "@/context/ThemeContext";
-import { CustomDropdown, DatePicker } from "@/components/common";
+import { CustomDropdown, DatePicker, DataTable } from "@/components/common";
 import type { AuditLogCategoryKey, AuditLogRecord } from "../types";
 import {
   Search,
@@ -287,159 +287,149 @@ export default function AuditLogTab({
         </div>
       </div>
 
-      {/* Main Audit Log Table */}
-      <div
-        className={`rounded-2xl border overflow-hidden shadow-sm transition-colors ${
-          isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
-        }`}
-      >
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr
-                className={`border-b transition-colors font-bold uppercase tracking-wider ${
+      {/* Main Audit Log Table using shared DataTable */}
+      <DataTable<AuditLogRecord>
+        data={filteredLogs}
+        keyExtractor={(log) => log.id}
+        selectedKey={inspectingLog?.id}
+        onRowClick={(log) => setInspectingLog(log)}
+        minWidth="900px"
+        emptyIcon={<ScrollText size={32} className="opacity-40" />}
+        emptyTitle={
+          isThai
+            ? "ไม่พบบันทึกกิจกรรมตามเงื่อนไข"
+            : "No audit records found matching criteria"
+        }
+        emptyAction={
+          <p className="text-xs text-zinc-500">
+            {isThai
+              ? "ลองเปลี่ยนหมวดหมู่หรือคำค้นหา"
+              : "Try changing category or search terms"}
+          </p>
+        }
+        columns={[
+          {
+            key: "occurredAt",
+            header: isThai ? "วันเวลา" : "Occurred At",
+            render: (log) => (
+              <div className="flex items-center gap-1.5 font-mono text-zinc-600 dark:text-zinc-300">
+                <Clock size={12} className="opacity-60" />
+                <span>{formatDateTime(log.occurredAt)}</span>
+              </div>
+            ),
+          },
+          {
+            key: "actor",
+            header: isThai ? "ผู้กระทำ" : "Actor",
+            render: (log) => (
+              <div className="flex items-center gap-2 min-w-[140px]">
+                <div
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                    isLight
+                      ? "bg-zinc-200 text-zinc-700"
+                      : "bg-[#282828] text-zinc-300"
+                  }`}
+                >
+                  {(log.actorName || log.actorEmail || "S").charAt(0).toUpperCase()}
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="font-semibold truncate max-w-[150px] leading-tight">
+                    {log.actorName ||
+                      log.actorEmail ||
+                      (isThai ? "ระบบอัตโนมัติ" : "System")}
+                  </span>
+                  {log.actorEmail && log.actorName && (
+                    <span className="text-[10.5px] text-zinc-400 truncate max-w-[150px] leading-tight">
+                      {log.actorEmail}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ),
+          },
+          {
+            key: "action",
+            header: isThai ? "กิจกรรม / แอ็กชัน" : "Action",
+            render: (log) => {
+              const actionClass = getActionColor(log.action);
+              return (
+                <span
+                  className={`inline-flex items-center px-2 py-0.5 rounded-lg border text-[11px] font-mono font-bold ${actionClass}`}
+                >
+                  {log.action}
+                </span>
+              );
+            },
+          },
+          {
+            key: "entityType",
+            header: isThai ? "เอนทิตี" : "Entity Type",
+            render: (log) => (
+              <div className="flex items-center gap-1.5 font-mono">
+                <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                  {log.entityType}
+                </span>
+                {log.entityId && (
+                  <span className="text-[10px] px-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 font-normal">
+                    #{log.entityId.slice(-6)}
+                  </span>
+                )}
+              </div>
+            ),
+          },
+          {
+            key: "facilityScope",
+            header: isThai ? "สาขา / ขอบเขต" : "Facility Scope",
+            render: (log) =>
+              log.facilityCode ? (
+                <div className="inline-flex items-center gap-1 text-[11px] text-zinc-600 dark:text-zinc-400">
+                  <MapPin size={11} className="text-zinc-400 shrink-0" />
+                  <span className="font-bold">{log.facilityCode}</span>
+                  {log.facilityName && (
+                    <span className="truncate max-w-[120px]">
+                      ({log.facilityName})
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <span className="text-zinc-400 text-[11px]">
+                  {isThai ? "ส่วนกลาง / องค์กร" : "HQ / Global"}
+                </span>
+              ),
+          },
+          {
+            key: "ipAddress",
+            header: isThai ? "IP Address" : "IP Address",
+            render: (log) => (
+              <span className="font-mono text-[11px] text-zinc-500">
+                {log.ipAddress || "-"}
+              </span>
+            ),
+          },
+          {
+            key: "actions",
+            header: isThai ? "รายละเอียด" : "Actions",
+            align: "right",
+            render: (log) => (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setInspectingLog(log);
+                }}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   isLight
-                    ? "bg-zinc-50/80 text-zinc-500 border-zinc-200"
-                    : "bg-[#303030] text-zinc-400 border-[#444444]"
+                    ? "bg-zinc-100 hover:bg-zinc-200 text-zinc-800"
+                    : "bg-[#484848] hover:bg-[#555555] text-white"
                 }`}
               >
-                <th className="py-3.5 px-4">{isThai ? "วันเวลา" : "Occurred At"}</th>
-                <th className="py-3.5 px-4">{isThai ? "ผู้กระทำ" : "Actor"}</th>
-                <th className="py-3.5 px-4">{isThai ? "กิจกรรม / แอ็กชัน" : "Action"}</th>
-                <th className="py-3.5 px-4">{isThai ? "เอนทิตี" : "Entity Type"}</th>
-                <th className="py-3.5 px-4">{isThai ? "สาขา / ขอบเขต" : "Facility Scope"}</th>
-                <th className="py-3.5 px-4">{isThai ? "IP Address" : "IP Address"}</th>
-                <th className="py-3.5 px-4 text-right">{isThai ? "รายละเอียด" : "Actions"}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-200/60 dark:divide-zinc-700/60 font-medium">
-              {filteredLogs.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-16 text-center text-zinc-400">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <ScrollText size={32} className="opacity-40" />
-                      <p className="text-sm font-semibold">
-                        {isThai ? "ไม่พบบันทึกกิจกรรมตามเงื่อนไข" : "No audit records found matching criteria"}
-                      </p>
-                      <p className="text-xs text-zinc-500">
-                        {isThai ? "ลองเปลี่ยนหมวดหมู่หรือคำค้นหา" : "Try changing category or search terms"}
-                      </p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredLogs.map((log) => {
-                  const actionClass = getActionColor(log.action);
-                  return (
-                    <tr
-                      key={log.id}
-                      className={`transition-colors hover:bg-zinc-50/70 dark:hover:bg-zinc-700/30 ${
-                        inspectingLog?.id === log.id
-                          ? isLight
-                            ? "bg-indigo-50/50"
-                            : "bg-indigo-950/20"
-                          : ""
-                      }`}
-                    >
-                      {/* Timestamp */}
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5 font-mono text-zinc-600 dark:text-zinc-300">
-                          <Clock size={12} className="opacity-60" />
-                          <span>{formatDateTime(log.occurredAt)}</span>
-                        </div>
-                      </td>
-
-                      {/* Actor */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2 min-w-[140px]">
-                          <div
-                            className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                              isLight ? "bg-zinc-200 text-zinc-700" : "bg-[#282828] text-zinc-300"
-                            }`}
-                          >
-                            {(log.actorName || log.actorEmail || "S").charAt(0).toUpperCase()}
-                          </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="font-semibold truncate max-w-[150px] leading-tight">
-                              {log.actorName || log.actorEmail || (isThai ? "ระบบอัตโนมัติ" : "System")}
-                            </span>
-                            {log.actorEmail && log.actorName && (
-                              <span className="text-[10.5px] text-zinc-400 truncate max-w-[150px] leading-tight">
-                                {log.actorEmail}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Action */}
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-lg border text-[11px] font-mono font-bold ${actionClass}`}
-                        >
-                          {log.action}
-                        </span>
-                      </td>
-
-                      {/* Entity */}
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5 font-mono">
-                          <span className="font-semibold text-zinc-800 dark:text-zinc-200">
-                            {log.entityType}
-                          </span>
-                          {log.entityId && (
-                            <span className="text-[10px] px-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 font-normal">
-                              #{log.entityId.slice(-6)}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Facility */}
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        {log.facilityCode ? (
-                          <div className="inline-flex items-center gap-1 text-[11px] text-zinc-600 dark:text-zinc-400">
-                            <MapPin size={11} className="text-zinc-400 shrink-0" />
-                            <span className="font-bold">{log.facilityCode}</span>
-                            {log.facilityName && (
-                              <span className="truncate max-w-[120px]">({log.facilityName})</span>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-zinc-400 text-[11px]">
-                            {isThai ? "ส่วนกลาง / องค์กร" : "HQ / Global"}
-                          </span>
-                        )}
-                      </td>
-
-                      {/* IP Address */}
-                      <td className="py-3 px-4 whitespace-nowrap font-mono text-[11px] text-zinc-500">
-                        {log.ipAddress || "-"}
-                      </td>
-
-                      {/* Details / Inspect */}
-                      <td className="py-3 px-4 text-right whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={() => setInspectingLog(log)}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                            isLight
-                              ? "bg-zinc-100 hover:bg-zinc-200 text-zinc-800"
-                              : "bg-[#484848] hover:bg-[#555555] text-white"
-                          }`}
-                        >
-                          <ExternalLink size={12} />
-                          <span>{isThai ? "ดูรายละเอียด" : "Details"}</span>
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                <ExternalLink size={12} />
+                <span>{isThai ? "ดูรายละเอียด" : "Details"}</span>
+              </button>
+            ),
+          },
+        ]}
+      />
 
       {/* Audit Detail Modal / Drawer */}
       {inspectingLog && (

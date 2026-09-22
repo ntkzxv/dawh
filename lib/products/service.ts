@@ -138,10 +138,27 @@ async function refs(x: PoolClient, c: AccessContext, i: ProductInput) {
       pickingStrategy: "FEFO requires LOT tracking and a positive shelf life.",
     });
 }
+export async function countProducts(c: AccessContext, f: ProductFilters): Promise<number> {
+  read(c);
+  const r = await dbPool.query<{ count: string }>(
+    `SELECT count(*)::text AS count FROM public.products p WHERE p.organization_id=$1 AND ($2::text IS NULL OR p.sku ILIKE '%'||$2||'%' ESCAPE '\\' OR p.name_th ILIKE '%'||$2||'%' ESCAPE '\\' OR p.name_en ILIKE '%'||$2||'%' ESCAPE '\\')AND($3::bigint IS NULL OR p.category_id=$3)AND($4::bigint IS NULL OR p.brand_id=$4)AND($5::text IS NULL OR p.tracking_method=$5)AND($6::boolean IS NULL OR p.is_active=$6)`,
+    [
+      c.organization.id,
+      f.search,
+      f.categoryId,
+      f.brandId,
+      f.trackingMethod,
+      f.active,
+    ],
+  );
+  return parseInt(r.rows[0]?.count || "0", 10);
+}
+
 export async function listProducts(c: AccessContext, f: ProductFilters) {
   read(c);
+  const offset = f.offset ?? 0;
   const r = await dbPool.query<Row>(
-    `${select} WHERE p.organization_id=$1 AND ($2::text IS NULL OR p.sku ILIKE '%'||$2||'%' ESCAPE '\\' OR p.name_th ILIKE '%'||$2||'%' ESCAPE '\\' OR p.name_en ILIKE '%'||$2||'%' ESCAPE '\\')AND($3::bigint IS NULL OR p.category_id=$3)AND($4::bigint IS NULL OR p.brand_id=$4)AND($5::text IS NULL OR p.tracking_method=$5)AND($6::boolean IS NULL OR p.is_active=$6)AND($7::timestamptz IS NULL OR(p.created_at,p.id)<($7,$8::bigint))ORDER BY p.created_at DESC,p.id DESC LIMIT $9`,
+    `${select} WHERE p.organization_id=$1 AND ($2::text IS NULL OR p.sku ILIKE '%'||$2||'%' ESCAPE '\\' OR p.name_th ILIKE '%'||$2||'%' ESCAPE '\\' OR p.name_en ILIKE '%'||$2||'%' ESCAPE '\\')AND($3::bigint IS NULL OR p.category_id=$3)AND($4::bigint IS NULL OR p.brand_id=$4)AND($5::text IS NULL OR p.tracking_method=$5)AND($6::boolean IS NULL OR p.is_active=$6)AND($7::timestamptz IS NULL OR(p.created_at,p.id)<($7,$8::bigint))ORDER BY p.created_at DESC,p.id DESC LIMIT $9 OFFSET $10`,
     [
       c.organization.id,
       f.search,
@@ -152,6 +169,7 @@ export async function listProducts(c: AccessContext, f: ProductFilters) {
       f.page.cursor?.timestamp ?? null,
       f.page.cursor?.id ?? null,
       f.page.limit + 1,
+      offset,
     ],
   );
   return r.rows.map(map);

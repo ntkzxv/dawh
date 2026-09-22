@@ -19,7 +19,7 @@ import {
   Building,
   ChevronDown,
 } from "lucide-react";
-import { CustomDropdown, Pagination, DatePicker } from "@/components/common";
+import { CustomDropdown, Pagination, DatePicker, DataTable } from "@/components/common";
 import type { ApiPage } from "@/lib/api/client";
 import type { ControlPanelListQuery } from "@/lib/api/control-panel";
 import { motion, AnimatePresence } from "framer-motion";
@@ -727,238 +727,232 @@ export default function RoleManagementTab({
           </div>
 
           {/* Users & Roles List Table */}
-          <div
-            className={`rounded-xl border overflow-hidden transition-colors ${
-              isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
-            }`}
-          >
-            <div className="overflow-x-auto [scrollbar-width:thin]">
-              <table className="w-full text-xs text-left">
-                <thead
-                  className={`text-[11px] font-bold uppercase tracking-wider ${
-                    isLight ? "bg-[#F4F4F5] text-zinc-600" : "bg-[#333333] text-zinc-300"
-                  }`}
+          <DataTable<AdminUserRecord>
+            data={paginatedUsers}
+            keyExtractor={(user) => user.id}
+            minWidth="900px"
+            emptyTitle={
+              isThai
+                ? "ไม่พบพนักงานที่ตรงกับเงื่อนไขการค้นหาหรือตัวกรอง"
+                : "No users matched the search or filter criteria"
+            }
+            emptyAction={
+              activeFiltersCount > 0 ? (
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="mt-1 px-3 py-1 rounded-lg text-xs font-bold underline cursor-pointer hover:opacity-100"
                 >
-                  <tr>
-                    <th className="p-3.5 min-w-[230px]">
-                      {isThai ? "พนักงาน / ผู้ใช้งาน" : "User / Employee"}
-                    </th>
-                    <th className="p-3.5 min-w-[140px]">
-                      {isThai ? "แผนก / สาขา" : "Department & Facility"}
-                    </th>
-                    <th className="p-3.5 min-w-[90px]">
-                      {isThai ? "สถานะ" : "Status"}
-                    </th>
-                    <th className="p-3.5 min-w-[320px]">
-                      {isThai ? "บทบาทที่ได้รับมอบหมาย (Current Assigned Roles)" : "Assigned Roles"}
-                    </th>
-                    <th className="p-3.5 text-right min-w-[110px]">
-                      {isThai ? "การจัดการ" : "Actions"}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className={`divide-y ${isLight ? "divide-zinc-200" : "divide-[#444444]/20"}`}>
-                  {filteredUsers.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="p-10 text-center">
-                        <div className="flex flex-col items-center justify-center gap-2 opacity-60">
-                          <AlertCircle size={28} />
-                          <span className="text-xs font-medium">
-                            {isThai
-                              ? "ไม่พบพนักงานที่ตรงกับเงื่อนไขการค้นหาหรือตัวกรอง"
-                              : "No users matched the search or filter criteria."}
-                          </span>
-                          {activeFiltersCount > 0 && (
-                            <button
-                              type="button"
-                              onClick={handleResetFilters}
-                              className="mt-1 px-3 py-1 rounded-lg text-xs font-bold underline cursor-pointer hover:opacity-100"
-                            >
-                              {isThai ? "ล้างตัวกรองและลองใหม่อีกครั้ง" : "Clear filters and try again"}
-                            </button>
+                  {isThai ? "ล้างตัวกรองและลองใหม่อีกครั้ง" : "Clear filters and try again"}
+                </button>
+              ) : undefined
+            }
+            columns={[
+              {
+                key: "user",
+                header: isThai ? "พนักงาน / ผู้ใช้งาน" : "User / Employee",
+                headerClassName: "min-w-[230px]",
+                className: "min-w-[230px]",
+                render: (user) => {
+                  const initials = (user.name || "U")
+                    .split(" ")
+                    .map((n) => n[0])
+                    .slice(0, 2)
+                    .join("")
+                    .toUpperCase();
+
+                  return (
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${
+                          isLight
+                            ? "bg-zinc-200 text-zinc-800"
+                            : "bg-[#2A2A2A] text-white border border-[#555555]"
+                        }`}
+                      >
+                        {initials}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-semibold text-xs truncate flex items-center gap-1.5">
+                          <span>{user.name}</span>
+                          {user.username && (
+                            <span className="text-[10px] font-mono opacity-50">
+                              (@{user.username})
+                            </span>
                           )}
                         </div>
-                      </td>
-                    </tr>
-                  ) : (
-                    paginatedUsers.map((user) => {
-                      const userRoles = user.roles || [];
-                      const initials = (user.name || "U")
-                        .split(" ")
-                        .map((n) => n[0])
-                        .slice(0, 2)
-                        .join("")
-                        .toUpperCase();
+                        <div className="text-[11px] font-mono opacity-60 truncate mt-0.5">
+                          {user.email}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                },
+              },
+              {
+                key: "department",
+                header: isThai ? "แผนก / สาขา" : "Department & Facility",
+                headerClassName: "min-w-[140px]",
+                className: "min-w-[140px]",
+                render: (user) => (
+                  <div className="flex flex-col gap-1">
+                    {user.department ? (
+                      <span className="text-[11px] font-medium opacity-80 flex items-center gap-1">
+                        <Building size={11} className="opacity-50 shrink-0" />
+                        <span className="truncate">{user.department.name}</span>
+                      </span>
+                    ) : (
+                      <span className="text-[11px] opacity-40 italic">-</span>
+                    )}
+                    {user.facility && (
+                      <span
+                        className={`text-[10px] px-1.5 py-0.2 rounded w-fit font-mono ${
+                          isLight
+                            ? "bg-zinc-100 text-zinc-700"
+                            : "bg-[#2C2C2C] text-zinc-300"
+                        }`}
+                      >
+                        {user.facility.name}
+                      </span>
+                    )}
+                  </div>
+                ),
+              },
+              {
+                key: "status",
+                header: isThai ? "สถานะ" : "Status",
+                headerClassName: "min-w-[90px]",
+                className: "min-w-[90px]",
+                render: (user) => (
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      user.accountStatus === "ACTIVE"
+                        ? "bg-[#2EC4B6]/15 text-[#2EC4B6]"
+                        : user.accountStatus === "SUSPENDED"
+                        ? "bg-[#FF9F1C]/15 text-[#FF9F1C]"
+                        : "bg-[#E71D36]/15 text-[#E71D36]"
+                    }`}
+                  >
+                    {user.accountStatus}
+                  </span>
+                ),
+              },
+              {
+                key: "roles",
+                header: isThai
+                  ? "บทบาทที่ได้รับมอบหมาย (Current Assigned Roles)"
+                  : "Assigned Roles",
+                headerClassName: "min-w-[320px]",
+                className: "min-w-[320px]",
+                render: (user) => {
+                  const userRoles = user.roles || [];
+                  if (userRoles.length === 0) {
+                    return (
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] border border-dashed transition-colors ${
+                          isLight
+                            ? "border-zinc-300 bg-zinc-100/70 text-zinc-500"
+                            : "border-[#555555] bg-[#2C2C2C] text-zinc-400"
+                        }`}
+                      >
+                        <AlertCircle
+                          size={12}
+                          className={isLight ? "text-zinc-400" : "text-zinc-500"}
+                        />
+                        <span>
+                          {isThai ? "ยังไม่มีบทบาทที่มอบหมาย" : "No Role Assigned"}
+                        </span>
+                      </span>
+                    );
+                  }
 
-                      return (
-                        <tr
-                          key={user.id}
-                          className={`transition-colors ${
-                            isLight ? "hover:bg-zinc-50" : "hover:bg-white/[0.03]"
-                          }`}
-                        >
-                          {/* 1. User Identity */}
-                          <td className="p-3.5">
-                            <div className="flex items-center gap-3">
-                              <div
-                                className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${
-                                  isLight
-                                    ? "bg-zinc-200 text-zinc-800"
-                                    : "bg-[#2A2A2A] text-white border border-[#555555]"
-                                }`}
-                              >
-                                {initials}
-                              </div>
-                              <div className="min-w-0">
-                                <div className="font-semibold text-xs truncate flex items-center gap-1.5">
-                                  <span>{user.name}</span>
-                                  {user.username && (
-                                    <span className="text-[10px] font-mono opacity-50">
-                                      (@{user.username})
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="text-[11px] font-mono opacity-60 truncate mt-0.5">
-                                  {user.email}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
+                  return (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {userRoles.map((r) => {
+                        const isSysAdmin = r.code === "SYSTEM_ADMINISTRATOR";
+                        const isExpiring = Boolean(r.validUntil);
 
-                          {/* 2. Department & Facility */}
-                          <td className="p-3.5">
-                            <div className="flex flex-col gap-1">
-                              {user.department ? (
-                                <span className="text-[11px] font-medium opacity-80 flex items-center gap-1">
-                                  <Building size={11} className="opacity-50 shrink-0" />
-                                  <span className="truncate">{user.department.name}</span>
-                                </span>
-                              ) : (
-                                <span className="text-[11px] opacity-40 italic">-</span>
-                              )}
-                              {user.facility && (
-                                <span
-                                  className={`text-[10px] px-1.5 py-0.2 rounded w-fit font-mono ${
-                                    isLight
-                                      ? "bg-zinc-100 text-zinc-700"
-                                      : "bg-[#2C2C2C] text-zinc-300"
-                                  }`}
-                                >
-                                  {user.facility.name}
-                                </span>
-                              )}
-                            </div>
-                          </td>
-
-                          {/* 3. Account Status */}
-                          <td className="p-3.5">
-                            <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                user.accountStatus === "ACTIVE"
-                                  ? "bg-[#2EC4B6]/15 text-[#2EC4B6]"
-                                  : user.accountStatus === "SUSPENDED"
-                                  ? "bg-[#FF9F1C]/15 text-[#FF9F1C]"
-                                  : "bg-[#E71D36]/15 text-[#E71D36]"
-                              }`}
-                            >
-                              {user.accountStatus}
-                            </span>
-                          </td>
-
-                          {/* 4. Assigned Roles */}
-                          <td className="p-3.5">
-                            {userRoles.length === 0 ? (
-                              <span
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] border border-dashed transition-colors ${
-                                  isLight
-                                    ? "border-zinc-300 bg-zinc-100/70 text-zinc-500"
-                                    : "border-[#555555] bg-[#2C2C2C] text-zinc-400"
-                                }`}
-                              >
-                                <AlertCircle size={12} className={isLight ? "text-zinc-400" : "text-zinc-500"} />
-                                <span>{isThai ? "ยังไม่มีบทบาทที่มอบหมาย" : "No Role Assigned"}</span>
-                              </span>
-                            ) : (
-                              <div className="flex flex-wrap items-center gap-1.5">
-                                {userRoles.map((r) => {
-                                  const isSysAdmin = r.code === "SYSTEM_ADMINISTRATOR";
-                                  const isExpiring = Boolean(r.validUntil);
-
-                                  return (
-                                    <div
-                                      key={r.assignmentId || r.roleId}
-                                      className={`inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-lg text-[11px] font-medium border transition-colors ${
-                                        isSysAdmin
-                                          ? isLight
-                                            ? "bg-zinc-200/90 text-zinc-900 border-zinc-300 shadow-2xs font-semibold"
-                                            : "bg-white/[0.12] text-white border-white/20 shadow-2xs font-semibold"
-                                          : isLight
-                                          ? "bg-zinc-100 text-zinc-800 border-zinc-200 hover:border-zinc-300"
-                                          : "bg-[#2A2A2A] text-zinc-200 border-[#444444] hover:border-zinc-500"
-                                      }`}
-                                    >
-                                      {isSysAdmin && (
-                                        <Shield size={12} className={`${isLight ? "text-zinc-700" : "text-zinc-300"} shrink-0`} />
-                                      )}
-                                      <span className="font-semibold">{r.name}</span>
-
-                                      {isExpiring && r.validUntil && (
-                                        <span
-                                          title={`Valid until: ${new Date(r.validUntil).toLocaleDateString()}`}
-                                          className="text-[9.5px] px-1 py-0.2 rounded bg-black/10 dark:bg-white/10 opacity-75 font-mono"
-                                        >
-                                          {new Date(r.validUntil).toLocaleDateString()}
-                                        </span>
-                                      )}
-
-                                      {/* Quick Revoke Button */}
-                                      <button
-                                        type="button"
-                                        title={
-                                          isThai
-                                            ? `เพิกถอนบทบาท ${r.name}`
-                                            : `Revoke ${r.name}`
-                                        }
-                                        onClick={() =>
-                                          setRevokeTarget({
-                                            user,
-                                            roleAssignment: r,
-                                          })
-                                        }
-                                        className="ml-0.5 p-0.5 rounded hover:bg-red-500/20 text-zinc-400 hover:text-red-500 transition-colors cursor-pointer"
-                                      >
-                                        <X size={12} />
-                                      </button>
-                                    </div>
-                                  );
-                                })}
-                              </div>
+                        return (
+                          <div
+                            key={r.assignmentId || r.roleId}
+                            className={`inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-lg text-[11px] font-medium border transition-colors ${
+                              isSysAdmin
+                                ? isLight
+                                  ? "bg-zinc-200/90 text-zinc-900 border-zinc-300 shadow-2xs font-semibold"
+                                  : "bg-white/[0.12] text-white border-white/20 shadow-2xs font-semibold"
+                                : isLight
+                                ? "bg-zinc-100 text-zinc-800 border-zinc-200 hover:border-zinc-300"
+                                : "bg-[#2A2A2A] text-zinc-200 border-[#444444] hover:border-zinc-500"
+                            }`}
+                          >
+                            {isSysAdmin && (
+                              <Shield
+                                size={12}
+                                className={`${
+                                  isLight ? "text-zinc-700" : "text-zinc-300"
+                                } shrink-0`}
+                              />
                             )}
-                          </td>
+                            <span className="font-semibold">{r.name}</span>
 
-                          {/* 5. Actions */}
-                          <td className="p-3.5 text-right">
+                            {isExpiring && r.validUntil && (
+                              <span
+                                title={`Valid until: ${new Date(
+                                  r.validUntil
+                                ).toLocaleDateString()}`}
+                                className="text-[9.5px] px-1 py-0.2 rounded bg-black/10 dark:bg-white/10 opacity-75 font-mono"
+                              >
+                                {new Date(r.validUntil).toLocaleDateString()}
+                              </span>
+                            )}
+
                             <button
                               type="button"
-                              onClick={() => openAssignModalForUser(user)}
-                              className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
-                                isLight
-                                  ? "bg-white hover:bg-zinc-100 text-zinc-800 border-zinc-300 shadow-xs"
-                                  : "bg-[#333333] hover:bg-[#3D3D3D] text-white border-[#555555] shadow-xs"
-                              }`}
+                              title={
+                                isThai
+                                  ? `เพิกถอนบทบาท ${r.name}`
+                                  : `Revoke ${r.name}`
+                              }
+                              onClick={() =>
+                                setRevokeTarget({
+                                  user,
+                                  roleAssignment: r,
+                                })
+                              }
+                              className="ml-0.5 p-0.5 rounded hover:bg-red-500/20 text-zinc-400 hover:text-red-500 transition-colors cursor-pointer"
                             >
-                              <Plus size={12} />
-                              <span>{isThai ? "เพิ่มบทบาท" : "Add Role"}</span>
+                              <X size={12} />
                             </button>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                },
+              },
+              {
+                key: "actions",
+                header: isThai ? "การจัดการ" : "Actions",
+                align: "right",
+                headerClassName: "min-w-[110px]",
+                className: "min-w-[110px]",
+                render: (user) => (
+                  <button
+                    type="button"
+                    onClick={() => openAssignModalForUser(user)}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                      isLight
+                        ? "bg-white hover:bg-zinc-100 text-zinc-800 border-zinc-300 shadow-xs"
+                        : "bg-[#333333] hover:bg-[#3D3D3D] text-white border-[#555555] shadow-xs"
+                    }`}
+                  >
+                    <Plus size={12} />
+                    <span>{isThai ? "เพิ่มบทบาท" : "Add Role"}</span>
+                  </button>
+                ),
+              },
+            ]}
+          />
 
           {/* Pagination (Outside Table Card) */}
           {(filteredUsers.length > 0 || pageIndex > 1) && (

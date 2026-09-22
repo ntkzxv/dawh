@@ -1,6 +1,8 @@
 import { UserRole } from "@/config/roles";
 
 export type { UserRole };
+export * from "./auth";
+export * from "./profile";
 
 export type PrefixType = "mr" | "mrs" | "miss" | string;
 

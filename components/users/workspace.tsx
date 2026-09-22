@@ -205,8 +205,8 @@ export default function WorkspaceView({ onNavigate }: WorkspaceViewProps) {
   }, [router, isThai, notify]);
 
   const handleOpenAccount = () => {
-    if (onNavigate) onNavigate("settings");
-    else navigateWithLoading("/settings");
+    if (onNavigate) onNavigate("account");
+    else navigateWithLoading("/account");
   };
 
   const handleDynamicNavigate = (route: string) => {

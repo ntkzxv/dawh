@@ -171,6 +171,22 @@ export function parseProductFilters(url: URL): ProductFilters {
   const rawActive = url.searchParams.get("active");
   if (rawActive !== null && rawActive !== "true" && rawActive !== "false")
     throw new ValidationError({ active: "Use true or false." });
+  const pageReq = parsePageRequest(url);
+  const rawPage = url.searchParams.get("page");
+  const rawOffset = url.searchParams.get("offset");
+  let offset: number | undefined = undefined;
+  if (rawOffset !== null) {
+    const parsedOffset = parseInt(rawOffset, 10);
+    if (!isNaN(parsedOffset) && parsedOffset >= 0) {
+      offset = parsedOffset;
+    }
+  } else if (rawPage !== null) {
+    const parsedPage = parseInt(rawPage, 10);
+    if (!isNaN(parsedPage) && parsedPage > 0) {
+      offset = (parsedPage - 1) * pageReq.limit;
+    }
+  }
+
   return {
     search:
       url.searchParams
@@ -181,6 +197,7 @@ export function parseProductFilters(url: URL): ProductFilters {
     brandId,
     trackingMethod: rawTracking ?? null,
     active: rawActive === null ? null : rawActive === "true",
-    page: parsePageRequest(url),
+    page: pageReq,
+    offset,
   };
 }

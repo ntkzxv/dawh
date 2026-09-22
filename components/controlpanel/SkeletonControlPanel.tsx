@@ -758,6 +758,9 @@ export default function SkeletonControlPanelTab({
     case "organization":
       return <SkeletonOrganizationTab />;
 
+    case "workspace":
+      return <SkeletonOrganizationTab />;
+
     case "products":
       return <SkeletonProductsTab />;
 

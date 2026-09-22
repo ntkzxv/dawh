@@ -113,18 +113,7 @@ export function DynamicWorkspaceLayout({
       return;
     }
 
-    const pureThaiName = module.titleTh.split(" (")[0];
-
     if (status === "maintenance") {
-      notify.warning(
-        isThai ? "ระบบปิดปรับปรุงชั่วคราว" : "Scheduled Maintenance",
-        {
-          message: isThai
-            ? `${pureThaiName} อยู่ระหว่างปิดปรับปรุงชั่วคราวเพื่ออัปเกรดระบบ`
-            : `${module.title} is currently under maintenance.`,
-          duration: 4000,
-        }
-      );
       const target = `/maintenance?module=${module.id}`;
       if (onNavigate) {
         onNavigate(target);

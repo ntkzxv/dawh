@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { useTheme } from "@/context/ThemeContext";
-import { CustomDropdown } from "@/components/common";
+import { CustomDropdown, DataTable } from "@/components/common";
 import type {
   ProductRecord,
   ProductCategoryRecord,
@@ -229,94 +229,118 @@ export default function ProductCatalogTab({
             <span className="opacity-60">{filteredProducts.length} {isThai ? "รายการสินค้า" : "products found"}</span>
           </div>
 
-          <div
-            className={`rounded-xl border overflow-hidden ${
-              isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
-            }`}
-          >
-            <div className="overflow-x-auto [scrollbar-width:thin]">
-              <table className="w-full text-xs text-left">
-                <thead
-                  className={`text-[11px] font-bold uppercase ${
-                    isLight ? "bg-[#F4F4F5] text-zinc-600" : "bg-[#333333] text-zinc-300"
-                  }`}
-                >
-                  <tr>
-                    <th className="p-3">SKU</th>
-                    <th className="p-3">{isThai ? "ชื่อสินค้า" : "Product Name"}</th>
-                    <th className="p-3">{isThai ? "หมวดหมู่และแบรนด์" : "Category & Brand"}</th>
-                    <th className="p-3">{isThai ? "การติดตาม" : "Tracking"}</th>
-                    <th className="p-3">{isThai ? "กลยุทธ์หยิบ" : "Picking"}</th>
-                    <th className="p-3">{isThai ? "หน่วยและบาร์โค้ด" : "Packaging & Barcode"}</th>
-                    <th className="p-3">{isThai ? "สถานะ" : "Status"}</th>
-                    <th className="p-3 text-right">{isThai ? "จัดการ" : "Action"}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#444444]/30">
-                  {filteredProducts.map((p) => (
-                    <tr
-                      key={p.id}
-                      className={`transition-colors ${
-                        isLight ? "hover:bg-zinc-50" : "hover:bg-white/[0.03]"
-                      }`}
-                    >
-                      <td className="p-3 font-mono font-bold text-[#6366F1]">{p.sku}</td>
-                      <td className="p-3">
-                        <div className="font-semibold">{isThai ? p.nameTh : p.nameEn}</div>
-                        <div className="text-[11px] opacity-60">{isThai ? p.nameEn : p.nameTh}</div>
-                      </td>
-                      <td className="p-3">
-                        <div className="font-medium">{p.categoryName}</div>
-                        <div className="text-[11px] opacity-60">{p.brandName}</div>
-                      </td>
-                      <td className="p-3">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-500/15">
-                          {p.trackingMethod}
-                        </span>
-                      </td>
-                      <td className="p-3 font-bold font-mono text-[11px]">{p.pickingStrategy}</td>
-                      <td className="p-3">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedProductForUnits(p)}
-                          className="flex items-center gap-1 font-semibold text-[11px] text-[#6366F1] hover:underline"
-                        >
-                          <Barcode size={13} />
-                          <span>{p.units.length} units, {p.barcodes.length} codes</span>
-                        </button>
-                      </td>
-                      <td className="p-3">
-                        <button
-                          type="button"
-                          onClick={() => onUpdateProduct(p.id, { isActive: !p.isActive })}
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            p.isActive ? "bg-[#2EC4B6]/20 text-[#2EC4B6]" : "bg-zinc-500/20 text-zinc-400"
-                          }`}
-                        >
-                          {p.isActive ? (isThai ? "เปิดใช้งาน" : "ACTIVE") : (isThai ? "ปิดการขาย" : "INACTIVE")}
-                        </button>
-                      </td>
-                      <td className="p-3 text-right">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingProduct(p);
-                            setProductForm(p);
-                            setIsAddProductOpen(true);
-                          }}
-                          className={`p-1.5 rounded ${
-                            isLight ? "hover:bg-zinc-100 text-zinc-700" : "hover:bg-white/10 text-zinc-300"
-                          }`}
-                        >
-                          <Edit size={14} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <DataTable<ProductRecord>
+            data={filteredProducts}
+            keyExtractor={(p) => p.id}
+            minWidth="800px"
+            emptyTitle={isThai ? "ไม่พบสินค้าตามเงื่อนไข" : "No products found"}
+            columns={[
+              {
+                key: "sku",
+                header: "SKU",
+                render: (p) => (
+                  <span className="font-mono font-bold text-[#6366F1]">{p.sku}</span>
+                ),
+              },
+              {
+                key: "name",
+                header: isThai ? "ชื่อสินค้า" : "Product Name",
+                render: (p) => (
+                  <div>
+                    <div className="font-semibold">{isThai ? p.nameTh : p.nameEn}</div>
+                    <div className="text-[11px] opacity-60">{isThai ? p.nameEn : p.nameTh}</div>
+                  </div>
+                ),
+              },
+              {
+                key: "category",
+                header: isThai ? "หมวดหมู่และแบรนด์" : "Category & Brand",
+                render: (p) => (
+                  <div>
+                    <div className="font-medium">{p.categoryName}</div>
+                    <div className="text-[11px] opacity-60">{p.brandName}</div>
+                  </div>
+                ),
+              },
+              {
+                key: "tracking",
+                header: isThai ? "การติดตาม" : "Tracking",
+                render: (p) => (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-500/15">
+                    {p.trackingMethod}
+                  </span>
+                ),
+              },
+              {
+                key: "picking",
+                header: isThai ? "กลยุทธ์หยิบ" : "Picking",
+                render: (p) => (
+                  <span className="font-bold font-mono text-[11px]">{p.pickingStrategy}</span>
+                ),
+              },
+              {
+                key: "packaging",
+                header: isThai ? "หน่วยและบาร์โค้ด" : "Packaging & Barcode",
+                render: (p) => (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedProductForUnits(p)}
+                    className="flex items-center gap-1 font-semibold text-[11px] text-[#6366F1] hover:underline"
+                  >
+                    <Barcode size={13} />
+                    <span>
+                      {p.units.length} units, {p.barcodes.length} codes
+                    </span>
+                  </button>
+                ),
+              },
+              {
+                key: "status",
+                header: isThai ? "สถานะ" : "Status",
+                render: (p) => (
+                  <button
+                    type="button"
+                    onClick={() => onUpdateProduct(p.id, { isActive: !p.isActive })}
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      p.isActive
+                        ? "bg-[#2EC4B6]/20 text-[#2EC4B6]"
+                        : "bg-zinc-500/20 text-zinc-400"
+                    }`}
+                  >
+                    {p.isActive
+                      ? isThai
+                        ? "เปิดใช้งาน"
+                        : "ACTIVE"
+                      : isThai
+                      ? "ปิดการขาย"
+                      : "INACTIVE"}
+                  </button>
+                ),
+              },
+              {
+                key: "actions",
+                header: isThai ? "จัดการ" : "Action",
+                align: "right",
+                render: (p) => (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingProduct(p);
+                      setProductForm(p);
+                      setIsAddProductOpen(true);
+                    }}
+                    className={`p-1.5 rounded ${
+                      isLight
+                        ? "hover:bg-zinc-100 text-zinc-700"
+                        : "hover:bg-white/10 text-zinc-300"
+                    }`}
+                  >
+                    <Edit size={14} />
+                  </button>
+                ),
+              },
+            ]}
+          />
         </div>
       )}
 
