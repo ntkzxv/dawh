@@ -7,6 +7,9 @@ export type { HeaderNavbarProps } from "./HeaderNavbar";
 
 export { default as MobileNavbar } from "./MobileNavbar";
 
+export { default as DropdownMenu } from "./DropdownMenu";
+export type { DropdownMenuProps } from "./DropdownMenu";
+
 export { default as SidebarDatacenter } from "./SidebarDatacenter";
 export { default as SidebarWarehouse } from "./SidebarWarehouse";
 

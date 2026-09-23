@@ -4,14 +4,10 @@ import React, { useEffect, useState } from "react";
 import {
   ChevronLeft,
   ChevronUp,
-  Settings,
-  LogOut,
-  Languages,
   LayoutGrid,
   Layers,
   Sun,
   Moon,
-  Monitor,
   Menu,
   X,
   PackageCheck,
@@ -21,14 +17,13 @@ import {
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
-import { getCurrentSession, logout } from "@/lib/auth-client";
-import { fetchAndStoreUserProfile, toEmployeeProfile } from "@/lib/user-profile";
-import { getAppMe, checkIsAdmin } from "@/lib/api/session";
 import { useTheme } from "@/context/ThemeContext";
 import { DAWH_LOGOS } from "@/config/brand";
 import { useLoading } from "@/components/loading_screen";
 import { useAppLanguage, setAppLanguage } from "@/utils/language";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAccountMenu } from "@/hooks/useAccountMenu";
+import DropdownMenu from "./DropdownMenu";
 import MobileNavbar from "./MobileNavbar";
 
 export interface NavbarMainProps {
@@ -81,11 +76,6 @@ export default function NavbarMain({
   const pathname = usePathname();
   const { navigateWithLoading } = useLoading();
   const { theme, toggleTheme } = useTheme();
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [userName, setUserName] = useState<string>("User");
-  const [userUsername, setUserUsername] = useState<string | null>(null);
-  const [userAvatar, setUserAvatar] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [isMinimized, setIsMinimized] = useState(initialMinimized);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -93,6 +83,18 @@ export default function NavbarMain({
   const appLang = useAppLanguage();
   const activeLang = controlledLang ?? (appLang.toLowerCase() as "th" | "en");
   const isLight = theme === "light";
+
+  // Shared account menu logic
+  const accountMenu = useAccountMenu({
+    lang: activeLang === "th" ? "TH" : "EN",
+    onLangChange: (lang) => {
+      onLangChange?.(lang.toLowerCase() as "th" | "en");
+    },
+    settingsPath,
+  });
+  const { profile: accountProfile, fullName: userName, initials, isAdmin, mounted: accountMounted } = accountMenu;
+  const userAvatar = accountProfile.avatar_url || null;
+  const userUsername = accountProfile.username || accountProfile.email?.split("@")[0] || null;
 
   // Auto-close mobile drawer on route change
   useEffect(() => {
@@ -124,132 +126,6 @@ export default function NavbarMain({
       setIsMinimized(initialMinimized);
     }
   }, [initialMinimized]);
-
-  useEffect(() => {
-    let isMounted = true;
-    setMounted(true);
-
-    // Format Helper: "Nattakit B." or Nickname fallback
-    const formatDisplayName = (
-      fullName?: string | null,
-      fName?: string | null,
-      lName?: string | null,
-      nicknameTh?: string | null,
-      nicknameEn?: string | null
-    ) => {
-      if (fName && lName) {
-        return `${fName} ${lName.charAt(0).toUpperCase()}.`;
-      }
-      if (fullName) {
-        const parts = fullName.trim().split(/\s+/);
-        if (parts.length >= 2) {
-          return `${parts[0]} ${parts[parts.length - 1].charAt(0).toUpperCase()}.`;
-        }
-        return parts[0];
-      }
-      if (nicknameTh) return nicknameTh;
-      if (nicknameEn) return nicknameEn;
-      return "Administrator";
-    };
-
-    // 1. Instant Cache Check (0ms - prevents any profile avatar/name flicker)
-    try {
-      const cached = localStorage.getItem("dawh_user_profile");
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed) {
-          setUserRole(parsed.role?.toLowerCase() || null);
-          setUserName(formatDisplayName(parsed.full_name, parsed.first_name, parsed.last_name, parsed.nickname_th, parsed.nickname));
-          setUserUsername(parsed.username || (parsed.nickname ? parsed.nickname.toLowerCase() : "user"));
-          setUserAvatar(parsed.avatar_url || null);
-        }
-      }
-    } catch {
-      // Non-blocking
-    }
-
-    const loadUserData = async () => {
-      try {
-        if (typeof window === "undefined") return;
-        try {
-          const me = await getAppMe();
-          if (me?.data && isMounted) {
-            const adminCheck = checkIsAdmin(me.data.roles, me.data.permissions);
-            setIsAdmin(adminCheck);
-          }
-          if (me.data.profile && isMounted) {
-            const canonicalProfile = toEmployeeProfile(me.data.profile);
-            setUserName(formatDisplayName(canonicalProfile.full_name, canonicalProfile.first_name, canonicalProfile.last_name, canonicalProfile.nickname_th, canonicalProfile.nickname));
-            setUserUsername(canonicalProfile.username || "user");
-            setUserAvatar(canonicalProfile.avatar_url || null);
-            localStorage.setItem("dawh_user_profile", JSON.stringify(canonicalProfile));
-          } else if (isMounted) {
-            setUserName(me.data.user.name || me.data.user.email.split("@")[0]);
-            setUserUsername(me.data.user.email.split("@")[0] || "user");
-          }
-        } catch {
-          // Fall back to Better Auth identity below if the application API is unavailable.
-        }
-        const session = await getCurrentSession();
-        const targetId = session?.user.id || undefined;
-        const targetEmail = session?.user.email || undefined;
-
-        if (targetId) {
-          const empProfile = await fetchAndStoreUserProfile(targetId, targetEmail);
-          if (empProfile && isMounted) {
-            setUserRole(empProfile.role?.toLowerCase() || null);
-            setUserName(formatDisplayName(empProfile.full_name, empProfile.first_name, empProfile.last_name, empProfile.nickname_th, empProfile.nickname));
-            setUserUsername(empProfile.username || (empProfile.nickname ? empProfile.nickname.toLowerCase() : "user"));
-            setUserAvatar(empProfile.avatar_url || null);
-            return;
-          }
-        }
-
-        // Check the business profile cache before falling back to auth identity.
-        const cached = localStorage.getItem("dawh_user_profile");
-        if (cached && isMounted) {
-          const parsed = JSON.parse(cached);
-          setUserRole(parsed.role?.toLowerCase() || null);
-          setUserName(formatDisplayName(parsed.full_name, parsed.first_name, parsed.last_name, parsed.nickname_th, parsed.nickname));
-          setUserUsername(parsed.username || (parsed.nickname ? parsed.nickname.toLowerCase() : "user"));
-          setUserAvatar(parsed.avatar_url || null);
-          return;
-        }
-
-        if (session?.user && isMounted) {
-          setUserName(session.user.name || session.user.email.split("@")[0]);
-          setUserUsername(session.user.email.split("@")[0] || "user");
-          setUserAvatar(session.user.image || null);
-          setUserRole(null);
-          return;
-        }
-
-        // Default active user fallback if no session yet
-        if (isMounted) {
-          const fallbackName = targetEmail ? targetEmail.split("@")[0] : "Administrator";
-          setUserName(fallbackName);
-          setUserUsername(fallbackName.toLowerCase());
-          setUserRole("super_admin");
-        }
-      } catch {
-        // Non-blocking fallback
-      } finally {
-        if (isMounted) setMounted(true);
-      }
-    };
-
-    loadUserData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  const toggleLanguage = () => {
-    const nextLang = activeLang === "en" ? "th" : "en";
-    setAppLanguage(nextLang.toUpperCase() as "TH" | "EN");
-    onLangChange?.(nextLang);
-  };
 
   const handleToggleMinimize = () => {
     const nextState = !isMinimized;
@@ -622,7 +498,7 @@ export default function NavbarMain({
               </div>
             </button>
 
-            {/* Expandable Account Actions Dropdown Popup */}
+            {/* Expandable Account Actions Dropdown */}
             <AnimatePresence>
               {isAccountOpen && !isMinimized && (
                 <motion.div
@@ -633,119 +509,18 @@ export default function NavbarMain({
                   className="w-full overflow-hidden mt-2"
                 >
                   <div
-                    className={`p-2 rounded-2xl border space-y-1 shadow-lg ${
+                    className={`p-2 rounded-2xl border shadow-lg ${
                       isLight
                         ? "bg-[#FFFFFF] border-[#E4E4E7]"
                         : "bg-[#282828] border-[#444444]"
                     }`}
                   >
-                    {/* Theme Switcher in Dropdown */}
-                  <button
-                    type="button"
-                    onClick={toggleTheme}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium transition-all text-left cursor-pointer ${
-                      isLight
-                        ? "text-[#2C2C2C] hover:bg-[#F4F4F5] hover:text-[#222222]"
-                        : "text-[#F4F4F5] hover:bg-white/10 hover:text-[#FFFFFF]"
-                    }`}
-                  >
-                    {isLight ? (
-                      <Moon size={16} className="shrink-0 text-[#222222]" />
-                    ) : (
-                      <Sun size={16} className="shrink-0 text-[#FFFFFF]" />
-                    )}
-                    <span className="truncate">
-                      {isLight ? t.themeDark : t.themeLight}
-                    </span>
-                  </button>
-
-                  {/* Language Switcher */}
-                  <button
-                    type="button"
-                    onClick={toggleLanguage}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium transition-all text-left cursor-pointer ${
-                      isLight
-                        ? "text-slate-800 hover:bg-[#F4F4F5] hover:text-slate-950"
-                        : "text-[#F4F4F5] hover:bg-white/10 hover:text-[#FFFFFF]"
-                    }`}
-                  >
-                    <Languages
-                      size={16}
-                      className={`shrink-0 ${
-                        isLight ? "text-[#222222]" : "text-[#FFFFFF]"
-                      }`}
+                    <DropdownMenu
+                      {...accountMenu}
+                      onClose={() => setIsAccountOpen(false)}
+                      variant="inline"
+                      settingsPath={settingsPath}
                     />
-                    <span className="truncate">{t.lang}</span>
-                  </button>
-
-                    {/* Control Panel Link (if admin) */}
-                    {isAdmin && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsAccountOpen(false);
-                          navigateWithLoading(
-                            "/controlpanel",
-                            activeLang === "th" ? "กำลังเปิดแผงควบคุมระบบ..." : "Opening Control Panel...",
-                            activeLang === "th" ? "กำลังโหลดเครื่องมือดูแลระบบ..." : "Loading management tools..."
-                          );
-                        }}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium transition-all text-left cursor-pointer ${
-                          isLight
-                            ? "text-slate-800 hover:bg-[#F4F4F5] hover:text-slate-950"
-                            : "text-[#F4F4F5] hover:text-[#FFFFFF] hover:bg-white/10"
-                        }`}
-                      >
-                        <Monitor
-                          size={16}
-                          className={`shrink-0 ${
-                            isLight ? "text-[#222222]" : "text-[#FFFFFF]"
-                          }`}
-                        />
-                        <span className="truncate">
-                          {activeLang === "th" ? "แผงควบคุมระบบ" : "Control Panel"}
-                        </span>
-                      </button>
-                    )}
-
-                    {/* Account Settings Link */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsAccountOpen(false);
-                        navigateWithLoading(
-                          settingsPath,
-                          "กำลังเปิดการตั้งค่าบัญชี...",
-                          "กำลังโหลดข้อมูลโปรไฟล์และความปลอดภัย..."
-                        );
-                      }}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium transition-all text-left cursor-pointer ${
-                        isLight
-                          ? "text-slate-800 hover:bg-[#F4F4F5] hover:text-slate-950"
-                          : "text-[#F4F4F5] hover:text-[#FFFFFF] hover:bg-white/10"
-                      }`}
-                    >
-                      <Settings
-                        size={16}
-                        className={`shrink-0 ${
-                          isLight ? "text-[#222222]" : "text-[#FFFFFF]"
-                        }`}
-                      />
-                      <span className="truncate">{t.account}</span>
-                    </button>
-
-                    {/* Sign Out Button */}
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        setIsAccountOpen(false);
-                        await logout();
-                      }}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium text-rose-500 hover:bg-rose-500/10 transition-all text-left cursor-pointer"
-                    >
-                      <LogOut size={16} className="shrink-0 text-rose-500" />
-                      <span className="truncate">{t.logout}</span>
-                    </button>
                   </div>
                 </motion.div>
               )}

@@ -23,12 +23,10 @@ import {
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage, setAppLanguage } from "@/utils/language";
-import { fetchAndStoreUserProfile } from "@/lib/user-profile";
-import { getCurrentSession, logout } from "@/lib/auth-client";
 import { useLoading } from "@/components/loading_screen";
 import { DAWH_LOGOS, getDawhLogo } from "@/config/brand";
 import { motion, AnimatePresence } from "framer-motion";
-import { getAppMe, checkIsAdmin } from "@/lib/api/session";
+import { useAccountMenu } from "@/hooks/useAccountMenu";
 
 interface SubTabItem {
   id: string;
@@ -61,117 +59,32 @@ export default function MobileNavbar({
   const [isAccountSheetOpen, setIsAccountSheetOpen] = useState(false);
   const [isSubMenuDrawerOpen, setIsSubMenuDrawerOpen] = useState(false);
 
-  // User Profile State with live database fetching
-  const [userProfile, setUserProfile] = useState<{
-    name: string;
-    employeeCode: string;
-    role: string;
-    department: string;
-    avatarUrl: string | null;
-    initials: string;
-    isAdmin: boolean;
-  }>({
-    name: "Authorized Staff",
-    employeeCode: "EMP-2847",
-    role: "Staff",
-    department: "General Operations",
-    avatarUrl: null,
-    initials: "DA",
-    isAdmin: false,
-  });
+  // Shared account menu logic
+  const accountMenu = useAccountMenu();
+  const { profile, fullName, initials, isAdmin } = accountMenu;
 
-  const parseAndSetProfile = (p: any) => {
-    if (!p) return;
-    const fullName =
-      p.full_name ||
-      [p.first_name, p.last_name].filter(Boolean).join(" ") ||
-      [p.first_name_th, p.last_name_th].filter(Boolean).join(" ") ||
-      p.name ||
-      p.username ||
-      "Staff Member";
-
-    const parts = fullName.trim().split(" ");
-    const initials =
+  // Derive mobile-friendly profile shape from the shared hook
+  const userProfile = useMemo(() => {
+    const name = fullName || profile.email?.split("@")[0] || "Authorized Staff";
+    const parts = name.trim().split(" ");
+    const derivedInitials =
       parts.length >= 2
         ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
-        : fullName.slice(0, 2).toUpperCase();
-
-    const roleStr = p.role || "Staff";
-    const roleFormatted = roleStr.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase());
-
-    const isAdminRole =
-      roleStr.toLowerCase() === "devops" ||
-      roleStr.toLowerCase() === "super_admin" ||
-      roleStr.toLowerCase() === "superadmin" ||
-      roleStr.toLowerCase() === "admin" ||
-      roleStr.toLowerCase().includes("admin") ||
-      roleStr.toLowerCase().includes("devops");
-
-    setUserProfile({
-      name: fullName,
-      employeeCode: p.employee_code || p.employee_id || "EMP-2847",
+        : name.slice(0, 2).toUpperCase();
+    const roleStr = profile.role || "Staff";
+    const roleFormatted = roleStr
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (l: string) => l.toUpperCase());
+    return {
+      name,
+      employeeCode: (profile as any).employee_code || (profile as any).employee_id || "EMP-0000",
       role: roleFormatted,
-      department: p.department || (isThai ? "ฝ่ายปฏิบัติการ" : "Operations"),
-      avatarUrl: p.avatar_url || null,
-      initials: initials || "DA",
-      isAdmin: isAdminRole,
-    });
-  };
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const cached = localStorage.getItem("dawh_user_profile");
-        if (cached) {
-          parseAndSetProfile(JSON.parse(cached));
-        }
-      } catch (e) {
-        // Fallback
-      }
-
-      const loadLiveProfile = async () => {
-        try {
-          try {
-            const me = await getAppMe();
-            if (me?.data) {
-              const isMeAdmin = checkIsAdmin(me.data.roles, me.data.permissions);
-              setUserProfile((prev) => ({
-                ...prev,
-                isAdmin: isMeAdmin,
-              }));
-            }
-          } catch {
-            // fallback to profile check
-          }
-
-          const session = await getCurrentSession();
-          const targetId = session?.user.id;
-          const targetEmail = session?.user.email;
-
-          if (targetId) {
-            const fetched = await fetchAndStoreUserProfile(targetId, targetEmail);
-            if (fetched) {
-              parseAndSetProfile(fetched);
-            }
-          }
-        } catch (err) {
-          // Non-blocking
-        }
-      };
-
-      loadLiveProfile();
-
-      const handleProfileUpdate = () => {
-        try {
-          const cached = localStorage.getItem("dawh_user_profile");
-          if (cached) parseAndSetProfile(JSON.parse(cached));
-        } catch {}
-      };
-
-      window.addEventListener("dawh_profile_updated", handleProfileUpdate);
-      return () => window.removeEventListener("dawh_profile_updated", handleProfileUpdate);
-    }
-  }, []);
+      department: profile.department || (isThai ? "ฝ่ายปฏิบัติการ" : "Operations"),
+      avatarUrl: profile.avatar_url || null,
+      initials: derivedInitials || initials || "DA",
+      isAdmin,
+    };
+  }, [fullName, profile, initials, isAdmin, isThai]);
 
   // Close drawers on route change
   useEffect(() => {
@@ -628,7 +541,7 @@ export default function MobileNavbar({
                 type="button"
                 onClick={async () => {
                   setIsAccountSheetOpen(false);
-                  await logout();
+                  await accountMenu.handleLogout();
                 }}
                 className="w-full h-[41px] border border-[#444444] rounded-[8px] flex items-center justify-center gap-2 text-white font-bold text-[13px] hover:bg-white/10 transition-all cursor-pointer mt-3 font-mono"
               >
