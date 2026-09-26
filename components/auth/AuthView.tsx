@@ -1076,22 +1076,9 @@ export function UserAuthView({
                           </motion.button>
                         </div>
 
-                        <div className="flex items-center justify-center pt-2 text-[13px]">
-                          <span className={isLight ? "text-[#383838]" : "text-[#A1A1AA]"}>
-                            {t.noAccount}{" "}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => switchMode("signup")}
-                            className={`font-bold underline ml-1.5 transition-colors cursor-pointer ${
-                              isLight
-                                ? "text-[#222222] hover:text-[#000000]"
-                                : "text-white hover:text-white/80"
-                            }`}
-                          >
-                            {t.signUpLink}
-                          </button>
-                        </div>
+                        <p className={`pt-2 text-center text-[13px] ${isLight ? "text-[#383838]" : "text-[#A1A1AA]"}`}>
+                          {lang === "TH" ? "บัญชีใหม่ให้ผู้ดูแลระบบเพิ่มสมาชิกในองค์กร" : "Ask your administrator to add your account."}
+                        </p>
 
                         {/* 🔘 BOTTOM CORNER QUICK SWITCH: RECENT USERS BUTTON */}
                         <div className="pt-3 mt-1 border-t border-dashed border-slate-200 dark:border-[#383838] flex items-center justify-between">

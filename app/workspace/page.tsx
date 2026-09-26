@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { WorkspaceView } from "@/components/users";
+import Workspace from "@/components/warehouse/Workspace";
 
 export const metadata: Metadata = {
   title: "Workspace",
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function WorkspacePage() {
-  return <WorkspaceView />;
+  return <Workspace />;
 }

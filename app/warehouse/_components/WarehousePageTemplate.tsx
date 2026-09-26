@@ -6,7 +6,6 @@ import { useAppLanguage } from "@/utils/language";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Box,
-  CheckCircle2,
   Package,
   Layers,
   ArrowDownLeft,
@@ -17,7 +16,6 @@ import {
   ArrowLeftRight,
   Sparkles,
   AlertTriangle,
-  AlertCircle,
   Activity,
   ChevronDown,
   ChevronUp,
@@ -92,9 +90,6 @@ let hasEnteredWarehouseModule = false;
 export default function WarehousePageTemplate({
   titleEn,
   titleTh,
-  routePath,
-  iconName,
-  icon,
   metrics,
   children,
   fullBleed = false,
@@ -245,52 +240,7 @@ export default function WarehousePageTemplate({
           </div>
         )}
 
-        {/* Custom Content */}
-        {children ? (
-          children
-        ) : (
-          <div
-            className={`rounded-2xl border p-6 sm:p-8 transition-all ${
-              isLight
-                ? "bg-white border-[#E4E4E7] shadow-sm"
-                : "bg-[#383838] border-[#444444]"
-            }`}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-[#2EC4B6]">
-                  {renderWarehouseIconByName(iconName, 20)}
-                </div>
-                <div>
-                  <h3 className="text-[18px] font-bold">
-                    Stock Dispatch & Receiving: {titleEn}
-                  </h3>
-                  <p className="text-[13px] text-[#999999]">
-                    Connected to Central Warehouse Master DB
-                  </p>
-                </div>
-              </div>
-
-              <span className="flex items-center gap-1.5 text-[12px] font-semibold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-                <CheckCircle2 size={13} />
-                Live Feed Active
-              </span>
-            </div>
-
-            <div
-              className={`rounded-xl border p-4 text-[13px] font-mono leading-relaxed overflow-x-auto ${
-                isLight
-                  ? "bg-slate-50 border-slate-200 text-slate-800"
-                  : "bg-[#202020] border-[#383838] text-[#E4E4E7]"
-              }`}
-            >
-              <div>[WAREHOUSE-ZONE-A] Temperature 24.5°C | Humidity 48% | Status: OPTIMAL</div>
-              <div>[BARCODE-SCANNER] Engine Ready (EAN-13, QR, Code128)</div>
-              <div>[DISPATCH-LOG] Real-time item verification active on route {routePath}</div>
-              <div>[SUPABASE-STORAGE] CDN Image Cache Synced</div>
-            </div>
-          </div>
-        )}
+        {children}
         </div>
       </div>
     </div>

@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { NavbarMain, NavbarsubWarehouse } from "@/components/navbar";
 import { useTheme } from "@/context/ThemeContext";
 import { getCurrentSession } from "@/lib/auth-client";
-import { checkProfileCompleteness, fetchAndStoreUserProfile } from "@/lib/user-profile";
-import { getAppMe } from "@/lib/api/session";
+import { warehouseApi } from "@/lib/api/warehouse";
+import type { Role } from "@/lib/api/warehouse";
 import { motion } from "framer-motion";
 
 export default function WarehouseLayout({
@@ -19,10 +19,9 @@ export default function WarehouseLayout({
   const isLight = theme === "light";
   const [isMinimized, setIsMinimized] = useState(false);
   const [sidebarAnimated, setSidebarAnimated] = useState(false);
+  const [role, setRole] = useState<Role | null>(null);
 
-  // Incomplete Profile Guard: Block direct access to warehouse module if profile is incomplete
   useEffect(() => {
-    let isMounted = true;
     async function verifyAccess() {
       try {
         const session = await getCurrentSession();
@@ -31,49 +30,28 @@ export default function WarehouseLayout({
           return;
         }
 
-        let profile = null;
-        let profileComplete = false;
-        try {
-          const me = await getAppMe();
-          profileComplete = me.data.profileComplete;
-        } catch {
-          // Fall back to the cached profile for transient API failures.
-        }
-        try {
-          const cached = localStorage.getItem("dawh_user_profile");
-          if (cached) profile = JSON.parse(cached);
-        } catch {
-          // Non-blocking
-        }
-
-        if (!profile) {
-          profile = await fetchAndStoreUserProfile(session.user.id, session.user.email);
-        }
-
-        const { isComplete } = checkProfileCompleteness(profile);
-        if (!profileComplete && !isComplete && isMounted) {
-          router.replace("/workspace?incomplete=true");
-        }
+        const me = await warehouseApi.me();
+        setRole(me.role);
+        if (me.mustChangePassword) router.replace("/settings");
       } catch (err) {
         console.error("Layout guard verification error:", err);
       }
     }
-
-    verifyAccess();
-    return () => {
-      isMounted = false;
-    };
+    void verifyAccess();
   }, [router]);
 
   useEffect(() => {
+    let frame = 0;
     try {
       const saved = localStorage.getItem("dawh_sidebar_minimized");
       if (saved !== null) {
-        setIsMinimized(JSON.parse(saved));
+        const minimized = JSON.parse(saved) === true;
+        frame = requestAnimationFrame(() => setIsMinimized(minimized));
       }
     } catch {
       // Non-blocking
     }
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   const handleMinimizedChange = (minimized: boolean) => {
@@ -111,7 +89,7 @@ export default function WarehouseLayout({
           hubPath="/workspace"
           settingsPath="/settings"
         >
-          <NavbarsubWarehouse isMinimized={isMinimized} />
+          <NavbarsubWarehouse isMinimized={isMinimized} userRole={role} />
         </NavbarMain>
       </motion.div>
 

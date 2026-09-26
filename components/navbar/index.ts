@@ -15,5 +15,3 @@ export { default as SidebarWarehouse } from "./SidebarWarehouse";
 
 export { default as NavbarsubDatacenter } from "./NavbarsubDatacenter";
 export { default as NavbarsubWarehouse } from "./NavbarsubWarehouse";
-export { default as NavbarsubControlPanel } from "./NavbarsubControlPanel";
-export type { NavbarsubControlPanelProps } from "./NavbarsubControlPanel";
