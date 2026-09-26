@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AccountView } from "@/components/users";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "User Account Profile",
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function AccountPage() {
-  return <AccountView />;
+  redirect("/settings");
 }

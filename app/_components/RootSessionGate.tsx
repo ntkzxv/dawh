@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import DawhLandingPage from "../landing-page/page";
 import AuthLoadingScreen from "@/components/loading_screen/AuthLoadingScreen";
 import { getCurrentSession } from "@/lib/auth-client";
-import { toEmployeeProfile } from "@/lib/user-profile";
-import { getAppMe } from "@/lib/api/session";
 
 interface RootSessionGateProps {
   initialHasSession?: boolean;
@@ -22,16 +20,6 @@ export default function RootSessionGate({
   useEffect(() => {
     // กรณี server ยืนยันว่ามี session แล้ว ให้ prefetch และนำทางเข้าสู่ workspace
     if (initialHasSession) {
-      void getAppMe()
-        .then((response) => {
-          if (response.data.profile) {
-            localStorage.setItem(
-              "dawh_user_profile",
-              JSON.stringify(toEmployeeProfile(response.data.profile)),
-            );
-          }
-        })
-        .catch(() => undefined);
       router.prefetch("/workspace");
       const timer = setTimeout(() => {
         router.replace("/workspace");
@@ -47,15 +35,6 @@ export default function RootSessionGate({
         if (isMounted && session?.user) {
           setHasSession(true);
           setIsRedirecting(true);
-          try {
-            const me = await getAppMe();
-            if (me.data.profile) {
-              localStorage.setItem(
-                "dawh_user_profile",
-                JSON.stringify(toEmployeeProfile(me.data.profile)),
-              );
-            }
-          } catch {}
           router.prefetch("/workspace");
           setTimeout(() => {
             router.replace("/workspace");

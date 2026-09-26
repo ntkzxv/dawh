@@ -1,8 +1,5 @@
-"use client";
-
-import React from "react";
-import AdminControlPanel from "@/components/controlpanel/AdminControlPanel";
+import ControlPanel from "@/components/warehouse/ControlPanel";
 
 export default function ControlPanelPage() {
-  return <AdminControlPanel />;
+  return <ControlPanel />;
 }
