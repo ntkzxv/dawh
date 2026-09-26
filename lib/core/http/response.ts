@@ -17,15 +17,6 @@ export function jsonOk<T>(request: Request, data: T, status = 200) {
   );
 }
 
-export function jsonCollection<T>(request: Request, data: T[], page: PageMeta) {
-  const requestId = getRequestId(request);
-
-  return Response.json(
-    { data, page, meta: { requestId } },
-    { headers: { "x-request-id": requestId } }
-  );
-}
-
 export function jsonError(request: Request, error: ApiError) {
   const requestId = getRequestId(request);
 

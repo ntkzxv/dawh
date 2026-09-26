@@ -1,26 +1,6 @@
-import { requireAccess } from "@/lib/access/service";
 import { apiRoute } from "@/lib/core/http/handler";
-import { nextCursor } from "@/lib/core/http/pagination";
-import { jsonCollection } from "@/lib/core/http/response";
-import { listStockLedger } from "@/lib/stock/service";
-import { parseStockLedgerFilters } from "@/lib/stock/validation";
+import { jsonOk } from "@/lib/core/http/response";
+import { getActor } from "@/lib/warehouse/core";
+import { listLedger } from "@/lib/warehouse/stock";
 export const runtime = "nodejs";
-export const GET = apiRoute(async (request) => {
-  const url = new URL(request.url),
-    filters = parseStockLedgerFilters(url);
-  const context = await requireAccess(request, {
-    permission: "stock.ledger.read",
-    facilityId: filters.facilityId ?? undefined,
-    facilityScope: "READ",
-  });
-  const rows = await listStockLedger(context, filters),
-    hasMore = rows.length > filters.page.limit,
-    data = hasMore ? rows.slice(0, filters.page.limit) : rows;
-  return jsonCollection(request, data, {
-    limit: filters.page.limit,
-    nextCursor: hasMore
-      ? nextCursor(rows, filters.page.limit, (x) => x.postedAt)
-      : null,
-    hasMore,
-  });
-});
+export const GET = apiRoute(async (request) => jsonOk(request, await listLedger(await getActor(request), new URL(request.url).searchParams)));

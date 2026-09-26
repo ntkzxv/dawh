@@ -54,7 +54,7 @@ export async function apiRequest<T>(
   init: RequestInit = {},
 ): Promise<ApiEnvelope<T>> {
   const headers = new Headers(init.headers);
-  if (init.body && !headers.has("content-type")) {
+  if (init.body && !(init.body instanceof FormData) && !headers.has("content-type")) {
     headers.set("content-type", "application/json");
   }
   headers.set("accept", "application/json");
@@ -110,3 +110,6 @@ export async function apiPatch<T>(path: string, body: unknown, init?: RequestIni
   return apiRequest<T>(path, { ...init, method: "PATCH", body: JSON.stringify(body) });
 }
 
+export async function apiDelete<T>(path: string, init?: RequestInit) {
+  return apiRequest<T>(path, { ...init, method: "DELETE" });
+}

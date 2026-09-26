@@ -7,7 +7,8 @@ export const runtime = "nodejs";
 
 export const GET = apiRoute(async (request) => {
   try {
-    await dbPool.query("SELECT 1");
+    const result = await dbPool.query<{ users: string | null; orders: string | null }>("SELECT to_regclass('app.app_users')::text AS users, to_regclass('app.purchase_orders')::text AS orders");
+    if (!result.rows[0]?.users || !result.rows[0]?.orders) throw new Error("Warehouse schema is missing.");
   } catch {
     throw new ApiError(503, "DEPENDENCY_UNAVAILABLE", "Database is unavailable.");
   }

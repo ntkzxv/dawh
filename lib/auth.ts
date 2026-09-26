@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { admin } from "better-auth/plugins";
 
 import { sendVerificationEmail } from "@/lib/auth/email";
 import { dbPool } from "@/lib/core/db/pool";
@@ -32,6 +33,7 @@ const createAuth = () =>
     },
     emailAndPassword: {
       enabled: true,
+      disableSignUp: true,
       minPasswordLength: 8,
       maxPasswordLength: 128,
       requireEmailVerification: authEmailEnabled,
@@ -63,6 +65,7 @@ const createAuth = () =>
       window: 60,
       max: 100,
     },
+    plugins: [admin()],
   });
 
 type BetterAuthInstance = ReturnType<typeof createAuth>;
