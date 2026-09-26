@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import Settings from "@/components/warehouse/Settings";
 
 export const metadata: Metadata = {
   title: "User Account Profile",
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function AccountPage() {
-  redirect("/settings");
+  return <Settings />;
 }
