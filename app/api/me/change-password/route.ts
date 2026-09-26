@@ -7,10 +7,9 @@ import { getActor } from "@/lib/warehouse/core";
 export const runtime = "nodejs";
 export const POST = apiRoute(async (request) => {
   const actor = await getActor(request, true);
-  const body = await parseJsonObject(request);
-  const result = await changeOwnPassword(actor, request.headers, body, {
-    requireConfirmation: false,
-    auditAction: "INITIAL_PASSWORD_CHANGED",
+  const result = await changeOwnPassword(actor, request.headers, await parseJsonObject(request), {
+    requireConfirmation: true,
+    auditAction: "PASSWORD_CHANGED",
   });
   return jsonOk(request, result);
 });

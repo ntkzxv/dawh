@@ -51,7 +51,9 @@ const createAuth = () =>
     },
     user: {
       changeEmail: {
-        enabled: authEmailEnabled,
+        // The application has a password-confirmed direct-change endpoint.
+        // Keep Better Auth's verification-email change flow unavailable.
+        enabled: false,
       },
     },
     session: {
