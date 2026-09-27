@@ -26,11 +26,11 @@
 | ปัญหาและติดตามเคลม | `/api/issues`, `/{issueId}/events`, `/{issueId}/claims` | Admin/CEO/Manager/Counter; ติดต่อ supplier ภายนอกระบบ |
 | หลักฐานและรายงาน | `/api/media`, `/api/reports/receipts`, `/api/reports/outstanding`, `/api/audit` | เปิดรูปตามสิทธิ์; audit ให้ Admin/CEO |
 
-Role `ADMIN` ใช้จัดการระบบภายในองค์กรเดียว ไม่ใช่ Better Auth public admin role. การ soft delete สมาชิกจะ ban บัญชีและลบ session; การกู้คืนปลด ban. สมาชิกใหม่ถูกบังคับเปลี่ยนรหัสผ่านเริ่มต้นก่อนใช้ API ธุรกิจ
+Role `ADMIN` ใช้จัดการระบบภายในองค์กรเดียว ไม่ใช่ Better Auth public admin role. การ soft delete สมาชิกจะ ban บัญชีและลบ session; การกู้คืนปลด ban. สมาชิกใหม่ใช้รหัสผ่านที่ Admin ตั้งเพื่อเข้าใช้งานได้ทันที และเปลี่ยนรหัสผ่านเองภายหลังได้
 
 ## ลำดับการใช้งาน
 
-1. **ตั้งค่าครั้งแรก:** admin เดิมเข้าสู่ระบบ → `POST /api/org` หนึ่งครั้ง → เพิ่มสาขา คลัง supplier หน่วย และสินค้า → เพิ่ม CEO/สมาชิกด้วย `/api/org/members` สมาชิกใหม่เปลี่ยนรหัสผ่านเริ่มต้นผ่าน `/api/me/change-initial-password`
+1. **ตั้งค่าครั้งแรก:** admin เดิมเข้าสู่ระบบ → `POST /api/org` หนึ่งครั้ง → เพิ่มสาขา คลัง supplier หน่วย และสินค้า → เพิ่ม CEO/สมาชิกด้วย `/api/org/members` สมาชิกใหม่เข้าใช้ได้ทันทีและเปลี่ยนรหัสผ่านภายหลังผ่าน `/api/me/change-password` ได้
 2. **บันทึก PO:** CEO สั่งจริงภายนอกระบบ ผู้มีสิทธิ์บันทึก supplier, วันสั่ง, รายการ, จำนวนและราคา พร้อม `orderedByCeoId` แยกจากผู้กรอก PO ไม่มี `branchId` และไม่มีขั้นอนุมัติ
 3. **เก็บหลักฐาน supplier:** อัปโหลดรูปแต่ละหน้าไป `/api/media` แล้วสร้าง `/api/supplier-receipts` โดยอ้าง PO, กรอกเลขเอกสารภายนอกและรายการสินค้าตามใบจริง ระบบเตือนเลข/รูปที่อาจซ้ำ
 4. **เก็บหลักฐานขนส่ง:** อัปโหลดรูปแล้วสร้าง `/api/carrier-receipts` ด้วยรหัส PO ใบขนส่งหลายใบอ้าง PO เดียวกันได้ หากใบไม่มี SKU ให้ส่ง `lines: []` หรือไม่ส่ง `lines`

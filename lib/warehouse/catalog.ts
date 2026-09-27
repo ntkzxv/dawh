@@ -2,20 +2,25 @@ import "server-only";
 
 import { dbPool } from "@/lib/core/db/pool";
 import { withTransaction } from "@/lib/core/db/transaction";
-import { ApiError, NotFoundError, ValidationError } from "@/lib/core/http/errors";
+import {
+  ApiError,
+  NotFoundError,
+  ValidationError,
+} from "@/lib/core/http/errors";
+import type { CatalogKind } from "@/lib/contracts/warehouse";
+import { canEditCatalog, isGlobalRole } from "@/lib/contracts/warehouse-policy";
+import { pageResult, parsePage } from "@/lib/warehouse/pagination";
 import {
   audit,
   id,
   money,
   optionalText,
   requireBranch,
-  requireRole,
   text,
   type Actor,
 } from "@/lib/warehouse/core";
 
-type Kind = "branches" | "warehouses" | "suppliers" | "units" | "product-groups"
-  | "product-categories" | "brands" | "product-models" | "products";
+type Kind = CatalogKind;
 
 const tables: Record<Kind, string> = {
   branches: "branches",
@@ -30,114 +35,209 @@ const tables: Record<Kind, string> = {
 };
 
 const editableColumns: Record<Kind, Record<string, string>> = {
-  branches: { code: "code", name: "name", address: "address", active: "active" },
+  branches: {
+    code: "code",
+    name: "name",
+    address: "address",
+    active: "active",
+  },
   warehouses: { code: "code", name: "name", active: "active" },
-  suppliers: { code: "code", name: "name", contact: "contact", phone: "phone", address: "address", active: "active" },
+  suppliers: {
+    code: "code",
+    name: "name",
+    contact: "contact",
+    phone: "phone",
+    address: "address",
+    active: "active",
+  },
   units: { code: "code", name: "name" },
   "product-groups": { name: "name" },
   "product-categories": { name: "name", groupId: "group_id" },
   brands: { name: "name" },
   "product-models": { name: "name", brandId: "brand_id" },
   products: {
-    sku: "sku", name: "name", groupId: "group_id", categoryId: "category_id",
-    brandId: "brand_id", modelId: "model_id", unitId: "unit_id",
-    serialTracked: "serial_tracked", cost: "cost", salePrice: "sale_price",
-    reorderPoint: "reorder_point", active: "active",
+    sku: "sku",
+    name: "name",
+    groupId: "group_id",
+    categoryId: "category_id",
+    brandId: "brand_id",
+    modelId: "model_id",
+    unitId: "unit_id",
+    serialTracked: "serial_tracked",
+    cost: "cost",
+    salePrice: "sale_price",
+    reorderPoint: "reorder_point",
+    active: "active",
   },
 };
 
 function catalog(kind: string): { kind: Kind; table: string } {
-  if (!Object.hasOwn(tables, kind)) throw new NotFoundError("Catalog collection");
+  if (!Object.hasOwn(tables, kind))
+    throw new NotFoundError("Catalog collection");
   return { kind: kind as Kind, table: tables[kind as Kind] };
 }
 
 function requireEditor(actor: Actor, kind: Kind) {
-  requireRole(actor, kind === "warehouses" ? ["ADMIN", "CEO", "MANAGER"] : ["ADMIN", "CEO"]);
+  if (!canEditCatalog(actor.role, kind))
+    throw new ApiError(
+      403,
+      "FORBIDDEN",
+      "You do not have permission for this action.",
+    );
 }
 
 function reorderPoint(value: unknown): string | null {
   if (value == null) return null;
   const raw = String(value);
   if (!/^\d{1,15}(?:\.\d{1,3})?$/.test(raw)) {
-    throw new ValidationError({ reorderPoint: "Use a nonnegative quantity with at most three decimals." });
+    throw new ValidationError({
+      reorderPoint: "Use a nonnegative quantity with at most three decimals.",
+    });
   }
   return raw;
 }
 
-function createFields(kind: Kind, body: Record<string, unknown>): { columns: string[]; values: unknown[] } {
+function createFields(
+  kind: Kind,
+  body: Record<string, unknown>,
+): { columns: string[]; values: unknown[] } {
   switch (kind) {
-    case "branches": return {
-      columns: ["code", "name", "address"],
-      values: [text(body.code, "code", 50), text(body.name, "name", 160), optionalText(body.address, "address", 1000)],
-    };
-    case "warehouses": return {
-      columns: ["branch_id", "code", "name"],
-      values: [id(body.branchId, "branchId"), text(body.code, "code", 50), text(body.name, "name", 160)],
-    };
-    case "suppliers": return {
-      columns: ["code", "name", "contact", "phone", "address"],
-      values: [
-        text(body.code, "code", 50), text(body.name, "name", 160),
-        optionalText(body.contact, "contact", 160), optionalText(body.phone, "phone", 50),
-        optionalText(body.address, "address", 1000),
-      ],
-    };
-    case "units": return {
-      columns: ["code", "name"],
-      values: [text(body.code, "code", 30), text(body.name, "name", 80)],
-    };
+    case "branches":
+      return {
+        columns: ["code", "name", "address"],
+        values: [
+          text(body.code, "code", 50),
+          text(body.name, "name", 160),
+          optionalText(body.address, "address", 1000),
+        ],
+      };
+    case "warehouses":
+      return {
+        columns: ["branch_id", "code", "name"],
+        values: [
+          id(body.branchId, "branchId"),
+          text(body.code, "code", 50),
+          text(body.name, "name", 160),
+        ],
+      };
+    case "suppliers":
+      return {
+        columns: ["code", "name", "contact", "phone", "address"],
+        values: [
+          text(body.code, "code", 50),
+          text(body.name, "name", 160),
+          optionalText(body.contact, "contact", 160),
+          optionalText(body.phone, "phone", 50),
+          optionalText(body.address, "address", 1000),
+        ],
+      };
+    case "units":
+      return {
+        columns: ["code", "name"],
+        values: [text(body.code, "code", 30), text(body.name, "name", 80)],
+      };
     case "product-groups":
-    case "brands": return { columns: ["name"], values: [text(body.name, "name", 160)] };
-    case "product-categories": return {
-      columns: ["group_id", "name"],
-      values: [body.groupId == null ? null : id(body.groupId, "groupId"), text(body.name, "name", 160)],
-    };
-    case "product-models": return {
-      columns: ["brand_id", "name"],
-      values: [body.brandId == null ? null : id(body.brandId, "brandId"), text(body.name, "name", 160)],
-    };
-    case "products": return {
-      columns: [
-        "sku", "name", "group_id", "category_id", "brand_id", "model_id",
-        "unit_id", "serial_tracked", "cost", "sale_price", "reorder_point",
-      ],
-      values: [
-        text(body.sku, "sku", 80), text(body.name, "name", 200),
-        body.groupId == null ? null : id(body.groupId, "groupId"),
-        body.categoryId == null ? null : id(body.categoryId, "categoryId"),
-        body.brandId == null ? null : id(body.brandId, "brandId"),
-        body.modelId == null ? null : id(body.modelId, "modelId"),
-        id(body.unitId, "unitId"), body.serialTracked === true,
-        body.cost == null ? null : money(body.cost, "cost"),
-        body.salePrice == null ? null : money(body.salePrice, "salePrice"),
-        reorderPoint(body.reorderPoint),
-      ],
-    };
+    case "brands":
+      return { columns: ["name"], values: [text(body.name, "name", 160)] };
+    case "product-categories":
+      return {
+        columns: ["group_id", "name"],
+        values: [
+          body.groupId == null ? null : id(body.groupId, "groupId"),
+          text(body.name, "name", 160),
+        ],
+      };
+    case "product-models":
+      return {
+        columns: ["brand_id", "name"],
+        values: [
+          body.brandId == null ? null : id(body.brandId, "brandId"),
+          text(body.name, "name", 160),
+        ],
+      };
+    case "products":
+      return {
+        columns: [
+          "sku",
+          "name",
+          "group_id",
+          "category_id",
+          "brand_id",
+          "model_id",
+          "unit_id",
+          "serial_tracked",
+          "cost",
+          "sale_price",
+          "reorder_point",
+        ],
+        values: [
+          text(body.sku, "sku", 80),
+          text(body.name, "name", 200),
+          body.groupId == null ? null : id(body.groupId, "groupId"),
+          body.categoryId == null ? null : id(body.categoryId, "categoryId"),
+          body.brandId == null ? null : id(body.brandId, "brandId"),
+          body.modelId == null ? null : id(body.modelId, "modelId"),
+          id(body.unitId, "unitId"),
+          body.serialTracked === true,
+          body.cost == null ? null : money(body.cost, "cost"),
+          body.salePrice == null ? null : money(body.salePrice, "salePrice"),
+          reorderPoint(body.reorderPoint),
+        ],
+      };
   }
 }
 
 function editValue(key: string, value: unknown): unknown {
   if (key === "active" || key === "serialTracked") {
-    if (typeof value !== "boolean") throw new ValidationError({ [key]: "Use true or false." });
+    if (typeof value !== "boolean")
+      throw new ValidationError({ [key]: "Use true or false." });
     return value;
   }
   if (key.endsWith("Id")) return value == null ? null : id(value, key);
-  if (key === "cost" || key === "salePrice") return value == null ? null : money(value, key);
+  if (key === "cost" || key === "salePrice")
+    return value == null ? null : money(value, key);
   if (key === "reorderPoint") return reorderPoint(value);
   return value == null ? null : text(value, key, 1000);
 }
 
-export async function listCatalog(actor: Actor, inputKind: string) {
+export async function listCatalog(
+  actor: Actor,
+  inputKind: string,
+  search?: URLSearchParams,
+) {
   const { kind, table } = catalog(inputKind);
   if (actor.role === "EMPLOYEE" && kind !== "branches" && kind !== "products") {
-    throw new ApiError(403, "FORBIDDEN", "This catalog is not available to employees.");
+    throw new ApiError(
+      403,
+      "FORBIDDEN",
+      "This catalog is not available to employees.",
+    );
   }
-  const scoped = actor.role !== "ADMIN" && actor.role !== "CEO";
-  const where = scoped && kind === "branches" ? "WHERE id = ANY($1::integer[])"
-    : scoped && kind === "warehouses" ? "WHERE branch_id = ANY($1::integer[])" : "";
-  const columns = actor.role === "EMPLOYEE"
-    ? kind === "products" ? "id,sku,name,unit_id,serial_tracked,active" : "id,code,name,active"
-    : "*";
+  if (kind === "products" && search?.get("lookup") === "1") {
+    const query = search.get("q")?.trim() ?? "";
+    if (query.length > 100)
+      throw new ValidationError({ q: "Use at most 100 characters." });
+    const result = await dbPool.query(
+      `SELECT id,sku,name,unit_id,serial_tracked,active FROM app.products
+      WHERE active AND ($1::text='' OR sku ILIKE '%'||$1||'%' OR name ILIKE '%'||$1||'%')
+      ORDER BY sku,id LIMIT 50`,
+      [query],
+    );
+    return result.rows;
+  }
+  const scoped = !isGlobalRole(actor.role);
+  const where =
+    scoped && kind === "branches"
+      ? "WHERE id = ANY($1::integer[])"
+      : scoped && kind === "warehouses"
+        ? "WHERE branch_id = ANY($1::integer[])"
+        : "";
+  const columns =
+    actor.role === "EMPLOYEE"
+      ? kind === "products"
+        ? "id,sku,name,unit_id,serial_tracked,active"
+        : "id,code,name,active"
+      : "*";
   const result = await dbPool.query(
     `SELECT ${columns} FROM app.${table} ${where} ORDER BY id DESC LIMIT 500`,
     where ? [actor.branchIds] : [],
@@ -145,7 +245,63 @@ export async function listCatalog(actor: Actor, inputKind: string) {
   return result.rows;
 }
 
-export async function createCatalog(actor: Actor, inputKind: string, body: Record<string, unknown>) {
+export async function listCatalogPage(
+  actor: Actor,
+  inputKind: string,
+  search: URLSearchParams,
+) {
+  const { kind, table } = catalog(inputKind);
+  if (actor.role === "EMPLOYEE" && kind !== "branches" && kind !== "products") {
+    throw new ApiError(
+      403,
+      "FORBIDDEN",
+      "This catalog is not available to employees.",
+    );
+  }
+  const { page, limit, offset } = parsePage(search);
+  const scoped = !isGlobalRole(actor.role);
+  const params: unknown[] = [];
+  let scope = "true";
+  if (scoped && (kind === "branches" || kind === "warehouses")) {
+    params.push(actor.branchIds);
+    scope = `${kind === "branches" ? "id" : "branch_id"}=ANY($1::integer[])`;
+  }
+  const query = search.get("q")?.trim() ?? "";
+  if (query.length > 100)
+    throw new ValidationError({ q: "Use at most 100 characters." });
+  params.push(query);
+  const q = `$${params.length}`;
+  const searchable =
+    kind === "products"
+      ? `(sku ILIKE '%'||${q}||'%' OR name ILIKE '%'||${q}||'%')`
+      : ["branches", "warehouses", "suppliers", "units"].includes(kind)
+        ? `(code ILIKE '%'||${q}||'%' OR name ILIKE '%'||${q}||'%')`
+        : `name ILIKE '%'||${q}||'%'`;
+  const where = `WHERE ${scope} AND (${q}::text='' OR ${searchable})`;
+  const columns =
+    actor.role === "EMPLOYEE"
+      ? kind === "products"
+        ? "id,sku,name,unit_id,serial_tracked,active"
+        : "id,code,name,active"
+      : "*";
+  const [totalResult, rows] = await Promise.all([
+    dbPool.query<{ total: number }>(
+      `SELECT COUNT(*)::integer AS total FROM app.${table} ${where}`,
+      params,
+    ),
+    dbPool.query(
+      `SELECT ${columns} FROM app.${table} ${where} ORDER BY id DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+      [...params, limit, offset],
+    ),
+  ]);
+  return pageResult(rows.rows, totalResult.rows[0].total, page, limit);
+}
+
+export async function createCatalog(
+  actor: Actor,
+  inputKind: string,
+  body: Record<string, unknown>,
+) {
   const { kind, table } = catalog(inputKind);
   requireEditor(actor, kind);
   const { columns, values } = createFields(kind, body);
@@ -157,12 +313,24 @@ export async function createCatalog(actor: Actor, inputKind: string, body: Recor
       `INSERT INTO app.${table}(${columns.join(", ")}) VALUES (${placeholders}) RETURNING *`,
       values,
     );
-    await audit(client, actor, "CATALOG_CREATED", table, result.rows[0].id, result.rows[0]);
+    await audit(
+      client,
+      actor,
+      "CATALOG_CREATED",
+      table,
+      result.rows[0].id,
+      result.rows[0],
+    );
     return result.rows[0];
   });
 }
 
-export async function updateCatalog(actor: Actor, inputKind: string, entityId: number, body: Record<string, unknown>) {
+export async function updateCatalog(
+  actor: Actor,
+  inputKind: string,
+  entityId: number,
+  body: Record<string, unknown>,
+) {
   const { kind, table } = catalog(inputKind);
   requireEditor(actor, kind);
   const entries = Object.entries(body);
@@ -172,16 +340,29 @@ export async function updateCatalog(actor: Actor, inputKind: string, entityId: n
   const values = entries.map(([key, value]) => editValue(key, value));
 
   return withTransaction(async (client) => {
-    const current = await client.query(`SELECT * FROM app.${table} WHERE id = $1 FOR UPDATE`, [entityId]);
+    const current = await client.query(
+      `SELECT * FROM app.${table} WHERE id = $1 FOR UPDATE`,
+      [entityId],
+    );
     if (!current.rowCount) throw new NotFoundError("Catalog item");
     if (kind === "warehouses") requireBranch(actor, current.rows[0].branch_id);
 
-    const assignments = entries.map(([key], index) => `${editableColumns[kind][key]} = $${index + 1}`).join(", ");
+    const assignments = entries
+      .map(([key], index) => `${editableColumns[kind][key]} = $${index + 1}`)
+      .join(", ");
     const result = await client.query(
       `UPDATE app.${table} SET ${assignments} WHERE id = $${values.length + 1} RETURNING *`,
       [...values, entityId],
     );
-    await audit(client, actor, "CATALOG_UPDATED", table, entityId, result.rows[0], current.rows[0]);
+    await audit(
+      client,
+      actor,
+      "CATALOG_UPDATED",
+      table,
+      entityId,
+      result.rows[0],
+      current.rows[0],
+    );
     return result.rows[0];
   });
 }
