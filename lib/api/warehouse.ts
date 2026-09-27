@@ -136,6 +136,7 @@ export type CarrierReceipt = {
   package_count: number | null;
   receiving_branch_id?: number | null;
   received_at?: string | null;
+  has_goods_receipt?: boolean;
   confirmation?: {
     receiving_branch_id: number;
     received_at: string;
@@ -261,6 +262,23 @@ export type InventoryProduct = CatalogItem & {
 };
 export type ApiListPage<T> = { items: T[]; page: ApiPage };
 
+async function cursorPage<T>(
+  path: string,
+  params: URLSearchParams,
+  signal?: AbortSignal,
+): Promise<ApiListPage<T>> {
+  const response = await apiGet<T[]>(`${path}?${params}`, { signal });
+  if (!response.page)
+    throw new Error("List response has no page information.");
+  return { items: response.data, page: response.page };
+}
+
+function cursorParams(cursor?: string | null) {
+  const params = new URLSearchParams({ limit: "20" });
+  if (cursor) params.set("cursor", cursor);
+  return params;
+}
+
 const data = async <T>(promise: ReturnType<typeof apiGet<T>>): Promise<T> =>
   (await promise).data;
 
@@ -379,8 +397,15 @@ export const warehouseApi = {
     id: number,
     body: Record<string, unknown>,
   ) => data(apiPatch<CatalogItem>(`/api/catalog/${kind}/${id}`, body)),
-  purchaseOrders: (signal?: AbortSignal) =>
-    data(apiGet<PurchaseOrder[]>("/api/purchase-orders", { signal })),
+  purchaseOrdersPage: (
+    cursor?: string | null,
+    signal?: AbortSignal,
+    query?: string,
+  ) => {
+    const params = cursorParams(cursor);
+    if (query?.trim()) params.set("q", query.trim());
+    return cursorPage<PurchaseOrder>("/api/purchase-orders", params, signal);
+  },
   purchaseOrder: (id: number, signal?: AbortSignal) =>
     data(apiGet<PurchaseOrder>(`/api/purchase-orders/${id}`, { signal })),
   createPurchaseOrder: (body: Record<string, unknown>) =>
@@ -389,16 +414,24 @@ export const warehouseApi = {
     data(apiPatch<PurchaseOrder>(`/api/purchase-orders/${id}`, body)),
   closePurchaseOrder: (id: number) =>
     data(apiPost<PurchaseOrder>(`/api/purchase-orders/${id}/close`, {})),
-  supplierReceipts: (signal?: AbortSignal) =>
-    data(apiGet<SupplierReceipt[]>("/api/supplier-receipts", { signal })),
+  supplierReceiptsPage: (cursor?: string | null, signal?: AbortSignal) =>
+    cursorPage<SupplierReceipt>(
+      "/api/supplier-receipts",
+      cursorParams(cursor),
+      signal,
+    ),
   supplierReceipt: (id: number) =>
     data(apiGet<SupplierReceipt>(`/api/supplier-receipts/${id}`)),
   createSupplierReceipt: (body: Record<string, unknown>) =>
     data(apiPost<SupplierReceipt>("/api/supplier-receipts", body)),
   updateSupplierReceipt: (id: number, body: Record<string, unknown>) =>
     data(apiPatch<SupplierReceipt>(`/api/supplier-receipts/${id}`, body)),
-  carrierReceipts: (signal?: AbortSignal) =>
-    data(apiGet<CarrierReceipt[]>("/api/carrier-receipts", { signal })),
+  carrierReceiptsPage: (cursor?: string | null, signal?: AbortSignal) =>
+    cursorPage<CarrierReceipt>(
+      "/api/carrier-receipts",
+      cursorParams(cursor),
+      signal,
+    ),
   carrierReceipt: (id: number, signal?: AbortSignal) =>
     data(apiGet<CarrierReceipt>(`/api/carrier-receipts/${id}`, { signal })),
   createCarrierReceipt: (body: Record<string, unknown>) =>
@@ -407,8 +440,12 @@ export const warehouseApi = {
     data(apiPatch<CarrierReceipt>(`/api/carrier-receipts/${id}`, body)),
   confirmDelivery: (id: number, body: Record<string, unknown>) =>
     data(apiPost<unknown>(`/api/carrier-receipts/${id}/confirm`, body)),
-  goodsReceipts: (signal?: AbortSignal) =>
-    data(apiGet<GoodsReceipt[]>("/api/goods-receipts", { signal })),
+  goodsReceiptsPage: (cursor?: string | null, signal?: AbortSignal) =>
+    cursorPage<GoodsReceipt>(
+      "/api/goods-receipts",
+      cursorParams(cursor),
+      signal,
+    ),
   goodsReceipt: (id: number) =>
     data(apiGet<GoodsReceipt>(`/api/goods-receipts/${id}`)),
   createGoodsReceipt: (body: Record<string, unknown>) =>
@@ -465,20 +502,28 @@ export const warehouseApi = {
     ),
   reverseStockDocument: (id: number, reason: string) =>
     data(apiPost<unknown>(`/api/stock/documents/${id}/reverse`, { reason })),
-  issues: () => data(apiGet<Issue[]>("/api/issues")),
-  issue: (id: number) => data(apiGet<Issue>(`/api/issues/${id}`)),
+  issuesPage: (cursor?: string | null, signal?: AbortSignal) =>
+    cursorPage<Issue>("/api/issues", cursorParams(cursor), signal),
+  issue: (id: number, signal?: AbortSignal) =>
+    data(apiGet<Issue>(`/api/issues/${id}`, { signal })),
   createIssue: (body: Record<string, unknown>) =>
     data(apiPost<Issue>("/api/issues", body)),
   addIssueEvent: (id: number, body: Record<string, unknown>) =>
     data(apiPost<Issue>(`/api/issues/${id}/events`, body)),
   addClaim: (id: number, body: Record<string, unknown>) =>
     data(apiPost<unknown>(`/api/issues/${id}/claims`, body)),
-  receiptReport: (signal?: AbortSignal) =>
-    data(
-      apiGet<Record<string, unknown>[]>("/api/reports/receipts", { signal }),
+  receiptReportPage: (cursor?: string | null, signal?: AbortSignal) =>
+    cursorPage<Record<string, unknown>>(
+      "/api/reports/receipts",
+      cursorParams(cursor),
+      signal,
     ),
-  outstandingReport: (signal?: AbortSignal) =>
-    data(apiGet<OutstandingLine[]>("/api/reports/outstanding", { signal })),
+  outstandingReportPage: (cursor?: string | null, signal?: AbortSignal) =>
+    cursorPage<OutstandingLine>(
+      "/api/reports/outstanding",
+      cursorParams(cursor),
+      signal,
+    ),
   audit: (signal?: AbortSignal) =>
     data(apiGet<AuditEvent[]>("/api/audit", { signal })),
   upload: async (file: File) => {

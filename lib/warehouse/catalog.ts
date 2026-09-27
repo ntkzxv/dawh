@@ -1,6 +1,6 @@
 import "server-only";
 
-import { dbPool } from "@/lib/core/db/pool";
+import { timedPoolQuery } from "@/lib/core/http/request-timing";
 import { withTransaction } from "@/lib/core/db/transaction";
 import {
   ApiError,
@@ -217,7 +217,7 @@ export async function listCatalog(
     const query = search.get("q")?.trim() ?? "";
     if (query.length > 100)
       throw new ValidationError({ q: "Use at most 100 characters." });
-    const result = await dbPool.query(
+    const result = await timedPoolQuery(
       `SELECT id,sku,name,unit_id,serial_tracked,active FROM app.products
       WHERE active AND ($1::text='' OR sku ILIKE '%'||$1||'%' OR name ILIKE '%'||$1||'%')
       ORDER BY sku,id LIMIT 50`,
@@ -238,7 +238,7 @@ export async function listCatalog(
         ? "id,sku,name,unit_id,serial_tracked,active"
         : "id,code,name,active"
       : "*";
-  const result = await dbPool.query(
+  const result = await timedPoolQuery(
     `SELECT ${columns} FROM app.${table} ${where} ORDER BY id DESC LIMIT 500`,
     where ? [actor.branchIds] : [],
   );
@@ -285,11 +285,11 @@ export async function listCatalogPage(
         : "id,code,name,active"
       : "*";
   const [totalResult, rows] = await Promise.all([
-    dbPool.query<{ total: number }>(
+    timedPoolQuery<{ total: number }>(
       `SELECT COUNT(*)::integer AS total FROM app.${table} ${where}`,
       params,
     ),
-    dbPool.query(
+    timedPoolQuery(
       `SELECT ${columns} FROM app.${table} ${where} ORDER BY id DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
       [...params, limit, offset],
     ),

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
-import RootSessionGate from "./_components/RootSessionGate";
+import AuthUnavailable from "./_components/AuthUnavailable";
+import DawhLandingPage from "./landing-page/page";
 
 export const metadata: Metadata = {
   title: "DAWH Enterprise Platform",
@@ -8,13 +10,12 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  let hasSession = false;
+  let session;
   try {
-    const session = await getSession();
-    hasSession = !!session?.user;
+    session = await getSession();
   } catch {
-    hasSession = false;
+    return <AuthUnavailable />;
   }
-
-  return <RootSessionGate initialHasSession={hasSession} />;
+  if (session?.user) redirect("/workspace");
+  return <DawhLandingPage />;
 }

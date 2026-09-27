@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useCallback, useMemo, useState, type FormEvent } from "react";
 import {
   AlertCircle,
@@ -21,8 +22,15 @@ import { warehouseApi, type MemberFull } from "@/lib/api/warehouse";
 import { useOptionalWarehouseAccount } from "@/context/WarehouseAccountContext";
 import { profileForm } from "./MemberProfileFields";
 import { message, Notice, panel, useRemote } from "./Ui";
-import { SecondaryRegModal } from "@/components/users/account/modals/SecondaryRegModal";
-import { AvatarCropModal } from "@/components/users/AvatarCropModal";
+
+const SecondaryRegModal = dynamic(
+  () => import("@/components/users/account/modals/SecondaryRegModal").then((module) => module.SecondaryRegModal),
+  { ssr: false },
+);
+const AvatarCropModal = dynamic(
+  () => import("@/components/users/AvatarCropModal").then((module) => module.AvatarCropModal),
+  { ssr: false },
+);
 
 export default function AccountProfile() {
   const account = useOptionalWarehouseAccount();

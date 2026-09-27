@@ -1,6 +1,6 @@
 import "server-only";
 
-import { dbPool } from "@/lib/core/db/pool";
+import { timedPoolQuery } from "@/lib/core/http/request-timing";
 import { withTransaction } from "@/lib/core/db/transaction";
 import {
   ApiError,
@@ -18,6 +18,7 @@ import {
   requireRole,
   type Actor,
 } from "@/lib/warehouse/core";
+import { cursorPageResult, parseCursorPage } from "@/lib/warehouse/cursor-pagination";
 
 type NewLine = { productId: number; quantity: string; unitPrice: string };
 function parseOrderLines(value: unknown): NewLine[] {
@@ -39,34 +40,40 @@ function parseOrderLines(value: unknown): NewLine[] {
     });
   return lines;
 }
-export async function listPurchaseOrders(actor: Actor) {
+export async function listPurchaseOrders(actor: Actor, search: URLSearchParams) {
   requireRole(actor, ["ADMIN", "CEO", "MANAGER", "COUNTER_STAFF", "EMPLOYEE"]);
-  const result =
-    await dbPool.query(`SELECT po.id,po.record_no,po.ordered_at,po.note,po.created_at,po.closed_at,
-    s.name AS supplier_name, ceo_user.name AS ordered_by_ceo, recorder.name AS recorded_by,
-    (SELECT count(*)::integer FROM app.carrier_receipts cr WHERE cr.purchase_order_id=po.id) AS carrier_receipt_count
+  const { limit, cursor } = parseCursorPage(search);
+  const query = search.get("q")?.trim() ?? "";
+  if (query.length > 100) throw new ValidationError({ q: "Use at most 100 characters." });
+  const result = await timedPoolQuery<Record<string, unknown> & { id: number }>(`
+    SELECT po.id,po.record_no,po.supplier_id,po.ordered_at,po.note,po.created_at,po.closed_at,
+      s.name AS supplier_name, ceo_user.name AS ordered_by_ceo, recorder.name AS recorded_by,
+      (SELECT count(*)::integer FROM app.carrier_receipts cr WHERE cr.purchase_order_id=po.id) AS carrier_receipt_count
     FROM app.purchase_orders po JOIN app.suppliers s ON s.id=po.supplier_id
     JOIN app.app_users ceo ON ceo.id=po.ordered_by_ceo_id JOIN public."user" ceo_user ON ceo_user.id=ceo.auth_user_id
     JOIN app.app_users recording_user ON recording_user.id=po.recorded_by_id JOIN public."user" recorder ON recorder.id=recording_user.auth_user_id
-    ORDER BY po.id DESC LIMIT 500`);
-  return result.rows;
+    WHERE ($1::text = '' OR po.record_no ILIKE '%' || $1 || '%')
+      AND ($2::bigint IS NULL OR po.id < $2)
+    ORDER BY po.id DESC LIMIT $3`,
+  [query, cursor?.parentId ?? null, limit + 1]);
+  return cursorPageResult(result.rows, limit, (row) => ({ parentId: row.id }));
 }
 export async function getPurchaseOrder(actor: Actor, poId: number) {
   requireRole(actor, ["ADMIN", "CEO", "MANAGER", "COUNTER_STAFF", "EMPLOYEE"]);
-  const head = await dbPool.query(
+  const head = await timedPoolQuery<Record<string, unknown> & { closed_at: Date | null }>(
     `SELECT po.*,s.code AS supplier_code,s.name AS supplier_name FROM app.purchase_orders po JOIN app.suppliers s ON s.id=po.supplier_id WHERE po.id=$1`,
     [poId],
   );
   if (!head.rowCount) throw new NotFoundError("Purchase order");
   if (actor.role === "EMPLOYEE") {
     const [lines, carrierReceipts] = await Promise.all([
-      dbPool.query(
+      timedPoolQuery(
         `SELECT l.id,l.purchase_order_id,l.product_id,l.quantity,p.sku,p.name AS product_name,u.code AS unit_code
         FROM app.purchase_order_lines l JOIN app.products p ON p.id=l.product_id
         JOIN app.units u ON u.id=p.unit_id WHERE l.purchase_order_id=$1 ORDER BY l.id`,
         [poId],
       ),
-      dbPool.query(
+      timedPoolQuery(
         `SELECT cr.*,dc.receiving_branch_id,dc.received_at,dc.actual_package_count
         FROM app.carrier_receipts cr LEFT JOIN app.delivery_confirmations dc ON dc.carrier_receipt_id=cr.id
         WHERE cr.purchase_order_id=$1 ORDER BY cr.id`,
@@ -84,7 +91,7 @@ export async function getPurchaseOrder(actor: Actor, poId: number) {
   }
   const [lines, supplierReceipts, carrierReceipts, goodsReceipts, revisions] =
     await Promise.all([
-      dbPool.query(
+      timedPoolQuery(
         `SELECT l.*,p.sku,p.name AS product_name,u.code AS unit_code,
       COALESCE((SELECT sum(srl.quantity) FROM app.supplier_receipt_lines srl WHERE srl.purchase_order_line_id=l.id),0) AS supplier_quantity,
       (SELECT sum(crl.quantity) FROM app.carrier_receipt_lines crl JOIN app.carrier_receipts cr ON cr.id=crl.carrier_receipt_id WHERE cr.purchase_order_id=l.purchase_order_id AND crl.product_id=l.product_id) AS carrier_document_quantity,
@@ -96,19 +103,19 @@ export async function getPurchaseOrder(actor: Actor, poId: number) {
       FROM app.purchase_order_lines l JOIN app.products p ON p.id=l.product_id JOIN app.units u ON u.id=p.unit_id WHERE l.purchase_order_id=$1 ORDER BY l.id`,
         [poId],
       ),
-      dbPool.query(
+      timedPoolQuery(
         `SELECT * FROM app.supplier_receipts WHERE purchase_order_id=$1 ORDER BY id`,
         [poId],
       ),
-      dbPool.query(
+      timedPoolQuery(
         `SELECT cr.*,dc.receiving_branch_id,dc.received_at,dc.actual_package_count FROM app.carrier_receipts cr LEFT JOIN app.delivery_confirmations dc ON dc.carrier_receipt_id=cr.id WHERE cr.purchase_order_id=$1 ORDER BY cr.id`,
         [poId],
       ),
-      dbPool.query(
+      timedPoolQuery(
         `SELECT gr.* FROM app.goods_receipts gr JOIN app.carrier_receipts cr ON cr.id=gr.carrier_receipt_id WHERE cr.purchase_order_id=$1 ORDER BY gr.id`,
         [poId],
       ),
-      dbPool.query(
+      timedPoolQuery(
         `SELECT revision_no,before_data,after_data,changed_by_id,created_at FROM app.document_revisions WHERE entity_type='PURCHASE_ORDER' AND entity_id=$1 ORDER BY revision_no`,
         [poId],
       ),
@@ -134,14 +141,14 @@ export async function createPurchaseOrder(
   const note = optionalText(body.note, "note");
   const lines = parseOrderLines(body.lines);
   const [supplier, ceo, products] = await Promise.all([
-    dbPool.query(`SELECT 1 FROM app.suppliers WHERE id=$1 AND active`, [
+    timedPoolQuery(`SELECT 1 FROM app.suppliers WHERE id=$1 AND active`, [
       supplierId,
     ]),
-    dbPool.query(
+    timedPoolQuery(
       `SELECT 1 FROM app.app_users WHERE id=$1 AND role='CEO' AND deleted_at IS NULL`,
       [orderedByCeoId],
     ),
-    dbPool.query(
+    timedPoolQuery(
       `SELECT id FROM app.products WHERE active AND id=ANY($1::integer[])`,
       [lines.map((line) => line.productId)],
     ),

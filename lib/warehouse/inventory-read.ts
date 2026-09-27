@@ -1,6 +1,6 @@
 import "server-only";
 
-import { dbPool } from "@/lib/core/db/pool";
+import { timedPoolQuery } from "@/lib/core/http/request-timing";
 import { ValidationError } from "@/lib/core/http/errors";
 import { requireRole, type Actor } from "@/lib/warehouse/core";
 import { parsePage, pageResult } from "@/lib/warehouse/pagination";
@@ -49,7 +49,7 @@ export async function listInventoryProducts(
     throw new ValidationError({ status: "Unknown stock status." });
   }
   const global = isGlobalRole(actor.role);
-  const result = await dbPool.query<{
+  const result = await timedPoolQuery<{
     total: number;
     items: InventoryProductRow[];
   }>(

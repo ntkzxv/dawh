@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { warehouseApi } from "@/lib/api/warehouse";
 import type { CarrierReceipt, CatalogItem, PurchaseOrder } from "@/lib/api/warehouse";
 import { button, EvidenceLinks, EvidencePicker, Field, input, Notice, panel, subtleButton } from "../Ui";
 import { ProductSearchSelect } from "../ProductSearchSelect";
 
 export function CarrierForm({ orders, onSave }: { orders: PurchaseOrder[]; onSave: (body: Record<string, unknown>) => void }) {
   const [code, setCode] = useState("");
+  const [searchedOrders, setSearchedOrders] = useState<PurchaseOrder[]>([]);
   const [external, setExternal] = useState("");
   const [carrier, setCarrier] = useState("");
   const [tracking, setTracking] = useState("");
@@ -16,13 +18,24 @@ export function CarrierForm({ orders, onSave }: { orders: PurchaseOrder[]; onSav
   const [note, setNote] = useState("");
   const [mediaIds, setMediaIds] = useState<number[]>([]);
   const [lines, setLines] = useState<Array<{ productId: string; quantity: string }>>([]);
+  useEffect(() => {
+    const query = code.trim();
+    if (query.length < 2) return;
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      void warehouseApi.purchaseOrdersPage(null, controller.signal, query)
+        .then((result) => setSearchedOrders(result.items))
+        .catch(() => { if (!controller.signal.aborted) setSearchedOrders([]); });
+    }, 250);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [code]);
   const submit = (event: FormEvent) => {
     event.preventDefault();
     onSave({ purchaseOrderCode: code.trim().toUpperCase(), externalDocNo: external || null, documentDate: date || null, carrierName: carrier || null, trackingNo: tracking || null, packageCount: packages ? Number(packages) : null, freightAmount: freight || null, note: note || null, lines: lines.map((line) => ({ productId: Number(line.productId), quantity: line.quantity || null })), mediaAssetIds: mediaIds });
   };
   return <form className={`${panel} space-y-3 self-start`} onSubmit={submit}>
     <h2 className="text-lg font-bold">บันทึกใบขนส่ง</h2>
-    <Field label="รหัส PO ที่สั่งของ"><input className={input} required list="po-codes" value={code} onChange={(event) => setCode(event.target.value)} /><datalist id="po-codes">{orders.map((item) => <option key={item.id} value={item.record_no} />)}</datalist></Field>
+    <Field label="รหัส PO ที่สั่งของ"><input className={input} required list="po-codes" value={code} onChange={(event) => setCode(event.target.value)} /><datalist id="po-codes">{[...new Map([...orders, ...(code.trim().length >= 2 ? searchedOrders : [])].map((item) => [item.id, item])).values()].map((item) => <option key={item.id} value={item.record_no}>{item.supplier_name}</option>)}</datalist></Field>
     <Field label="เลขใบขนส่ง"><input className={input} value={external} onChange={(event) => setExternal(event.target.value)} /></Field>
     <Field label="วันที่เอกสาร"><input className={input} type="date" value={date} onChange={(event) => setDate(event.target.value)} /></Field>
     <Field label="ผู้ขนส่ง"><input className={input} value={carrier} onChange={(event) => setCarrier(event.target.value)} /></Field>

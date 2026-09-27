@@ -51,9 +51,9 @@ export function LoadingProvider({
   const isLoading = isNavLoading && !isExiting;
 
   const prevPathnameRef = useRef<string>(pathname);
-  const navStartTimeTracker = useRef<number>(0);
   const navigationTimerRef = useRef<NodeJS.Timeout | null>(null);
   const watchdogTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const exitTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const clearAllTimers = useCallback(() => {
     if (navigationTimerRef.current) {
@@ -64,35 +64,46 @@ export function LoadingProvider({
       clearTimeout(watchdogTimerRef.current);
       watchdogTimerRef.current = null;
     }
+    if (exitTimerRef.current) {
+      clearTimeout(exitTimerRef.current);
+      exitTimerRef.current = null;
+    }
   }, []);
 
   const stopLoading = useCallback(() => {
     clearAllTimers();
     setIsExiting(true);
-    setTimeout(() => {
+    exitTimerRef.current = setTimeout(() => {
       setIsNavLoading(false);
       setIsExiting(false);
       setExitTransition("slide");
-    }, 650);
+      exitTimerRef.current = null;
+    }, 160);
   }, [clearAllTimers]);
 
   const startLoading = useCallback(
     (options?: { exitTransition?: "slide" | "fade"; duration?: number }) => {
       clearAllTimers();
       setExitTransition(options?.exitTransition || "slide");
-      navStartTimeTracker.current = Date.now();
       setIsExiting(false);
-      setIsNavLoading(true);
+      setIsNavLoading(false);
 
-      // Watchdog safety: auto dismiss after 7 seconds max
+      // Avoid flashing a full-screen loader for fast transitions.
+      navigationTimerRef.current = setTimeout(() => {
+        setIsNavLoading(true);
+        navigationTimerRef.current = null;
+      }, 150);
+
+      // Hide stale navigation feedback if an operation never completes.
       watchdogTimerRef.current = setTimeout(() => {
         setIsExiting(true);
-        setTimeout(() => {
+        exitTimerRef.current = setTimeout(() => {
           setIsNavLoading(false);
           setIsExiting(false);
           setExitTransition("slide");
-        }, 650);
-      }, 7000);
+          exitTimerRef.current = null;
+        }, 160);
+      }, 15_000);
     },
     [clearAllTimers]
   );
@@ -120,57 +131,45 @@ export function LoadingProvider({
       }
 
       clearAllTimers();
-      navStartTimeTracker.current = Date.now();
       setIsExiting(false);
-      setIsNavLoading(true);
+      setIsNavLoading(false);
+      setExitTransition("slide");
 
-      try {
-        router.prefetch(url);
-      } catch {}
-
-      // Push route transition smoothly after initial logo flow starts
       navigationTimerRef.current = setTimeout(() => {
-        router.push(url);
-      }, 350);
+        setIsNavLoading(true);
+        navigationTimerRef.current = null;
+      }, 150);
+      router.push(url);
 
       // Watchdog safety
       watchdogTimerRef.current = setTimeout(() => {
         setIsExiting(true);
-        setTimeout(() => {
+        exitTimerRef.current = setTimeout(() => {
           setIsNavLoading(false);
           setIsExiting(false);
-        }, 650);
-      }, 7000);
+          exitTimerRef.current = null;
+        }, 160);
+      }, 15_000);
     },
     [router, pathname, clearAllTimers]
   );
 
-  // Route change monitor: ensures standard 2.0s flow fill, then exits quickly (halved hold time: 90ms)
+  // End navigation feedback shortly after the destination route renders.
   useEffect(() => {
     if (prevPathnameRef.current !== pathname) {
       prevPathnameRef.current = pathname;
       clearAllTimers();
 
       if (isNavLoading) {
-        const minAnimationTime = 1300; // Fast & crisp 1.3s fill duration
-        const elapsed =
-          navStartTimeTracker.current > 0
-            ? Date.now() - navStartTimeTracker.current
-            : minAnimationTime;
-
-        // Hold time when full: 80ms
-        const remaining = Math.max(80, minAnimationTime - elapsed + 80);
-
-        const exitTimer = setTimeout(() => {
+        exitTimerRef.current = setTimeout(() => {
           setIsExiting(true);
-          setTimeout(() => {
+          exitTimerRef.current = setTimeout(() => {
             setIsNavLoading(false);
             setIsExiting(false);
             setExitTransition("slide");
-          }, 550);
-        }, remaining);
-
-        return () => clearTimeout(exitTimer);
+            exitTimerRef.current = null;
+          }, 160);
+        }, 0);
       }
     }
   }, [pathname, isNavLoading, clearAllTimers]);
