@@ -56,6 +56,7 @@ function publishLogout() {
 
 function handleRemoteLogout() {
   clearUserClientState();
+  window.dispatchEvent(new Event("dawh:auth-logout"));
   replaceWithLogin();
 }
 

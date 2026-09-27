@@ -24,10 +24,11 @@ export function useCursorResource<T>(
     controllerRef.current = controller;
     const generation = ++generationRef.current;
     setLoading(true);
+    setLoadingMore(false);
     setError(null);
     try {
       const result = await loadPage(null, controller.signal);
-      if (generation !== generationRef.current) return;
+      if (generation !== generationRef.current || controller.signal.aborted) return;
       setItems(result.items);
       setPage(result.page);
     } catch (cause) {
@@ -35,7 +36,8 @@ export function useCursorResource<T>(
         setError(cause instanceof Error ? cause.message : "โหลดข้อมูลไม่สำเร็จ");
       }
     } finally {
-      if (generation === generationRef.current) setLoading(false);
+      if (generation === generationRef.current && !controller.signal.aborted)
+        setLoading(false);
     }
   }, [loadPage]);
 
@@ -63,6 +65,7 @@ export function useCursorResource<T>(
 
   useEffect(() => {
     if (!enabled) {
+      generationRef.current += 1;
       controllerRef.current?.abort();
       return;
     }
@@ -72,6 +75,7 @@ export function useCursorResource<T>(
     });
     return () => {
       active = false;
+      generationRef.current += 1;
       controllerRef.current?.abort();
     };
   }, [enabled, refresh]);

@@ -270,7 +270,7 @@ export default function AccountProfile() {
                       {member ? (
                         <OwnProfile
                           member={member}
-                          onSaved={refresh}
+                          onSaved={refreshAccount}
                           isLight={isLight}
                           isThai={isThai}
                         />

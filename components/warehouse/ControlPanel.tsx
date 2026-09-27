@@ -206,7 +206,10 @@ export default function ControlPanel() {
                       actorRole={me.role}
                       onUpdate={(body) =>
                         run(
-                          () => warehouseApi.updateMember(member.id, body),
+                          async () => {
+                            await warehouseApi.updateMember(member.id, body);
+                            if (member.id === me.id) await account?.refresh();
+                          },
                           "บันทึกข้อมูลสมาชิกแล้ว",
                         )
                       }

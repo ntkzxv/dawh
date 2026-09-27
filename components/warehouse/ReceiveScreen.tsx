@@ -43,6 +43,13 @@ type ReceiveData = {
   goodsReceipts: GoodsReceipt[];
   pages: Partial<Record<CursorResource, ApiPage>>;
 };
+type ReceiveReferences = {
+  step: Step;
+  suppliers?: CatalogItem[];
+  ceos?: Array<{ id: number; name: string }>;
+  branches?: CatalogItem[];
+  warehouses?: CatalogItem[];
+};
 const steps: Array<[Step, string]> = [
   ["po", "รายการสั่งซื้อ"],
   ["supplier", "เอกสารผู้ขาย"],
@@ -87,12 +94,8 @@ export default function ReceiveScreen() {
       };
 
       if (activeStep === "po") {
-        const [ordersPage, suppliers, ceos] = await Promise.all([
-          warehouseApi.purchaseOrdersPage(null, signal),
-          warehouseApi.catalog("suppliers", signal),
-          warehouseApi.ceos(signal),
-        ]);
-        return { ...emptyData, purchaseOrders: ordersPage.items, pages: { purchaseOrders: ordersPage.page }, suppliers, ceos };
+        const ordersPage = await warehouseApi.purchaseOrdersPage(null, signal);
+        return { ...emptyData, purchaseOrders: ordersPage.items, pages: { purchaseOrders: ordersPage.page } };
       }
 
       if (activeStep === "supplier") {
@@ -104,28 +107,65 @@ export default function ReceiveScreen() {
       }
 
       if (activeStep === "carrier") {
-        const [ordersPage, carriersPage, branches] = await Promise.all([
+        const [ordersPage, carriersPage] = await Promise.all([
           warehouseApi.purchaseOrdersPage(null, signal),
           warehouseApi.carrierReceiptsPage(null, signal),
-          warehouseApi.catalog("branches", signal),
         ]);
-        return { ...emptyData, purchaseOrders: ordersPage.items, carriers: carriersPage.items, pages: { purchaseOrders: ordersPage.page, carriers: carriersPage.page }, branches };
+        return { ...emptyData, purchaseOrders: ordersPage.items, carriers: carriersPage.items, pages: { purchaseOrders: ordersPage.page, carriers: carriersPage.page } };
       }
 
-      const [carriersPage, receiptsPage, warehouses] = await Promise.all([
+      const [carriersPage, receiptsPage] = await Promise.all([
         warehouseApi.carrierReceiptsPage(null, signal),
         warehouseApi.goodsReceiptsPage(null, signal),
-        warehouseApi.catalog("warehouses", signal),
       ]);
-      return { ...emptyData, carriers: carriersPage.items, goodsReceipts: receiptsPage.items, pages: { carriers: carriersPage.page, goodsReceipts: receiptsPage.page }, warehouses };
+      return { ...emptyData, carriers: carriersPage.items, goodsReceipts: receiptsPage.items, pages: { carriers: carriersPage.page, goodsReceipts: receiptsPage.page } };
     },
     [step, account?.me],
   );
   const { data, loading, error, refresh, setData } = useRemote(load, {
     enabled: !!account?.me,
   });
+  const loadReferences = useCallback(
+    async (signal: AbortSignal): Promise<ReceiveReferences> => {
+      const me = account?.me;
+      if (!me) throw new Error("ยังไม่ได้โหลดข้อมูลบัญชี");
+      const activeStep: Step = me.role === "EMPLOYEE" ? "carrier" : step;
+      if (activeStep === "po") {
+        const [suppliers, ceos] = await Promise.all([
+          warehouseApi.catalog("suppliers", signal),
+          warehouseApi.ceos(signal),
+        ]);
+        return { step: activeStep, suppliers, ceos };
+      }
+      if (activeStep === "carrier")
+        return {
+          step: activeStep,
+          branches: await warehouseApi.catalog("branches", signal),
+        };
+      if (activeStep === "count")
+        return {
+          step: activeStep,
+          warehouses: await warehouseApi.catalog("warehouses", signal),
+        };
+      return { step: activeStep };
+    },
+    [step, account?.me],
+  );
+  const { data: references, error: referencesError } = useRemote(
+    loadReferences,
+    { enabled: !!account?.me },
+  );
   const activeStep = data?.me.role === "EMPLOYEE" ? "carrier" : step;
-  const activeData = data?.step === activeStep ? data : null;
+  const activeReferences = references?.step === activeStep ? references : null;
+  const activeData = data?.step === activeStep
+    ? {
+        ...data,
+        suppliers: activeReferences?.suppliers ?? data.suppliers,
+        ceos: activeReferences?.ceos ?? data.ceos,
+        branches: activeReferences?.branches ?? data.branches,
+        warehouses: activeReferences?.warehouses ?? data.warehouses,
+      }
+    : null;
   const [po, setPo] = useState<PurchaseOrder | null>(null);
   const [carrier, setCarrier] = useState<CarrierReceipt | null>(null);
   useEffect(() => {
@@ -239,6 +279,7 @@ export default function ReceiveScreen() {
           ))}
       </div>
       {error && <Notice tone="error">{error}</Notice>}
+      {referencesError && <Notice tone="error">{referencesError}</Notice>}
       {failure && <Notice tone="error">{failure}</Notice>}
       {notice && <Notice tone="success">{notice}</Notice>}
       {(loading || (!activeData && !error)) && <p>กำลังโหลดข้อมูล...</p>}

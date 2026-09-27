@@ -85,6 +85,12 @@ export function WarehouseAccountProvider({
     };
   }, [protectedPath, refresh]);
 
+  useEffect(() => {
+    const handleLogout = () => clear();
+    window.addEventListener("dawh:auth-logout", handleLogout);
+    return () => window.removeEventListener("dawh:auth-logout", handleLogout);
+  }, [clear]);
+
   const value = useMemo(
     () => ({ me, loading, error, refresh, clear }),
     [me, loading, error, refresh, clear],
