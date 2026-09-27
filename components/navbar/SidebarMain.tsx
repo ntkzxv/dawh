@@ -445,7 +445,7 @@ export default function NavbarMain({
                     : "bg-white/10 text-[#FFFFFF] border-white/20"
                 }`}
               >
-                {mounted && userAvatar ? (
+                {accountMounted && userAvatar ? (
                   <img
                     src={userAvatar}
                     alt={userName}
