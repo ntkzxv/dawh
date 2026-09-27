@@ -1,6 +1,6 @@
 import "server-only";
 
-import { dbPool } from "@/lib/core/db/pool";
+import { timedPoolQuery } from "@/lib/core/http/request-timing";
 import { date, id, requireRole, type Actor } from "@/lib/warehouse/core";
 import { pageResult, parsePage } from "@/lib/warehouse/pagination";
 import { isGlobalRole } from "@/lib/contracts/warehouse-policy";
@@ -32,7 +32,7 @@ const balanceSelect = `SELECT sb.warehouse_id,sb.product_id,sb.quantity::text AS
 
 export async function listBalances(actor: Actor, search?: URLSearchParams) {
   requireRole(actor, ["ADMIN", "CEO", "MANAGER", "COUNTER_STAFF"]);
-  const result = await dbPool.query(
+  const result = await timedPoolQuery(
     `${balanceSelect} ORDER BY b.name,p.sku,sb.warehouse_id,sb.product_id LIMIT 1000`,
     balanceFilters(actor, search),
   );
@@ -41,7 +41,7 @@ export async function listBalances(actor: Actor, search?: URLSearchParams) {
 export async function listBalancesPage(actor: Actor, search: URLSearchParams) {
   requireRole(actor, ["ADMIN", "CEO", "MANAGER", "COUNTER_STAFF"]);
   const { page, limit, offset } = parsePage(search);
-  const result = await dbPool.query<{
+  const result = await timedPoolQuery<{
     total: number;
     items: Record<string, unknown>[];
   }>(
@@ -85,7 +85,7 @@ const ledgerSelect = `SELECT sm.id,sm.product_id,sm.warehouse_id,sm.quantity_del
     AND ($6::date IS NULL OR sm.occurred_at < $6::date+interval '1 day')`;
 export async function listLedger(actor: Actor, search?: URLSearchParams) {
   requireRole(actor, ["ADMIN", "CEO", "MANAGER", "COUNTER_STAFF"]);
-  const result = await dbPool.query(
+  const result = await timedPoolQuery(
     `${ledgerSelect} ORDER BY sm.id DESC LIMIT 1000`,
     ledgerFilters(actor, search),
   );
@@ -94,7 +94,7 @@ export async function listLedger(actor: Actor, search?: URLSearchParams) {
 export async function listLedgerPage(actor: Actor, search: URLSearchParams) {
   requireRole(actor, ["ADMIN", "CEO", "MANAGER", "COUNTER_STAFF"]);
   const { page, limit, offset } = parsePage(search);
-  const result = await dbPool.query<{
+  const result = await timedPoolQuery<{
     total: number;
     items: Record<string, unknown>[];
   }>(
@@ -111,7 +111,7 @@ export async function listLedgerPage(actor: Actor, search: URLSearchParams) {
 export async function listAudit(actor: Actor) {
   requireRole(actor, ["ADMIN", "CEO"]);
   return (
-    await dbPool.query(
+    await timedPoolQuery(
       `SELECT a.*,u.email AS actor_email FROM app.audit_events a LEFT JOIN app.app_users actor ON actor.id=a.actor_user_id LEFT JOIN public."user" u ON u.id=actor.auth_user_id ORDER BY a.id DESC LIMIT 1000`,
     )
   ).rows;

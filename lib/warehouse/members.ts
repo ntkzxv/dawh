@@ -3,7 +3,7 @@ import "server-only";
 import type { PoolClient } from "pg";
 import { auth } from "@/lib/auth";
 import { assertDirectEmailChangeAllowed } from "@/lib/auth/account-security";
-import { dbPool } from "@/lib/core/db/pool";
+import { timedPoolQuery } from "@/lib/core/http/request-timing";
 import { withTransaction } from "@/lib/core/db/transaction";
 import {
   ApiError,
@@ -49,7 +49,7 @@ function validateMembership(role: Role, branchIds: number[]) {
 }
 async function assertBranches(branchIds: number[]) {
   if (!branchIds.length) return;
-  const result = await dbPool.query<{ id: number }>(
+  const result = await timedPoolQuery<{ id: number }>(
     `SELECT id FROM app.branches WHERE active AND id = ANY($1::integer[])`,
     [branchIds],
   );
@@ -75,7 +75,7 @@ export async function createMember(
     });
   validateMembership(role, branchIds);
   await assertBranches(branchIds);
-  const existing = await dbPool.query(
+  const existing = await timedPoolQuery(
     `SELECT 1 FROM public."user" WHERE lower(email) = $1`,
     [email],
   );
@@ -115,8 +115,7 @@ export async function createMember(
     return getMember(actor, memberId);
   } catch (error) {
     if (authUserId)
-      await dbPool
-        .query(
+      await timedPoolQuery(
           `DELETE FROM public."user" WHERE id = $1 AND NOT EXISTS (SELECT 1 FROM app.app_users WHERE auth_user_id = $1)`,
           [authUserId],
         )

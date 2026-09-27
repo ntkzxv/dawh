@@ -1,25 +1,36 @@
 import "server-only";
 
-import { dbPool } from "@/lib/core/db/pool";
+import { timedPoolQuery } from "@/lib/core/http/request-timing";
 import { withTransaction } from "@/lib/core/db/transaction";
 import { ApiError, NotFoundError, ValidationError } from "@/lib/core/http/errors";
 import { audit, id, optionalCount, optionalDate, optionalMoney, optionalText, quantity, recordRevision, requireBranch, requireRole, text, type Actor } from "@/lib/warehouse/core";
 import { duplicateWarnings } from "@/lib/warehouse/document-support";
 import { attachEvidence } from "@/lib/warehouse/media";
+import { cursorPageResult, parseCursorPage } from "@/lib/warehouse/cursor-pagination";
 
-export async function listCarrierReceipts(actor: Actor) {
+export async function listCarrierReceipts(actor: Actor, search: URLSearchParams) {
   requireRole(actor, ["ADMIN", "CEO", "MANAGER", "COUNTER_STAFF", "EMPLOYEE"]);
-  return (await dbPool.query(`SELECT cr.*,po.record_no AS purchase_order_no,dc.receiving_branch_id,dc.received_at,dc.actual_package_count FROM app.carrier_receipts cr JOIN app.purchase_orders po ON po.id=cr.purchase_order_id LEFT JOIN app.delivery_confirmations dc ON dc.carrier_receipt_id=cr.id ORDER BY cr.id DESC LIMIT 500`)).rows;
+  const { limit, cursor } = parseCursorPage(search);
+  const result = await timedPoolQuery<Record<string, unknown> & { id: number }>(`
+    SELECT cr.*,po.record_no AS purchase_order_no,dc.receiving_branch_id,dc.received_at,dc.actual_package_count,
+      EXISTS(SELECT 1 FROM app.goods_receipts gr WHERE gr.carrier_receipt_id=cr.id) AS has_goods_receipt
+    FROM app.carrier_receipts cr JOIN app.purchase_orders po ON po.id=cr.purchase_order_id
+    LEFT JOIN app.delivery_confirmations dc ON dc.carrier_receipt_id=cr.id
+    WHERE ($1::boolean OR dc.receiving_branch_id IS NULL OR dc.receiving_branch_id=ANY($2::integer[]))
+      AND ($3::bigint IS NULL OR cr.id < $3)
+    ORDER BY cr.id DESC LIMIT $4`, [actor.role === "ADMIN" || actor.role === "CEO", actor.branchIds, cursor?.parentId ?? null, limit + 1]);
+  return cursorPageResult(result.rows, limit, (row) => ({ parentId: row.id }));
 }
 export async function getCarrierReceipt(actor: Actor, receiptId: number) {
   requireRole(actor, ["ADMIN", "CEO", "MANAGER", "COUNTER_STAFF", "EMPLOYEE"]);
-  const head = await dbPool.query(`SELECT cr.*,po.record_no AS purchase_order_no FROM app.carrier_receipts cr JOIN app.purchase_orders po ON po.id=cr.purchase_order_id WHERE cr.id=$1`, [receiptId]);
+  const head = await timedPoolQuery<{ receiving_branch_id: number | null } & Record<string, unknown>>(`SELECT cr.*,po.record_no AS purchase_order_no,dc.receiving_branch_id FROM app.carrier_receipts cr JOIN app.purchase_orders po ON po.id=cr.purchase_order_id LEFT JOIN app.delivery_confirmations dc ON dc.carrier_receipt_id=cr.id WHERE cr.id=$1`, [receiptId]);
   if (!head.rowCount) throw new NotFoundError("Carrier receipt");
+  if (head.rows[0].receiving_branch_id != null) requireBranch(actor, head.rows[0].receiving_branch_id);
   const [lines, confirmation, media, revisions] = await Promise.all([
-    dbPool.query(`SELECT l.*,p.sku,p.name AS product_name FROM app.carrier_receipt_lines l JOIN app.products p ON p.id=l.product_id WHERE l.carrier_receipt_id=$1 ORDER BY l.id`, [receiptId]),
-    dbPool.query(`SELECT * FROM app.delivery_confirmations WHERE carrier_receipt_id=$1`, [receiptId]),
-    dbPool.query(`SELECT e.media_asset_id,e.page_number,m.sha256,m.mime_type FROM app.evidence_links e JOIN app.media_assets m ON m.id=e.media_asset_id WHERE e.carrier_receipt_id=$1 ORDER BY e.page_number`, [receiptId]),
-    dbPool.query(`SELECT revision_no,before_data,after_data,changed_by_id,created_at FROM app.document_revisions WHERE entity_type='CARRIER_RECEIPT' AND entity_id=$1 ORDER BY revision_no`, [receiptId]),
+    timedPoolQuery(`SELECT l.*,p.sku,p.name AS product_name FROM app.carrier_receipt_lines l JOIN app.products p ON p.id=l.product_id WHERE l.carrier_receipt_id=$1 ORDER BY l.id`, [receiptId]),
+    timedPoolQuery(`SELECT * FROM app.delivery_confirmations WHERE carrier_receipt_id=$1`, [receiptId]),
+    timedPoolQuery(`SELECT e.media_asset_id,e.page_number,m.sha256,m.mime_type FROM app.evidence_links e JOIN app.media_assets m ON m.id=e.media_asset_id WHERE e.carrier_receipt_id=$1 ORDER BY e.page_number`, [receiptId]),
+    timedPoolQuery(`SELECT revision_no,before_data,after_data,changed_by_id,created_at FROM app.document_revisions WHERE entity_type='CARRIER_RECEIPT' AND entity_id=$1 ORDER BY revision_no`, [receiptId]),
   ]);
   return { ...head.rows[0], lines: lines.rows, confirmation: confirmation.rows[0] ?? null, media: media.rows, revisions: revisions.rows };
 }
@@ -62,7 +73,7 @@ export async function updateCarrierReceipt(actor: Actor, receiptId: number, body
 export async function createCarrierReceipt(actor: Actor, body: Record<string, unknown>) {
   requireRole(actor, ["ADMIN", "CEO", "MANAGER", "COUNTER_STAFF", "EMPLOYEE"]);
   const poCode = text(body.purchaseOrderCode, "purchaseOrderCode", 50).toUpperCase();
-  const po = await dbPool.query<{ id: number; closed_at: Date | null }>(`SELECT id,closed_at FROM app.purchase_orders WHERE record_no=$1`, [poCode]);
+  const po = await timedPoolQuery<{ id: number; closed_at: Date | null }>(`SELECT id,closed_at FROM app.purchase_orders WHERE record_no=$1`, [poCode]);
   if (!po.rowCount) throw new NotFoundError("Purchase order");
   if (po.rows[0].closed_at) throw new ApiError(409, "PO_CLOSED", "Purchase order is closed.");
   const externalDocNo = optionalText(body.externalDocNo, "externalDocNo", 100);
@@ -105,5 +116,5 @@ export async function confirmDelivery(actor: Actor, receiptId: number, body: Rec
     await audit(client, actor, "DELIVERY_CONFIRMED", "delivery_confirmations", created.rows[0].id, { carrierReceiptId: receiptId, branchId, packageCount, condition });
     return created.rows[0].id;
   });
-  return (await dbPool.query(`SELECT * FROM app.delivery_confirmations WHERE id=$1`, [result])).rows[0];
+  return (await timedPoolQuery(`SELECT * FROM app.delivery_confirmations WHERE id=$1`, [result])).rows[0];
 }

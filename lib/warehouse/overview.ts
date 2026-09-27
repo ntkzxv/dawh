@@ -1,6 +1,6 @@
 import "server-only";
 
-import { dbPool } from "@/lib/core/db/pool";
+import { timedPoolQuery } from "@/lib/core/http/request-timing";
 import { requireRole, type Actor } from "@/lib/warehouse/core";
 
 export type WarehouseOverview = {
@@ -19,7 +19,7 @@ export async function getWarehouseOverview(
 
   const global = actor.role === "ADMIN" || actor.role === "CEO";
   const employee = actor.role === "EMPLOYEE";
-  const result = await dbPool.query<WarehouseOverview>(
+  const result = await timedPoolQuery<WarehouseOverview>(
     `SELECT
       (SELECT count(*)::integer FROM app.purchase_orders) AS "purchaseOrderCount",
       (SELECT count(*)::integer FROM app.carrier_receipts) AS "carrierReceiptCount",

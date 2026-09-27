@@ -6,7 +6,28 @@
 
 ข้อมูลปัจจุบันมี products 1 รายการ, stock_balances 0 รายการ และ purchase_orders 0 รายการ จึงไม่มีหลักฐานว่าปริมาณข้อมูลหรือ SQL ที่ประมวลผลช้าเป็นสาเหตุหลักในตอนนี้
 
-การตรวจนี้ไม่ได้แก้ application code, environment, schema หรือข้อมูลธุรกิจ เพิ่มเฉพาะรายงานนี้
+ผลวัดและข้อค้นพบด้านล่างเป็น snapshot ก่อนแก้โค้ด; สถานะการเปลี่ยนแปลงหลัง audit อยู่ในหัวข้อถัดไป
+
+## สถานะหลังนำแผนส่วนที่อยู่ใน scope ไปใช้
+
+ทำแล้วใน codebase:
+
+- เพิ่ม request timing ที่ผูกกับ request ID: เวลารวม, session, actor, pool wait, SQL query และสถานะ pool (`total/idle/waiting`) พร้อมนับ pool/query timeout และ `Server-Timing`; instrument การ query ผ่าน pool และ transaction โดยไม่บันทึก SQL parameters หรือข้อมูลผู้ใช้
+- `/` และ `/auth`, `/auth/login` ตรวจ session ฝั่ง server; เอา client session check ซ้ำออกจาก landing/login และเปลี่ยน transient auth error ให้แสดงปุ่ม retry
+- ลดการหน่วงนำทาง: เปลี่ยน route ทันทีและค่อยแสดง overlay เมื่อเกิน 150 ms; ตัด forced delay ของ sign-in และ registration
+- เพิ่ม cursor pagination (default 20, max 100) ให้ PO, เอกสาร supplier, ใบขนส่ง, ใบตรวจรับ, issue และรายงานคลัง; เพิ่ม PO search; FE โหลดหน้าถัดไปเมื่อผู้ใช้กด และยังดึงรายละเอียดเมื่อเลือก record; carrier ที่ยืนยันรับแล้วจำกัดตามสาขาสมาชิก ส่วนรายการที่ยังไม่กำหนดสาขาคงมองเห็นเพื่อให้รับงานได้
+- Issue ปรับสถานะ/บันทึกติดตามแล้ว refresh เฉพาะรายละเอียดที่เลือก ส่วนรายการไม่โหลดใหม่ทั้งชุด
+- Account profile โหลด `SecondaryRegModal` และ `AvatarCropModal` เมื่อเปิดใช้; API client กำหนด timeout 20 วินาทีเฉพาะ GET และไม่ retry mutation
+
+ยังไม่ได้ทำ/ยังยืนยันผลไม่ได้:
+
+- ไม่มีข้อมูลจริงมากพอทดสอบ pagination มากกว่า 500/1,000 แถว, ความถูกต้องของรายงาน, การเรียงหน้าระหว่างมี insert พร้อมกัน หรือ branch/role ทุกแบบ; ต้องทดสอบกับข้อมูลตัวแทนก่อนปล่อยใช้จริง
+- ยังไม่ได้เก็บ authenticated browser waterfall และ before/after p50/p95; ไม่มีหลักฐานซ้ำพอสำหรับเพิ่ม shared cache หรือปรับการโหลดหน้าอื่นนอก scope รอบนี้
+- ไม่เปลี่ยน index, SQL aggregation, pool/timeout configuration, schema, upload flow หรือข้อมูล production; รอ query plan, connection budget และ workload ที่วัดได้
+- การวัด API ครอบคลุม query ที่ผ่าน `timedPoolQuery` และ transaction client; Better Auth ภายในและ serialization response ยังไม่มี timing แยก
+- `npm run build` ทั้งก่อนและหลังแก้จบด้วย exit code 0 แต่มี Better Auth database-schema validation error 7 ครั้งระหว่าง prerender; ยังไม่ได้พิสูจน์ว่าเป็นสาเหตุจากโค้ดชุดนี้หรือทดสอบกับ DB ที่เชื่อมต่อได้
+
+ตรวจ `npm run typecheck`, production build และ cursor unit tests 4 cases ผ่าน; ESLint เฉพาะไฟล์ที่เกี่ยวข้องไม่มี error แต่ยังมี warnings เดิมในหน้า landing/auth; runtime session กับข้อมูลหลาย role ยังต้องตรวจเพิ่ม
 
 ## วิธีตรวจและขอบเขต
 
@@ -170,10 +191,10 @@ EvidencePicker ใน Ui.tsx อัปโหลดทีละไฟล์ตา
 **BE-2: ลดการตรวจ actor ซ้ำใน API หลายตัว**
 
 - จุดเริ่ม: `lib/warehouse/access.ts` และ `lib/warehouse/core.ts` ซึ่ง endpoint เรียกตรวจ session, actor และ branch membership
-- ตรวจว่ารวม query actor กับ branch memberships เป็น query เดียวได้หรือไม่ โดยยังเช็กบัญชีถูกลบ/ระงับ, role, branch scope และ `must_change_password` เหมือนเดิม
+- โค้ดปัจจุบันรวม actor กับ branch memberships ใน query เดียวและตรวจบัญชีถูกลบ/ระงับ; ไม่มีเงื่อนไข `must_change_password` ในข้อกำหนดปัจจุบัน
 - สำรวจ endpoint รวมข้อมูลสำหรับ initial view ของหน้าที่เรียก API หลายชุด แต่ต้องยืนยันสิทธิ์ของทุกข้อมูลที่รวมและห้ามส่ง field ที่ role นั้นอ่านไม่ได้
 - ผลส่งมอบ: query/request ลดลงเมื่อเปิดหน้า โดยไม่ลดขั้นตอน authorization ของ server
-- ตรวจรับ: ทดสอบทุก role และ branch scope รวมถึงบัญชีถูกระงับ/ต้องเปลี่ยนรหัสผ่าน และยืนยันว่าได้รับผลลัพธ์หรือ error แบบเดิมตามสิทธิ์
+- ตรวจรับ: ทดสอบทุก role และ branch scope รวมถึงบัญชีถูกระงับ และยืนยันว่าได้รับผลลัพธ์หรือ error แบบเดิมตามสิทธิ์
 
 **BE-3: เพิ่ม server-side pagination ให้ API รายการ**
 

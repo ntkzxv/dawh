@@ -1,6 +1,6 @@
 import "server-only";
 
-import { dbPool } from "@/lib/core/db/pool";
+import { timedPoolQuery } from "@/lib/core/http/request-timing";
 import { NotFoundError } from "@/lib/core/http/errors";
 import { emptyProfile, type Profile } from "@/lib/warehouse/member-profile";
 import type { Actor, Role } from "@/lib/warehouse/access";
@@ -98,7 +98,7 @@ function visibilityParams(actor: Actor) {
 }
 
 export async function loadMember(actor: Actor, memberId: number) {
-  const result = await dbPool.query<MemberRow>(
+  const result = await timedPoolQuery<MemberRow>(
     `${select} WHERE a.id=$4 AND ${visibility}`,
     [...visibilityParams(actor), memberId],
   );
@@ -112,7 +112,7 @@ export async function listMembers(
   view: "full" | "summary" = "full",
 ) {
   if (view === "summary") {
-    const result = await dbPool.query<MemberSummaryRow>(
+    const result = await timedPoolQuery<MemberSummaryRow>(
       `SELECT a.id,u.name,u.image,a.role,a.deleted_at,
       ARRAY(SELECT m.branch_id FROM app.branch_memberships m WHERE m.user_id=a.id ORDER BY m.branch_id) AS branch_ids
       FROM app.app_users a JOIN public."user" u ON u.id=a.auth_user_id
@@ -129,7 +129,7 @@ export async function listMembers(
       ...(actor.role === "ADMIN" ? { deletedAt: row.deleted_at } : {}),
     }));
   }
-  const result = await dbPool.query<MemberRow>(
+  const result = await timedPoolQuery<MemberRow>(
     `${select} WHERE ${visibility} ORDER BY a.id`,
     visibilityParams(actor),
   );

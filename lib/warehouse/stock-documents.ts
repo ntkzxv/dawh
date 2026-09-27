@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createHash } from "node:crypto";
-import { dbPool } from "@/lib/core/db/pool";
+import { timedPoolQuery } from "@/lib/core/http/request-timing";
 import { withTransaction } from "@/lib/core/db/transaction";
 import {
   ApiError,
@@ -84,7 +84,7 @@ export async function postStockDocument(
   if (!reason)
     throw new ValidationError({ reason: "Enter the reason for the movement." });
   const lines = parseLines(kind, body.lines);
-  const warehouses = await dbPool.query<{ id: number; branch_id: number }>(
+  const warehouses = await timedPoolQuery<{ id: number; branch_id: number }>(
     `SELECT id,branch_id FROM app.warehouses WHERE id=ANY($1::integer[]) AND active`,
     [[warehouseId, ...(destinationId ? [destinationId] : [])]],
   );
@@ -92,7 +92,7 @@ export async function postStockDocument(
     throw new ValidationError({ warehouseId: "Choose active warehouses." });
   for (const warehouse of warehouses.rows)
     requireBranch(actor, warehouse.branch_id);
-  const products = await dbPool.query<{ id: number; serial_tracked: boolean }>(
+  const products = await timedPoolQuery<{ id: number; serial_tracked: boolean }>(
     `SELECT id,serial_tracked FROM app.products WHERE id=ANY($1::integer[]) AND active`,
     [lines.map((line) => line.productId)],
   );
@@ -232,7 +232,7 @@ export async function reverseStockDocument(
   const reason = optionalText(reasonValue, "reason", 2000);
   if (!reason)
     throw new ValidationError({ reason: "Enter a reversal reason." });
-  const original = await dbPool.query<{
+  const original = await timedPoolQuery<{
     id: number;
     kind: string;
     warehouse_id: number;
