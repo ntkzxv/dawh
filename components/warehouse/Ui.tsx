@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { ApiRequestError } from "@/lib/api/client";
+import { ApiRequestError, ApiTimeoutError } from "@/lib/api/client";
 import { warehouseApi } from "@/lib/api/warehouse";
 import { useNotification } from "@/context/NotificationContext";
 
@@ -16,6 +16,8 @@ export const subtleButton =
 export { useRemote } from "@/hooks/useRemoteResource";
 
 export function message(error: unknown): string {
+  if (error instanceof ApiTimeoutError)
+    return "การโหลดข้อมูลใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง";
   if (error instanceof ApiRequestError) {
     if (error.code === "STORAGE_NOT_CONFIGURED")
       return "ระบบเก็บรูปยังไม่ได้ตั้งค่า กรุณาแจ้งผู้ดูแลระบบ";

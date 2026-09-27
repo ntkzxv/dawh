@@ -4,10 +4,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import WarehousePageTemplate from "@/app/warehouse/_components/WarehousePageTemplate";
 import {
   warehouseApi,
+  type ApiListPage,
   type CarrierReceipt,
   type CatalogItem,
+  type GoodsReceipt,
+  type Me,
   type PurchaseOrder,
+  type SupplierReceipt,
 } from "@/lib/api/warehouse";
+import type { ApiPage } from "@/lib/api/client";
 import {
   button,
   Empty,
@@ -24,6 +29,20 @@ import { CarrierDetails, CarrierForm } from "./receive/ReceiveCarrier";
 import { CountForm } from "./receive/ReceiveCount";
 
 type Step = "po" | "supplier" | "carrier" | "count";
+type CursorResource = "purchaseOrders" | "supplierReceipts" | "carriers" | "goodsReceipts";
+type ReceiveData = {
+  step: Step;
+  me: Me;
+  purchaseOrders: PurchaseOrder[];
+  carriers: CarrierReceipt[];
+  branches: CatalogItem[];
+  suppliers: CatalogItem[];
+  warehouses: CatalogItem[];
+  ceos: Array<{ id: number; name: string }>;
+  supplierReceipts: SupplierReceipt[];
+  goodsReceipts: GoodsReceipt[];
+  pages: Partial<Record<CursorResource, ApiPage>>;
+};
 const steps: Array<[Step, string]> = [
   ["po", "รายการสั่งซื้อ"],
   ["supplier", "เอกสารผู้ขาย"],
@@ -42,68 +61,67 @@ export default function ReceiveScreen() {
   const [failure, setFailure] = useState<string | null>(null);
   const busyRef = useRef(false);
   const [busy, setBusy] = useState(false);
+  const [loadingMore, setLoadingMore] = useState<Set<CursorResource>>(new Set());
+  const pageControllersRef = useRef(new Map<CursorResource, AbortController>());
+  useEffect(() => () => {
+    for (const controller of pageControllersRef.current.values()) controller.abort();
+    pageControllersRef.current.clear();
+  }, [step]);
   const load = useCallback(
-    async (signal: AbortSignal) => {
+    async (signal: AbortSignal): Promise<ReceiveData> => {
       const me = account?.me;
       if (!me) throw new Error("ยังไม่ได้โหลดข้อมูลบัญชี");
       const activeStep: Step = me.role === "EMPLOYEE" ? "carrier" : step;
-      const emptyData = {
+      const emptyData: ReceiveData = {
         step: activeStep,
         me,
-        purchaseOrders: [] as Awaited<
-          ReturnType<typeof warehouseApi.purchaseOrders>
-        >,
-        carriers: [] as Awaited<
-          ReturnType<typeof warehouseApi.carrierReceipts>
-        >,
+        purchaseOrders: [],
+        carriers: [],
         branches: [] as CatalogItem[],
         suppliers: [] as CatalogItem[],
         warehouses: [] as CatalogItem[],
-        ceos: [] as Awaited<ReturnType<typeof warehouseApi.ceos>>,
-        supplierReceipts: [] as Awaited<
-          ReturnType<typeof warehouseApi.supplierReceipts>
-        >,
-        goodsReceipts: [] as Awaited<
-          ReturnType<typeof warehouseApi.goodsReceipts>
-        >,
+        ceos: [],
+        supplierReceipts: [],
+        goodsReceipts: [],
+        pages: {},
       };
 
       if (activeStep === "po") {
-        const [purchaseOrders, suppliers, ceos] = await Promise.all([
-          warehouseApi.purchaseOrders(signal),
+        const [ordersPage, suppliers, ceos] = await Promise.all([
+          warehouseApi.purchaseOrdersPage(null, signal),
           warehouseApi.catalog("suppliers", signal),
           warehouseApi.ceos(signal),
         ]);
-        return { ...emptyData, purchaseOrders, suppliers, ceos };
+        return { ...emptyData, purchaseOrders: ordersPage.items, pages: { purchaseOrders: ordersPage.page }, suppliers, ceos };
       }
 
       if (activeStep === "supplier") {
-        const [purchaseOrders, supplierReceipts] = await Promise.all([
-          warehouseApi.purchaseOrders(signal),
-          warehouseApi.supplierReceipts(signal),
+        const [ordersPage, receiptsPage] = await Promise.all([
+          warehouseApi.purchaseOrdersPage(null, signal),
+          warehouseApi.supplierReceiptsPage(null, signal),
         ]);
-        return { ...emptyData, purchaseOrders, supplierReceipts };
+        return { ...emptyData, purchaseOrders: ordersPage.items, supplierReceipts: receiptsPage.items, pages: { purchaseOrders: ordersPage.page, supplierReceipts: receiptsPage.page } };
       }
 
       if (activeStep === "carrier") {
-        const [purchaseOrders, carriers, branches] = await Promise.all([
-          warehouseApi.purchaseOrders(signal),
-          warehouseApi.carrierReceipts(signal),
+        const [ordersPage, carriersPage, branches] = await Promise.all([
+          warehouseApi.purchaseOrdersPage(null, signal),
+          warehouseApi.carrierReceiptsPage(null, signal),
           warehouseApi.catalog("branches", signal),
         ]);
-        return { ...emptyData, purchaseOrders, carriers, branches };
+        return { ...emptyData, purchaseOrders: ordersPage.items, carriers: carriersPage.items, pages: { purchaseOrders: ordersPage.page, carriers: carriersPage.page }, branches };
       }
 
-      const [carriers, goodsReceipts, warehouses] = await Promise.all([
-        warehouseApi.carrierReceipts(signal),
-        warehouseApi.goodsReceipts(signal),
+      const [carriersPage, receiptsPage, warehouses] = await Promise.all([
+        warehouseApi.carrierReceiptsPage(null, signal),
+        warehouseApi.goodsReceiptsPage(null, signal),
         warehouseApi.catalog("warehouses", signal),
       ]);
-      return { ...emptyData, carriers, goodsReceipts, warehouses };
+      return { ...emptyData, carriers: carriersPage.items, goodsReceipts: receiptsPage.items, pages: { carriers: carriersPage.page, goodsReceipts: receiptsPage.page }, warehouses };
     },
     [step, account?.me],
   );
-  const { data, loading, error, refresh } = useRemote(load, {
+  const { data, loading, error, refresh, setData } = useRemote(load, {
     enabled: !!account?.me,
   });
   const activeStep = data?.me.role === "EMPLOYEE" ? "carrier" : step;
@@ -165,10 +183,41 @@ export default function ReceiveScreen() {
     }
   };
 
-  const countedCarrierIds = new Set(
-    activeData?.goodsReceipts.map((receipt) => receipt.carrier_receipt_id) ??
-      [],
-  );
+  const loadMore = async (resource: CursorResource) => {
+    const cursor = activeData?.pages[resource]?.nextCursor;
+    if (!cursor || loadingMore.has(resource)) return;
+    const controller = new AbortController();
+    pageControllersRef.current.set(resource, controller);
+    setLoadingMore((current) => new Set(current).add(resource));
+    try {
+      let result: ApiListPage<{ id: number }>;
+      if (resource === "purchaseOrders") result = await warehouseApi.purchaseOrdersPage(cursor, controller.signal);
+      else if (resource === "supplierReceipts") result = await warehouseApi.supplierReceiptsPage(cursor, controller.signal);
+      else if (resource === "carriers") result = await warehouseApi.carrierReceiptsPage(cursor, controller.signal);
+      else result = await warehouseApi.goodsReceiptsPage(cursor, controller.signal);
+      setData((current) => {
+        if (!current || current.step !== activeStep) return current;
+        const combined = <T extends { id: number }>(items: T[], added: T[]) => {
+          const known = new Set(items.map((item) => item.id));
+          return [...items, ...added.filter((item) => !known.has(item.id))];
+        };
+        const pages = { ...current.pages, [resource]: result.page };
+        if (resource === "purchaseOrders") return { ...current, pages, purchaseOrders: combined(current.purchaseOrders, result.items as typeof current.purchaseOrders) };
+        if (resource === "supplierReceipts") return { ...current, pages, supplierReceipts: combined(current.supplierReceipts, result.items as typeof current.supplierReceipts) };
+        if (resource === "carriers") return { ...current, pages, carriers: combined(current.carriers, result.items as typeof current.carriers) };
+        return { ...current, pages, goodsReceipts: combined(current.goodsReceipts, result.items as typeof current.goodsReceipts) };
+      });
+    } catch (cause) {
+      if (!controller.signal.aborted) setFailure(message(cause));
+    } finally {
+      if (pageControllersRef.current.get(resource) === controller) pageControllersRef.current.delete(resource);
+      if (!controller.signal.aborted) {
+        setLoadingMore((current) => { const next = new Set(current); next.delete(resource); return next; });
+      }
+    }
+  };
+
+  const countedCarrierIds = new Set(activeData?.carriers.filter((item) => item.has_goods_receipt).map((item) => item.id) ?? []);
   return (
     <WarehousePageTemplate
       titleEn="Receiving"
@@ -183,7 +232,7 @@ export default function ReceiveScreen() {
             <button
               key={key}
               className={activeStep === key ? button : subtleButton}
-              onClick={() => setStep(key)}
+              onClick={() => { setLoadingMore(new Set()); setStep(key); }}
             >
               {label}
             </button>
@@ -230,6 +279,7 @@ export default function ReceiveScreen() {
                 ) : (
                   <Empty text="ยังไม่มี PO" />
                 )}
+                {activeData.pages.purchaseOrders?.hasMore && <button className={`${subtleButton} mt-3`} disabled={loadingMore.has("purchaseOrders")} onClick={() => void loadMore("purchaseOrders")}>{loadingMore.has("purchaseOrders") ? "กำลังโหลด..." : "โหลด PO เพิ่ม"}</button>}
                 {po && (
                   <PoDetails
                     key={po.id}
@@ -276,6 +326,7 @@ export default function ReceiveScreen() {
                 ) : (
                   <Empty text="ยังไม่มีเอกสารผู้ขาย" />
                 )}
+                {activeData.pages.supplierReceipts?.hasMore && <button className={`${subtleButton} mt-3`} disabled={loadingMore.has("supplierReceipts")} onClick={() => void loadMore("supplierReceipts")}>{loadingMore.has("supplierReceipts") ? "กำลังโหลด..." : "โหลดเอกสารเพิ่ม"}</button>}
               </section>
               <SupplierForm
                 orders={activeData.purchaseOrders}
@@ -319,6 +370,7 @@ export default function ReceiveScreen() {
                 ) : (
                   <Empty text="ยังไม่มีใบขนส่ง" />
                 )}
+                {activeData.pages.carriers?.hasMore && <button className={`${subtleButton} mt-3`} disabled={loadingMore.has("carriers")} onClick={() => void loadMore("carriers")}>{loadingMore.has("carriers") ? "กำลังโหลด..." : "โหลดใบขนส่งเพิ่ม"}</button>}
                 {carrier && (
                   <CarrierDetails
                     carrier={carrier}
@@ -382,6 +434,7 @@ export default function ReceiveScreen() {
                 ) : (
                   <Empty text="ยังไม่มีใบตรวจรับ" />
                 )}
+                {activeData.pages.goodsReceipts?.hasMore && <button className={`${subtleButton} mt-3`} disabled={loadingMore.has("goodsReceipts")} onClick={() => void loadMore("goodsReceipts")}>{loadingMore.has("goodsReceipts") ? "กำลังโหลด..." : "โหลดใบตรวจรับเพิ่ม"}</button>}
               </section>
               <CountForm
                 carriers={activeData.carriers.filter(
@@ -395,6 +448,7 @@ export default function ReceiveScreen() {
                   )
                 }
               />
+              {activeData.pages.carriers?.hasMore && <button className={`${subtleButton} mt-3`} disabled={loadingMore.has("carriers")} onClick={() => void loadMore("carriers")}>{loadingMore.has("carriers") ? "กำลังโหลด..." : "โหลดใบขนส่งที่รับแล้วเพิ่ม"}</button>}
             </div>
           )}
         </div>

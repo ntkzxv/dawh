@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ApiRequestError } from "@/lib/api/client";
+import { ApiRequestError, ApiTimeoutError } from "@/lib/api/client";
 
 function errorMessage(error: unknown): string {
+  if (error instanceof ApiTimeoutError)
+    return "การโหลดข้อมูลใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง";
   if (error instanceof ApiRequestError) {
     if (error.code === "STORAGE_NOT_CONFIGURED")
       return "ระบบเก็บรูปยังไม่ได้ตั้งค่า กรุณาแจ้งผู้ดูแลระบบ";
