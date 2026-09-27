@@ -21,7 +21,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { authClient, getCurrentSession } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth-client";
 import { getDawhLogo } from "@/config/brand";
 import { useTheme } from "@/context/ThemeContext";
 import { useNotification } from "@/context/NotificationContext";
@@ -94,7 +94,6 @@ export function UserAuthView({
   initialMode = "signin",
   onNavigate,
   onAuthSuccess,
-  preventAutoRedirect = false,
 }: UserAuthViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -121,7 +120,6 @@ export function UserAuthView({
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -326,34 +324,6 @@ export function UserAuthView({
       : "bg-[#202020] border-[#3A3A3A] focus-within:border-white/50";
   };
 
-  useEffect(() => {
-    if (preventAutoRedirect) {
-      return;
-    }
-
-    const fromPath = searchParams.get("from");
-
-    const verifySession = async () => {
-      try {
-        const session = await getCurrentSession();
-        if (session) {
-          startLoading({ exitTransition: "fade" });
-          const targetUrl = fromPath || "/workspace";
-          router.prefetch(targetUrl);
-          setTimeout(() => {
-            if (onAuthSuccess) onAuthSuccess();
-            else if (onNavigate) onNavigate(targetUrl);
-            else router.replace(targetUrl);
-          }, 350);
-        }
-      } catch {
-        // Continue
-      }
-    };
-
-    verifySession();
-  }, [router, onAuthSuccess, onNavigate, preventAutoRedirect, searchParams, startLoading]);
-
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -411,11 +381,9 @@ export function UserAuthView({
 
         const targetUrl = searchParams.get("from") || "/workspace";
         router.prefetch(targetUrl);
-        setTimeout(() => {
-          if (onAuthSuccess) onAuthSuccess();
-          else if (onNavigate) onNavigate(targetUrl);
-          else router.replace(targetUrl);
-        }, 350);
+        if (onAuthSuccess) onAuthSuccess();
+        else if (onNavigate) onNavigate(targetUrl);
+        else router.replace(targetUrl);
       }
     } catch (error: unknown) {
       setErrors({ signinEmail: true, signinPassword: true });
@@ -608,8 +576,6 @@ export function UserAuthView({
         : "Securing credentials & allocating permissions..."
     );
 
-    const startTime = Date.now();
-
     try {
       const cleanFirstName = firstName.trim();
       const cleanLastName = lastName.trim();
@@ -625,12 +591,6 @@ export function UserAuthView({
       });
 
       if (error) {
-        // Wait full 2.0s duration so user sees the bar complete before showing error modal
-        const elapsed = Date.now() - startTime;
-        if (elapsed < 2000) {
-          await new Promise((resolve) => setTimeout(resolve, 2000 - elapsed));
-        }
-
         setShowLoadingModal(false);
         setIsRegistering(false);
         setIsModalSuccess(false);
@@ -681,59 +641,41 @@ export function UserAuthView({
           last_login_at: new Date().toISOString(),
         });
 
-        // 1. Wait until the progress bar has filled COMPLETELY to 100% (2.0s duration) before proceeding
-        const elapsed = Date.now() - startTime;
-        if (elapsed < 2000) {
-          await new Promise((resolve) => setTimeout(resolve, 2000 - elapsed));
-        }
-
-        // 2. Reveal success state only after bar is 100% full
+        setShowLoadingModal(false);
         setIsModalSuccess(true);
         setIsRegistering(false);
 
-        // Transition from modal to full LoadingScreen
-        setTimeout(() => {
-          setShowLoadingModal(false);
+        if (data?.token) {
           startLoading({ exitTransition: "fade" });
 
-          if (data?.token) {
-            try {
-              sessionStorage.setItem(
-                "dawh_pending_notice",
-                JSON.stringify({
-                  type: "success",
-                  title: lang === "TH" ? "ลงทะเบียนสำเร็จ" : "Registration Successful",
-                  message:
-                    lang === "TH"
-                      ? "สร้างบัญชีพนักงานและเข้าสู่ระบบเรียบร้อยแล้ว"
-                      : "Staff account created and signed in successfully.",
-                  duration: 4000,
-                })
-              );
-            } catch {}
+          try {
+            sessionStorage.setItem(
+              "dawh_pending_notice",
+              JSON.stringify({
+                type: "success",
+                title: lang === "TH" ? "ลงทะเบียนสำเร็จ" : "Registration Successful",
+                message:
+                  lang === "TH"
+                    ? "สร้างบัญชีพนักงานและเข้าสู่ระบบเรียบร้อยแล้ว"
+                    : "Staff account created and signed in successfully.",
+                duration: 4000,
+              })
+            );
+          } catch {}
 
-            const targetUrl = "/workspace";
-            router.prefetch(targetUrl);
-            setTimeout(() => {
-              if (onAuthSuccess) onAuthSuccess();
-              else if (onNavigate) onNavigate(targetUrl);
-              else router.replace(targetUrl);
-            }, 350);
-          } else {
-            const targetUrl = "/auth/login";
-            setTimeout(() => {
-              if (onNavigate) onNavigate(targetUrl);
-              else router.replace(targetUrl);
-            }, 350);
-          }
-        }, 800);
+          const targetUrl = "/workspace";
+          router.prefetch(targetUrl);
+          if (onAuthSuccess) onAuthSuccess();
+          else if (onNavigate) onNavigate(targetUrl);
+          else router.replace(targetUrl);
+        } else {
+          const targetUrl = "/auth/login";
+          if (onNavigate) onNavigate(targetUrl);
+          else router.replace(targetUrl);
+        }
 
       }
     } catch {
-      const elapsed = Date.now() - startTime;
-      if (elapsed < 2000) {
-        await new Promise((resolve) => setTimeout(resolve, 2000 - elapsed));
-      }
       setShowLoadingModal(false);
       setIsRegistering(false);
       setIsModalSuccess(false);
@@ -756,14 +698,6 @@ export function UserAuthView({
       window.history.replaceState({ __dawh_silent: true }, "", nextPath);
     }
   };
-
-  if (isCheckingAuth) {
-    return (
-      <div className="flex min-h-dvh w-full items-center justify-center bg-[#222222] text-white">
-        <Loader2 size={32} className="animate-spin text-white" />
-      </div>
-    );
-  }
 
   return (
     <div

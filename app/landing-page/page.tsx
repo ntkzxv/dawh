@@ -1,11 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, useScroll, useTransform, useSpring } from "framer-motion";
-import { getCurrentSession } from "@/lib/auth-client";
-import AuthLoadingScreen from "@/components/loading_screen/AuthLoadingScreen";
 import { getDawhLogo } from "@/config/brand";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage, setAppLanguage } from "@/utils/language";
@@ -128,47 +125,6 @@ export default function DawhLandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeAnalyticsTab, setActiveAnalyticsTab] = useState<"overview" | "warehouse" | "datacenter" | "audit">("overview");
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
-  const router = useRouter();
-
-  const [showSessionLoader, setShowSessionLoader] = useState(false);
-
-  // หากมี session หรือ login อยู่แล้ว ให้แสดง loading screen แล้วนำทางเข้าสู่ workspace ตามปกติ
-  useEffect(() => {
-    let isMounted = true;
-    async function verifyExistingAuth() {
-      try {
-        const session = await getCurrentSession();
-        if (isMounted && session?.user) {
-          setShowSessionLoader(true);
-          router.prefetch("/workspace");
-          setTimeout(() => {
-            router.replace("/workspace");
-          }, 1600);
-        }
-      } catch {
-        // Guest user, remain on landing page without loading screen
-      }
-    }
-    verifyExistingAuth();
-    return () => {
-      isMounted = false;
-    };
-  }, [router]);
-
-  // หากตรวจพบว่ามี session ให้แสดง Loading Screen ก่อนพาเข้า workspace
-  if (showSessionLoader) {
-    return (
-      <div className="fixed inset-0 z-[9999] bg-[#181818]">
-        <AuthLoadingScreen
-          duration={1.6}
-          onFilled={() => {
-            router.replace("/workspace");
-          }}
-        />
-      </div>
-    );
-  }
-
   const { scrollY } = useScroll();
 
   // Physics-based spring smoothing to turn chunky scroll steps into silky momentum
