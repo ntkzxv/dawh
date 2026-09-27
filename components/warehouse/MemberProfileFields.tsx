@@ -2,8 +2,9 @@
 
 import type { MemberProfile } from "@/lib/api/warehouse";
 import { Field, input } from "./Ui";
+import DatePicker from "@/components/common/DatePicker";
 
-export type ProfileForm = Record<keyof MemberProfile, string>;
+export type ProfileForm = Record<"employeeCode" | "phone" | "address" | "startedOn" | "emergencyContactName" | "emergencyContactPhone", string>;
 
 export function profileForm(profile: MemberProfile): ProfileForm {
   return {
@@ -27,7 +28,14 @@ export function MemberProfileFields({ value, onChange, employmentEditable }: {
       <input className={input} value={value.employeeCode} maxLength={50} disabled={!employmentEditable} onChange={(event) => change("employeeCode", event.target.value)} />
     </Field>
     <Field label="วันที่เริ่มงาน">
-      <input className={input} type="date" value={value.startedOn} disabled={!employmentEditable} onChange={(event) => change("startedOn", event.target.value)} />
+      <DatePicker
+        value={value.startedOn}
+        disabled={!employmentEditable}
+        onChange={(date) => change("startedOn", date)}
+        placeholder="เลือกวันที่เริ่มงาน"
+        isThai={true}
+        triggerClassName="h-[38px]"
+      />
     </Field>
     <Field label="เบอร์โทรศัพท์">
       <input className={input} type="tel" value={value.phone} maxLength={30} autoComplete="tel" onChange={(event) => change("phone", event.target.value)} />

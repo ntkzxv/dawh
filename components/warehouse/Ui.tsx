@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { ApiRequestError } from "@/lib/api/client";
 import { warehouseApi } from "@/lib/api/warehouse";
+import { useNotification } from "@/context/NotificationContext";
 
 export const panel = "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#383838]";
 export const input = "w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-white/20 dark:bg-[#292929] dark:text-white";
-export const button = "inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50";
-export const subtleButton = "inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium transition hover:bg-slate-50 disabled:opacity-50 dark:border-white/20 dark:hover:bg-white/5";
+export const button = "inline-flex items-center justify-center rounded-xl bg-[#222222] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#383838] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-[#222222] dark:hover:bg-[#F4F4F5]";
+export const subtleButton = "inline-flex items-center justify-center rounded-xl bg-[#F4F4F5] px-4 py-2 text-sm font-medium text-[#222222] transition hover:bg-[#E4E4E7] disabled:opacity-50 dark:bg-white/10 dark:text-white dark:hover:bg-white/15";
 
 export function message(error: unknown): string {
   if (error instanceof ApiRequestError) {
@@ -46,8 +47,14 @@ export function useRemote<T>(load: () => Promise<T>) {
 }
 
 export function Notice({ children, tone = "info" }: { children: ReactNode; tone?: "info" | "error" | "success" }) {
-  const color = tone === "error" ? "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-700 dark:bg-rose-950/30 dark:text-rose-200" : tone === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-200" : "border-indigo-200 bg-indigo-50 text-indigo-900 dark:border-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-200";
-  return <div role={tone === "error" ? "alert" : "status"} className={`rounded-xl border px-4 py-3 text-sm ${color}`}>{children}</div>;
+  const { notify } = useNotification();
+  const messageText = typeof children === "string" ? children : "มีการแจ้งเตือนจากระบบ";
+  const notifyCurrent = notify[tone];
+  useEffect(() => {
+    const title = tone === "error" ? "เกิดข้อผิดพลาด" : tone === "success" ? "ดำเนินการสำเร็จ" : "แจ้งเตือน";
+    notifyCurrent(title, { message: messageText });
+  }, [messageText, notifyCurrent, tone]);
+  return null;
 }
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {

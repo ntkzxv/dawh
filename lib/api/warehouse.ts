@@ -5,6 +5,30 @@ import { apiDelete, apiGet, apiPatch, apiPost, apiRequest } from "@/lib/api/clie
 export type Role = "ADMIN" | "CEO" | "MANAGER" | "COUNTER_STAFF" | "EMPLOYEE";
 export type Me = { id: number; authUserId: string; role: Role; branchIds: number[]; mustChangePassword: boolean };
 export type MemberProfile = {
+  username?: string | null;
+  prefix?: string | null;
+  firstNameTh?: string | null;
+  lastNameTh?: string | null;
+  nicknameTh?: string | null;
+  firstNameEn?: string | null;
+  lastNameEn?: string | null;
+  nicknameEn?: string | null;
+  citizenId?: string | null;
+  birthDate?: string | null;
+  gender?: string | null;
+  bloodType?: string | null;
+  maritalStatus?: string | null;
+  nationality?: string | null;
+  religion?: string | null;
+  department?: string | null;
+  educationLevel?: string | null;
+  majorSubject?: string | null;
+  universityNameTh?: string | null;
+  universityNameEn?: string | null;
+  contactEmail?: string | null;
+  emergencyContactNameEn?: string | null;
+  emergencyContactRelationship?: string | null;
+  registeredAddress?: string | null;
   employeeCode: string | null;
   phone: string | null;
   address: string | null;
@@ -12,14 +36,14 @@ export type MemberProfile = {
   emergencyContactName: string | null;
   emergencyContactPhone: string | null;
 };
-export type MemberSummary = { id: number; name: string; role: Role; branchIds: number[]; detailLevel: "SUMMARY" };
+export type MemberSummary = { id: number; name: string; image?: string | null; role: Role; branchIds: number[]; detailLevel: "SUMMARY" };
 export type MemberFull = Omit<MemberSummary, "detailLevel"> & {
-  detailLevel: "FULL"; email: string; mustChangePassword: boolean;
+  detailLevel: "FULL"; email: string; image?: string | null; mustChangePassword: boolean;
   deletedAt: string | null; profile: MemberProfile;
 };
 export type Member = MemberSummary | MemberFull;
 export type MemberUpdate = {
-  name?: string; email?: string; role?: Role; branchIds?: number[];
+  name?: string; email?: string; image?: string | null; role?: Role; branchIds?: number[];
   profile?: Partial<MemberProfile>;
 };
 export type Organization = { id: number; name: string; phone: string | null; address: string | null } | null;
@@ -40,6 +64,8 @@ export type AuditEvent = { id: number; action: string; entity_type: string; enti
 const data = async <T>(promise: ReturnType<typeof apiGet<T>>): Promise<T> => (await promise).data;
 export const warehouseApi = {
   me: () => data(apiGet<Me>("/api/me")),
+  changeEmail: (newEmail: string, confirmNewEmail: string) => data(apiPost<{ changed: boolean; email: string }>("/api/me/change-email", { newEmail, confirmNewEmail })),
+  changePassword: (currentPassword: string, newPassword: string, confirmNewPassword: string) => data(apiPost<{ changed: boolean }>("/api/me/change-password", { currentPassword, newPassword, confirmNewPassword })),
   changeInitialPassword: (currentPassword: string, newPassword: string) => data(apiPost<{ changed: boolean }>("/api/me/change-initial-password", { currentPassword, newPassword })),
   organization: () => data(apiGet<Organization>("/api/org")),
   saveOrganization: (body: { name: string; phone?: string; address?: string }, exists: boolean) => data(exists ? apiPatch<Organization>("/api/org", body) : apiPost<Organization>("/api/org", body)),

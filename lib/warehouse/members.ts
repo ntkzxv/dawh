@@ -10,7 +10,7 @@ import { audit, id, optionalText, requireRole, text, type Actor, type Role } fro
 
 const roles: Role[] = ["ADMIN", "CEO", "MANAGER", "COUNTER_STAFF", "EMPLOYEE"];
 type MemberRow = {
-  id: number; auth_user_id: string; name: string; email: string; role: Role;
+  id: number; auth_user_id: string; name: string; email: string; image: string | null; role: Role;
   branch_ids: number[]; must_change_password: boolean; deleted_at: Date | null;
   profile: Profile | null;
 };
@@ -174,7 +174,7 @@ function visibleBranches(actor: Actor, row: MemberRow) {
     : row.branch_ids.filter((branchId) => actor.branchIds.includes(branchId));
 }
 function map(actor: Actor, row: MemberRow) {
-  const common = { id: row.id, name: row.name, role: row.role, branchIds: visibleBranches(actor, row) };
+  const common = { id: row.id, name: row.name, image: row.image, role: row.role, branchIds: visibleBranches(actor, row) };
   if (!["ADMIN", "CEO", "MANAGER"].includes(actor.role) && actor.id !== row.id) {
     return { ...common, detailLevel: "SUMMARY" as const };
   }
@@ -184,7 +184,7 @@ function map(actor: Actor, row: MemberRow) {
     profile: row.profile ?? emptyProfile,
   };
 }
-const select = `SELECT a.id, a.auth_user_id, u.name, u.email, a.role, a.must_change_password, a.deleted_at,
+const select = `SELECT a.id, a.auth_user_id, u.name, u.email, u.image, a.role, a.must_change_password, a.deleted_at,
   CASE WHEN ($1::text IN ('ADMIN','CEO','MANAGER') OR a.id=$2) THEN jsonb_build_object(
     'employeeCode', p.employee_code,
     'username', p.username,
@@ -313,7 +313,7 @@ export async function updateMember(actor: Actor, memberId: number, body: Record<
   const isAdmin = actor.role === "ADMIN";
   if (!isAdmin && actor.id !== memberId) throw new ApiError(403, "FORBIDDEN", "Only the member or an admin can edit this profile.");
   for (const key of Object.keys(body)) {
-    if (!["name", "email", "role", "branchIds", "profile"].includes(key)) throw new ValidationError({ [key]: "Unknown member field." });
+    if (!["name", "email", "role", "branchIds", "profile", "image"].includes(key)) throw new ValidationError({ [key]: "Unknown member field." });
   }
   if (!isAdmin && ("email" in body || "role" in body || "branchIds" in body)) {
     throw new ApiError(403, "FORBIDDEN", "Only an admin can edit account access or email.");
@@ -328,6 +328,7 @@ export async function updateMember(actor: Actor, memberId: number, body: Record<
   }
   const name = body.name === undefined ? current.name : text(body.name, "name", 160);
   const email = body.email === undefined ? current.email : parseEmail(body.email);
+  const image = body.image === undefined ? undefined : body.image === null ? null : typeof body.image === "string" ? body.image.trim() : undefined;
   const emailChanged = body.email !== undefined && email.toLowerCase() !== current.email.toLowerCase();
   if (emailChanged) assertDirectEmailChangeAllowed();
   const profile = parseProfile(body.profile);
@@ -344,6 +345,9 @@ export async function updateMember(actor: Actor, memberId: number, body: Record<
       await client.query(`UPDATE public."user" SET name=$1,"updatedAt"=now() WHERE id=$2`, [name, current.auth_user_id]);
     } else if (emailChanged) {
       await client.query(`UPDATE public."user" SET email=$1,"emailVerified"=false,"updatedAt"=now() WHERE id=$2`, [email, current.auth_user_id]);
+    }
+    if (image !== undefined) {
+      await client.query(`UPDATE public."user" SET image=$1,"updatedAt"=now() WHERE id=$2`, [image, current.auth_user_id]);
     }
     if (isAdmin) {
       if (body.role !== undefined) await client.query(`UPDATE app.app_users SET role=$1,updated_at=now() WHERE id=$2`, [role, memberId]);

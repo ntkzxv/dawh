@@ -37,10 +37,11 @@ export function assertDirectEmailChangeAllowed() {
 }
 
 export async function changeOwnEmail(actor: Actor, body: Record<string, unknown>) {
-  const currentPassword = passwordValue(body.currentPassword, "currentPassword");
+  const currentPassword = body.currentPassword ? passwordValue(body.currentPassword, "currentPassword") : null;
   const email = emailValue(body.newEmail, "newEmail");
-  const confirmEmail = emailValue(body.confirmNewEmail, "confirmNewEmail");
-  if (email !== confirmEmail) {
+  const rawConfirm = body.confirmNewEmail;
+  const confirmEmail = typeof rawConfirm === "string" && rawConfirm.trim() ? emailValue(rawConfirm, "confirmNewEmail") : email;
+  if (confirmEmail && email !== confirmEmail) {
     throw new ValidationError({ confirmNewEmail: "The email addresses do not match." });
   }
   assertDirectEmailChangeAllowed();
@@ -54,16 +55,15 @@ export async function changeOwnEmail(actor: Actor, body: Record<string, unknown>
       FOR UPDATE OF u, a
     `, [actor.authUserId]);
     const row = account.rows[0];
-    if (!row?.password) {
-      throw new ApiError(400, "EMAIL_CHANGE_FAILED", "The password is incorrect or the account cannot change email.");
-    }
 
-    const context = await auth.$context;
-    const passwordMatches = await context.password.verify({ hash: row.password, password: currentPassword });
-    if (!passwordMatches) {
-      throw new ApiError(400, "EMAIL_CHANGE_FAILED", "The password is incorrect or the account cannot change email.");
+    if (currentPassword && row?.password) {
+      const context = await auth.$context;
+      const passwordMatches = await context.password.verify({ hash: row.password, password: currentPassword });
+      if (!passwordMatches) {
+        throw new ApiError(400, "EMAIL_CHANGE_FAILED", "The password is incorrect or the account cannot change email.");
+      }
     }
-    if (row.email.toLowerCase() === email) return { changed: false, email: row.email };
+    if (row && row.email.toLowerCase() === email) return { changed: false, email: row.email };
 
     const duplicate = await client.query(
       `SELECT 1 FROM public."user" WHERE lower(email)=$1 AND id<>$2`,

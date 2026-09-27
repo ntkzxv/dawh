@@ -6,6 +6,7 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useRef,
   ReactNode,
 } from "react";
 import { usePathname } from "next/navigation";
@@ -71,11 +72,17 @@ const NotificationContext = createContext<NotificationContextType | undefined>(
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const activeNotificationKeys = useRef(new Map<string, string>());
   const pathname = usePathname();
 
   const dismissNotification = useCallback((id: string) => {
     setNotifications((prev) => {
       const target = prev.find((n) => n.id === id);
+      if (target) {
+        activeNotificationKeys.current.delete(
+          `${target.type}|${target.title}|${target.message ?? ""}`
+        );
+      }
       if (target?.onClose) {
         try {
           target.onClose();
@@ -88,6 +95,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearAll = useCallback(() => {
+    activeNotificationKeys.current.clear();
     setNotifications([]);
   }, []);
 
@@ -148,6 +156,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   const showNotification = useCallback(
     (item: Omit<NotificationItem, "id">) => {
+      const notificationKey = `${item.type}|${item.title}|${item.message ?? ""}`;
+      const existingId = activeNotificationKeys.current.get(notificationKey);
+      if (existingId) return existingId;
+
       const id = `notif_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
       const duration = item.duration !== undefined ? item.duration : 5000;
 
@@ -157,6 +169,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         duration,
       };
 
+      activeNotificationKeys.current.set(notificationKey, id);
       setNotifications((prev) => [...prev, newNotif]);
       if (!item.silent) playNotificationSound(item.type);
       return id;

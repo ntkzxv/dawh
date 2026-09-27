@@ -3,7 +3,7 @@ import Settings from "@/components/warehouse/Settings";
 
 export const metadata: Metadata = {
   title: "Settings",
-  description: "Account Profile, Security, Credentials, and System Preferences",
+  description: "System settings and organization configuration",
 };
 
 export default function SettingsPage() {

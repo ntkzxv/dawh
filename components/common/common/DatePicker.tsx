@@ -226,24 +226,18 @@ export default function DatePicker({
             ? "opacity-50 cursor-not-allowed bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700"
             : isLight
             ? isOpen
-              ? "border-[#222222] ring-2 ring-[#222222]/10 bg-white text-[#222222]"
-              : "bg-[#F5F5F5] hover:bg-[#EBEBEB] border-[#E5E5E5] text-[#222222]"
+              ? "bg-white border-zinc-400 text-zinc-900 shadow-xs"
+              : "bg-zinc-100/90 hover:bg-zinc-100 border-zinc-200 text-zinc-800"
             : isOpen
-            ? "border-white ring-2 ring-white/10 bg-[#333333] text-white"
-            : "bg-[#282828] hover:bg-[#303030] border-[#444444] text-white"
+            ? "bg-[#333333] border-white/60 text-white shadow-xs"
+            : "bg-[#2C2C2C] hover:bg-[#333333] border-[#555555] text-white"
         } ${triggerClassName}`}
       >
         <div className="flex items-center gap-2 truncate min-w-0 flex-1">
           <CalendarIcon
             size={isSmall ? 13 : 15}
             className={`shrink-0 ${
-              value
-                ? isLight
-                  ? "text-[#222222]"
-                  : "text-white"
-                : isLight
-                ? "text-zinc-500"
-                : "text-zinc-400"
+              value ? "text-[#6366F1]" : isLight ? "text-zinc-500" : "text-zinc-400"
             }`}
           />
           <span

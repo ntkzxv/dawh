@@ -297,9 +297,7 @@ function OffsetPagination({
                 }}
                 className={`relative min-w-[32px] h-[32px] px-2 rounded-lg text-xs font-medium cursor-pointer flex items-center justify-center transition-colors ${
                   isActive
-                    ? isLight
-                      ? "text-white font-bold"
-                      : "text-[#222222] font-bold"
+                    ? "text-white font-bold"
                     : isLight
                     ? "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100"
                     : "text-zinc-400 hover:text-white hover:bg-white/10"
@@ -309,7 +307,7 @@ function OffsetPagination({
                 {isActive && (
                   <motion.div
                     layoutId={`pagination-active-pill-${paginationId}`}
-                    className={`absolute inset-0 rounded-lg shadow-sm ${isLight ? "bg-[#222222]" : "bg-white"}`}
+                    className="absolute inset-0 bg-[#6366F1] rounded-lg shadow-sm"
                     transition={{
                       type: "spring",
                       stiffness: 380,
@@ -346,8 +344,8 @@ function OffsetPagination({
           title={isThai ? "ถัดไป" : "Next Page"}
           className={`p-2 rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-25 ${
             isLight
-                    ? "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100"
-                    : "text-zinc-400 hover:text-white hover:bg-white/10"
+              ? "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100"
+              : "text-zinc-400 hover:text-white hover:bg-white/10"
           }`}
         >
           <ChevronRight size={18} />

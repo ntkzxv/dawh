@@ -27,15 +27,33 @@ export function useAccountMenu(options: UseAccountMenuOptions = {}): UseAccountM
   useEffect(() => {
     let active = true;
     const frame = requestAnimationFrame(() => setMounted(true));
-    void Promise.all([getCurrentSession(), warehouseApi.me()]).then(([session, me]) => {
+    void Promise.all([getCurrentSession(), warehouseApi.me()]).then(async ([session, me]) => {
       if (!active) return;
       setRole(me.role);
-      setProfile({ id: session?.user?.id, email: session?.user?.email, full_name: session?.user?.name ?? undefined });
+      let avatar = (session?.user as { image?: string | null } | undefined)?.image || null;
+      try {
+        const full = await warehouseApi.member(me.id);
+        if (full && "image" in full && full.image) avatar = full.image;
+      } catch {
+        // use session image fallback
+      }
+      setProfile({
+        id: session?.user?.id,
+        email: session?.user?.email,
+        full_name: session?.user?.name ?? undefined,
+        avatar_url: avatar || undefined,
+      });
       setLoaded(true);
     }).catch(async () => {
       const session = await getCurrentSession().catch(() => null);
       if (!active) return;
-      setProfile({ id: session?.user?.id, email: session?.user?.email, full_name: session?.user?.name ?? undefined });
+      const avatar = (session?.user as { image?: string | null } | undefined)?.image || undefined;
+      setProfile({
+        id: session?.user?.id,
+        email: session?.user?.email,
+        full_name: session?.user?.name ?? undefined,
+        avatar_url: avatar,
+      });
       setLoaded(true);
     });
     return () => { active = false; cancelAnimationFrame(frame); };

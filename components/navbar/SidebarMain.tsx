@@ -18,7 +18,6 @@ import {
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import { useTheme } from "@/context/ThemeContext";
-import { DAWH_LOGOS } from "@/config/brand";
 import { useLoading } from "@/components/loading_screen";
 import { useAppLanguage, setAppLanguage } from "@/utils/language";
 import { motion, AnimatePresence } from "framer-motion";
@@ -52,13 +51,15 @@ export interface NavbarMainProps {
   };
 }
 
-const DEFAULT_LOGO_WHITE = DAWH_LOGOS.horizontal.black;
-const DEFAULT_LOGO_DARK = DAWH_LOGOS.horizontal.light;
+const DEFAULT_LOGO_LIGHT_THEME = "/assets/dawh_nospacewight_dark_logo.png";
+const DEFAULT_LOGO_DARK_THEME = "/assets/dawh_nospacewight_light_logo.png";
+const MINIMIZED_LOGO_LIGHT_THEME = "/assets/dawh_black4x2048logo.png";
+const MINIMIZED_LOGO_DARK_THEME = "/assets/dawh_light1024logo.png";
 
 export default function NavbarMain({
   children,
-  logoWhiteUrl = DEFAULT_LOGO_WHITE,
-  logoDarkUrl = DEFAULT_LOGO_DARK,
+  logoWhiteUrl = DEFAULT_LOGO_LIGHT_THEME,
+  logoDarkUrl = DEFAULT_LOGO_DARK_THEME,
   logoUrl,
   hubPath = "/workspace",
   settingsPath = "/settings",
@@ -103,7 +104,7 @@ export default function NavbarMain({
 
   // Dynamic logo based on active theme and minimized state
   const currentLogo = isMinimized
-    ? (isLight ? "/assets/dawh_black4x2048logo.png" : "/assets/dawh_light1024logo.png")
+    ? (isLight ? MINIMIZED_LOGO_LIGHT_THEME : MINIMIZED_LOGO_DARK_THEME)
     : (logoUrl || (isLight ? logoWhiteUrl : logoDarkUrl));
 
   // Sync with localStorage on mount
@@ -175,7 +176,7 @@ export default function NavbarMain({
           isMinimized ? "w-20 overflow-visible" : "w-64 overflow-hidden"
         } ${
           isLight
-            ? "bg-[#FFFFFF] text-slate-900 border-r border-[#E4E4E7] shadow-sm"
+            ? "bg-[#FFFFFF] text-[#222222] border-r border-[#E4E4E7] shadow-xs"
             : "bg-[#222222] text-[#FFFFFF] border-r border-[#444444]"
         }`}
       >
@@ -183,12 +184,12 @@ export default function NavbarMain({
         <div className="pt-safe" />
 
         {/* ======================================================== */}
-        {/* 📌 [จุดที่ 1] LOGO AREA - Enlarged +1/3 in Expanded Mode */}
+        {/* Sidebar logo */}
         {/* ======================================================== */}
         <div className="flex flex-col items-center justify-center w-full overflow-hidden shrink-0 h-[88px] px-2.5 transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]">
           <div
             className={`relative flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-              isMinimized ? "w-10 h-10" : "w-full h-[58px]"
+              isMinimized ? "w-[38px] h-[38px]" : "w-full h-[39px]"
             }`}
           >
             {currentLogo ? (
@@ -197,7 +198,7 @@ export default function NavbarMain({
                 alt="Logo"
                 fill
                 priority
-                sizes="(max-width: 768px) 40px, 220px"
+                sizes="(max-width: 768px) 38px, 150px"
                 className={`object-contain transition-opacity duration-300 ${
                   isMinimized ? "p-0.5" : "p-0"
                 }`}
@@ -213,15 +214,15 @@ export default function NavbarMain({
                     isMinimized ? "h-8 w-8" : "h-9 w-9"
                   } ${
                     isLight
-                      ? "bg-slate-900 text-[#FFFFFF]"
-                      : "bg-[#FFFFFF] text-slate-950"
+                      ? "bg-[#222222] text-[#FFFFFF]"
+                      : "bg-[#FFFFFF] text-[#222222]"
                   }`}
                 >
                   <Layers className={isMinimized ? "h-4 w-4" : "h-5 w-5"} />
                 </div>
                 <span
                   className={`font-extrabold text-2xl tracking-tight whitespace-nowrap overflow-hidden transition-all ease-out ${
-                    isLight ? "text-slate-900" : "text-[#FFFFFF]"
+                    isLight ? "text-[#222222]" : "text-[#FFFFFF]"
                   } ${
                     isMinimized
                       ? "max-w-0 opacity-0 -translate-x-3 duration-200 pointer-events-none"
@@ -257,7 +258,7 @@ export default function NavbarMain({
       <div
         className={`px-3 ${showAccount ? "pt-5 pb-2.5" : "py-2.5"} mt-auto w-full shrink-0 border-t space-y-2 transition-colors duration-700 ${
           isLight
-            ? "bg-[#FFFFFF] border-[#E4E4E7] shadow-sm"
+            ? "bg-[#FFFFFF] border-[#E4E4E7]"
             : "bg-[#1E1E1E] border-[#383838]"
         }`}
       >
@@ -269,7 +270,7 @@ export default function NavbarMain({
           >
             <p
               className={`text-[11px] font-medium leading-tight truncate text-center ${
-                isLight ? "text-slate-500" : "text-[#A1A1AA]"
+                isLight ? "text-[#383838]" : "text-[#A1A1AA]"
               }`}
             >
               {serverStatus.label || serverStatus.sublabel}
@@ -293,7 +294,7 @@ export default function NavbarMain({
               disabled={refreshButton.isLoading}
               className={`flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] group cursor-pointer overflow-hidden ${
                 isLight
-                  ? "bg-[#FFFFFF] border-[#E4E4E7] text-slate-800 hover:bg-[#F4F4F5] shadow-sm disabled:opacity-50"
+                  ? "bg-[#FFFFFF] border-[#E4E4E7] text-[#222222] hover:bg-[#F4F4F5] disabled:opacity-50"
                   : "bg-[#383838] border-[#444444] text-[#FFFFFF] hover:bg-[#444444] disabled:opacity-50"
               } ${
                 isMinimized
@@ -351,7 +352,7 @@ export default function NavbarMain({
               }
               className={`flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] group cursor-pointer overflow-hidden ${
                 isLight
-                  ? "bg-[#FFFFFF] border-[#E4E4E7] text-slate-800 hover:bg-[#F4F4F5] shadow-sm"
+                  ? "bg-[#FFFFFF] border-[#E4E4E7] text-[#222222] hover:bg-[#F4F4F5]"
                   : "bg-[#383838] border-[#444444] text-[#FFFFFF] hover:bg-[#444444]"
               } ${
                 isMinimized
@@ -369,7 +370,7 @@ export default function NavbarMain({
                 <LayoutGrid
                   size={16}
                   className={`group-hover:rotate-90 transition-transform duration-500 shrink-0 ${
-                    isLight ? "text-slate-800 group-hover:text-black" : "text-[#FFFFFF] group-hover:text-white"
+                    isLight ? "text-[#222222] group-hover:text-black" : "text-[#FFFFFF] group-hover:text-white"
                   }`}
                 />
               </div>
@@ -395,7 +396,7 @@ export default function NavbarMain({
             onClick={handleToggleMinimize}
             className={`flex items-center justify-center rounded-xl border transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] active:scale-75 cursor-pointer shrink-0 ${
               isLight
-                ? "border-[#E4E4E7] bg-[#FFFFFF] text-[#2C2C2C] hover:bg-[#F4F4F5] shadow-sm"
+                ? "border-[#E4E4E7] bg-[#FFFFFF] text-[#2C2C2C] hover:bg-[#F4F4F5]"
                 : "border-[#444444] bg-[#383838] text-[#E4E4E7] hover:border-white/30 hover:text-[#FFFFFF]"
             } ${isMinimized ? "w-10 h-10 aspect-square" : "h-9 w-9"}`}
             aria-label="Toggle sidebar minimize"
@@ -427,7 +428,7 @@ export default function NavbarMain({
               }
               className={`flex items-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden cursor-pointer ${
                 isLight
-                  ? "bg-[#FFFFFF] border-[#E4E4E7] text-[#222222] hover:bg-[#F4F4F5] shadow-sm"
+                  ? "bg-[#FFFFFF] border-[#E4E4E7] text-[#222222] hover:bg-[#F4F4F5]"
                   : "bg-[#383838] border-[#444444] text-[#FFFFFF] hover:bg-[#444444]"
               } ${
                 isMinimized
@@ -440,7 +441,7 @@ export default function NavbarMain({
                   isMinimized ? "w-8 h-8" : "w-9 h-9"
                 } ${
                   isLight
-                    ? "bg-slate-100 border-[#E4E4E7] text-[#222222]"
+                    ? "bg-[#F4F4F5] border-[#E4E4E7] text-[#222222]"
                     : "bg-white/10 text-[#FFFFFF] border-white/20"
                 }`}
               >
@@ -467,14 +468,14 @@ export default function NavbarMain({
               >
                 <p
                   className={`text-[13px] font-semibold truncate leading-tight ${
-                    isLight ? "text-slate-900" : "text-[#FFFFFF]"
+                    isLight ? "text-[#222222]" : "text-[#FFFFFF]"
                   }`}
                 >
                   {userName}
                 </p>
                 <p
                   className={`text-[11.5px] truncate leading-tight mt-0.5 ${
-                    isLight ? "text-slate-500" : "text-[#D4D4D8]"
+                    isLight ? "text-[#383838]" : "text-[#D4D4D8]"
                   }`}
                 >
                   {userUsername || "dawh.internal"}
@@ -493,7 +494,7 @@ export default function NavbarMain({
                   size={15}
                   className={`transition-transform duration-300 ${
                     isAccountOpen ? "rotate-0" : "rotate-180"
-                  } ${isLight ? "text-slate-400" : "text-[#D4D4D8]"}`}
+                  } ${isLight ? "text-[#383838]" : "text-[#D4D4D8]"}`}
                 />
               </div>
             </button>
