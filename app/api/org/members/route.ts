@@ -5,5 +5,21 @@ import { getActor } from "@/lib/warehouse/core";
 import { createMember, listMembers } from "@/lib/warehouse/members";
 
 export const runtime = "nodejs";
-export const GET = apiRoute(async (request) => jsonOk(request, await listMembers(await getActor(request))));
-export const POST = apiRoute(async (request) => jsonOk(request, await createMember(await getActor(request), await parseJsonObject(request)), 201));
+export const GET = apiRoute(async (request) =>
+  jsonOk(
+    request,
+    await listMembers(
+      await getActor(request),
+      new URL(request.url).searchParams.get("view") === "summary"
+        ? "summary"
+        : "full",
+    ),
+  ),
+);
+export const POST = apiRoute(async (request) =>
+  jsonOk(
+    request,
+    await createMember(await getActor(request), await parseJsonObject(request)),
+    201,
+  ),
+);
