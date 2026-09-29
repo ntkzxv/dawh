@@ -12,7 +12,7 @@ export interface LoadingScreenProps {
   isReady?: boolean;
   /** Callback fired when the logo has completed filling to 100% */
   onFilled?: () => void;
-  /** Duration in seconds for the flow fill animation (default: 2.0s) */
+  /** Duration in seconds for the flow fill animation (default: 1.3s) */
   duration?: number;
   /** Whether to show in fullscreen fixed overlay mode (default: true) */
   fullscreen?: boolean;
@@ -40,6 +40,7 @@ export interface LoadingScreenProps {
 
 export default function LoadingScreen({
   show = true,
+  isReady,
   onFilled,
   duration = 1.3,
   fullscreen = true,
@@ -48,9 +49,13 @@ export default function LoadingScreen({
   className = "",
   exitTransition = "slide",
 }: LoadingScreenProps) {
+  const [hasReachedWaitPoint, setHasReachedWaitPoint] = React.useState(false);
   const { theme: contextTheme } = useTheme();
   const theme = themeOverride || contextTheme || "dark";
   const isLight = theme === "light";
+  const isTrackingReadiness = isReady !== undefined;
+  const shouldHoldAtWaitPoint =
+    isTrackingReadiness && !(isReady === true && hasReachedWaitPoint);
 
   if (!show) return null;
 
@@ -85,19 +90,25 @@ export default function LoadingScreen({
           draggable={false}
         />
 
-        {/* Layer 2: Continuous Flow Fill (flows smoothly 0% -> 100% without stopping at half) */}
+        {/* Layer 2: Fill to the wait point, then finish after the destination is ready. */}
         <motion.div
           initial={{ clipPath: "inset(0 100% 0 0)" }}
-          animate={{ clipPath: "inset(0 0% 0 0)" }}
+          animate={{
+            clipPath: shouldHoldAtWaitPoint
+              ? "inset(0 10% 0 0)"
+              : "inset(0 0% 0 0)",
+          }}
           transition={{
-            duration,
-            ease: [0.25, 1, 0.5, 1],
-            delay: 0.05,
+            duration: isTrackingReadiness && !shouldHoldAtWaitPoint ? 0.1 : duration,
+            ease: "linear",
+            delay: shouldHoldAtWaitPoint ? 0.05 : 0,
           }}
           onAnimationComplete={() => {
-            if (onFilled) {
-              onFilled();
+            if (shouldHoldAtWaitPoint) {
+              setHasReachedWaitPoint(true);
+              return;
             }
+            if (isReady !== false) onFilled?.();
           }}
           className="absolute inset-0 w-full h-full pointer-events-none"
         >

@@ -377,13 +377,17 @@ export function UserAuthView({
           );
         } catch {}
 
-        startLoading({ exitTransition: "fade" });
-
         const targetUrl = searchParams.get("from") || "/workspace";
         router.prefetch(targetUrl);
-        if (onAuthSuccess) onAuthSuccess();
-        else if (onNavigate) onNavigate(targetUrl);
-        else router.replace(targetUrl);
+        if (onAuthSuccess) {
+          startLoading({ exitTransition: "fade" });
+          onAuthSuccess();
+        } else if (onNavigate) {
+          startLoading({ exitTransition: "fade" });
+          onNavigate(targetUrl);
+        } else {
+          navigateWithLoading(targetUrl, undefined, undefined, { replace: true });
+        }
       }
     } catch (error: unknown) {
       setErrors({ signinEmail: true, signinPassword: true });
@@ -646,8 +650,6 @@ export function UserAuthView({
         setIsRegistering(false);
 
         if (data?.token) {
-          startLoading({ exitTransition: "fade" });
-
           try {
             sessionStorage.setItem(
               "dawh_pending_notice",
@@ -665,9 +667,15 @@ export function UserAuthView({
 
           const targetUrl = "/workspace";
           router.prefetch(targetUrl);
-          if (onAuthSuccess) onAuthSuccess();
-          else if (onNavigate) onNavigate(targetUrl);
-          else router.replace(targetUrl);
+          if (onAuthSuccess) {
+            startLoading({ exitTransition: "fade" });
+            onAuthSuccess();
+          } else if (onNavigate) {
+            startLoading({ exitTransition: "fade" });
+            onNavigate(targetUrl);
+          } else {
+            navigateWithLoading(targetUrl, undefined, undefined, { replace: true });
+          }
         } else {
           const targetUrl = "/auth/login";
           if (onNavigate) onNavigate(targetUrl);

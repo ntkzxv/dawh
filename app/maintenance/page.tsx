@@ -2,15 +2,16 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppLanguage } from "@/utils/language";
 import { DAWH_LONGNOSPACE_DATA_URI, getDawhLogo } from "@/config/brand";
 import { useNotification } from "@/context/NotificationContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useLoading } from "@/components/loading_screen";
 
 export default function SystemMaintenancePage() {
-  const router = useRouter();
+  const { navigateWithLoading } = useLoading();
   const searchParams = useSearchParams();
   const moduleParam = searchParams.get("module");
   const appLang = useAppLanguage();
@@ -96,7 +97,7 @@ export default function SystemMaintenancePage() {
             );
 
             setTimeout(() => {
-              router.push("/workspace");
+              navigateWithLoading("/workspace");
             }, 1800);
           }
           return 0;
@@ -105,7 +106,21 @@ export default function SystemMaintenancePage() {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [moduleParam, isThai, notify, router]);
+  }, [moduleParam, isThai, notify, navigateWithLoading]);
+
+  const handleWorkspaceLink = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    event.preventDefault();
+    navigateWithLoading("/workspace");
+  };
 
   const formatTimer = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);
@@ -206,6 +221,7 @@ export default function SystemMaintenancePage() {
         >
           <Link
             href="/workspace"
+            onClick={handleWorkspaceLink}
             className="flex items-center cursor-pointer hover:opacity-85 transition-opacity select-none"
             title="DAWH Workspace"
           >
@@ -318,6 +334,7 @@ export default function SystemMaintenancePage() {
               >
                 <Link
                   href="/workspace"
+                  onClick={handleWorkspaceLink}
                   className="w-full h-[42px] flex flex-row justify-center items-center px-6 py-3 rounded-[8px] border border-[#555555] bg-[#2A2A2A] hover:bg-white hover:text-zinc-950 transition-all text-[#F4F4F5] font-bold text-[14px] leading-[18px] select-none text-center block"
                   style={{ fontFamily: "var(--font-geist-sans)" }}
                 >

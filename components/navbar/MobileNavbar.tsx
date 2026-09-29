@@ -119,7 +119,7 @@ export default function MobileNavbar({
       >
         {/* Brand Logo Left (Official Horizontal Logo, No Boxes or Random Text) */}
         <div
-          onClick={() => router.push("/workspace")}
+          onClick={() => navigateWithLoading("/workspace")}
           className="flex items-center cursor-pointer hover:opacity-90 transition-opacity"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}

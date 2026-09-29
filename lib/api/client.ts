@@ -49,6 +49,62 @@ export class ApiTimeoutError extends Error {
   }
 }
 
+let navigationApiTrackingId = 0;
+let navigationApiTrackingActive = false;
+let navigationApiRequestsInFlight = 0;
+const navigationApiTrackingListeners = new Set<() => void>();
+
+function notifyNavigationApiTrackingListeners() {
+  for (const listener of navigationApiTrackingListeners) listener();
+}
+
+export function beginNavigationApiTracking() {
+  navigationApiTrackingId += 1;
+  navigationApiTrackingActive = true;
+  navigationApiRequestsInFlight = 0;
+  notifyNavigationApiTrackingListeners();
+  return navigationApiTrackingId;
+}
+
+export function endNavigationApiTracking(trackingId: number) {
+  if (trackingId !== navigationApiTrackingId) return;
+  navigationApiTrackingActive = false;
+  navigationApiRequestsInFlight = 0;
+  notifyNavigationApiTrackingListeners();
+}
+
+export function getNavigationApiRequestsInFlight(trackingId: number) {
+  return trackingId === navigationApiTrackingId && navigationApiTrackingActive
+    ? navigationApiRequestsInFlight
+    : 0;
+}
+
+export function subscribeToNavigationApiTracking(listener: () => void) {
+  navigationApiTrackingListeners.add(listener);
+  return () => {
+    navigationApiTrackingListeners.delete(listener);
+  };
+}
+
+function trackNavigationApiRequestStart() {
+  if (!navigationApiTrackingActive) return null;
+  navigationApiRequestsInFlight += 1;
+  notifyNavigationApiTrackingListeners();
+  return navigationApiTrackingId;
+}
+
+function trackNavigationApiRequestEnd(trackingId: number | null) {
+  if (
+    trackingId === null ||
+    trackingId !== navigationApiTrackingId ||
+    !navigationApiTrackingActive
+  ) {
+    return;
+  }
+  navigationApiRequestsInFlight = Math.max(0, navigationApiRequestsInFlight - 1);
+  notifyNavigationApiTrackingListeners();
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -88,6 +144,7 @@ export async function apiRequest<T>(
 
   let response: Response;
   let payload: unknown;
+  const navigationTrackingId = trackNavigationApiRequestStart();
   try {
     response = await fetch(path, {
       ...init,
@@ -105,6 +162,7 @@ export async function apiRequest<T>(
     if (controller && init.signal) {
       init.signal.removeEventListener("abort", onCallerAbort);
     }
+    trackNavigationApiRequestEnd(navigationTrackingId);
   }
   if (!response.ok) {
     const body = isRecord(payload) && isRecord(payload.error) ? payload.error : {};

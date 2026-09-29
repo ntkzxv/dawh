@@ -1,29 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Construction } from "lucide-react";
 import { PlaceholderBlockerView } from "@/components/common";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage } from "@/utils/language";
+import { useLoading } from "@/components/loading_screen";
 
 export default function ReportsPage() {
   const { theme } = useTheme();
   const isLight = theme === "light";
   const appLang = useAppLanguage();
   const isThai = appLang === "TH";
-  const router = useRouter();
+  const { navigateWithLoading } = useLoading();
   const [count, setCount] = useState(10);
 
   useEffect(() => {
     if (count <= 0) {
-      router.replace("/workspace");
+      navigateWithLoading("/workspace", undefined, undefined, { replace: true });
       return;
     }
     const t = setTimeout(() => setCount((c) => c - 1), 1000);
     return () => clearTimeout(t);
-  }, [count, router]);
+  }, [count, navigateWithLoading]);
 
   return (
     <PlaceholderBlockerView
