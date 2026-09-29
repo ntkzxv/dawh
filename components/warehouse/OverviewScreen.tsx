@@ -25,7 +25,7 @@ export default function OverviewScreen() {
       routePath="/warehouse"
       iconName="package"
     >
-      {loading && <p>กำลังโหลดข้อมูล...</p>}
+
       {error && <Notice tone="error">{error}</Notice>}
       {data && (
         <>

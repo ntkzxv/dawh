@@ -108,11 +108,72 @@ export async function listLedgerPage(actor: Actor, search: URLSearchParams) {
   );
   return pageResult(result.rows[0].items, result.rows[0].total, page, limit);
 }
-export async function listAudit(actor: Actor) {
+export async function listAudit(
+  actor: Actor,
+  filters: {
+    actions: readonly string[];
+    action?: string;
+    entityType?: string;
+    entityIdSearch?: number;
+    actorQuery?: string;
+    from?: string;
+    to?: string;
+    sort?: "date_desc" | "date_asc" | "name_asc" | "name_desc";
+    page: number;
+    limit: number;
+  },
+) {
   requireRole(actor, ["ADMIN", "CEO"]);
-  return (
-    await timedPoolQuery(
-      `SELECT a.*,u.email AS actor_email FROM app.audit_events a LEFT JOIN app.app_users actor ON actor.id=a.actor_user_id LEFT JOIN public."user" u ON u.id=actor.auth_user_id ORDER BY a.id DESC LIMIT 1000`,
-    )
-  ).rows;
+  const values: unknown[] = [filters.actions];
+  const where = ["a.action = ANY($1::text[])"];
+  if (filters.action) {
+    values.push(filters.action);
+    where.push(`a.action = $${values.length}`);
+  }
+  if (filters.entityType) {
+    values.push(filters.entityType);
+    where.push(`a.entity_type = $${values.length}`);
+  }
+  if (filters.actorQuery) {
+    values.push(`%${filters.actorQuery}%`);
+    const actorParameter = `$${values.length}`;
+    if (filters.entityIdSearch) {
+      values.push(filters.entityIdSearch);
+      where.push(`(u.name ILIKE ${actorParameter} OR u.email ILIKE ${actorParameter} OR a.entity_id = $${values.length})`);
+    } else {
+      where.push(`(u.name ILIKE ${actorParameter} OR u.email ILIKE ${actorParameter})`);
+    }
+  }
+  if (filters.from) {
+    values.push(filters.from);
+    where.push(`a.created_at >= ($${values.length}::date::timestamp AT TIME ZONE 'Asia/Bangkok')`);
+  }
+  if (filters.to) {
+    values.push(filters.to);
+    where.push(`a.created_at < (($${values.length}::date + INTERVAL '1 day')::timestamp AT TIME ZONE 'Asia/Bangkok')`);
+  }
+  const filterSql = where.join(" AND ");
+  const count = await timedPoolQuery<{ total: string }>(
+    `SELECT count(*)::text AS total FROM app.audit_events a LEFT JOIN app.app_users actor ON actor.id=a.actor_user_id LEFT JOIN public."user" u ON u.id=actor.auth_user_id WHERE ${filterSql}`,
+    values,
+  );
+  const total = Number(count.rows[0]?.total ?? 0);
+  const offset = (filters.page - 1) * filters.limit;
+  const orderBy = {
+    date_desc: "a.created_at DESC,a.id DESC",
+    date_asc: "a.created_at ASC,a.id ASC",
+    name_asc: "COALESCE(u.name,'') ASC,a.created_at DESC,a.id DESC",
+    name_desc: "COALESCE(u.name,'') DESC,a.created_at DESC,a.id DESC",
+  }[filters.sort ?? "date_desc"];
+  const rows = await timedPoolQuery(
+    `SELECT a.*,u.email AS actor_email,u.name AS actor_name FROM app.audit_events a LEFT JOIN app.app_users actor ON actor.id=a.actor_user_id LEFT JOIN public."user" u ON u.id=actor.auth_user_id WHERE ${filterSql} ORDER BY ${orderBy} LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
+    [...values, filters.limit, offset],
+  );
+  return {
+    items: rows.rows,
+    page: filters.page,
+    limit: filters.limit,
+    total,
+    hasMore: offset + rows.rows.length < total,
+  };
 }

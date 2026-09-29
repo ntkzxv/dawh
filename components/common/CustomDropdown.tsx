@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo, useCallback, useLayoutEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback, useLayoutEffect, useId } from "react";
 import { createPortal } from "react-dom";
 import { useTheme } from "@/context/ThemeContext";
 import { ChevronDown, Check, Search, X } from "lucide-react";
@@ -54,6 +54,8 @@ export default function CustomDropdown<T = string>({
   const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const dropdownId = useId();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -112,10 +114,70 @@ export default function CustomDropdown<T = string>({
     if (disabled) return;
     if (!isOpen) {
       updatePosition();
+      const selectedIndex = filteredOptions.findIndex((option) => option.value === value && !option.disabled);
+      setActiveIndex(selectedIndex >= 0 ? selectedIndex : filteredOptions.findIndex((option) => !option.disabled));
       setIsOpen(true);
     } else {
       setIsOpen(false);
       setSearchQuery("");
+      setActiveIndex(-1);
+    }
+  };
+
+  const handleTriggerKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    const enabledIndices = filteredOptions.reduce<number[]>(
+      (indices, option, index) => (option.disabled ? indices : [...indices, index]),
+      [],
+    );
+    if (!enabledIndices.length) return;
+
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      const direction = event.key === "ArrowDown" ? 1 : -1;
+      if (!isOpen) {
+        updatePosition();
+        setIsOpen(true);
+        const selected = filteredOptions.findIndex((option) => option.value === value && !option.disabled);
+        setActiveIndex(selected >= 0 ? selected : direction > 0 ? enabledIndices[0] : enabledIndices.at(-1) ?? -1);
+        return;
+      }
+      const currentPosition = enabledIndices.indexOf(activeIndex);
+      const nextPosition = currentPosition < 0
+        ? direction > 0 ? 0 : enabledIndices.length - 1
+        : (currentPosition + direction + enabledIndices.length) % enabledIndices.length;
+      setActiveIndex(enabledIndices[nextPosition]);
+      return;
+    }
+
+    if (event.key === "Home" || event.key === "End") {
+      event.preventDefault();
+      if (!isOpen) {
+        updatePosition();
+        setIsOpen(true);
+      }
+      setActiveIndex(event.key === "Home" ? enabledIndices[0] : enabledIndices.at(-1) ?? -1);
+      return;
+    }
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      if (isOpen && activeIndex >= 0) {
+        const activeOption = filteredOptions[activeIndex];
+        if (activeOption) handleSelect(activeOption);
+      } else if (!isOpen) {
+        updatePosition();
+        setIsOpen(true);
+        const selected = filteredOptions.findIndex((option) => option.value === value && !option.disabled);
+        setActiveIndex(selected >= 0 ? selected : enabledIndices[0]);
+      }
+      return;
+    }
+
+    if (event.key === "Escape" && isOpen) {
+      event.preventDefault();
+      setIsOpen(false);
+      setSearchQuery("");
+      setActiveIndex(-1);
     }
   };
 
@@ -205,23 +267,31 @@ export default function CustomDropdown<T = string>({
   }, [options, value]);
 
   // Filter options by search
-  const filteredOptions = useMemo(() => {
-    if (!searchQuery.trim()) return options;
-    const q = searchQuery.toLowerCase().trim();
-    return options.filter(
-      (opt) =>
-        opt.label.toLowerCase().includes(q) ||
-        (opt.subLabel && opt.subLabel.toLowerCase().includes(q)) ||
-        (typeof opt.value === "string" && opt.value.toLowerCase().includes(q))
-    );
-  }, [options, searchQuery]);
+  const normalizedSearch = searchQuery.toLowerCase().trim();
+  const filteredOptions = normalizedSearch
+    ? options.filter(
+        (opt) =>
+          opt.label.toLowerCase().includes(normalizedSearch) ||
+          (opt.subLabel && opt.subLabel.toLowerCase().includes(normalizedSearch)) ||
+          (typeof opt.value === "string" && opt.value.toLowerCase().includes(normalizedSearch)),
+      )
+    : options;
 
   const handleSelect = (option: DropdownOption<T>) => {
     if (option.disabled || disabled) return;
     onChange(option.value);
     setIsOpen(false);
     setSearchQuery("");
+    setActiveIndex(-1);
   };
+
+  useEffect(() => {
+    if (!isOpen || activeIndex < 0) return;
+    menuRef.current
+      ?.querySelectorAll<HTMLElement>('[role="option"]')
+      .item(activeIndex)
+      ?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex, isOpen]);
 
   const isSmall = size === "sm";
   const isBlock = className.includes("w-full") || className.includes("flex-1") || className.includes("block");
@@ -238,6 +308,9 @@ export default function CustomDropdown<T = string>({
         onClick={toggleOpen}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
+        aria-controls={`${dropdownId}-listbox`}
+        aria-activedescendant={isOpen && activeIndex >= 0 ? `${dropdownId}-option-${activeIndex}` : undefined}
+        onKeyDown={handleTriggerKeyDown}
         className={`w-full flex items-center justify-between gap-2.5 rounded-lg border font-medium transition-all duration-150 cursor-pointer select-none text-left outline-none ${
           isSmall ? "px-2.5 py-1.5 text-[11px]" : "px-3 py-2 text-xs"
         } ${
@@ -285,6 +358,7 @@ export default function CustomDropdown<T = string>({
         createPortal(
           <div
             ref={menuRef}
+            id={`${dropdownId}-listbox`}
             role="listbox"
             style={menuStyle}
             className={`rounded-xl border p-1.5 shadow-2xl flex flex-col gap-1 animate-in fade-in zoom-in-95 duration-150 ${
@@ -340,12 +414,18 @@ export default function CustomDropdown<T = string>({
                   return (
                     <div
                       key={String(opt.value)}
+                      id={`${dropdownId}-option-${filteredOptions.indexOf(opt)}`}
                       role="option"
                       aria-selected={isSelected}
                       onClick={() => handleSelect(opt)}
+                      onMouseEnter={() => !opt.disabled && setActiveIndex(filteredOptions.indexOf(opt))}
                       className={`flex items-center justify-between gap-2.5 px-2.5 py-2 rounded-lg text-xs transition-colors cursor-pointer select-none ${
                         opt.disabled
                           ? "opacity-35 cursor-not-allowed"
+                          : activeIndex === filteredOptions.indexOf(opt)
+                          ? isLight
+                            ? "bg-zinc-100 text-zinc-900"
+                            : "bg-white/[0.08] text-white"
                           : isSelected
                           ? isLight
                             ? "bg-zinc-900 text-white font-semibold"

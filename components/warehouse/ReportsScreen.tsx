@@ -38,7 +38,7 @@ function ReportList({ tab }: { tab: ReportTab }) {
 
   return (
     <>
-      {active.loading && <p>กำลังโหลดรายงาน...</p>}
+
       {active.error && <Notice tone="error">{active.error}</Notice>}
       <section className={panel}>
         {tab === "outstanding" ? (

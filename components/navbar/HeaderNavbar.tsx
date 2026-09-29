@@ -40,7 +40,7 @@ export default function HeaderNavbar({
     onLangChange,
     onNavigate,
   });
-  const { profile, fullName, initials, departmentDisplay, isProfileLoaded, mounted } = accountMenu;
+  const { profile, fullName, initials, accountSubtitle, isProfileLoaded, mounted } = accountMenu;
 
   // Check if current page is Workspace
   const isWorkspacePage =
@@ -199,7 +199,7 @@ export default function HeaderNavbar({
             ) : (
               <div className={`h-[16px] w-[84px] rounded-md animate-pulse my-[1px] ${isLight ? "bg-slate-200" : "bg-[#383838]"}`} />
             )}
-            {mounted && departmentDisplay ? (
+            {mounted && (isProfileLoaded || fullName) ? (
               <div className="flex items-center gap-1.5 mt-[1px]">
                 <span
                   className={`font-medium text-[12px] leading-[15px] truncate max-w-[140px] ${
@@ -207,18 +207,9 @@ export default function HeaderNavbar({
                   }`}
                   suppressHydrationWarning
                 >
-                  {departmentDisplay}
+                  {accountSubtitle}
                 </span>
               </div>
-            ) : mounted && (isProfileLoaded || fullName) && profile.email ? (
-              <span
-                className={`font-normal text-[11px] leading-[14px] truncate max-w-[140px] ${
-                  isLight ? "text-[#888888]" : "text-[#A1A1AA]"
-                }`}
-                suppressHydrationWarning
-              >
-                {profile.email}
-              </span>
             ) : !isProfileLoaded && !fullName ? (
               <div className={`h-[12px] w-[56px] rounded-md animate-pulse mt-[2px] ${isLight ? "bg-slate-200" : "bg-[#383838]"}`} />
             ) : null}

@@ -1,9 +1,11 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
-import { useCallback, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import DataTable, { type DataTableColumn } from "@/components/common/DataTable";
 import {
   warehouseApi,
+  type AuditEvent,
   type CatalogItem,
   type Member,
   type MemberProfile,
@@ -29,6 +31,16 @@ import {
 } from "./Ui";
 import { useOptionalWarehouseAccount } from "@/context/WarehouseAccountContext";
 import { warehouseRoles } from "@/lib/contracts/warehouse";
+import WarehousePageTemplate from "@/app/warehouse/_components/WarehousePageTemplate";
+import { useControlPanelNavigation } from "./ControlPanelNavigationContext";
+import {
+  ALL_AUDIT_CATEGORIES,
+  AUDIT_CATEGORIES,
+  getAuditActionLabel,
+  getAuditCategoryKey,
+} from "./auditLog";
+import { useAccountMenu } from "@/hooks/useAccountMenu";
+import { SkeletonBox } from "@/components/loading_screen/SkeletonLoading";
 
 const roleName: Record<Role, string> = {
   ADMIN: "ผู้ดูแลระบบ",
@@ -48,7 +60,13 @@ const blankProfile: MemberProfile = {
 
 export default function ControlPanel() {
   const account = useOptionalWarehouseAccount();
-  const [tab, setTab] = useState<"members" | "org" | "audit">("members");
+  const {
+    tab,
+    auditCategory,
+    auditCategories,
+    setAuditCategories,
+  } = useControlPanelNavigation();
+  const { isThai } = useAccountMenu();
   const loadMembers = useCallback(async (signal: AbortSignal) => {
     const [members, branches] = await Promise.all([
       warehouseApi.membersSummary(signal),
@@ -84,6 +102,17 @@ export default function ControlPanel() {
   const [notice, setNotice] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!audit) return;
+    setAuditCategories(
+      AUDIT_CATEGORIES.map((category) => ({
+        ...category,
+        count: audit.filter((event) => category.actions.includes(event.action))
+          .length,
+      })),
+    );
+  }, [audit, setAuditCategories]);
+
   const run = async (action: () => Promise<unknown>, success: string) => {
     setFailure(null);
     setNotice(null);
@@ -100,7 +129,15 @@ export default function ControlPanel() {
 
   if (account?.loading)
     return (
-      <main className="mx-auto max-w-6xl p-8">กำลังโหลดข้อมูลบัญชี...</main>
+      <WarehousePageTemplate
+        titleEn="Admin Control Panel"
+        titleTh="แผงควบคุมผู้ดูแลระบบ"
+        routePath="/controlpanel"
+      >
+        <main className="space-y-5" aria-busy="true" aria-label="Loading control panel">
+          <ControlPanelMemberSkeleton isAdmin />
+        </main>
+      </WarehousePageTemplate>
     );
   if (!account?.me)
     return (
@@ -117,60 +154,85 @@ export default function ControlPanel() {
   const isAdmin = me.role === "ADMIN";
   const canViewOrganization = ["ADMIN", "CEO", "MANAGER"].includes(me.role);
   const canViewAudit = ["ADMIN", "CEO"].includes(me.role);
+  const selectedAuditCategory = auditCategories.find(
+    (category) => getAuditCategoryKey(category) === auditCategory,
+  );
+  const visibleAudit = (audit ?? []).filter(
+    (event) =>
+      auditCategory === ALL_AUDIT_CATEGORIES ||
+      selectedAuditCategory?.actions.includes(event.action) === true,
+  );
+  const auditColumns: DataTableColumn<AuditEvent>[] = [
+    {
+      key: "created_at",
+      header: isThai ? "วันที่และเวลา" : "Date and time",
+      className: "whitespace-nowrap",
+      render: (event) =>
+        new Date(event.created_at).toLocaleString(isThai ? "th-TH" : "en-GB"),
+    },
+    {
+      key: "event",
+      header: isThai ? "เหตุการณ์" : "Event",
+      className: "min-w-48 font-medium",
+      render: (event) => getAuditActionLabel(event.action, isThai),
+    },
+    {
+      key: "entity_id",
+      header: isThai ? "รายการที่เกี่ยวข้อง" : "Related record",
+      className: "whitespace-nowrap font-mono text-xs",
+      render: (event) =>
+        `${event.entity_type}${event.entity_id === null ? "" : ` #${event.entity_id}`}`,
+    },
+    {
+      key: "actor_email",
+      header: isThai ? "ผู้ดำเนินการ" : "Actor",
+      className: "whitespace-nowrap",
+      render: (event) => event.actor_email ?? (isThai ? "ระบบ" : "System"),
+    },
+    {
+      key: "details",
+      header: isThai ? "ข้อมูลที่บันทึก" : "Stored data",
+      render: (event) => {
+        const hasSnapshot = event.before_data !== null || event.after_data !== null;
+        if (!hasSnapshot) return isThai ? "ไม่มีรายละเอียด" : "No details";
+        return (
+          <details className="max-w-[340px]">
+            <summary className="cursor-pointer text-[#6366F1]">
+              {isThai ? "ดูข้อมูลก่อนและหลัง" : "View before and after"}
+            </summary>
+            <div className="mt-2 space-y-2">
+              {event.before_data && (
+                <div>
+                  <span className="font-semibold">{isThai ? "ก่อนหน้า" : "Before"}</span>
+                  <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-black/5 p-2 text-[11px] dark:bg-black/20">
+                    {JSON.stringify(event.before_data, null, 2)}
+                  </pre>
+                </div>
+              )}
+              {event.after_data && (
+                <div>
+                  <span className="font-semibold">{isThai ? "หลังดำเนินการ" : "After"}</span>
+                  <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-black/5 p-2 text-[11px] dark:bg-black/20">
+                    {JSON.stringify(event.after_data, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </div>
+          </details>
+        );
+      },
+    },
+  ];
 
   return (
-    <main className="min-h-screen bg-[#F8FAFC] px-5 py-8 text-[#2C2C2C] dark:bg-[#2C2C2C] dark:text-white">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold text-indigo-600">
-              DAWH · สมาชิกองค์กร
-            </p>
-            <h1 className="text-2xl font-bold">รายชื่อสมาชิก</h1>
-          </div>
-          <div className="flex gap-2">
-            <Link className={subtleButton} href="/settings">
-              บัญชีของฉัน
-            </Link>
-            <Link className={subtleButton} href="/workspace">
-              หน้าหลัก
-            </Link>
-          </div>
-        </div>
-        <nav className="flex flex-wrap gap-2" aria-label="ส่วนข้อมูลสมาชิก">
-          <button
-            type="button"
-            className={tab === "members" ? button : subtleButton}
-            onClick={() => setTab("members")}
-          >
-            สมาชิก
-          </button>
-          {canViewOrganization && (
-            <button
-              type="button"
-              className={tab === "org" ? button : subtleButton}
-              onClick={() => setTab("org")}
-            >
-              ข้อมูลองค์กร
-            </button>
-          )}
-          {canViewAudit && (
-            <button
-              type="button"
-              className={tab === "audit" ? button : subtleButton}
-              onClick={() => {
-                setTab("audit");
-              }}
-            >
-              กิจกรรม
-            </button>
-          )}
-        </nav>
+    <WarehousePageTemplate
+      titleEn="Admin Control Panel"
+      titleTh="แผงควบคุมผู้ดูแลระบบ"
+      routePath="/controlpanel"
+    >
+      <main className="space-y-6">
         {notice && <Notice tone="success">{notice}</Notice>}
         {failure && <Notice tone="error">{failure}</Notice>}
-        {((tab === "members" && membersLoading) ||
-          (tab === "org" && orgLoading) ||
-          (tab === "audit" && auditLoading)) && <p>กำลังโหลดข้อมูล...</p>}
         {(tab === "members"
           ? membersError
           : tab === "org"
@@ -186,74 +248,80 @@ export default function ControlPanel() {
         )}
 
         {tab === "members" && (
-          <div
-            className={
-              isAdmin ? "grid gap-5 lg:grid-cols-[minmax(0,1fr)_330px]" : ""
-            }
-          >
-            <section className={panel}>
-              <h2 className="mb-4 text-lg font-bold">
-                สมาชิก ({members.length})
-              </h2>
-              {members.length ? (
-                <div className="space-y-3">
-                  {members.map((member) => (
-                    <MemberCard
-                      key={member.id}
-                      member={member}
-                      branches={branches}
-                      actorId={me.id}
-                      actorRole={me.role}
-                      onUpdate={(body) =>
-                        run(
-                          async () => {
-                            await warehouseApi.updateMember(member.id, body);
-                            if (member.id === me.id) await account?.refresh();
-                          },
-                          "บันทึกข้อมูลสมาชิกแล้ว",
-                        )
-                      }
-                      onDelete={() =>
-                        run(
-                          () => warehouseApi.deleteMember(member.id),
-                          "ลบสมาชิกแบบกู้คืนได้แล้ว",
-                        )
-                      }
-                      onRestore={() =>
-                        run(
-                          () => warehouseApi.restoreMember(member.id),
-                          "กู้คืนสมาชิกแล้ว",
-                        )
-                      }
-                      onReset={(password) =>
-                        run(
-                          () =>
-                            warehouseApi.resetMemberPassword(
-                              member.id,
-                              password,
-                            ),
-                          "รีเซ็ตรหัสผ่านแล้ว",
-                        )
-                      }
-                    />
-                  ))}
-                </div>
-              ) : (
-                <Empty text="ยังไม่มีสมาชิกในสาขาที่คุณดูได้" />
+          membersLoading ? (
+            <ControlPanelMemberSkeleton isAdmin={isAdmin} />
+          ) : (
+            <div
+              className={
+                isAdmin ? "grid gap-5 lg:grid-cols-[minmax(0,1fr)_330px]" : ""
+              }
+            >
+              <section className={panel}>
+                <h2 className="mb-4 text-lg font-bold">
+                  สมาชิก ({members.length})
+                </h2>
+                {members.length ? (
+                  <div className="space-y-3">
+                    {members.map((member) => (
+                      <MemberCard
+                        key={member.id}
+                        member={member}
+                        branches={branches}
+                        actorId={me.id}
+                        actorRole={me.role}
+                        onUpdate={(body) =>
+                          run(
+                            async () => {
+                              await warehouseApi.updateMember(member.id, body);
+                              if (member.id === me.id) await account?.refresh();
+                            },
+                            "บันทึกข้อมูลสมาชิกแล้ว",
+                          )
+                        }
+                        onDelete={() =>
+                          run(
+                            () => warehouseApi.deleteMember(member.id),
+                            "ลบสมาชิกแบบกู้คืนได้แล้ว",
+                          )
+                        }
+                        onRestore={() =>
+                          run(
+                            () => warehouseApi.restoreMember(member.id),
+                            "กู้คืนสมาชิกแล้ว",
+                          )
+                        }
+                        onReset={(password) =>
+                          run(
+                            () =>
+                              warehouseApi.resetMemberPassword(
+                                member.id,
+                                password,
+                              ),
+                            "รีเซ็ตรหัสผ่านแล้ว",
+                          )
+                        }
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <Empty text="ยังไม่มีสมาชิกในสาขาที่คุณดูได้" />
+                )}
+              </section>
+              {isAdmin && (
+                <CreateMember
+                  branches={branches}
+                  onSave={(body) =>
+                    run(() => warehouseApi.createMember(body), "เพิ่มสมาชิกแล้ว")
+                  }
+                />
               )}
-            </section>
-            {isAdmin && (
-              <CreateMember
-                branches={branches}
-                onSave={(body) =>
-                  run(() => warehouseApi.createMember(body), "เพิ่มสมาชิกแล้ว")
-                }
-              />
-            )}
-          </div>
+            </div>
+          )
         )}
 
-        {tab === "org" && canViewOrganization && (
+        {tab === "org" && canViewOrganization && (orgLoading ? (
+          <ControlPanelOrganizationSkeleton />
+        ) : (
           <OrganizationForm
             value={organization}
             canEdit={isAdmin}
@@ -264,34 +332,96 @@ export default function ControlPanel() {
               )
             }
           />
-        )}
+        ))}
         {tab === "audit" && canViewAudit && (
-          <section className={panel}>
-            <h2 className="mb-4 text-lg font-bold">กิจกรรมในระบบ</h2>
-            {audit?.length ? (
-              <div className="space-y-2">
-                {audit.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex flex-wrap justify-between gap-2 border-b border-slate-100 py-2 text-sm dark:border-white/10"
-                  >
-                    <span>
-                      {item.action} · {item.entity_type}
-                    </span>
-                    <span className="text-slate-500">
-                      {item.actor_email ?? "ระบบ"} ·{" "}
-                      {new Date(item.created_at).toLocaleString("th-TH")}
-                    </span>
-                  </div>
-                ))}
+          <section className={`${panel} space-y-4`}>
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold">
+                  {isThai ? "บันทึกการตรวจสอบ" : "Audit Log"}
+                </h2>
+                <p className="mt-1 text-sm text-slate-500 dark:text-zinc-300">
+                  {isThai
+                    ? `แสดง ${visibleAudit.length} จาก ${audit?.length ?? 0} รายการที่บันทึกไว้`
+                    : `Showing ${visibleAudit.length} of ${audit?.length ?? 0} recorded events`}
+                </p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
+                  {isThai
+                    ? "ระบบยังไม่ได้บันทึกประวัติการเข้าสู่ระบบหรือออกจากระบบ"
+                    : "Login and logout history is not currently recorded."}
+                </p>
               </div>
-            ) : (
-              <Empty />
-            )}
+            </div>
+            <DataTable
+              columns={auditColumns}
+              data={visibleAudit}
+              keyExtractor={(event) => event.id}
+              isLoading={auditLoading}
+              skeletonRowCount={5}
+              minWidth="1040px"
+              emptyTitle={
+                auditCategory === ALL_AUDIT_CATEGORIES
+                  ? isThai
+                    ? "ยังไม่มีบันทึกการตรวจสอบ"
+                    : "No audit events yet"
+                  : isThai
+                    ? "ไม่พบบันทึกในหมวดนี้"
+                    : "No events in this category"
+              }
+            />
           </section>
         )}
-      </div>
-    </main>
+      </main>
+    </WarehousePageTemplate>
+  );
+}
+
+function ControlPanelMemberSkeleton({ isAdmin }: { isAdmin: boolean }) {
+  return (
+    <div className={isAdmin ? "grid gap-5 lg:grid-cols-[minmax(0,1fr)_330px]" : ""}>
+      <section className={panel} aria-hidden="true">
+        <SkeletonBox className="mb-5 h-6 w-40 rounded-md" />
+        <div className="space-y-3">
+          {[0, 1, 2].map((item) => (
+            <div key={item} className="rounded-xl border border-slate-200 p-4 dark:border-white/10">
+              <div className="flex items-start justify-between gap-4">
+                <div className="w-full space-y-2">
+                  <SkeletonBox className="h-4 w-44 rounded-md" />
+                  <SkeletonBox className="h-3 w-56 max-w-full rounded-md" />
+                  <SkeletonBox className="h-3 w-36 rounded-md" />
+                </div>
+                <SkeletonBox className="h-8 w-20 shrink-0 rounded-lg" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+      {isAdmin && (
+        <section className={`${panel} space-y-4`} aria-hidden="true">
+          <SkeletonBox className="h-6 w-36 rounded-md" />
+          <SkeletonBox className="h-10 w-full rounded-xl" />
+          <SkeletonBox className="h-10 w-full rounded-xl" />
+          <SkeletonBox className="h-10 w-full rounded-xl" />
+          <SkeletonBox className="h-10 w-full rounded-xl" />
+          <SkeletonBox className="h-10 w-32 rounded-xl" />
+        </section>
+      )}
+    </div>
+  );
+}
+
+function ControlPanelOrganizationSkeleton() {
+  return (
+    <section className={`${panel} max-w-2xl space-y-4`} aria-hidden="true">
+      <SkeletonBox className="h-6 w-44 rounded-md" />
+      <SkeletonBox className="h-4 w-28 rounded-md" />
+      <SkeletonBox className="h-10 w-full rounded-xl" />
+      <SkeletonBox className="h-4 w-24 rounded-md" />
+      <SkeletonBox className="h-10 w-full rounded-xl" />
+      <SkeletonBox className="h-4 w-16 rounded-md" />
+      <SkeletonBox className="h-20 w-full rounded-xl" />
+      <SkeletonBox className="h-10 w-36 rounded-xl" />
+    </section>
   );
 }
 
@@ -510,7 +640,6 @@ function MemberCard({
           <summary className="cursor-pointer font-medium text-indigo-600 dark:text-indigo-300">
             ดูข้อมูลสมาชิก
           </summary>
-          {detailBusy && <p className="mt-3">กำลังโหลด...</p>}
           {full && (
             <dl className="mt-3 grid gap-2 sm:grid-cols-2">
               <div>

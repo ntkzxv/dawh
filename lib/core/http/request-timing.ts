@@ -45,7 +45,9 @@ export async function timedPoolQuery<
 ) {
   const client = await timedPoolConnect();
   try {
-    return await timedClientQuery<T>(client, text, values);
+    // timedPoolConnect returns an instrumented client, so call its query
+    // directly to avoid timing the same query twice.
+    return await client.query<T>(text, values);
   } finally {
     client.release();
   }

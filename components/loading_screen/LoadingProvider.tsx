@@ -1,6 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import LoadingScreen from "./LoadingScreen";
@@ -28,7 +35,9 @@ export function isAllowedLoadingRoute(targetUrl: string): boolean {
     clean === "/login" ||
     clean === "/auth" ||
     clean.startsWith("/auth/") ||
-    clean === "/landing-page"
+    clean === "/landing-page" ||
+    clean === "/controlpanel/audit-log" ||
+    clean.startsWith("/controlpanel/audit-log/")
   ) {
     return false;
   }
@@ -50,10 +59,25 @@ export function LoadingProvider({
   // LoadingScreen displays only during active navigation
   const isLoading = isNavLoading && !isExiting;
 
+  useEffect(() => {
+    if (!isLoading) return;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousRootOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousRootOverflow;
+    };
+  }, [isLoading]);
+
   const prevPathnameRef = useRef<string>(pathname);
   const navigationTimerRef = useRef<NodeJS.Timeout | null>(null);
   const watchdogTimerRef = useRef<NodeJS.Timeout | null>(null);
   const exitTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingNavigationRef = useRef<string | null>(null);
 
   const clearAllTimers = useCallback(() => {
     if (navigationTimerRef.current) {
@@ -72,6 +96,7 @@ export function LoadingProvider({
 
   const stopLoading = useCallback(() => {
     clearAllTimers();
+    pendingNavigationRef.current = null;
     setIsExiting(true);
     exitTimerRef.current = setTimeout(() => {
       setIsNavLoading(false);
@@ -84,6 +109,7 @@ export function LoadingProvider({
   const startLoading = useCallback(
     (options?: { exitTransition?: "slide" | "fade"; duration?: number }) => {
       clearAllTimers();
+      pendingNavigationRef.current = null;
       setExitTransition(options?.exitTransition || "slide");
       setIsExiting(false);
       setIsNavLoading(false);
@@ -117,6 +143,7 @@ export function LoadingProvider({
 
       if (targetPath === currentPath) {
         clearAllTimers();
+        pendingNavigationRef.current = null;
         setIsNavLoading(false);
         router.push(url);
         return;
@@ -124,6 +151,7 @@ export function LoadingProvider({
 
       if (!isAllowedLoadingRoute(url)) {
         clearAllTimers();
+        pendingNavigationRef.current = null;
         setIsNavLoading(false);
         setIsExiting(false);
         router.push(url);
@@ -131,18 +159,15 @@ export function LoadingProvider({
       }
 
       clearAllTimers();
+      pendingNavigationRef.current = url;
       setIsExiting(false);
-      setIsNavLoading(false);
+      setIsNavLoading(true);
       setExitTransition("slide");
 
-      navigationTimerRef.current = setTimeout(() => {
-        setIsNavLoading(true);
-        navigationTimerRef.current = null;
-      }, 150);
-      router.push(url);
-
-      // Watchdog safety
+      // Keep the current page covered if the loading animation or navigation
+      // never completes, and discard the queued destination on timeout.
       watchdogTimerRef.current = setTimeout(() => {
+        pendingNavigationRef.current = null;
         setIsExiting(true);
         exitTimerRef.current = setTimeout(() => {
           setIsNavLoading(false);
@@ -159,6 +184,7 @@ export function LoadingProvider({
     if (prevPathnameRef.current !== pathname) {
       prevPathnameRef.current = pathname;
       clearAllTimers();
+      pendingNavigationRef.current = null;
 
       if (isNavLoading) {
         exitTimerRef.current = setTimeout(() => {
@@ -191,6 +217,13 @@ export function LoadingProvider({
             fullscreen
             duration={1.3}
             exitTransition={exitTransition}
+            onFilled={() => {
+              const pendingUrl = pendingNavigationRef.current;
+              if (!pendingUrl) return;
+
+              pendingNavigationRef.current = null;
+              router.push(pendingUrl);
+            }}
           />
         )}
       </AnimatePresence>

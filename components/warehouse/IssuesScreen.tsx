@@ -75,7 +75,7 @@ export default function IssuesScreen() {
       {error && <Notice tone="error">{error}</Notice>}
       {failure && <Notice tone="error">{failure}</Notice>}
       {success && <Notice tone="success">{success}</Notice>}
-      {loading && <p>กำลังโหลดข้อมูล...</p>}
+
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
         <section className={panel}>
           <h2 className="mb-4 text-lg font-bold">เรื่องที่แสดง ({items.length})</h2>

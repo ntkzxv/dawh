@@ -4,5 +4,5 @@ import { getActor } from "@/lib/warehouse/core";
 
 export const runtime = "nodejs";
 export const GET = apiRoute(async (request) =>
-  jsonOk(request, await getActor(request)),
+  jsonOk(request, await getActor(request, { includeLocalizedNames: true })),
 );

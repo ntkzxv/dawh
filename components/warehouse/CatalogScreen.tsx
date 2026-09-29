@@ -418,9 +418,7 @@ export default function CatalogScreen({
                 </h2>
               </div>
 
-              {requiredRefs.length > 0 && !refs ? (
-                <p className="py-5 text-sm">กำลังโหลดข้อมูลสำหรับฟอร์ม...</p>
-              ) : (
+              {requiredRefs.length > 0 && !refs ? null : (
                 <CatalogForm
                   key={`${kind}-${editing?.id ?? "new"}`}
                   kind={kind}

@@ -13,7 +13,7 @@ import {
   Pencil,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { HeaderNavbar, MobileNavbar } from "@/components/navbar";
+import { HeaderNavbar } from "@/components/navbar";
 import { SkeletonBox } from "@/components/loading_screen/SkeletonLoading";
 import { useNotification } from "@/context/NotificationContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -109,7 +109,6 @@ export default function AccountProfile() {
               : "Manage personal details, organization, and employment records"
           }
         />
-        <MobileNavbar />
       </div>
 
       <div className="flex-1 w-full overflow-y-auto min-h-0">

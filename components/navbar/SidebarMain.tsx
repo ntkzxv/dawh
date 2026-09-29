@@ -23,7 +23,7 @@ import { useAppLanguage, setAppLanguage } from "@/utils/language";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAccountMenu } from "@/hooks/useAccountMenu";
 import DropdownMenu from "./DropdownMenu";
-import MobileNavbar from "./MobileNavbar";
+import { DAWH_LOGOS } from "@/config/brand";
 
 export interface NavbarMainProps {
   children?: React.ReactNode;
@@ -53,8 +53,8 @@ export interface NavbarMainProps {
 
 const DEFAULT_LOGO_LIGHT_THEME = "/assets/dawh_nospacewight_dark_logo.png";
 const DEFAULT_LOGO_DARK_THEME = "/assets/dawh_nospacewight_light_logo.png";
-const MINIMIZED_LOGO_LIGHT_THEME = "/assets/dawh_black4x2048logo.png";
-const MINIMIZED_LOGO_DARK_THEME = "/assets/dawh_light1024logo.png";
+const MINIMIZED_LOGO_LIGHT_THEME = DAWH_LOGOS.square1024.black; // "/assets/dawh_black1024logo.png" (1:1 Square)
+const MINIMIZED_LOGO_DARK_THEME = DAWH_LOGOS.square1024.light;   // "/assets/dawh_light1024logo.png" (1:1 Square)
 
 export default function NavbarMain({
   children,
@@ -79,8 +79,6 @@ export default function NavbarMain({
   const { theme, toggleTheme } = useTheme();
   const [isMinimized, setIsMinimized] = useState(initialMinimized);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
-  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const appLang = useAppLanguage();
   const activeLang = controlledLang ?? (appLang.toLowerCase() as "th" | "en");
   const isLight = theme === "light";
@@ -93,19 +91,19 @@ export default function NavbarMain({
     },
     settingsPath,
   });
-  const { profile: accountProfile, fullName: userName, initials, isAdmin, mounted: accountMounted } = accountMenu;
+  const { profile: accountProfile, fullName: userName, initials, accountSubtitle, isAdmin, mounted: accountMounted } = accountMenu;
   const userAvatar = accountProfile.avatar_url || null;
-  const userUsername = accountProfile.username || accountProfile.email?.split("@")[0] || null;
 
-  // Auto-close mobile drawer on route change
-  useEffect(() => {
-    setIsMobileDrawerOpen(false);
-  }, [pathname]);
+  const [logoError, setLogoError] = useState(false);
 
   // Dynamic logo based on active theme and minimized state
   const currentLogo = isMinimized
     ? (isLight ? MINIMIZED_LOGO_LIGHT_THEME : MINIMIZED_LOGO_DARK_THEME)
     : (logoUrl || (isLight ? logoWhiteUrl : logoDarkUrl));
+
+  useEffect(() => {
+    setLogoError(false);
+  }, [currentLogo]);
 
   // Sync with localStorage on mount
   useEffect(() => {
@@ -192,7 +190,7 @@ export default function NavbarMain({
               isMinimized ? "w-[38px] h-[38px]" : "w-full h-[39px]"
             }`}
           >
-            {currentLogo ? (
+            {currentLogo && !logoError ? (
               <Image
                 src={currentLogo}
                 alt="Logo"
@@ -202,9 +200,8 @@ export default function NavbarMain({
                 className={`object-contain transition-opacity duration-300 ${
                   isMinimized ? "p-0.5" : "p-0"
                 }`}
-                onError={(e) => {
-                  const target = e.currentTarget;
-                  target.style.display = "none";
+                onError={() => {
+                  setLogoError(true);
                 }}
               />
             ) : (
@@ -478,7 +475,7 @@ export default function NavbarMain({
                     isLight ? "text-[#383838]" : "text-[#D4D4D8]"
                   }`}
                 >
-                  {userUsername || "dawh.internal"}
+                  {accountSubtitle}
                 </p>
               </div>
 
@@ -537,7 +534,6 @@ export default function NavbarMain({
     {/* ======================================================== */}
     {/* MOBILE NAVIGATION SYSTEM (FIGMA SPEC PIXEL-PERFECT)     */}
     {/* ======================================================== */}
-    <MobileNavbar childrenSubMenu={children} />
   </>
   );
 }

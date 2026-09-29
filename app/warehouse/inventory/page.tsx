@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import WarehousePageTemplate from "../_components/WarehousePageTemplate";
-import ProductInventorySplitView from "./ProductInventorySplitView";
-import CatalogScreen from "@/components/warehouse/CatalogScreen";
+import InventoryContent from "./InventoryContent";
 import type { CatalogKind } from "@/lib/api/warehouse";
 
 const catalogKinds: CatalogKind[] = [
@@ -31,18 +29,5 @@ export default async function InventoryPage({
     ? requestedKind as CatalogKind
     : "products";
 
-  if (kind !== "products") {
-    return <CatalogScreen key={kind} initialKind={kind} />;
-  }
-
-  return (
-    <WarehousePageTemplate
-      titleEn="Product Master & SKU Catalog"
-      titleTh="ข้อมูลสินค้าหลัก"
-      routePath="/warehouse/inventory"
-      fullBleed
-    >
-      <ProductInventorySplitView />
-    </WarehousePageTemplate>
-  );
+  return <InventoryContent kind={kind} />;
 }

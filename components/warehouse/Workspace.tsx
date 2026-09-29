@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowRight,
   Box,
@@ -13,19 +14,13 @@ import {
   Lock,
 } from "lucide-react";
 import { getDawhLogo } from "@/config/brand";
+import { getWarehouseRoleLabel } from "@/utils/warehouseRole";
 import { useAccountMenu } from "@/hooks/useAccountMenu";
+import { useLoading } from "@/components/loading_screen/LoadingProvider";
 import { useTheme } from "@/context/ThemeContext";
 import { useOptionalWarehouseAccount } from "@/context/WarehouseAccountContext";
 import DropdownMenu from "@/components/navbar/DropdownMenu";
 import { Notice } from "./Ui";
-
-const roleLabel: Record<string, { en: string; th: string }> = {
-  ADMIN: { en: "System Administrator", th: "ผู้ดูแลระบบ" },
-  CEO: { en: "Chief Executive Officer", th: "ผู้บริหารสูงสุด" },
-  MANAGER: { en: "Branch Manager", th: "ผู้จัดการสาขา" },
-  COUNTER_STAFF: { en: "Counter Staff", th: "เจ้าหน้าที่เคาน์เตอร์" },
-  EMPLOYEE: { en: "Employee", th: "พนักงาน" },
-};
 
 const workspaceModules = [
   {
@@ -87,6 +82,8 @@ const workspaceModules = [
 ] as const;
 
 export default function Workspace() {
+  const { isLoading } = useLoading();
+  const reduceMotion = useReducedMotion();
   const account = useOptionalWarehouseAccount();
   const me = account?.me;
   const loading = account?.loading ?? true;
@@ -98,7 +95,7 @@ export default function Workspace() {
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const accountRef = useRef<HTMLDivElement>(null);
   const profileRole = me
-    ? (roleLabel[me.role]?.[isThai ? "th" : "en"] ?? me.role)
+    ? getWarehouseRoleLabel(me.role, isThai ? "TH" : "EN")
     : "";
   const profileName = accountMenu.fullName || "Horizon Logistics";
   const profileInitial = accountMenu.initials || "H";
@@ -132,7 +129,14 @@ export default function Workspace() {
       className={`relative flex min-h-screen flex-col justify-between overflow-hidden transition-colors duration-300 ${isLight ? "bg-[#F8FAFC] text-slate-900 selection:bg-[#222222] selection:text-white" : "bg-[#222222] text-white selection:bg-white/25 selection:text-white"}`}
     >
       <WorkspaceAuthBackground theme={theme} />
-      <header
+      <motion.header
+        initial={reduceMotion ? false : { y: -24, opacity: 0 }}
+        animate={
+          isLoading && !reduceMotion
+            ? { y: -24, opacity: 0 }
+            : { y: 0, opacity: 1 }
+        }
+        transition={{ duration: reduceMotion ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] }}
         className={`relative z-50 flex h-[72px] w-full flex-none items-center justify-between border-b px-6 py-4 transition-colors duration-300 sm:px-8 ${
           isLight
             ? "border-[#E4E4E7] bg-white"
@@ -223,9 +227,14 @@ export default function Workspace() {
             />
           </div>
         </div>
-      </header>
+      </motion.header>
       <section className="relative z-10 mx-auto flex w-full max-w-[1344px] flex-1 flex-col items-start justify-center gap-6 self-stretch px-4 py-8 sm:gap-7 sm:px-8 sm:py-10">
-        <div className="flex max-w-[507px] flex-col items-start gap-1.5">
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0 }}
+          animate={isLoading && !reduceMotion ? { opacity: 0 } : { opacity: 1 }}
+          transition={{ duration: reduceMotion ? 0 : 0.5, ease: "easeOut" }}
+          className="flex max-w-[507px] flex-col items-start gap-1.5"
+        >
           <h1
             className={`font-outfit text-[30px] font-bold leading-[38px] tracking-tight sm:text-[32px] ${isLight ? "text-[#0F172A]" : "text-white"}`}
           >
@@ -238,41 +247,60 @@ export default function Workspace() {
               ? "เลือกโมดูลเฉพาะทางเพื่อเริ่มต้นการทำงานสำหรับ Horizon Logistics"
               : "Choose a dedicated module to begin operations for Horizon Logistics."}
           </p>
-        </div>
+        </motion.div>
 
         <div className="flex w-full flex-col gap-3">
-          {loading && (
-            <p
-              className={`font-geist text-sm ${isLight ? "text-slate-600" : "text-[#E4E4E7]"}`}
-            >
-              {isThai
-                ? "กำลังโหลดสิทธิ์การเข้าถึง..."
-                : "Loading access permissions..."}
-            </p>
-          )}
           {error && <Notice tone="error">{error}</Notice>}
         </div>
 
         <div className="flex w-full flex-col gap-5">
           <div className="grid w-full grid-cols-1 gap-5 lg:grid-cols-2">
-            {workspaceModules.slice(0, 2).map((module) => (
-              <WorkspaceCard
+            {workspaceModules.slice(0, 2).map((module, index) => (
+              <motion.div
                 key={module.title}
+                initial={reduceMotion ? false : { y: 28, opacity: 0 }}
+                animate={
+                  isLoading && !reduceMotion
+                    ? { y: 28, opacity: 0 }
+                    : { y: 0, opacity: 1 }
+                }
+                transition={{
+                  duration: reduceMotion ? 0 : 0.48,
+                  delay: reduceMotion ? 0 : index * 0.08,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+              >
+                <WorkspaceCard
+                  module={module}
+                  isLight={isLight}
+                  isThai={isThai}
+                  variant="standard"
+                />
+              </motion.div>
+            ))}
+          </div>
+          {workspaceModules.slice(2).map((module, index) => (
+            <motion.div
+              key={module.title}
+              initial={reduceMotion ? false : { y: 28, opacity: 0 }}
+              animate={
+                isLoading && !reduceMotion
+                  ? { y: 28, opacity: 0 }
+                  : { y: 0, opacity: 1 }
+              }
+              transition={{
+                duration: reduceMotion ? 0 : 0.48,
+                delay: reduceMotion ? 0 : (index + 2) * 0.08,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+            >
+              <WorkspaceCard
                 module={module}
                 isLight={isLight}
                 isThai={isThai}
-                variant="standard"
+                variant="horizontal"
               />
-            ))}
-          </div>
-          {workspaceModules.slice(2).map((module) => (
-            <WorkspaceCard
-              key={module.title}
-              module={module}
-              isLight={isLight}
-              isThai={isThai}
-              variant="horizontal"
-            />
+            </motion.div>
           ))}
         </div>
       </section>
@@ -358,6 +386,7 @@ function WorkspaceCard({
   isThai: boolean;
   variant: "standard" | "horizontal";
 }) {
+  const { navigateWithLoading } = useLoading();
   const Icon = module.icon;
   const ButtonIcon = module.disabled ? Lock : ArrowRight;
   const statusDot =
@@ -517,6 +546,22 @@ function WorkspaceCard({
   return (
     <Link
       href={module.href}
+      onClick={(event) => {
+        // Keep modified clicks (new tab/window) under native Link behavior.
+        if (
+          event.defaultPrevented ||
+          event.button !== 0 ||
+          event.metaKey ||
+          event.ctrlKey ||
+          event.shiftKey ||
+          event.altKey
+        ) {
+          return;
+        }
+
+        event.preventDefault();
+        navigateWithLoading(module.href);
+      }}
       className={`${cardClass} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40`}
     >
       {content}

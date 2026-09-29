@@ -25,6 +25,8 @@ export type Me = {
   role: Role;
   branchIds: number[];
   name: string;
+  nameTh?: string | null;
+  nameEn?: string | null;
   email: string;
   image: string | null;
 };
@@ -234,8 +236,11 @@ export type AuditEvent = {
   id: number;
   action: string;
   entity_type: string;
-  entity_id: number;
+  entity_id: number | null;
+  actor_name: string | null;
   actor_email: string | null;
+  before_data: Record<string, unknown> | null;
+  after_data: Record<string, unknown> | null;
   created_at: string;
 };
 export type WarehouseOverview = {
@@ -526,6 +531,26 @@ export const warehouseApi = {
     ),
   audit: (signal?: AbortSignal) =>
     data(apiGet<AuditEvent[]>("/api/audit", { signal })),
+  auditPage: (
+    params: { category: string; q?: string; from?: string; to?: string; action?: string; entityType?: string; sort?: string; page?: number },
+    signal?: AbortSignal,
+  ) => {
+    const query = new URLSearchParams({ category: params.category });
+    if (params.q) query.set("q", params.q);
+    if (params.from) query.set("from", params.from);
+    if (params.to) query.set("to", params.to);
+    if (params.action) query.set("action", params.action);
+    if (params.entityType) query.set("entityType", params.entityType);
+    if (params.sort) query.set("sort", params.sort);
+    if (params.page && params.page > 1) query.set("page", String(params.page));
+    return apiGet<{
+      items: AuditEvent[];
+      page: number;
+      limit: number;
+      total: number;
+      hasMore: boolean;
+    }>(`/api/audit?${query.toString()}`, { signal });
+  },
   upload: async (file: File) => {
     const form = new FormData();
     form.append("file", file);

@@ -19,6 +19,7 @@ export interface DatePickerProps {
   size?: "sm" | "md";
   className?: string;
   triggerClassName?: string;
+  iconClassName?: string;
   calendarClassName?: string;
 }
 
@@ -65,6 +66,7 @@ export default function DatePicker({
   size = "md",
   className = "",
   triggerClassName = "",
+  iconClassName = "",
   calendarClassName = "",
 }: DatePickerProps) {
   const { theme } = useTheme();
@@ -244,7 +246,7 @@ export default function DatePicker({
                 : isLight
                 ? "text-zinc-500"
                 : "text-zinc-400"
-            }`}
+            } ${iconClassName}`}
           />
           <span
             className={`truncate font-medium ${

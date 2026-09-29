@@ -134,7 +134,6 @@ export default function StockScreen({
       routePath="/warehouse/stock"
       iconName="layers"
     >
-      {busy && <Notice>กำลังบันทึกการเคลื่อนไหว...</Notice>}
       <div className="flex flex-wrap gap-2">
         <button
           className={tab === "balances" ? button : subtleButton}
@@ -175,7 +174,6 @@ export default function StockScreen({
       {error && <Notice tone="error">{error}</Notice>}
       {failure && <Notice tone="error">{failure}</Notice>}
       {success && <Notice tone="success">{success}</Notice>}
-      {(loading || (!activeData && !error)) && <p>กำลังโหลดข้อมูล...</p>}
       {activeData && (
         <div
           className={

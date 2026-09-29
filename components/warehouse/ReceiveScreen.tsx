@@ -282,8 +282,6 @@ export default function ReceiveScreen() {
       {referencesError && <Notice tone="error">{referencesError}</Notice>}
       {failure && <Notice tone="error">{failure}</Notice>}
       {notice && <Notice tone="success">{notice}</Notice>}
-      {(loading || (!activeData && !error)) && <p>กำลังโหลดข้อมูล...</p>}
-      {busy && <Notice>กำลังบันทึกข้อมูล...</Notice>}
 
       {activeData && (
         <div

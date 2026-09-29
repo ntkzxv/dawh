@@ -5,6 +5,7 @@ import { logout } from "@/lib/auth-client";
 import { useOptionalWarehouseAccount } from "@/context/WarehouseAccountContext";
 import type { EmployeeProfile } from "@/types/user";
 import { useAppLanguage, setAppLanguage } from "@/utils/language";
+import { getWarehouseRoleLabel } from "@/utils/warehouseRole";
 import { useLoading } from "@/components/loading_screen";
 
 export interface UseAccountMenuOptions {
@@ -17,7 +18,7 @@ export interface UseAccountMenuReturn {
   profile: Partial<EmployeeProfile>;
   fullName: string;
   initials: string;
-  departmentDisplay: string;
+  accountSubtitle: string;
   isAdmin: boolean;
   isProfileLoaded: boolean;
   mounted: boolean;
@@ -41,6 +42,15 @@ export function useAccountMenu(
   const warehouseAccount = useOptionalWarehouseAccount();
   const [mounted, setMounted] = useState(false);
   const [showGuardModal, setShowGuardModal] = useState(false);
+  const localizedName =
+    activeLanguage === "TH"
+      ? warehouseAccount?.me?.nameTh
+      : warehouseAccount?.me?.nameEn;
+  const fullName =
+    localizedName ||
+    warehouseAccount?.me?.name ||
+    warehouseAccount?.me?.email?.split("@")[0] ||
+    "";
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setMounted(true));
@@ -50,18 +60,20 @@ export function useAccountMenu(
   const profile: Partial<EmployeeProfile> = {
     id: warehouseAccount?.me?.authUserId,
     email: warehouseAccount?.me?.email,
-    full_name: warehouseAccount?.me?.name,
+    full_name: fullName,
     avatar_url: warehouseAccount?.me?.image || undefined,
   };
   const role = warehouseAccount?.me?.role ?? null;
   const loaded = !!warehouseAccount && !warehouseAccount.loading;
 
-  const fullName = profile.full_name || profile.email?.split("@")[0] || "";
+  const accountSubtitle = role
+    ? getWarehouseRoleLabel(role, activeLanguage)
+    : profile.email || "dawh.internal";
   return {
     profile,
     fullName,
     initials: (fullName[0] || "U").toUpperCase(),
-    departmentDisplay: role ?? "",
+    accountSubtitle,
     isAdmin: role === "ADMIN",
     isProfileLoaded: loaded,
     mounted,
