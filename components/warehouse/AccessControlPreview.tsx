@@ -24,11 +24,11 @@ const rules: Array<{ th: string; en: string; roles: Role[] }> = [
 export default function AccessControlPreview() {
   const isThai = useAppLanguage() === "TH";
   return (
-    <WarehousePageTemplate titleEn="Access Preview" titleTh="ตัวอย่างการควบคุมสิทธิ์" routePath="/controlpanel/access-preview">
-      <main className="space-y-6 pb-10">
+    <WarehousePageTemplate titleEn="Access Preview" titleTh="ตัวอย่างการควบคุมสิทธิ์" routePath="/controlpanel/access-preview" fullBleed>
+      <main className="@container mx-auto w-full min-w-0 max-w-7xl space-y-6 p-4 pb-10 sm:p-6 lg:p-10">
         <section className="overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white dark:border-[#444444] dark:bg-[#383838]">
           <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-7">
-            <div className="flex min-w-0 items-start gap-4">
+            <div className="flex min-w-0 flex-col items-start gap-3 @md:flex-row @md:gap-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F4F4F5] text-[#222222] dark:bg-white/10 dark:text-white">
                 <ShieldCheck size={22} aria-hidden="true" />
               </div>
@@ -61,20 +61,24 @@ export default function AccessControlPreview() {
         <section className="overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white dark:border-[#444444] dark:bg-[#383838]" aria-labelledby="access-matrix-title">
           <div className="border-b border-[#E4E4E7] px-5 py-5 dark:border-[#444444] sm:px-7">
             <h2 id="access-matrix-title" className="text-base font-bold text-[#222222] dark:text-white">{isThai ? "ตารางสิทธิ์ตามฟังก์ชัน" : "Access by function"}</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-[#E4E4E7]">{isThai ? "เลื่อนตารางในแนวนอนเพื่อดูทุกบทบาท" : "Scroll horizontally to see every role."}</p>
+            <p id="access-matrix-help" className="mt-1 text-sm text-slate-500 dark:text-[#E4E4E7]">{isThai ? "เลื่อนตารางในแนวนอน หรือเลือกตารางแล้วใช้ปุ่มลูกศรเพื่อดูทุกบทบาท" : "Scroll horizontally, or focus the table and use the arrow keys to see all roles."}</p>
+            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-xs text-slate-600 dark:text-[#E4E4E7]">
+              <span className="inline-flex items-center gap-1.5"><Check size={15} aria-hidden="true" />{isThai ? "อนุญาต" : "Allowed"}</span>
+              <span className="inline-flex items-center gap-1.5"><X size={15} aria-hidden="true" />{isThai ? "ไม่มีสิทธิ์" : "No access"}</span>
+            </div>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#6366F1]" tabIndex={0} role="region" aria-labelledby="access-matrix-title" aria-describedby="access-matrix-help">
             <table className="w-full min-w-[760px] border-collapse text-left text-[13px]">
               <thead className="bg-[#F4F4F5] text-[#383838] dark:bg-[#2C2C2C] dark:text-[#E4E4E7]">
                 <tr>
-                  <th scope="col" className="w-[32%] px-5 py-3.5 font-semibold sm:px-7">{isThai ? "ฟังก์ชัน" : "Function"}</th>
+                  <th scope="col" className="sticky left-0 z-10 w-40 min-w-40 bg-[#F4F4F5] px-4 py-3.5 font-semibold dark:bg-[#2C2C2C]">{isThai ? "ฟังก์ชัน" : "Function"}</th>
                   {warehouseRoles.map((role) => <th scope="col" key={role} className="min-w-28 px-3 py-3.5 text-center font-semibold">{isThai ? roleLabels[role].th : roleLabels[role].en}</th>)}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E4E4E7] dark:divide-[#444444]">
                 {rules.map((rule) => (
                   <tr key={rule.en} className="transition-colors hover:bg-[#F8FAFC] dark:hover:bg-white/5">
-                    <th scope="row" className="px-5 py-4 font-medium text-[#222222] dark:text-[#F4F4F5] sm:px-7">{isThai ? rule.th : rule.en}</th>
+                    <th scope="row" className="sticky left-0 z-10 bg-white px-4 py-4 font-medium text-[#222222] dark:bg-[#383838] dark:text-[#F4F4F5]">{isThai ? rule.th : rule.en}</th>
                     {warehouseRoles.map((role) => {
                       const allowed = rule.roles.includes(role);
                       return (
@@ -99,11 +103,11 @@ export default function AccessControlPreview() {
         <section className="rounded-2xl border border-[#E4E4E7] bg-white p-5 dark:border-[#444444] dark:bg-[#383838] sm:p-7" aria-labelledby="access-roles-title">
           <h2 id="access-roles-title" className="text-base font-bold text-[#222222] dark:text-white">{isThai ? "บทบาทที่มีอยู่" : "Available roles"}</h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-[#E4E4E7]">{isThai ? "ชื่อบทบาทที่ใช้ในตารางสิทธิ์ด้านบน" : "Role names used in the access table above."}</p>
-          <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="mt-4 grid gap-3 @xl:grid-cols-2 @4xl:grid-cols-3">
             {warehouseRoles.map((role) => (
-              <li key={role} className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] px-4 py-3 dark:border-[#555555] dark:bg-[#323232]">
-                <span className="truncate text-sm font-medium text-[#222222] dark:text-[#F4F4F5]">{isThai ? roleLabels[role].th : roleLabels[role].en}</span>
-                <span className="shrink-0 font-mono text-[10px] text-slate-500 dark:text-[#E4E4E7]">{role}</span>
+              <li key={role} className="flex min-w-0 flex-col items-start gap-1.5 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] px-4 py-3 dark:border-[#555555] dark:bg-[#323232]">
+                <span className="break-words text-sm font-medium text-[#222222] dark:text-[#F4F4F5]">{isThai ? roleLabels[role].th : roleLabels[role].en}</span>
+                <span className="break-all font-mono text-xs text-slate-500 dark:text-[#E4E4E7]">{role}</span>
               </li>
             ))}
           </ul>

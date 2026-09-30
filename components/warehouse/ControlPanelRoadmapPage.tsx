@@ -10,20 +10,20 @@ const pageCopy = {
   scopes: {
     titleEn: "Branch Access",
     titleTh: "สิทธิ์การเข้าถึงสาขา",
-    introEn: "Assign a user to a branch with a defined access level and validity period.",
-    introTh: "กำหนดผู้ใช้ สาขา ระดับสิทธิ์ และช่วงเวลาที่มีผล",
+    introEn: "Preview planned branch access levels and validity periods.",
+    introTh: "ตัวอย่างระดับสิทธิ์และช่วงเวลาที่เตรียมรองรับสำหรับผู้ใช้แต่ละสาขา",
   },
   "account-status": {
     titleEn: "Account Status",
     titleTh: "สถานะบัญชี",
-    introEn: "Manage active, suspended, and terminated accounts with a reason and change history.",
-    introTh: "จัดการบัญชีใช้งาน ระงับ และสิ้นสุด พร้อมเหตุผลและประวัติการเปลี่ยนแปลง",
+    introEn: "Preview planned account statuses, reasons, and change history.",
+    introTh: "ตัวอย่างสถานะบัญชี เหตุผล และประวัติการเปลี่ยนแปลงที่เตรียมรองรับ",
   },
   "master-data": {
     titleEn: "Master Data",
     titleTh: "ข้อมูลหลัก",
-    introEn: "Manage warehouse locations and organization departments.",
-    introTh: "จัดการตำแหน่งจัดเก็บสินค้าและแผนกขององค์กร",
+    introEn: "Preview the planned structure for warehouse locations and departments.",
+    introTh: "ตัวอย่างโครงสร้างตำแหน่งจัดเก็บสินค้าและแผนกขององค์กร",
   },
 } satisfies Record<RoadmapPageKind, { titleEn: string; titleTh: string; introEn: string; introTh: string }>;
 
@@ -44,13 +44,13 @@ function EmptyApiState({ isThai, children }: { isThai: boolean; children: string
 export default function ControlPanelRoadmapPage({ kind }: { kind: RoadmapPageKind }) {
   const isThai = useAppLanguage() === "TH";
   const copy = pageCopy[kind];
-  const routePath = `/controlpanel/${kind}`;
+  const routePath = kind === "scopes" ? "/controlpanel/user-scopes" : `/controlpanel/${kind}`;
 
   return (
-    <WarehousePageTemplate titleEn={copy.titleEn} titleTh={copy.titleTh} routePath={routePath}>
-      <main className="space-y-6 pb-10">
+    <WarehousePageTemplate titleEn={copy.titleEn} titleTh={copy.titleTh} routePath={routePath} fullBleed>
+      <main className="@container mx-auto w-full min-w-0 max-w-7xl space-y-6 p-4 pb-10 sm:p-6 lg:p-10">
         <section className="flex flex-col gap-5 rounded-2xl border border-[#E4E4E7] bg-white p-5 dark:border-[#444444] dark:bg-[#383838] sm:flex-row sm:items-start sm:justify-between sm:p-7">
-          <div className="flex min-w-0 items-start gap-4">
+          <div className="flex min-w-0 flex-col items-start gap-3 @md:flex-row @md:gap-4">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F4F4F5] text-[#222222] dark:bg-white/10 dark:text-white">
               {kind === "account-status" ? <CircleCheck size={22} aria-hidden="true" /> : kind === "master-data" ? <Boxes size={22} aria-hidden="true" /> : <ShieldCheck size={22} aria-hidden="true" />}
             </div>
@@ -69,12 +69,18 @@ export default function ControlPanelRoadmapPage({ kind }: { kind: RoadmapPageKin
           <>
             <section className="rounded-2xl border border-[#E4E4E7] bg-white p-5 dark:border-[#444444] dark:bg-[#383838] sm:p-7">
               <h2 className="text-base font-bold">{isThai ? "ระดับสิทธิ์" : "Access levels"}</h2>
-              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              <div className="mt-4 grid gap-3 @2xl:grid-cols-3">
                 {[
-                  ["READ", isThai ? "อ่านข้อมูล" : "Read"],
-                  ["OPERATE", isThai ? "ปฏิบัติงาน" : "Operate"],
-                  ["APPROVE", isThai ? "อนุมัติ" : "Approve"],
-                ].map(([code, label]) => <div key={code} className="rounded-lg bg-slate-50 p-3 dark:bg-white/5"><span className="font-medium">{label}</span><span className="ml-2 text-xs text-slate-500 dark:text-zinc-400">{code}</span></div>)}
+                  ["READ", isThai ? "อ่านข้อมูล" : "Read", isThai ? "ดูข้อมูลภายในสาขาที่ได้รับสิทธิ์" : "View data in assigned branches."],
+                  ["OPERATE", isThai ? "ปฏิบัติงาน" : "Operate", isThai ? "ทำรายการตามฟังก์ชันที่ได้รับอนุญาต" : "Perform actions allowed by assigned permissions."],
+                  ["APPROVE", isThai ? "อนุมัติ" : "Approve", isThai ? "อนุมัติรายการตามขอบเขตที่กำหนด" : "Approve records within the assigned scope."],
+                ].map(([code, label, description]) => (
+                  <div key={code} className="min-w-0 rounded-xl border border-[#E4E4E7] bg-[#F8FAFC] p-4 dark:border-[#444444] dark:bg-[#2C2C2C]">
+                    <p className="font-mono text-xs text-slate-500 dark:text-[#E4E4E7]">{code}</p>
+                    <h3 className="mt-2 text-sm font-semibold">{label}</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-[#E4E4E7]">{description}</p>
+                  </div>
+                ))}
               </div>
               <p className="mt-3 text-sm text-slate-500 dark:text-zinc-400">{isThai ? "กำหนดวันเริ่มต้นและวันสิ้นสุดของสิทธิ์แต่ละสาขา" : "Each branch assignment will have a start date and an optional end date."}</p>
             </section>
@@ -89,7 +95,7 @@ export default function ControlPanelRoadmapPage({ kind }: { kind: RoadmapPageKin
                 <h2 id="account-status-options-title" className="text-base font-bold text-[#222222] dark:text-white">{isThai ? "รูปแบบสถานะบัญชี" : "Account status model"}</h2>
                 <p className="mt-1 text-sm text-slate-500 dark:text-[#E4E4E7]">{isThai ? "สถานะที่เตรียมรองรับเมื่อเชื่อมข้อมูลจริง" : "Statuses planned for live account records."}</p>
               </div>
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 @2xl:grid-cols-3">
               {[
                 { code: "ACTIVE", title: isThai ? "ใช้งาน" : "Active", description: isThai ? "บัญชีที่เข้าใช้งานระบบได้ตามสิทธิ์" : "Account can sign in and use assigned access.", icon: CircleCheck, tone: "text-[#168D82] bg-[#2EC4B6]/10 border-[#2EC4B6]/30 dark:text-[#2EC4B6]" },
                 { code: "SUSPENDED", title: isThai ? "ระงับชั่วคราว" : "Suspended", description: isThai ? "พักการใช้งานโดยระบุเหตุผลและช่วงเวลา" : "Temporarily blocked with a reason and period.", icon: PauseCircle, tone: "text-[#B66B09] bg-[#FF9F1C]/10 border-[#FF9F1C]/30 dark:text-[#FF9F1C]" },
@@ -108,7 +114,7 @@ export default function ControlPanelRoadmapPage({ kind }: { kind: RoadmapPageKin
             </section>
             <section className="rounded-2xl border border-[#E4E4E7] bg-white p-5 dark:border-[#444444] dark:bg-[#383838] sm:p-7">
               <h2 className="text-base font-bold text-[#222222] dark:text-white">{isThai ? "ข้อมูลที่ต้องบันทึกเมื่อเปลี่ยนสถานะ" : "Status change details"}</h2>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="mt-4 grid gap-4 @2xl:grid-cols-2">
                 <div className="flex gap-3 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] p-4 dark:border-[#555555] dark:bg-[#323232]">
                   <FileText size={18} className="mt-0.5 shrink-0 text-slate-500 dark:text-[#E4E4E7]" aria-hidden="true" />
                   <div><h3 className="text-sm font-semibold">{isThai ? "เหตุผลและระยะเวลา" : "Reason and duration"}</h3><p className="mt-1 text-xs leading-5 text-slate-500 dark:text-[#E4E4E7]">{isThai ? "ระบุสาเหตุ วันเริ่มต้น และวันสิ้นสุดเมื่อจำเป็น" : "Record the reason, start date, and optional end date."}</p></div>
@@ -124,7 +130,7 @@ export default function ControlPanelRoadmapPage({ kind }: { kind: RoadmapPageKin
         )}
 
         {kind === "master-data" && (
-          <div className="grid gap-5 lg:grid-cols-2">
+          <div className="grid gap-5 @3xl:grid-cols-2">
             <section className="flex flex-col rounded-2xl border border-[#E4E4E7] bg-white p-5 dark:border-[#444444] dark:bg-[#383838] sm:p-7">
               <div className="flex items-start gap-3">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F4F4F5] text-[#222222] dark:bg-white/10 dark:text-white"><Boxes size={20} aria-hidden="true" /></span>
