@@ -4,6 +4,13 @@ description: Create distinctive, production-grade frontend interfaces with high 
 ---
 
 This skill guides the creation of distinctive, production-grade frontend interfaces for the **DAWH Enterprise ERP & Hire-Purchase System**, adhering strictly to our custom design tokens, typography, and UI paradigms while avoiding generic "AI slop" aesthetics.
+## Shared Common UI Components
+
+Before adding or restyling common controls, inspect `components/common` and reuse its existing components and visual styles. For buttons, search fields, and filters, use `Button`, `SecondaryButton`, `SearchInput`, `FilterDropdown`, and `FilterButton` where they fit instead of inventing page-specific Tailwind styles. Follow their shared dimensions, spacing, colors, borders, radii, hover/focus states, and Light/Dark theme behavior.
+
+Use `Button` with the appropriate variant for primary actions such as Add/Create, and `SecondaryButton` for secondary actions such as Import/Export. Do not create narrowly named wrappers for an action pair when an existing shared button type already expresses the visual role.
+
+If a page needs a reusable style that is missing or inconsistent, update or add it in `components/common`, then use that shared implementation on the page. For filter popovers, use `FilterButton` as the trigger and follow the responsive panel structure, theme colors, active-filter count, and dismiss behavior of `audit-filter-panel`. Avoid per-page overrides that conflict with the common component defaults. Before finalizing, compare the rendered controls with an existing common toolbar and check both themes and responsive widths.
 
 ---
 

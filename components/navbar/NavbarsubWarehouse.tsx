@@ -28,9 +28,10 @@ export interface NavbarsubWarehouseProps {
   lang?: "th" | "en";
   userRole?: string | null;
   onNavigate?: (path: string) => void;
+  menuItems?: MenuGroup[];
 }
 
-interface SubMenuItem {
+export interface SubMenuItem {
   label: string;
   path: string;
   badge?: string | number;
@@ -38,7 +39,7 @@ interface SubMenuItem {
   isRestricted?: boolean;
 }
 
-interface MenuGroup {
+export interface MenuGroup {
   id: string;
   title: string;
   icon: React.ElementType;
@@ -52,6 +53,7 @@ export default function NavbarsubWarehouse({
   lang: propLang,
   userRole: propUserRole,
   onNavigate,
+  menuItems: providedMenuItems,
 }: NavbarsubWarehouseProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -121,7 +123,7 @@ export default function NavbarsubWarehouse({
     return Array.from(params.entries()).every(([key, value]) => searchParams.get(key) === value);
   };
 
-  const menuItems: MenuGroup[] = [
+  const warehouseMenuItems: MenuGroup[] = [
     {
       id: "dashboard",
       title: t.dashboard,
@@ -220,6 +222,7 @@ export default function NavbarsubWarehouse({
       ],
     },
   ];
+  const menuItems = providedMenuItems ?? warehouseMenuItems;
 
   // Track expanded groups for dropdown accordion
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {

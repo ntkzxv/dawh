@@ -48,13 +48,7 @@ export default function DataTable<T>({
   const isLight = theme === "light";
 
   return (
-    <div
-      className={`w-full rounded-[12px] border overflow-hidden ${
-        isLight
-          ? "bg-white border-[#E4E4E7] shadow-xs"
-          : "bg-[#383838] border-[#444444]"
-      } ${className}`}
-    >
+    <div className={`w-full overflow-hidden ${className}`}>
       <div className="overflow-x-auto">
         <table
           className={`w-full text-left text-[13px] border-collapse ${tableClassName}`}
@@ -62,10 +56,10 @@ export default function DataTable<T>({
         >
           <thead>
             <tr
-              className={`h-[42px] border-b text-[12px] font-semibold text-white select-none ${
+              className={`h-[36px] text-xs font-semibold select-none ${
                 isLight
-                  ? "bg-slate-900 border-slate-800"
-                  : "bg-[#282828] border-[#444444]"
+                  ? "bg-[#F4F4F5] text-[#666666]"
+                  : "bg-[#2C2C2C] text-[#A1A1AA]"
               }`}
             >
               {columns.map((col) => {
@@ -79,7 +73,7 @@ export default function DataTable<T>({
                 return (
                   <th
                     key={col.key}
-                    className={`py-2.5 px-4 ${alignClass} ${col.headerClassName || ""}`}
+                    className={`py-2 px-3 ${alignClass} first:rounded-l-[6px] last:rounded-r-[6px] ${col.headerClassName || ""}`}
                   >
                     {col.header}
                   </th>
@@ -89,12 +83,12 @@ export default function DataTable<T>({
           </thead>
           <tbody
             className={`divide-y ${
-              isLight ? "divide-slate-200" : "divide-white/5"
+              isLight ? "divide-[#E4E4E7]" : "divide-[#444444]"
             }`}
           >
             {isLoading ? (
               Array.from({ length: skeletonRowCount }).map((_, rIdx) => (
-                <tr key={`skeleton-${rIdx}`} className="animate-pulse">
+                <tr key={`skeleton-${rIdx}`} className="h-[56px] animate-pulse">
                   {columns.map((col, cIdx) => {
                     const alignClass =
                       col.align === "right"
@@ -104,7 +98,7 @@ export default function DataTable<T>({
                         : "justify-start";
 
                     return (
-                      <td key={`skeleton-cell-${rIdx}-${col.key || cIdx}`} className="py-4 px-4">
+                      <td key={`skeleton-cell-${rIdx}-${col.key || cIdx}`} className="px-3 py-3">
                         <div className={`flex items-center ${alignClass}`}>
                           {cIdx === 0 ? (
                             <div className="flex flex-col gap-2 w-full max-w-[200px]">
@@ -165,7 +159,7 @@ export default function DataTable<T>({
                           : "bg-white/[0.08]"
                         : isLight
                         ? "hover:bg-slate-50"
-                        : "hover:bg-white/[0.03]"
+                          : "hover:bg-white/[0.02]"
                     }`}
                   >
                     {columns.map((col) => {
@@ -179,7 +173,7 @@ export default function DataTable<T>({
                       return (
                         <td
                           key={`cell-${key}-${col.key}`}
-                          className={`py-3.5 px-4 ${alignClass} ${col.className || ""}`}
+                          className={`py-3 px-3 ${alignClass} ${col.className || ""}`}
                         >
                           {col.render
                             ? col.render(item, idx)

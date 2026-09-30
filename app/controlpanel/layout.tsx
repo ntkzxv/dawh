@@ -44,11 +44,25 @@ export default function ControlPanelLayout({
   }, [account?.loading, account?.me, account?.error, router]);
 
   const isAuditRoute = pathname.startsWith("/controlpanel/audit-log/");
+  const isSecurityPreviewRoute = pathname === "/controlpanel/access-preview";
+  const routeTab: ControlPanelTab | null = isAuditRoute
+    ? "audit"
+    : isSecurityPreviewRoute
+      ? "security"
+      : pathname === "/controlpanel/branches"
+        ? "branches"
+        : pathname === "/controlpanel/users"
+          ? "members"
+          : pathname === "/controlpanel/user-scopes"
+            ? "scopes"
+            : pathname === "/controlpanel/account-status"
+              ? "account-status"
+              : pathname === "/controlpanel/master-data"
+                ? "master-data"
+          : null;
   const activeTab: ControlPanelTab = isAuditRoute
     ? "audit"
-    : tab === "audit"
-      ? "members"
-      : tab;
+    : routeTab ?? (tab === "audit" || tab === "security" || tab === "scopes" || tab === "account-status" || tab === "master-data" ? "members" : tab);
   const auditCategory = isAuditRoute
     ? pathname.split("/").at(-1) ?? ALL_AUDIT_CATEGORIES
     : storedAuditCategory;

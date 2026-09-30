@@ -8,33 +8,19 @@ import { useOptionalWarehouseAccount } from "@/context/WarehouseAccountContext";
 import { canEditCatalog } from "@/lib/contracts/warehouse-policy";
 import { useRemote, Notice, message } from "@/components/warehouse/Ui";
 import CustomDropdown from "@/components/common/CustomDropdown";
-import { Pagination } from "@/components/common";
 import { SkeletonBox } from "@/components/loading_screen/SkeletonLoading";
 import {
-  UploadCloud,
-  Download,
-  Plus,
-  X,
-  Search,
-  Package,
-  Edit,
-  MoreVertical,
-} from "lucide-react";
+  SidePanel,
+  Pagination,
+  Button,
+  SecondaryButton,
+  SearchInput,
+  FilterDropdown,
+  type ProductDetailItem,
+} from "@/components/common";
+import { UploadCloud, Download, Plus, X, MoreVertical } from "lucide-react";
 
-export interface InventoryRowItem {
-  id: string;
-  sku: string;
-  name: string;
-  category: string;
-  brand: string;
-  onHand: number;
-  warehouse: string;
-  status: "in_stock" | "low_stock" | "out_of_stock";
-  unit: string;
-  price: number | null;
-  description?: string;
-  minStock?: number;
-}
+export type InventoryRowItem = ProductDetailItem;
 
 export default function ProductInventorySplitView() {
   const { theme } = useTheme();
@@ -297,12 +283,37 @@ export default function ProductInventorySplitView() {
       <div className="flex-1 w-full min-w-0 flex flex-col items-start p-6 lg:p-8 gap-6 self-stretch overflow-y-auto">
         {error && <Notice tone="error">{error}</Notice>}
 
+        <div className="flex w-full justify-end gap-2.5">
+          <SecondaryButton icon={<UploadCloud size={14} />}>
+            {isThai ? "ส่งออก" : "Export"}
+          </SecondaryButton>
+          <SecondaryButton icon={<Download size={14} />}>
+            {isThai ? "นำเข้า" : "Import"}
+          </SecondaryButton>
+          {canEdit && (
+            <Button
+              variant="primary"
+              onClick={openAddModal}
+              icon={<Plus size={14} />}
+            >
+              {isThai ? "เพิ่มสินค้า" : "Add Product"}
+            </Button>
+          )}
+        </div>
+
+        <div
+          className={`w-full rounded-[12px] border p-4 shadow-sm overflow-hidden flex flex-col transition-colors ${
+            isLight
+              ? "bg-white border-[#E4E4E7]"
+              : "bg-[#383838] border-[#444444]"
+          }`}
+        >
         {/* filter-bar */}
-        <div className="w-full flex flex-wrap items-center justify-between gap-3">
+        <div className="w-full flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#E4E4E7] dark:border-[#444444]">
           {/* filters */}
           <div className="flex flex-wrap items-center gap-3">
             {/* f-category */}
-            <CustomDropdown
+            <FilterDropdown
               value={selectedCategory}
               onChange={(value) => {
                 setSelectedCategory(value);
@@ -318,16 +329,10 @@ export default function ProductInventorySplitView() {
                   label: c.name,
                 })),
               ]}
-              size="sm"
-              triggerClassName={`h-[33px] px-3 py-2 rounded-[6px] border text-[13px] font-normal transition-colors ${
-                isLight
-                  ? "bg-white border-[#E4E4E7] text-[#222222]"
-                  : "bg-[#383838] border-[#444444] text-[#F8FAFC]"
-              }`}
             />
 
             {/* f-status */}
-            <CustomDropdown
+            <FilterDropdown
               value={selectedStatus}
               onChange={(value) => {
                 setSelectedStatus(value);
@@ -351,16 +356,10 @@ export default function ProductInventorySplitView() {
                   label: isThai ? "สถานะ: วิกฤต" : "Out of Stock",
                 },
               ]}
-              size="sm"
-              triggerClassName={`h-[33px] px-3 py-2 rounded-[6px] border text-[13px] font-normal transition-colors ${
-                isLight
-                  ? "bg-white border-[#E4E4E7] text-[#222222]"
-                  : "bg-[#383838] border-[#444444] text-[#F8FAFC]"
-              }`}
             />
 
             {/* f-warehouse */}
-            <CustomDropdown
+            <FilterDropdown
               value={selectedWarehouse}
               onChange={(value) => {
                 setSelectedWarehouse(value);
@@ -376,95 +375,22 @@ export default function ProductInventorySplitView() {
                   label: `คลัง: ${w.name}`,
                 })),
               ]}
-              size="sm"
-              triggerClassName={`h-[33px] px-3 py-2 rounded-[6px] border text-[13px] font-normal transition-colors ${
-                isLight
-                  ? "bg-white border-[#E4E4E7] text-[#222222]"
-                  : "bg-[#383838] border-[#444444] text-[#F8FAFC]"
-              }`}
+            />
+            <SearchInput
+              value={searchQuery}
+              onChange={(val) => {
+                setSearchQuery(val);
+                setCurrentPage(1);
+              }}
+              placeholder={
+                isThai ? "ค้นหา SKU, ชื่อ..." : "Search SKU, Name..."
+              }
             />
           </div>
 
-          {/* actions */}
-          <div className="flex items-center gap-2.5">
-            {/* Search Input */}
-            <div
-              className={`flex items-center px-3 py-1.5 h-[33px] rounded-[6px] border text-[13px] w-[180px] sm:w-[220px] transition-colors ${
-                isLight
-                  ? "bg-white border-[#E4E4E7] text-[#222222]"
-                  : "bg-[#383838] border-[#444444] text-[#F8FAFC]"
-              }`}
-            >
-              <Search size={14} className="text-[#A1A1AA] shrink-0 mr-2" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setCurrentPage(1);
-                }}
-                placeholder={
-                  isThai ? "ค้นหา SKU, ชื่อ..." : "Search SKU, Name..."
-                }
-                className="w-full bg-transparent border-none outline-none text-[13px] placeholder:text-[#A1A1AA]"
-              />
-            </div>
-
-            {/* btn-export */}
-            <button
-              type="button"
-              className={`flex items-center justify-center px-4 py-2 gap-1.5 h-[33px] rounded-[6px] border text-[13px] font-normal transition-colors cursor-pointer ${
-                isLight
-                  ? "bg-white border-[#E4E4E7] text-[#222222] hover:bg-slate-100"
-                  : "bg-[#383838] border-[#444444] text-[#F8FAFC] hover:bg-[#444444]"
-              }`}
-            >
-              <UploadCloud size={14} />
-              <span>{isThai ? "ส่งออก" : "Export"}</span>
-            </button>
-
-            {/* btn-import */}
-            <button
-              type="button"
-              className={`flex items-center justify-center px-4 py-2 gap-1.5 h-[33px] rounded-[6px] border text-[13px] font-normal transition-colors cursor-pointer ${
-                isLight
-                  ? "bg-white border-[#E4E4E7] text-[#222222] hover:bg-slate-100"
-                  : "bg-[#383838] border-[#444444] text-[#F8FAFC] hover:bg-[#444444]"
-              }`}
-            >
-              <Download size={14} />
-              <span>{isThai ? "นำเข้า" : "Import"}</span>
-            </button>
-
-            {/* btn-add (Theme-adaptive Black/White Primary CTA) */}
-            {canEdit && (
-              <button
-                type="button"
-                onClick={openAddModal}
-                className={`flex items-center justify-center px-4 py-2 gap-1.5 h-[33px] rounded-[6px] text-[13px] font-semibold transition-colors cursor-pointer shadow-xs ${
-                  isLight
-                    ? "bg-[#222222] hover:bg-black text-white"
-                    : "bg-white hover:bg-[#F4F4F5] text-[#222222]"
-                }`}
-              >
-                <Plus
-                  size={14}
-                  className={isLight ? "text-white" : "text-[#222222]"}
-                />
-                <span>{isThai ? "เพิ่มสินค้า" : "Add Product"}</span>
-              </button>
-            )}
-          </div>
         </div>
 
         {/* inventory-table-container */}
-        <div
-          className={`w-full rounded-[12px] border p-4 shadow-sm overflow-hidden flex flex-col transition-colors ${
-            isLight
-              ? "bg-white border-[#E4E4E7]"
-              : "bg-[#383838] border-[#444444]"
-          }`}
-        >
           {loading && !data ? (
             <div
               role="status"
@@ -714,177 +640,13 @@ export default function ProductInventorySplitView() {
         )}
       </div>
 
-      {/* Product detail modal */}
-      {activeDetailItem && (
-        <div
-          className="fixed inset-0 z-[90] flex items-stretch justify-end bg-black/70 backdrop-blur-xs"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setSelectedItem(null);
-          }}
-        >
-          <aside
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="product-detail-title"
-            className={`h-full w-full max-w-[380px] shrink-0 rounded-l-[8px] border-y border-l border-r-0 p-6 flex flex-col gap-5 overflow-y-auto shadow-2xl transition-colors ${
-              isLight
-                ? "bg-white border-[#E4E4E7]"
-                : "bg-[#383838] border-[#444444]"
-            }`}
-          >
-            {/* drawer-header */}
-            <div className="w-full flex items-center justify-between">
-              <h3
-                id="product-detail-title"
-                className={`font-bold text-[16px] leading-[21px] ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}
-              >
-                {isThai ? "รายละเอียดสินค้า" : "Item Details"}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setSelectedItem(null)}
-                className="text-[#A1A1AA] hover:text-white transition-colors cursor-pointer p-0.5"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Product Image Showcase */}
-            <div className="w-full h-[180px] rounded-[8px] border border-[#444444]/40 bg-[#2C2C2C] flex flex-col items-center justify-center text-[#A1A1AA] overflow-hidden relative shadow-inner">
-              <Package size={48} className="opacity-40" />
-              <span className="text-[11.5px] mt-2 font-mono text-[#A1A1AA]/80">
-                {activeDetailItem.sku}
-              </span>
-            </div>
-
-            {/* item-info */}
-            <div className="w-full flex flex-col gap-2">
-              <span className="font-mono font-semibold text-[12px] text-[#0D99FF]">
-                {activeDetailItem.sku}
-              </span>
-              <h4
-                className={`font-bold text-[18px] leading-[23px] ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}
-              >
-                {activeDetailItem.name}
-              </h4>
-            </div>
-
-            {/* Line divider */}
-            <div
-              className={`w-full border-b ${isLight ? "border-[#E4E4E7]" : "border-[#444444]"}`}
-            />
-
-            {/* specs */}
-            <div className="w-full flex flex-col gap-2.5 text-[13px]">
-              <div className="flex items-center justify-between">
-                <span className="text-[#A1A1AA]">
-                  {isThai ? "หมวดหมู่หลัก" : "Category"}
-                </span>
-                <span
-                  className={`font-medium ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}
-                >
-                  {activeDetailItem.category}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-[#A1A1AA]">
-                  {isThai ? "ยี่ห้อ" : "Brand"}
-                </span>
-                <span
-                  className={`font-medium ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}
-                >
-                  {activeDetailItem.brand}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-[#A1A1AA]">
-                  {isThai ? "คลังที่มีสินค้า" : "Warehouse"}
-                </span>
-                <span
-                  className={`font-medium ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}
-                >
-                  {activeDetailItem.warehouse}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-[#A1A1AA]">
-                  {isThai ? "หน่วยนับ" : "Unit"}
-                </span>
-                <span
-                  className={`font-medium ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}
-                >
-                  {activeDetailItem.unit}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-[#A1A1AA]">
-                  {isThai ? "ราคาต่อหน่วย" : "Unit Price"}
-                </span>
-                <span
-                  className={`font-medium ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}
-                >
-                  {activeDetailItem.price == null
-                    ? "-"
-                    : `${activeDetailItem.price.toLocaleString()} ${isThai ? "บาท" : "THB"}`}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-[#A1A1AA]">
-                  {isThai ? "ระดับสต็อกขั้นต่ำ" : "Safety Stock"}
-                </span>
-                <span
-                  className={`font-medium ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}
-                >
-                  {activeDetailItem.minStock == null
-                    ? "-"
-                    : `${activeDetailItem.minStock} ${activeDetailItem.unit}`}
-                </span>
-              </div>
-            </div>
-
-            <a
-              className="text-sm text-indigo-500 underline"
-              href="/warehouse/movements"
-            >
-              {isThai ? "ดูประวัติการเคลื่อนไหวสต๊อก" : "View stock movements"}
-            </a>
-
-            {/* drawer-actions */}
-            {canEdit && (
-              <div className="w-full flex items-center gap-3 pt-2">
-                {/* btn-edit */}
-                <button
-                  type="button"
-                  onClick={() => openEditModal(activeDetailItem)}
-                  className={`flex-1 h-[41px] px-4 py-3 rounded-[6px] border flex items-center justify-center gap-1.5 text-[13px] font-medium transition-colors cursor-pointer ${
-                    isLight
-                      ? "bg-[#F4F4F5] border-[#E4E4E7] text-[#222222] hover:bg-slate-200"
-                      : "bg-[#2C2C2C] border-[#444444] text-[#F8FAFC] hover:bg-[#333333]"
-                  }`}
-                >
-                  <Edit size={14} />
-                  <span>{isThai ? "แก้ไขข้อมูล" : "Edit"}</span>
-                </button>
-
-                {/* btn-receive */}
-                <button
-                  type="button"
-                  onClick={() => openEditModal(activeDetailItem)}
-                  className="flex-1 h-[41px] px-4 py-3 rounded-[6px] flex items-center justify-center gap-1.5 text-[13px] font-semibold text-white bg-[#2EC4B6] hover:bg-[#25A99D] transition-colors cursor-pointer"
-                >
-                  <Plus size={14} />
-                  <span>{isThai ? "ปรับปรุงยอด" : "Adjust"}</span>
-                </button>
-              </div>
-            )}
-          </aside>
-        </div>
-      )}
+      {/* Product detail drawer (Shared component) */}
+      <SidePanel
+        item={activeDetailItem}
+        onClose={() => setSelectedItem(null)}
+        canEdit={canEdit}
+        onEdit={(item) => openEditModal(item)}
+      />
 
       {/* ========================================================= */}
       {/* 📌 [MODAL / SIDE DRAWER]: Add / Edit Product Form         */}

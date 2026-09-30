@@ -182,16 +182,18 @@ export default function StockScreen({
               : "grid gap-5"
           }
         >
-          <section className={panel}>
-            {tab === "balances" ? (
-              <BalanceList rows={activeData.items as StockBalance[]} />
-            ) : (
-              <MovementList
-                rows={activeData.items as StockMovement[]}
-                canReverse={mayManageStock}
-                onReverse={reverse}
-              />
-            )}
+          <div className="min-w-0 space-y-5">
+            <section className={panel}>
+              {tab === "balances" ? (
+                <BalanceList rows={activeData.items as StockBalance[]} />
+              ) : (
+                <MovementList
+                  rows={activeData.items as StockMovement[]}
+                  canReverse={mayManageStock}
+                  onReverse={reverse}
+                />
+              )}
+            </section>
             {(activeData.page.total ?? 0) > 0 && (
               <Pagination
                 currentPage={page}
@@ -200,10 +202,10 @@ export default function StockScreen({
                 pageSize={pageSize}
                 onPageChange={setPage}
                 isThai
-                className="mt-5"
+                className="px-1"
               />
             )}
-          </section>
+          </div>
           {formOpen && mayManageStock && (
             <StockForm warehouses={warehouses ?? []} onSave={save} />
           )}

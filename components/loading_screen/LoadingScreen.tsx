@@ -108,7 +108,7 @@ export default function LoadingScreen({
               setHasReachedWaitPoint(true);
               return;
             }
-            if (isReady !== false) onFilled?.();
+            if (!isTrackingReadiness || isReady) onFilled?.();
           }}
           className="absolute inset-0 w-full h-full pointer-events-none"
         >

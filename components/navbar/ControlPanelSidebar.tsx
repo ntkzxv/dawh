@@ -1,19 +1,21 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useRef, useEffect, type ElementType } from "react";
-import Link from "next/link";
+import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Building2,
-  ChevronDown,
   ChevronLeft,
   ChevronUp,
   History,
   Layers,
   LayoutGrid,
+  Building2,
+  Database,
+  MapPin,
+  ShieldCheck,
   Users,
   X,
+  UserRound,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { DAWH_LOGOS } from "@/config/brand";
@@ -28,6 +30,7 @@ import {
   getAuditCategoryLabel,
 } from "@/components/warehouse/auditLog";
 import DropdownMenu from "./DropdownMenu";
+import NavbarsubWarehouse, { type MenuGroup } from "./NavbarsubWarehouse";
 
 const DEFAULT_LOGO_LIGHT_THEME = "/assets/dawh_nospacewight_dark_logo.png";
 const DEFAULT_LOGO_DARK_THEME = "/assets/dawh_nospacewight_light_logo.png";
@@ -37,7 +40,6 @@ const MINIMIZED_LOGO_DARK_THEME = DAWH_LOGOS.square1024.light;
 export default function ControlPanelSidebar({
   isMinimized,
   onMinimizedChange,
-  activeTab,
   onTabChange,
   mobileOpen = false,
   onMobileClose,
@@ -58,21 +60,8 @@ export default function ControlPanelSidebar({
   const { auditCategories } = useControlPanelNavigation();
   const { isThai } = accountMenu;
   const isLight = theme === "light";
-  const selectedAuditCategory = pathname.split("/").at(-1);
-
   const [isAccountOpen, setIsAccountOpen] = useState(false);
-  const [isAuditExpanded, setIsAuditExpanded] = useState(activeTab === "audit");
-  const [isAuditCollapsedOnRoute, setIsAuditCollapsedOnRoute] = useState(false);
   const [logoErrorSource, setLogoErrorSource] = useState<string | null>(null);
-
-  // Floating Sub Sidebar (Flyout when minimized)
-  const [activePopupAudit, setActivePopupAudit] = useState(false);
-  const [popupCoords, setPopupCoords] = useState({ top: 0, left: 0 });
-  const popupRef = useRef<HTMLDivElement>(null);
-  const auditButtonRef = useRef<HTMLButtonElement>(null);
-
-  const isAuditRoute = pathname.startsWith("/controlpanel/audit-log/");
-  const auditExpanded = isAuditRoute ? !isAuditCollapsedOnRoute : isAuditExpanded;
 
   const currentLogo = isMinimized
     ? isLight
@@ -82,69 +71,69 @@ export default function ControlPanelSidebar({
       ? DEFAULT_LOGO_LIGHT_THEME
       : DEFAULT_LOGO_DARK_THEME;
 
-  useEffect(() => {
-    setLogoErrorSource(null);
-  }, [currentLogo]);
-
-  // Click outside to close minimized flyout
-  useEffect(() => {
-    if (!activePopupAudit) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (popupRef.current && popupRef.current.contains(target)) return;
-      if (auditButtonRef.current && auditButtonRef.current.contains(target)) return;
-      setActivePopupAudit(false);
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setActivePopupAudit(false);
-    };
-
-    const handleResize = () => setActivePopupAudit(false);
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("resize", handleResize);
-    };
-  }, [activePopupAudit]);
-
-  const tabs: Array<{
-    label: string;
-    id: ControlPanelTab;
-    icon: ElementType;
-    visible: boolean;
-  }> = [
+  const canManageBranches = ["ADMIN", "CEO"].includes(account?.me?.role ?? "");
+  const isAdmin = account?.me?.role === "ADMIN";
+  const menuItems: MenuGroup[] = [
     {
-      label: isThai ? "สมาชิก" : "Members",
-      id: "members",
+      id: "users",
+      title: isThai ? "จัดการผู้ใช้" : "User Management",
       icon: Users,
-      visible: true,
+      children: [
+        { label: isThai ? "ผู้ใช้" : "Users", path: "/controlpanel/users", icon: UserRound },
+        ...(isAdmin ? [{ label: isThai ? "สถานะบัญชี" : "Account Status", path: "/controlpanel/account-status", icon: Users }] : []),
+      ],
     },
     {
-      label: isThai ? "ข้อมูลองค์กร" : "Organization",
-      id: "org",
-      icon: Building2,
-      visible: ["ADMIN", "CEO", "MANAGER"].includes(account?.me?.role ?? ""),
+      id: "access",
+      title: isThai ? "สิทธิ์และการเข้าถึง" : "Access & Permissions",
+      icon: ShieldCheck,
+      children: isAdmin ? [
+        { label: isThai ? "ตัวอย่างการควบคุมสิทธิ์" : "Access Preview", path: "/controlpanel/access-preview", icon: ShieldCheck },
+        { label: isThai ? "สิทธิ์รายสาขา" : "Branch Access", path: "/controlpanel/user-scopes", icon: MapPin },
+      ] : [],
     },
     {
-      label: isThai ? "บันทึกการตรวจสอบ" : "Audit Log",
+      id: "master-data",
+      title: isThai ? "ข้อมูลหลัก" : "Master Data",
+      icon: Database,
+      children: [
+        ...(canManageBranches ? [{ label: isThai ? "สาขา" : "Branches", path: "/controlpanel/branches", icon: Building2 }] : []),
+        ...(isAdmin ? [{ label: isThai ? "ข้อมูลหลัก" : "Master Data", path: "/controlpanel/master-data", icon: Database }] : []),
+      ],
+    },
+    {
       id: "audit",
+      title: isThai ? "บันทึกและตรวจสอบ" : "Audit & Logs",
       icon: History,
-      visible: ["ADMIN", "CEO"].includes(account?.me?.role ?? ""),
+      children: canManageBranches ? auditCategories.map((category) => {
+        const key = getAuditCategoryKey(category);
+        return {
+          label: getAuditCategoryLabel(category, isThai),
+          path: `/controlpanel/audit-log/${key}`,
+          icon: History,
+        };
+      }) : [],
     },
-  ];
+  ].filter((group) => group.children?.length);
 
   const handleToggleMinimize = () => {
     const next = !isMinimized;
     onMinimizedChange(next);
     setIsAccountOpen(false);
-    setActivePopupAudit(false);
+  };
+
+  const navigateControlPanel = (path: string) => {
+    const nextTab: ControlPanelTab = path.startsWith("/controlpanel/audit-log/")
+      ? "audit"
+      : path === "/controlpanel/users" ? "members"
+        : path === "/controlpanel/branches" ? "branches"
+          : path === "/controlpanel/access-preview" ? "security"
+            : path === "/controlpanel/user-scopes" ? "scopes"
+              : path === "/controlpanel/account-status" ? "account-status"
+                : "master-data";
+    onTabChange(nextTab);
+    onMobileClose?.();
+    if (pathname !== path) router.push(path);
   };
 
   return (
@@ -236,307 +225,19 @@ export default function ControlPanelSidebar({
         />
 
         {/* SUB NAVBAR AREA */}
-        <nav
-          aria-label={isThai ? "เมนูแผงควบคุม" : "Control Panel navigation"}
-          className={`flex-1 px-3 w-full transition-all duration-700 no-scrollbar ${
-            isMinimized ? "overflow-visible" : "overflow-y-auto overflow-x-hidden"
-          }`}
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-        >
-          <div className="w-full space-y-1.5 py-2 transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]">
-            <p
-              className={`px-1 text-[11px] font-semibold transition-all ease-out ${
-                isLight ? "text-slate-500" : "text-zinc-400"
-              } ${
-                isMinimized
-                  ? "max-h-0 opacity-0 mb-0 -translate-x-2 pointer-events-none duration-200"
-                  : "max-h-6 opacity-100 mb-2 translate-x-0 duration-300"
-              }`}
-            >
-              {isThai ? "การจัดการ" : "Management"}
+        <div className={`flex-1 px-3 w-full transition-all duration-700 no-scrollbar ${isMinimized ? "overflow-visible" : "overflow-y-auto overflow-x-hidden"}`} style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+          {!isMinimized && (
+            <p className={`px-1 pt-2 text-[11px] font-semibold ${isLight ? "text-slate-500" : "text-zinc-400"}`}>
+              {isThai ? "เมนูแผงควบคุม" : "Control Panel"}
             </p>
-
-            {tabs
-              .filter((tab) => tab.visible)
-              .map(({ label, id, icon: Icon }) => {
-                const selected = activeTab === id;
-                const auditTab = id === "audit";
-                const isPopupOpen = auditTab && activePopupAudit;
-
-                // Case 1: Simple tab item without sub-items (members, org)
-                if (!auditTab) {
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      role="tab"
-                      aria-selected={selected}
-                      aria-label={label}
-                      title={isMinimized ? label : undefined}
-                      onClick={() => {
-                        onTabChange(id);
-                        onMobileClose?.();
-                        if (isAuditRoute) router.push("/controlpanel");
-                      }}
-                      className={`group relative rounded-xl border transition-colors duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] flex items-center overflow-hidden cursor-pointer outline-none focus:outline-none select-none ${
-                        isMinimized
-                          ? "w-12 h-12 justify-center mx-auto px-0"
-                          : "w-full px-3.5 py-2.5 gap-3"
-                      } ${
-                        selected
-                          ? isLight
-                            ? "bg-[#F4F4F5] text-[#222222] border-[#E4E4E7] font-semibold"
-                            : "bg-[#383838]/80 text-[#FFFFFF] border-[#444444]/60 font-semibold"
-                          : isLight
-                          ? "border-transparent text-[#2C2C2C] hover:bg-[#F4F4F5] hover:text-[#222222]"
-                          : "border-transparent text-[#F4F4F5] hover:bg-[#383838]/60 hover:text-[#FFFFFF]"
-                      }`}
-                    >
-                      <Icon
-                        size={18}
-                        className={`${
-                          selected
-                            ? isLight
-                              ? "text-[#222222]"
-                              : "text-[#FFFFFF]"
-                            : isLight
-                            ? "text-[#2C2C2C] group-hover:text-[#222222]"
-                            : "text-[#E4E4E7] group-hover:text-[#FFFFFF]"
-                        } shrink-0 transition-colors duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]`}
-                        aria-hidden="true"
-                      />
-
-                      <span
-                        className={`text-[13.5px] font-medium leading-tight text-left whitespace-nowrap overflow-hidden transition-all ease-out ${
-                          selected
-                            ? isLight
-                              ? "text-[#222222] font-semibold"
-                              : "text-[#FFFFFF] font-semibold"
-                            : isLight
-                            ? "text-[#2C2C2C] group-hover:text-[#222222]"
-                            : "text-[#E4E4E7] group-hover:text-[#FFFFFF]"
-                        } ${
-                          isMinimized
-                            ? "max-w-0 opacity-0 -translate-x-3 duration-200 pointer-events-none"
-                            : "max-w-[170px] opacity-100 translate-x-0 duration-350 delay-100"
-                        }`}
-                      >
-                        {label}
-                      </span>
-
-                      {/* Side line indicator when expanded */}
-                      {!isMinimized && (
-                        <div className="flex items-center justify-center w-4 shrink-0 ml-auto mr-[-3px]">
-                          <span
-                            className={`w-[2.5px] h-[13px] rounded-full shrink-0 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-                              isLight ? "bg-[#222222]" : "bg-white"
-                            } ${
-                              selected
-                                ? "opacity-100 scale-y-100"
-                                : "opacity-0 scale-y-50 pointer-events-none"
-                            }`}
-                          />
-                        </div>
-                      )}
-
-                      {/* Bottom line indicator when minimized */}
-                      {isMinimized && (
-                        <span
-                          className={`absolute bottom-1.5 left-1/2 -translate-x-1/2 w-3.5 h-[2.5px] rounded-full shrink-0 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-                            isLight ? "bg-[#222222]" : "bg-white"
-                          } ${
-                            selected
-                              ? "opacity-100 scale-x-100"
-                              : "opacity-0 scale-x-50 pointer-events-none"
-                          }`}
-                        />
-                      )}
-                    </button>
-                  );
-                }
-
-                // Case 2: Audit Log tab with sub-categories (Accordion + Minimized Flyout)
-                return (
-                  <div key={id} className="w-full flex flex-col">
-                    <button
-                      ref={auditButtonRef}
-                      type="button"
-                      role="tab"
-                      aria-selected={selected}
-                      aria-expanded={auditExpanded}
-                      aria-label={label}
-                      title={isMinimized ? label : undefined}
-                      onClick={(e) => {
-                        if (isMinimized) {
-                          if (activePopupAudit) {
-                            setActivePopupAudit(false);
-                            return;
-                          }
-                          const rect = e.currentTarget.getBoundingClientRect();
-                          const popupEstimatedHeight = auditCategories.length * 40 + 20;
-                          const windowHeight = typeof window !== "undefined" ? window.innerHeight : 800;
-                          let top = rect.top;
-                          if (top + popupEstimatedHeight > windowHeight - 16) {
-                            top = Math.max(16, windowHeight - popupEstimatedHeight - 16);
-                          }
-                          setPopupCoords({ top, left: rect.right + 10 });
-                          setActivePopupAudit(true);
-                          return;
-                        }
-
-                        // Expanded sidebar: only toggle accordion dropdown without navigating
-                        if (isAuditRoute) {
-                          setIsAuditCollapsedOnRoute((collapsed) => !collapsed);
-                        } else {
-                          setIsAuditExpanded((expanded) => !expanded);
-                        }
-                      }}
-                      className={`group relative rounded-xl border transition-colors duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] flex items-center justify-between overflow-hidden cursor-pointer outline-none focus:outline-none select-none ${
-                        isMinimized
-                          ? "w-12 h-12 justify-center mx-auto px-0"
-                          : "w-full px-3.5 py-2.5 gap-3"
-                      } ${
-                        isPopupOpen
-                          ? isLight
-                            ? "bg-[#E4E4E7] text-[#222222] border-[#D4D4D8]"
-                            : "bg-[#383838] text-[#FFFFFF] border-[#555555]"
-                          : selected
-                          ? isLight
-                            ? "bg-[#F4F4F5] text-[#222222] border-[#E4E4E7] font-semibold"
-                            : "bg-[#383838]/80 text-[#FFFFFF] border-[#444444]/60 font-semibold"
-                          : isLight
-                          ? "border-transparent text-[#2C2C2C] hover:bg-[#F4F4F5] hover:text-[#222222]"
-                          : "border-transparent text-[#F4F4F5] hover:bg-[#383838]/60 hover:text-[#FFFFFF]"
-                      }`}
-                    >
-                      <div
-                        className={`flex items-center ${
-                          isMinimized ? "justify-center" : "gap-3"
-                        } min-w-0`}
-                      >
-                        <Icon
-                          size={18}
-                          className={`${
-                            isPopupOpen || selected
-                              ? isLight
-                                ? "text-[#222222]"
-                                : "text-[#FFFFFF]"
-                              : isLight
-                              ? "text-[#2C2C2C] group-hover:text-[#222222]"
-                              : "text-[#E4E4E7] group-hover:text-[#FFFFFF]"
-                          } shrink-0 transition-colors duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]`}
-                          aria-hidden="true"
-                        />
-
-                        <span
-                          className={`text-[13.5px] font-medium leading-tight text-left whitespace-nowrap overflow-hidden transition-all ease-out ${
-                            isPopupOpen || selected
-                              ? isLight
-                                ? "text-[#222222] font-semibold"
-                                : "text-[#FFFFFF] font-semibold"
-                              : isLight
-                              ? "text-[#2C2C2C] group-hover:text-[#222222]"
-                              : "text-[#E4E4E7] group-hover:text-[#FFFFFF]"
-                          } ${
-                            isMinimized
-                              ? "max-w-0 opacity-0 -translate-x-3 duration-200 pointer-events-none"
-                              : "max-w-[150px] opacity-100 translate-x-0 duration-350 delay-100"
-                          }`}
-                        >
-                          {label}
-                        </span>
-                      </div>
-
-                      {/* Accordion Chevron Indicator */}
-                      {!isMinimized && (
-                        <div className="flex items-center justify-center shrink-0">
-                          <ChevronDown
-                            size={16}
-                            className={`shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-                              isLight ? "text-slate-600" : "text-[#E4E4E7]"
-                            } ${auditExpanded ? "rotate-180" : "rotate-0"}`}
-                            aria-hidden="true"
-                          />
-                        </div>
-                      )}
-
-                      {/* Indicator when sidebar is minimized */}
-                      {isMinimized && (
-                        <span
-                          className={`absolute bottom-1.5 left-1/2 -translate-x-1/2 w-3.5 h-[2.5px] rounded-full shrink-0 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-                            isLight ? "bg-[#222222]" : "bg-white"
-                          } ${
-                            selected
-                              ? "opacity-100 scale-x-100"
-                              : "opacity-0 scale-x-50 pointer-events-none"
-                          }`}
-                        />
-                      )}
-                    </button>
-
-                    {/* Accordion Sub-items (Grid animation identical to warehouse sidebar) */}
-                    {!isMinimized && (
-                      <div
-                        className={`grid transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-                          auditExpanded
-                            ? "grid-rows-[1fr] opacity-100 mt-1 mb-1"
-                            : "grid-rows-[0fr] opacity-0 mt-0 mb-0 pointer-events-none"
-                        }`}
-                      >
-                        <div className="overflow-hidden">
-                          <div
-                            className={`ml-5 pl-3 border-l space-y-1 py-1 transition-colors ${
-                              isLight ? "border-[#E4E4E7]" : "border-[#444444]"
-                            }`}
-                          >
-                            {auditCategories.map((category) => {
-                              const key = getAuditCategoryKey(category);
-                              const isSubActive = isAuditRoute && selectedAuditCategory === key;
-
-                              return (
-                                <Link
-                                  key={key}
-                                  href={`/controlpanel/audit-log/${key}`}
-                                  aria-current={isSubActive ? "page" : undefined}
-                                  onClick={() => {
-                                    onTabChange("audit");
-                                    onMobileClose?.();
-                                  }}
-                                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left border transition-all duration-200 cursor-pointer outline-none focus:outline-none select-none ${
-                                    isSubActive
-                                      ? isLight
-                                        ? "bg-[#222222] text-[#FFFFFF] border-[#222222] shadow-sm font-semibold"
-                                        : "bg-[#383838] text-white border-[#555555] shadow-sm font-semibold"
-                                      : isLight
-                                      ? "border-transparent text-[#2C2C2C] hover:text-[#222222] hover:bg-[#F4F4F5] font-normal"
-                                      : "border-transparent text-[#E4E4E7] hover:text-[#FFFFFF] hover:bg-white/5 font-normal"
-                                  }`}
-                                >
-                                  <span className="text-[13px] font-medium leading-tight truncate">
-                                    {getAuditCategoryLabel(category, isThai)}
-                                  </span>
-
-                                  <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                                    <span
-                                      className={`w-[2px] h-[11px] rounded-full shrink-0 transition-all duration-300 ${
-                                        isSubActive
-                                          ? "bg-white opacity-100 scale-y-100"
-                                          : "opacity-0 scale-y-50 pointer-events-none"
-                                      }`}
-                                    />
-                                  </div>
-                                </Link>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-          </div>
-        </nav>
+          )}
+          <NavbarsubWarehouse
+            isMinimized={isMinimized}
+            lang={isThai ? "th" : "en"}
+            menuItems={menuItems}
+            onNavigate={navigateControlPanel}
+          />
+        </div>
 
         {/* ACCOUNT & CONTROL AREA */}
         <div
@@ -753,71 +454,6 @@ export default function ControlPanelSidebar({
         </div>
       </aside>
 
-      {/* Floating Sub Sidebar for Audit Log when sidebar is minimized */}
-      <AnimatePresence>
-        {isMinimized && activePopupAudit && (
-          <motion.div
-            ref={popupRef}
-            initial={{ opacity: 0, scale: 0.96, x: -6 }}
-            animate={{ opacity: 1, scale: 1, x: 0 }}
-            exit={{ opacity: 0, scale: 0.96, x: -6 }}
-            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-            style={{
-              position: "fixed",
-              top: `${popupCoords.top}px`,
-              left: `${popupCoords.left}px`,
-              zIndex: 9999,
-            }}
-            className={`w-[210px] sm:w-[230px] rounded-2xl border shadow-2xl p-1.5 backdrop-blur-2xl select-none transition-colors ${
-              isLight
-                ? "bg-white/95 border-slate-200/90 text-slate-900 shadow-[0_20px_50px_rgba(0,0,0,0.14)]"
-                : "bg-[#252525]/95 border-[#444444] text-white shadow-[0_25px_60px_rgba(0,0,0,0.7)]"
-            }`}
-          >
-            <div className="space-y-1 max-h-[380px] overflow-y-auto no-scrollbar py-0.5">
-              <div className="px-2.5 py-1 text-[11px] font-semibold text-slate-500 dark:text-zinc-400 border-b border-slate-200/60 dark:border-white/10 mb-1">
-                {isThai ? "บันทึกการตรวจสอบ" : "Audit Log"}
-              </div>
-              {auditCategories.map((category) => {
-                const key = getAuditCategoryKey(category);
-                const isSubActive = isAuditRoute && selectedAuditCategory === key;
-
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => {
-                      setActivePopupAudit(false);
-                      onTabChange("audit");
-                      router.push(`/controlpanel/audit-log/${key}`);
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left border transition-colors duration-250 ease-[cubic-bezier(0.4,0,0.2,1)] group/item cursor-pointer outline-none focus:outline-none select-none ${
-                      isSubActive
-                        ? isLight
-                          ? "bg-slate-900 text-white border-slate-900 shadow-sm"
-                          : "bg-[#383838] text-white border-[#555555] shadow-sm"
-                        : isLight
-                        ? "border-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-950"
-                        : "border-transparent text-[#E4E4E7] hover:bg-white/10 hover:text-white"
-                    }`}
-                  >
-                    <span className="text-[13px] font-medium leading-tight truncate">
-                      {getAuditCategoryLabel(category, isThai)}
-                    </span>
-                    <span
-                      className={`w-[2px] h-[11px] rounded-full shrink-0 transition-all duration-300 ${
-                        isSubActive
-                          ? "bg-white opacity-100 scale-y-100"
-                          : "opacity-0 scale-y-50 pointer-events-none"
-                      }`}
-                    />
-                  </button>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </>
   );
 }

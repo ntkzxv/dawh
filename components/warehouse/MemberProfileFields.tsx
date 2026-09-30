@@ -40,14 +40,16 @@ export function MemberProfileFields({ value, onChange, employmentEditable }: {
     <Field label="เบอร์โทรศัพท์">
       <input className={input} type="tel" value={value.phone} maxLength={30} autoComplete="tel" onChange={(event) => change("phone", event.target.value)} />
     </Field>
+    <div className="sm:col-span-2">
+      <Field label="ที่อยู่">
+        <textarea className={`${input} min-h-20 w-full resize-none`} value={value.address} maxLength={1000} onChange={(event) => change("address", event.target.value)} />
+      </Field>
+    </div>
     <Field label="ชื่อผู้ติดต่อฉุกเฉิน">
       <input className={input} value={value.emergencyContactName} maxLength={160} onChange={(event) => change("emergencyContactName", event.target.value)} />
     </Field>
     <Field label="เบอร์ผู้ติดต่อฉุกเฉิน">
       <input className={input} type="tel" value={value.emergencyContactPhone} maxLength={30} onChange={(event) => change("emergencyContactPhone", event.target.value)} />
-    </Field>
-    <Field label="ที่อยู่">
-      <textarea className={`${input} min-h-20 resize-y`} value={value.address} maxLength={1000} onChange={(event) => change("address", event.target.value)} />
     </Field>
   </div>;
 }

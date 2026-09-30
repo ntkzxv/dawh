@@ -266,6 +266,14 @@ export async function listCatalogPage(
     params.push(actor.branchIds);
     scope = `${kind === "branches" ? "id" : "branch_id"}=ANY($1::integer[])`;
   }
+  let statusFilter = "true";
+  if (kind === "branches") {
+    const status = search.get("status");
+    if (status === "active" || status === "inactive") {
+      params.push(status === "active");
+      statusFilter = `active=$${params.length}`;
+    }
+  }
   const query = search.get("q")?.trim() ?? "";
   if (query.length > 100)
     throw new ValidationError({ q: "Use at most 100 characters." });
@@ -277,7 +285,7 @@ export async function listCatalogPage(
       : ["branches", "warehouses", "suppliers", "units"].includes(kind)
         ? `(code ILIKE '%'||${q}||'%' OR name ILIKE '%'||${q}||'%')`
         : `name ILIKE '%'||${q}||'%'`;
-  const where = `WHERE ${scope} AND (${q}::text='' OR ${searchable})`;
+  const where = `WHERE ${scope} AND ${statusFilter} AND (${q}::text='' OR ${searchable})`;
   const columns =
     actor.role === "EMPLOYEE"
       ? kind === "products"

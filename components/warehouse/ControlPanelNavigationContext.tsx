@@ -3,7 +3,15 @@
 import { createContext, useContext } from "react";
 import type { AuditCategory } from "./auditLog";
 
-export type ControlPanelTab = "members" | "org" | "audit";
+export type ControlPanelTab =
+  | "members"
+  | "org"
+  | "branches"
+  | "audit"
+  | "security"
+  | "scopes"
+  | "account-status"
+  | "master-data";
 
 type ControlPanelNavigationValue = {
   tab: ControlPanelTab;

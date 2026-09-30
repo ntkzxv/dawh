@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import DataTable, { type DataTableColumn } from "@/components/common/DataTable";
 import CustomDropdown, { type DropdownOption } from "@/components/common/CustomDropdown";
@@ -12,7 +12,7 @@ import { warehouseApi, type AuditEvent } from "@/lib/api/warehouse";
 import { useAccountMenu } from "@/hooks/useAccountMenu";
 import { useTheme } from "@/context/ThemeContext";
 import { AUDIT_CATEGORIES, getAuditActionLabel, getAuditEntityTypeLabel } from "./auditLog";
-import { button, input, panel } from "./Ui";
+import { input, panel } from "./Ui";
 
 const PAGE_SIZE = 25;
 
@@ -48,12 +48,19 @@ export default function AuditCategoryPage({ categoryId }: { categoryId: string }
   const [draftEntityType, setDraftEntityType] = useState(entityType);
   const [draftSort, setDraftSort] = useState(sort);
   const filterDropdownRef = useRef<HTMLDivElement>(null);
-  const formRef = useRef<HTMLFormElement>(null);
 
   // Sync search input state if query parameter changes externally
   useEffect(() => {
     setSearchInput(query);
   }, [query]);
+
+  useEffect(() => {
+    setDraftFrom(from);
+    setDraftTo(to);
+    setDraftAction(action);
+    setDraftEntityType(entityType);
+    setDraftSort(sort);
+  }, [from, to, action, entityType, sort]);
   const loading = result?.key !== searchKey;
   const events = result?.key === searchKey ? result.items : [];
   const total = result?.key === searchKey ? result.total : 0;
@@ -158,19 +165,30 @@ export default function AuditCategoryPage({ categoryId }: { categoryId: string }
     return () => window.clearTimeout(timer);
   }, [searchInput, query, from, to, action, entityType, sort, pushFilters]);
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
+  const updateFilters = (patch: Partial<{
+    from: string;
+    to: string;
+    action: string;
+    entityType: string;
+    sort: string;
+  }>) => {
+    const next = {
+      from: patch.from ?? draftFrom,
+      to: patch.to ?? draftTo,
+      action: patch.action ?? draftAction,
+      entityType: patch.entityType ?? draftEntityType,
+      sort: patch.sort ?? draftSort,
+    };
+    setDraftFrom(next.from);
+    setDraftTo(next.to);
+    setDraftAction(next.action);
+    setDraftEntityType(next.entityType);
+    setDraftSort(next.sort);
     pushFilters({
       q: query,
-      from: draftFrom,
-      to: draftTo,
-      action: draftAction,
-      entityType: draftEntityType,
-      sort: draftSort,
+      ...next,
       page: 1,
     });
-    setFiltersOpen(false);
   };
 
 
@@ -233,8 +251,7 @@ export default function AuditCategoryPage({ categoryId }: { categoryId: string }
 
   return (
     <main className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4 sm:p-6 lg:p-8">
-      <section className={`${panel} space-y-4`}>
-        <div className="flex items-center gap-2">
+      <div className="relative z-30 flex items-center gap-2">
           {/* Search Input */}
           <div
             className={`relative flex items-center px-3 py-1.5 min-w-0 flex-1 rounded-[6px] border text-[13px] transition-colors ${
@@ -296,8 +313,7 @@ export default function AuditCategoryPage({ categoryId }: { categoryId: string }
             <form
               key={searchKey}
               id="audit-filter-panel"
-              ref={formRef}
-              onSubmit={submit}
+              onSubmit={(event) => event.preventDefault()}
               className={`absolute right-0 top-full z-30 mt-2 w-[min(680px,calc(100vw-2rem))] space-y-4 rounded-2xl border p-4 shadow-2xl sm:p-5 ${isLight ? "border-[#E4E4E7] bg-white text-[#222222]" : "border-[#444444] bg-[#383838] text-white"}`}
             >
               <div className="grid gap-3 sm:grid-cols-2">
@@ -305,7 +321,7 @@ export default function AuditCategoryPage({ categoryId }: { categoryId: string }
                   <span>{isThai ? "วันที่เริ่มต้น" : "Start date"}</span>
                   <DatePicker
                     value={draftFrom}
-                    onChange={setDraftFrom}
+                    onChange={(value) => updateFilters({ from: value })}
                     isThai={isThai}
                     maxDate={draftTo || undefined}
                     placeholder={isThai ? "เลือกวันที่เริ่มต้น" : "Select start date"}
@@ -318,7 +334,7 @@ export default function AuditCategoryPage({ categoryId }: { categoryId: string }
                   <span>{isThai ? "วันที่สิ้นสุด" : "End date"}</span>
                   <DatePicker
                     value={draftTo}
-                    onChange={setDraftTo}
+                    onChange={(value) => updateFilters({ to: value })}
                     isThai={isThai}
                     minDate={draftFrom || undefined}
                     placeholder={isThai ? "เลือกวันที่สิ้นสุด" : "Select end date"}
@@ -331,7 +347,7 @@ export default function AuditCategoryPage({ categoryId }: { categoryId: string }
                   <span>{isThai ? "เหตุการณ์" : "Event"}</span>
                   <CustomDropdown
                     value={draftAction}
-                    onChange={setDraftAction}
+                    onChange={(value) => updateFilters({ action: value })}
                     options={actionOptions}
                     className="w-full"
                     placeholder={isThai ? "เลือกเหตุการณ์" : "Select event"}
@@ -342,7 +358,7 @@ export default function AuditCategoryPage({ categoryId }: { categoryId: string }
                   <span>{isThai ? "ประเภทข้อมูล" : "Record type"}</span>
                   <CustomDropdown
                     value={draftEntityType}
-                    onChange={setDraftEntityType}
+                    onChange={(value) => updateFilters({ entityType: value })}
                     options={entityOptions}
                     className="w-full"
                     placeholder={isThai ? "เลือกประเภทข้อมูล" : "Select record type"}
@@ -353,7 +369,7 @@ export default function AuditCategoryPage({ categoryId }: { categoryId: string }
                   <span>{isThai ? "เรียงตาม" : "Sort by"}</span>
                   <CustomDropdown
                     value={draftSort}
-                    onChange={setDraftSort}
+                    onChange={(value) => updateFilters({ sort: value })}
                     options={sortOptions}
                     className="w-full"
                     placeholder={isThai ? "เลือกการเรียง" : "Select sort order"}
@@ -366,7 +382,7 @@ export default function AuditCategoryPage({ categoryId }: { categoryId: string }
                   type="button"
                   className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold transition-colors hover:bg-slate-100 dark:border-white/15 dark:hover:bg-white/5"
                   onClick={() => {
-                    formRef.current?.reset();
+                    setSearchInput("");
                     setDraftFrom("");
                     setDraftTo("");
                     setDraftAction("");
@@ -378,13 +394,13 @@ export default function AuditCategoryPage({ categoryId }: { categoryId: string }
                 >
                   {isThai ? "ล้างตัวกรอง" : "Clear filters"}
                 </button>
-                <button type="submit" className={button}>{isThai ? "ใช้ตัวกรอง" : "Apply filters"}</button>
               </div>
             </form>
           )}
           </div>
-        </div>
+      </div>
 
+      <section className={`${panel} space-y-4`}>
         {error && <div role="alert" className="rounded-xl border border-[#E74C3C]/30 bg-[#E74C3C]/10 px-4 py-3 text-sm text-[#E74C3C]">{error}</div>}
         <DataTable
           columns={columns}
@@ -395,19 +411,19 @@ export default function AuditCategoryPage({ categoryId }: { categoryId: string }
           minWidth="1080px"
           emptyTitle={isThai ? "ไม่พบบันทึกในหมวดนี้" : "No events in this category"}
         />
-        {total > 0 && (
-          <Pagination
-            currentPage={page}
-            totalPages={Math.ceil(total / PAGE_SIZE)}
-            totalItems={total}
-            pageSize={PAGE_SIZE}
-            isThai={isThai}
-            onPageChange={(nextPage) =>
-              pushFilters({ q: query, from, to, action, entityType, sort, page: nextPage })
-            }
-          />
-        )}
       </section>
+      {total > 0 && (
+        <Pagination
+          currentPage={page}
+          totalPages={Math.ceil(total / PAGE_SIZE)}
+          totalItems={total}
+          pageSize={PAGE_SIZE}
+          isThai={isThai}
+          onPageChange={(nextPage) =>
+            pushFilters({ q: query, from, to, action, entityType, sort, page: nextPage })
+          }
+        />
+      )}
     </main>
   );
 }

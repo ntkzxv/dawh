@@ -348,7 +348,7 @@ export const warehouseApi = {
   members: () => data(apiGet<Member[]>("/api/org/members")),
   membersSummary: (signal?: AbortSignal) =>
     data(apiGet<MemberSummary[]>("/api/org/members?view=summary", { signal })),
-  member: (id: number) => data(apiGet<Member>(`/api/org/members/${id}`)),
+  member: (id: number) => data(apiGet<MemberFull>(`/api/org/members/${id}`)),
   ceos: (signal?: AbortSignal) =>
     data(
       apiGet<Array<{ id: number; name: string }>>("/api/org/ceos", { signal }),
