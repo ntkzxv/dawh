@@ -4,6 +4,8 @@ import { Check, LockKeyhole, ShieldCheck, Users, X } from "lucide-react";
 import WarehousePageTemplate from "@/app/warehouse/_components/WarehousePageTemplate";
 import { warehouseRoles, type Role } from "@/lib/contracts/warehouse";
 import { useAppLanguage } from "@/utils/language";
+import { useTheme } from "@/context/ThemeContext";
+import { dataTableFrameClassName } from "@/components/common/DataTable";
 
 const roleLabels: Record<Role, { th: string; en: string }> = {
   ADMIN: { th: "ผู้ดูแลระบบ", en: "Admin" },
@@ -23,6 +25,8 @@ const rules: Array<{ th: string; en: string; roles: Role[] }> = [
 
 export default function AccessControlPreview() {
   const isThai = useAppLanguage() === "TH";
+  const { theme } = useTheme();
+  const isLight = theme === "light";
   return (
     <WarehousePageTemplate titleEn="Access Preview" titleTh="ตัวอย่างการควบคุมสิทธิ์" routePath="/controlpanel/access-preview" fullBleed>
       <main className="@container mx-auto w-full min-w-0 max-w-7xl space-y-6 p-4 pb-10 sm:p-6 lg:p-10">
@@ -58,7 +62,7 @@ export default function AccessControlPreview() {
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white dark:border-[#444444] dark:bg-[#383838]" aria-labelledby="access-matrix-title">
+        <section className={dataTableFrameClassName(isLight)} aria-labelledby="access-matrix-title">
           <div className="border-b border-[#E4E4E7] px-5 py-5 dark:border-[#444444] sm:px-7">
             <h2 id="access-matrix-title" className="text-base font-bold text-[#222222] dark:text-white">{isThai ? "ตารางสิทธิ์ตามฟังก์ชัน" : "Access by function"}</h2>
             <p id="access-matrix-help" className="mt-1 text-sm text-slate-500 dark:text-[#E4E4E7]">{isThai ? "เลื่อนตารางในแนวนอน หรือเลือกตารางแล้วใช้ปุ่มลูกศรเพื่อดูทุกบทบาท" : "Scroll horizontally, or focus the table and use the arrow keys to see all roles."}</p>

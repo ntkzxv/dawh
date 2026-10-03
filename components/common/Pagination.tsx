@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect, useRef, useId } from "react";
 import { useTheme } from "@/context/ThemeContext";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   ChevronLeft,
   ChevronRight,
@@ -115,7 +115,6 @@ function OffsetPagination({
   currentPage,
   totalPages,
   totalItems,
-  pageSize = 10,
   onPageChange,
   isThai = true,
   className = "",
@@ -137,13 +136,6 @@ function OffsetPagination({
       prevPageRef.current = currentPage;
     }
   }, [currentPage]);
-
-  // Fixed 10 items per page by default
-  const effectivePageSize = pageSize || 10;
-
-  // Calculate range of items being shown
-  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * effectivePageSize + 1;
-  const endItem = Math.min(currentPage * effectivePageSize, totalItems);
 
   /**
    * Generates page buttons with dots:
@@ -195,54 +187,30 @@ function OffsetPagination({
     <div
       className={`flex flex-col sm:flex-row items-center justify-between gap-4 py-3 select-none text-xs ${className}`}
     >
-      {/* Left: Total Items Summary with subtle smooth slide */}
+      {/* Left: current page and total item summary */}
       <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
         {showTotalItems && (
-          <div className="text-xs opacity-70 flex items-center gap-1">
+          <div className="text-xs opacity-70 flex items-center gap-1.5">
             {isThai ? (
               <>
-                <span>แสดง</span>
-                <span className="relative inline-flex overflow-hidden h-[18px] items-center">
-                  <AnimatePresence mode="popLayout" initial={false}>
-                    <motion.span
-                      key={`thai-range-${currentPage}`}
-                      initial={{ y: direction >= 0 ? 10 : -10, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      exit={{ y: direction >= 0 ? -10 : 10, opacity: 0 }}
-                      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                      className="font-semibold text-zinc-900 dark:text-white"
-                    >
-                      {startItem}-{endItem}
-                    </motion.span>
-                  </AnimatePresence>
-                </span>
-                <span>จากทั้งหมด</span>
-                <span className="font-semibold text-zinc-900 dark:text-white">
-                  {totalItems.toLocaleString()}
-                </span>
+                <span>หน้า</span>
+                <span className="font-semibold text-zinc-900 dark:text-white">{currentPage}</span>
+                <span>จาก</span>
+                <span className="font-semibold text-zinc-900 dark:text-white">{totalPages}</span>
+                <span className="mx-1" aria-hidden="true">·</span>
+                <span>ทั้งหมด</span>
+                <span className="font-semibold text-zinc-900 dark:text-white">{totalItems.toLocaleString()}</span>
                 <span>รายการ</span>
               </>
             ) : (
               <>
-                <span>Showing</span>
-                <span className="relative inline-flex overflow-hidden h-[18px] items-center">
-                  <AnimatePresence mode="popLayout" initial={false}>
-                    <motion.span
-                      key={`en-range-${currentPage}`}
-                      initial={{ y: direction >= 0 ? 10 : -10, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      exit={{ y: direction >= 0 ? -10 : 10, opacity: 0 }}
-                      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                      className="font-semibold text-zinc-900 dark:text-white"
-                    >
-                      {startItem}-{endItem}
-                    </motion.span>
-                  </AnimatePresence>
-                </span>
+                <span>Page</span>
+                <span className="font-semibold text-zinc-900 dark:text-white">{currentPage}</span>
                 <span>of</span>
-                <span className="font-semibold text-zinc-900 dark:text-white">
-                  {totalItems.toLocaleString()}
-                </span>
+                <span className="font-semibold text-zinc-900 dark:text-white">{totalPages}</span>
+                <span className="mx-1" aria-hidden="true">·</span>
+                <span>Total</span>
+                <span className="font-semibold text-zinc-900 dark:text-white">{totalItems.toLocaleString()}</span>
                 <span>items</span>
               </>
             )}

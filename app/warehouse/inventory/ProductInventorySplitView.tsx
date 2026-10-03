@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage } from "@/utils/language";
 import { warehouseApi, type CatalogItem } from "@/lib/api/warehouse";
@@ -8,6 +8,10 @@ import { useOptionalWarehouseAccount } from "@/context/WarehouseAccountContext";
 import { canEditCatalog } from "@/lib/contracts/warehouse-policy";
 import { useRemote, Notice, message } from "@/components/warehouse/Ui";
 import CustomDropdown from "@/components/common/CustomDropdown";
+import {
+  DATA_TABLE_STYLES,
+  dataTableFrameClassName,
+} from "@/components/common/DataTable";
 import { SkeletonBox } from "@/components/loading_screen/SkeletonLoading";
 import {
   SidePanel,
@@ -16,6 +20,7 @@ import {
   SecondaryButton,
   SearchInput,
   FilterDropdown,
+  FilterButton,
   type ProductDetailItem,
 } from "@/components/common";
 import { UploadCloud, Download, Plus, X, MoreVertical } from "lucide-react";
@@ -34,10 +39,32 @@ export default function ProductInventorySplitView() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedWarehouse, setSelectedWarehouse] = useState("all");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filterDropdownRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (
+        event.target instanceof Node &&
+        !filterDropdownRef.current?.contains(event.target)
+      ) {
+        setFiltersOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setFiltersOpen(false);
+    };
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [filtersOpen]);
   useEffect(() => {
     const timer = window.setTimeout(
       () => setDebouncedSearch(searchQuery.trim()),
@@ -283,111 +310,128 @@ export default function ProductInventorySplitView() {
       <div className="flex-1 w-full min-w-0 flex flex-col items-start p-6 lg:p-8 gap-6 self-stretch overflow-y-auto">
         {error && <Notice tone="error">{error}</Notice>}
 
-        <div className="flex w-full justify-end gap-2.5">
-          <SecondaryButton icon={<UploadCloud size={14} />}>
-            {isThai ? "ส่งออก" : "Export"}
-          </SecondaryButton>
-          <SecondaryButton icon={<Download size={14} />}>
-            {isThai ? "นำเข้า" : "Import"}
-          </SecondaryButton>
-          {canEdit && (
-            <Button
-              variant="primary"
-              onClick={openAddModal}
-              icon={<Plus size={14} />}
-            >
-              {isThai ? "เพิ่มสินค้า" : "Add Product"}
-            </Button>
-          )}
-        </div>
-
-        <div
-          className={`w-full rounded-[12px] border p-4 shadow-sm overflow-hidden flex flex-col transition-colors ${
-            isLight
-              ? "bg-white border-[#E4E4E7]"
-              : "bg-[#383838] border-[#444444]"
-          }`}
-        >
-        {/* filter-bar */}
-        <div className="w-full flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#E4E4E7] dark:border-[#444444]">
-          {/* filters */}
-          <div className="flex flex-wrap items-center gap-3">
-            {/* f-category */}
-            <FilterDropdown
-              value={selectedCategory}
-              onChange={(value) => {
-                setSelectedCategory(value);
-                setCurrentPage(1);
-              }}
-              options={[
-                {
-                  value: "all",
-                  label: isThai ? "หมวดหมู่: ทั้งหมด" : "All Categories",
-                },
-                ...(filters?.categories || []).map((c) => ({
-                  value: String(c.id),
-                  label: c.name,
-                })),
-              ]}
-            />
-
-            {/* f-status */}
-            <FilterDropdown
-              value={selectedStatus}
-              onChange={(value) => {
-                setSelectedStatus(value);
-                setCurrentPage(1);
-              }}
-              options={[
-                {
-                  value: "all",
-                  label: isThai ? "สถานะ: ทั้งหมด" : "All Status",
-                },
-                {
-                  value: "in_stock",
-                  label: isThai ? "สถานะ: ปกติ" : "In Stock",
-                },
-                {
-                  value: "low_stock",
-                  label: isThai ? "สถานะ: ใกล้หมด" : "Low Stock",
-                },
-                {
-                  value: "out_of_stock",
-                  label: isThai ? "สถานะ: วิกฤต" : "Out of Stock",
-                },
-              ]}
-            />
-
-            {/* f-warehouse */}
-            <FilterDropdown
-              value={selectedWarehouse}
-              onChange={(value) => {
-                setSelectedWarehouse(value);
-                setCurrentPage(1);
-              }}
-              options={[
-                {
-                  value: "all",
-                  label: isThai ? "คลัง: ทั้งหมด" : "All Warehouses",
-                },
-                ...(filters?.warehouses || []).map((w) => ({
-                  value: String(w.id),
-                  label: `คลัง: ${w.name}`,
-                })),
-              ]}
-            />
-            <SearchInput
-              value={searchQuery}
-              onChange={(val) => {
-                setSearchQuery(val);
-                setCurrentPage(1);
-              }}
-              placeholder={
-                isThai ? "ค้นหา SKU, ชื่อ..." : "Search SKU, Name..."
+        <div className="flex w-full flex-wrap items-center gap-2.5">
+          <SearchInput
+            value={searchQuery}
+            onChange={(val) => {
+              setSearchQuery(val);
+              setCurrentPage(1);
+            }}
+            placeholder={isThai ? "ค้นหา SKU, ชื่อ..." : "Search SKU, Name..."}
+          />
+          <div className="relative shrink-0" ref={filterDropdownRef}>
+            <FilterButton
+              controls="inventory-filter-panel"
+              expanded={filtersOpen}
+              label={isThai ? "ตัวกรอง" : "Filters"}
+              activeFilterCount={
+                Number(selectedCategory !== "all") +
+                Number(selectedStatus !== "all") +
+                Number(selectedWarehouse !== "all")
               }
+              onClick={() => setFiltersOpen((open) => !open)}
             />
+            {filtersOpen && (
+              <div
+                id="inventory-filter-panel"
+                className={`absolute left-0 top-full z-30 mt-2 w-[min(680px,calc(100vw-3rem))] space-y-4 rounded-2xl border p-4 shadow-2xl sm:p-5 ${
+                  isLight
+                    ? "border-[#E4E4E7] bg-white text-[#222222]"
+                    : "border-[#444444] bg-[#383838] text-white"
+                }`}
+              >
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <label className="space-y-1.5 text-sm font-medium">
+                    <span>{isThai ? "หมวดหมู่" : "Category"}</span>
+                    <FilterDropdown
+                      value={selectedCategory}
+                      onChange={(value) => {
+                        setSelectedCategory(value);
+                        setCurrentPage(1);
+                      }}
+                      className="w-full"
+                      options={[
+                        {
+                          value: "all",
+                          label: isThai ? "ทั้งหมด" : "All categories",
+                        },
+                        ...(filters?.categories || []).map((category) => ({
+                          value: String(category.id),
+                          label: category.name,
+                        })),
+                      ]}
+                    />
+                  </label>
+                  <label className="space-y-1.5 text-sm font-medium">
+                    <span>{isThai ? "สถานะสินค้า" : "Product status"}</span>
+                    <FilterDropdown
+                      value={selectedStatus}
+                      onChange={(value) => {
+                        setSelectedStatus(value);
+                        setCurrentPage(1);
+                      }}
+                      className="w-full"
+                      options={[
+                        { value: "all", label: isThai ? "ทั้งหมด" : "All statuses" },
+                        { value: "in_stock", label: isThai ? "ปกติ" : "In stock" },
+                        { value: "low_stock", label: isThai ? "ใกล้หมด" : "Low stock" },
+                        { value: "out_of_stock", label: isThai ? "วิกฤต" : "Out of stock" },
+                      ]}
+                    />
+                  </label>
+                  <label className="space-y-1.5 text-sm font-medium sm:col-span-2 lg:col-span-1">
+                    <span>{isThai ? "คลังสินค้า" : "Warehouse"}</span>
+                    <FilterDropdown
+                      value={selectedWarehouse}
+                      onChange={(value) => {
+                        setSelectedWarehouse(value);
+                        setCurrentPage(1);
+                      }}
+                      className="w-full"
+                      options={[
+                        { value: "all", label: isThai ? "ทั้งหมด" : "All warehouses" },
+                        ...(filters?.warehouses || []).map((warehouse) => ({
+                          value: String(warehouse.id),
+                          label: warehouse.name,
+                        })),
+                      ]}
+                    />
+                  </label>
+                </div>
+                <div className={`flex justify-end gap-2 border-t pt-3 ${isLight ? "border-[#E4E4E7]" : "border-white/10"}`}>
+                  <button
+                    type="button"
+                    className={`rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${isLight ? "border-slate-300 hover:bg-slate-100" : "border-white/15 hover:bg-white/5"}`}
+                    onClick={() => {
+                      setSelectedCategory("all");
+                      setSelectedStatus("all");
+                      setSelectedWarehouse("all");
+                      setCurrentPage(1);
+                    }}
+                  >
+                    {isThai ? "ล้างตัวกรอง" : "Clear filters"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-2.5">
+            <SecondaryButton icon={<UploadCloud size={14} />}>
+              {isThai ? "ส่งออก" : "Export"}
+            </SecondaryButton>
+            <SecondaryButton icon={<Download size={14} />}>
+              {isThai ? "นำเข้า" : "Import"}
+            </SecondaryButton>
+            {canEdit && (
+              <Button
+                variant="primary"
+                onClick={openAddModal}
+                icon={<Plus size={14} />}
+              >
+                {isThai ? "เพิ่มสินค้า" : "Add Product"}
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* inventory-table-container */}
@@ -397,15 +441,15 @@ export default function ProductInventorySplitView() {
               aria-label={
                 isThai ? "กำลังโหลดข้อมูลสินค้า" : "Loading inventory"
               }
-              className="w-full overflow-x-auto"
+              className={`${dataTableFrameClassName(isLight)} w-full overflow-x-auto`}
             >
               <table
-                className="w-full text-left text-[13px]"
+                className={DATA_TABLE_STYLES.table}
                 aria-hidden="true"
               >
                 <thead>
                   <tr
-                    className={`h-[36px] text-xs ${isLight ? "bg-[#F4F4F5]" : "bg-[#2C2C2C]"}`}
+                    className={`${DATA_TABLE_STYLES.headerRow} ${isLight ? "bg-[#F4F4F5]" : "bg-[#2C2C2C]"}`}
                   >
                     {[
                       "w-[190px]",
@@ -418,7 +462,7 @@ export default function ProductInventorySplitView() {
                       "w-[100px]",
                       "w-[48px]",
                     ].map((width, index) => (
-                      <th key={index} className={`px-3 py-2 ${width}`}>
+                      <th key={index} className={`${DATA_TABLE_STYLES.headerCell} ${width}`}>
                         <SkeletonBox
                           className={`h-3 ${index === 1 ? "w-3/4" : "w-2/3"}`}
                         />
@@ -427,7 +471,7 @@ export default function ProductInventorySplitView() {
                   </tr>
                 </thead>
                 <tbody
-                  className={`divide-y ${isLight ? "divide-[#E4E4E7]" : "divide-[#444444]"}`}
+                  className={`${DATA_TABLE_STYLES.body} ${isLight ? "divide-[#E4E4E7]" : "divide-[#444444]"}`}
                 >
                   {Array.from({ length: 6 }).map((_, row) => (
                     <tr key={row} className="h-[56px]">
@@ -464,7 +508,7 @@ export default function ProductInventorySplitView() {
               </table>
             </div>
           ) : !data && error ? (
-            <div className="py-12 text-center text-sm">
+            <div className={`${dataTableFrameClassName(isLight)} w-full py-12 text-center text-sm`}>
               <button
                 type="button"
                 className="underline"
@@ -474,43 +518,43 @@ export default function ProductInventorySplitView() {
               </button>
             </div>
           ) : filteredItems.length === 0 ? (
-            <div className="py-12 text-center text-sm text-[#A1A1AA]">
+            <div className={`${dataTableFrameClassName(isLight)} w-full py-12 text-center text-sm text-[#A1A1AA]`}>
               {isThai ? "ไม่พบรายการสินค้าที่ค้นหา" : "No products found."}
             </div>
           ) : (
-            <div className="w-full overflow-x-auto">
-              <table className="w-full text-left text-[13px]">
+            <div className={`${dataTableFrameClassName(isLight)} w-full overflow-x-auto`}>
+              <table className={DATA_TABLE_STYLES.table}>
                 {/* row-header */}
                 <thead>
                   <tr
-                    className={`h-[36px] rounded-[6px] text-xs font-semibold ${isLight ? "bg-[#F4F4F5] text-[#666666]" : "bg-[#2C2C2C] text-[#A1A1AA]"}`}
+                    className={`${DATA_TABLE_STYLES.headerRow} ${isLight ? "bg-[#F4F4F5] text-[#666666]" : "bg-[#2C2C2C] text-[#A1A1AA]"}`}
                   >
-                    <th className="py-2 px-3 w-[190px] rounded-l-[6px]">
+                    <th className={`${DATA_TABLE_STYLES.headerCell} w-[190px] rounded-l-[6px]`}>
                       {isThai ? "รหัส SKU" : "SKU"}
                     </th>
-                    <th className="py-2 px-3 min-w-[220px]">
+                    <th className={`${DATA_TABLE_STYLES.headerCell} min-w-[220px]`}>
                       {isThai ? "ชื่อสินค้า" : "Product Name"}
                     </th>
-                    <th className="py-2 px-3 w-[130px]">
+                    <th className={`${DATA_TABLE_STYLES.headerCell} w-[130px]`}>
                       {isThai ? "หมวดหมู่" : "Category"}
                     </th>
-                    <th className="py-2 px-3 w-[120px]">
+                    <th className={`${DATA_TABLE_STYLES.headerCell} w-[120px]`}>
                       {isThai ? "ยี่ห้อ" : "Brand"}
                     </th>
-                    <th className="py-2 px-3 text-right w-[120px]">
+                    <th className={`${DATA_TABLE_STYLES.headerCell} text-right w-[120px]`}>
                       {isThai ? "คงเหลือ" : "On Hand"}
                     </th>
-                    <th className="py-2 px-3 w-[90px]">
+                    <th className={`${DATA_TABLE_STYLES.headerCell} w-[90px]`}>
                       {isThai ? "หน่วย" : "Unit"}
                     </th>
-                    <th className="py-2 px-3 text-right w-[120px]">
+                    <th className={`${DATA_TABLE_STYLES.headerCell} text-right w-[120px]`}>
                       {isThai ? "จุดสั่งซื้อ" : "Reorder Point"}
                     </th>
-                    <th className="py-2 px-3 w-[100px]">
+                    <th className={`${DATA_TABLE_STYLES.headerCell} w-[100px]`}>
                       {isThai ? "สถานะ" : "Status"}
                     </th>
                     <th
-                      className="py-2 px-3 w-[48px] rounded-r-[6px]"
+                      className={`${DATA_TABLE_STYLES.headerCell} w-[48px] rounded-r-[6px]`}
                       aria-label={isThai ? "การทำงาน" : "Actions"}
                     />
                   </tr>
@@ -525,7 +569,7 @@ export default function ProductInventorySplitView() {
                     return (
                       <tr
                         key={item.id}
-                        className={`h-[56px] transition-colors select-none ${
+                        className={`${DATA_TABLE_STYLES.bodyRow} ${
                           isSelected
                             ? isLight
                               ? "bg-slate-100"
@@ -537,7 +581,7 @@ export default function ProductInventorySplitView() {
                       >
                         {/* SKU */}
                         <td
-                          className={`py-3 px-3 font-mono text-[12px] font-medium ${isLight ? "text-slate-900" : "text-[#F8FAFC]"}`}
+                          className={`${DATA_TABLE_STYLES.bodyCell} font-mono text-[12px] font-medium ${isLight ? "text-slate-900" : "text-[#F8FAFC]"}`}
                         >
                           <span className="block truncate" title={item.sku}>
                             {item.sku}
@@ -545,7 +589,7 @@ export default function ProductInventorySplitView() {
                         </td>
 
                         {/* Name */}
-                        <td className="py-3 px-3 font-medium">
+                        <td className={`${DATA_TABLE_STYLES.bodyCell} font-medium`}>
                           <span
                             className={`line-clamp-1 ${isLight ? "text-slate-900" : "text-[#F8FAFC]"}`}
                           >
@@ -554,17 +598,17 @@ export default function ProductInventorySplitView() {
                         </td>
 
                         {/* Category */}
-                        <td className="py-3 px-3 text-[#A1A1AA] text-xs">
+                        <td className={`${DATA_TABLE_STYLES.bodyCell} text-[#A1A1AA] text-xs`}>
                           {item.category}
                         </td>
 
                         {/* Brand */}
-                        <td className="py-3 px-3 text-[#A1A1AA] text-xs">
+                        <td className={`${DATA_TABLE_STYLES.bodyCell} text-[#A1A1AA] text-xs`}>
                           {item.brand}
                         </td>
 
                         {/* On Hand */}
-                        <td className="py-3 px-3 text-right font-mono font-bold text-[13px]">
+                        <td className={`${DATA_TABLE_STYLES.bodyCell} text-right font-mono font-bold text-[13px]`}>
                           <span
                             className={
                               item.status === "out_of_stock"
@@ -581,22 +625,22 @@ export default function ProductInventorySplitView() {
                         </td>
 
                         {/* Unit */}
-                        <td className="py-3 px-3 text-xs">{item.unit}</td>
+                        <td className={`${DATA_TABLE_STYLES.bodyCell} text-xs`}>{item.unit}</td>
 
                         {/* Reorder point */}
-                        <td className="py-3 px-3 text-right font-mono text-xs">
+                        <td className={`${DATA_TABLE_STYLES.bodyCell} text-right font-mono text-xs`}>
                           {item.minStock == null
                             ? "-"
                             : item.minStock.toLocaleString()}
                         </td>
 
                         {/* Status */}
-                        <td className="py-3 px-3">
+                        <td className={DATA_TABLE_STYLES.bodyCell}>
                           {renderStatusBadge(item.status)}
                         </td>
 
                         {/* Actions */}
-                        <td className="py-3 px-3 text-right">
+                        <td className={`${DATA_TABLE_STYLES.bodyCell} text-right`}>
                           <button
                             type="button"
                             onClick={() => setSelectedItem(item)}
@@ -626,7 +670,6 @@ export default function ProductInventorySplitView() {
               </table>
             </div>
           )}
-        </div>
         {filteredItems.length > 0 && (
           <Pagination
             currentPage={displayedPage}

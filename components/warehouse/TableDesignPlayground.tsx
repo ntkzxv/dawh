@@ -4,7 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { ChevronLeft, GripVertical, LayoutGrid, Menu, Plus } from "lucide-react";
 import { Reorder } from "framer-motion";
-import DataTable, { type DataTableColumn } from "@/components/common/DataTable";
+import DataTable, {
+  dataTableFrameClassName,
+  type DataTableColumn,
+} from "@/components/common/DataTable";
 import SearchInput from "@/components/common/SearchInput";
 import FilterDropdown from "@/components/common/FilterDropdown";
 import FilterButton from "@/components/common/FilterButton";
@@ -179,10 +182,10 @@ function PreviewSection({ kind, isThai, isLight }: { kind: DesignKind; isThai: b
         {filters}
         <CommonButton variant="primary" icon={<Plus size={14} />}>{isThai ? "เพิ่มรายการ" : "Add item"}</CommonButton>
       </div>
-      <div className={`overflow-hidden rounded-xl border ${isLight ? "border-[#D4D4D8] bg-white" : "border-[#555555] bg-[#383838]"}`}>
-        <DataTable columns={columns} data={pageRows} keyExtractor={(row) => row.id} minWidth="760px" tableClassName="!border-separate !border-spacing-0 !border-0 bg-transparent" emptyTitle={isThai ? "ไม่พบรายการ" : "No items found"} />
-        <Pagination currentPage={page} totalPages={totalPages} totalItems={filteredRows.length} pageSize={pageSize} onPageChange={setPage} isThai={isThai} showTotalItems={false} className="!justify-end px-4" />
+      <div className={dataTableFrameClassName(isLight)}>
+        <DataTable columns={columns} data={pageRows} keyExtractor={(row) => row.id} minWidth="760px" emptyTitle={isThai ? "ไม่พบรายการ" : "No items found"} />
       </div>
+      <Pagination currentPage={page} totalPages={totalPages} totalItems={filteredRows.length} pageSize={pageSize} onPageChange={setPage} isThai={isThai} className="px-1" />
     </section>
   );
 

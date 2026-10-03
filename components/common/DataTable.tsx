@@ -4,6 +4,24 @@ import React, { ReactNode } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { Package } from "lucide-react";
 
+export const DATA_TABLE_STYLES = {
+  table: "w-full border-separate border-spacing-0 border-0 bg-transparent text-left text-[13px]",
+  headerRow: "h-[36px] text-xs font-semibold select-none",
+  headerCell: "py-2 px-3",
+  body: "divide-y",
+  bodyRow: "transition-colors select-none",
+  bodyCell: "py-3 px-3",
+} as const;
+
+export const DATA_TABLE_FRAME_STYLES = {
+  base: "overflow-hidden rounded-xl border",
+  light: "border-[#D4D4D8] bg-white",
+  dark: "border-[#555555] bg-[#383838]",
+} as const;
+
+export const dataTableFrameClassName = (isLight: boolean) =>
+  `${DATA_TABLE_FRAME_STYLES.base} ${isLight ? DATA_TABLE_FRAME_STYLES.light : DATA_TABLE_FRAME_STYLES.dark}`;
+
 export interface DataTableColumn<T> {
   key: string;
   header: ReactNode;
@@ -51,12 +69,12 @@ export default function DataTable<T>({
     <div className={`w-full overflow-hidden ${className}`}>
       <div className="overflow-x-auto">
         <table
-          className={`w-full text-left text-[13px] border-collapse ${tableClassName}`}
+          className={`${DATA_TABLE_STYLES.table} ${tableClassName}`}
           style={{ minWidth }}
         >
           <thead>
             <tr
-              className={`h-[36px] text-xs font-semibold select-none ${
+              className={`${DATA_TABLE_STYLES.headerRow} ${
                 isLight
                   ? "bg-[#F4F4F5] text-[#666666]"
                   : "bg-[#2C2C2C] text-[#A1A1AA]"
@@ -73,7 +91,7 @@ export default function DataTable<T>({
                 return (
                   <th
                     key={col.key}
-                    className={`py-2 px-3 ${alignClass} first:rounded-l-[6px] last:rounded-r-[6px] ${col.headerClassName || ""}`}
+                    className={`${DATA_TABLE_STYLES.headerCell} ${alignClass} first:rounded-l-[6px] last:rounded-r-[6px] ${col.headerClassName || ""}`}
                   >
                     {col.header}
                   </th>
@@ -82,7 +100,7 @@ export default function DataTable<T>({
             </tr>
           </thead>
           <tbody
-            className={`divide-y ${
+            className={`${DATA_TABLE_STYLES.body} ${
               isLight ? "divide-[#E4E4E7]" : "divide-[#444444]"
             }`}
           >
@@ -150,7 +168,7 @@ export default function DataTable<T>({
                   <tr
                     key={key}
                     onClick={() => onRowClick && onRowClick(item, idx)}
-                    className={`transition-colors select-none ${
+                    className={`${DATA_TABLE_STYLES.bodyRow} ${
                       isClickable ? "cursor-pointer" : ""
                     } ${
                       isSelected
@@ -173,7 +191,7 @@ export default function DataTable<T>({
                       return (
                         <td
                           key={`cell-${key}-${col.key}`}
-                          className={`py-3 px-3 ${alignClass} ${col.className || ""}`}
+                          className={`${DATA_TABLE_STYLES.bodyCell} ${alignClass} ${col.className || ""}`}
                         >
                           {col.render
                             ? col.render(item, idx)

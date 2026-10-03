@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import DataTable, { type DataTableColumn } from "@/components/common/DataTable";
+import DataTable, {
+  dataTableFrameClassName,
+  type DataTableColumn,
+} from "@/components/common/DataTable";
 import CustomDropdown, { type DropdownOption } from "@/components/common/CustomDropdown";
 import DatePicker from "@/components/common/DatePicker";
 import Pagination from "@/components/common/Pagination";
@@ -402,15 +405,17 @@ export default function AuditCategoryPage({ categoryId }: { categoryId: string }
 
       <section className={`${panel} space-y-4`}>
         {error && <div role="alert" className="rounded-xl border border-[#E74C3C]/30 bg-[#E74C3C]/10 px-4 py-3 text-sm text-[#E74C3C]">{error}</div>}
-        <DataTable
-          columns={columns}
-          data={events}
-          keyExtractor={(event) => event.id}
-          isLoading={loading}
-          skeletonRowCount={5}
-          minWidth="1080px"
-          emptyTitle={isThai ? "ไม่พบบันทึกในหมวดนี้" : "No events in this category"}
-        />
+        <div className={dataTableFrameClassName(isLight)}>
+          <DataTable
+            columns={columns}
+            data={events}
+            keyExtractor={(event) => event.id}
+            isLoading={loading}
+            skeletonRowCount={5}
+            minWidth="1080px"
+            emptyTitle={isThai ? "ไม่พบบันทึกในหมวดนี้" : "No events in this category"}
+          />
+        </div>
       </section>
       {total > 0 && (
         <Pagination

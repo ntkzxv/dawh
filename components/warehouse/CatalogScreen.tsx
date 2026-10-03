@@ -15,7 +15,11 @@ import {
   type CatalogItem,
   type CatalogKind,
 } from "@/lib/api/warehouse";
-import { Empty, message, Notice, useRemote } from "./Ui";
+import DataTable, {
+  dataTableFrameClassName,
+  type DataTableColumn,
+} from "@/components/common/DataTable";
+import { message, Notice, useRemote } from "./Ui";
 import { useTheme } from "@/context/ThemeContext";
 import CustomDropdown from "@/components/common/CustomDropdown";
 import { SkeletonBox } from "@/components/loading_screen/SkeletonLoading";
@@ -179,12 +183,9 @@ export default function CatalogScreen({
     }
   };
 
-  const surface = isLight
-    ? "bg-white border-[#E4E4E7]"
-    : "bg-[#383838] border-[#444444]";
   const kindLabel =
     kinds.find((item) => item.key === kind)?.label ?? "ข้อมูลหลัก";
-  const openForm = (item: CatalogItem | null) => {
+  const openForm = useCallback((item: CatalogItem | null) => {
     setEditing(item);
     const rect = addButtonRef.current?.getBoundingClientRect();
     if (rect) {
@@ -194,7 +195,42 @@ export default function CatalogScreen({
       });
     }
     setIsFormOpen(true);
-  };
+  }, []);
+  const columns = useMemo<DataTableColumn<CatalogItem>[]>(() => [
+    {
+      key: "code",
+      header: "รหัส",
+      className: "font-mono",
+      render: (row) => row.sku ?? row.code ?? row.id,
+    },
+    { key: "name", header: "ชื่อ", className: "font-medium" },
+    {
+      key: "status",
+      header: "สถานะ",
+      headerClassName: "w-[120px]",
+      className: "whitespace-nowrap",
+      render: (row) => (
+        <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${row.active === false ? "bg-[#E74C3C]/15 text-[#E74C3C]" : "bg-[#2EC4B6]/15 text-[#2EC4B6]"}`}>
+          {row.active === false ? "ปิดใช้" : "ใช้งาน"}
+        </span>
+      ),
+    },
+    {
+      key: "actions",
+      header: null,
+      headerClassName: "w-[88px]",
+      align: "right",
+      render: (row) => canEdit ? (
+        <button
+          type="button"
+          className={`rounded-[4px] px-2 py-1 font-semibold transition-colors cursor-pointer ${isLight ? "text-[#222222] hover:bg-[#E4E4E7]" : "text-white hover:bg-[#444444]"}`}
+          onClick={() => openForm(row)}
+        >
+          แก้ไข
+        </button>
+      ) : null,
+    },
+  ], [canEdit, isLight, openForm]);
   const closeForm = useCallback(() => {
     setEditing(null);
     setIsFormOpen(false);
@@ -241,28 +277,16 @@ export default function CatalogScreen({
             <section
               role="status"
               aria-label="กำลังโหลดข้อมูล"
-              className={`w-full overflow-hidden rounded-[12px] border p-4 shadow-sm ${surface}`}
+              className={`w-full ${dataTableFrameClassName(isLight)}`}
             >
-              <div className="space-y-0">
-                <div
-                  className={`grid grid-cols-[1fr_2fr_1fr_48px] gap-3 rounded-[6px] px-3 py-3 ${isLight ? "bg-[#F4F4F5]" : "bg-[#2C2C2C]"}`}
-                >
-                  {["w-16", "w-20", "w-14", "w-5"].map((width, index) => (
-                    <SkeletonBox key={index} className={`h-3 ${width}`} />
-                  ))}
-                </div>
-                {Array.from({ length: 6 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className={`grid h-[56px] grid-cols-[1fr_2fr_1fr_48px] items-center gap-3 border-b px-3 ${isLight ? "border-[#E4E4E7]" : "border-[#444444]"}`}
-                  >
-                    <SkeletonBox className="h-3.5 w-20" />
-                    <SkeletonBox className="h-3.5 w-3/4" />
-                    <SkeletonBox className="h-5 w-14 rounded-full" />
-                    <SkeletonBox className="ml-auto size-8 rounded-[6px]" />
-                  </div>
-                ))}
-              </div>
+              <DataTable
+                columns={columns}
+                data={[]}
+                keyExtractor={(row) => row.id}
+                isLoading
+                skeletonRowCount={6}
+                minWidth="520px"
+              />
             </section>
           </div>
         )}
@@ -289,79 +313,14 @@ export default function CatalogScreen({
               )}
             </div>
 
-            <section
-              className={`w-full overflow-hidden rounded-[12px] border p-4 shadow-sm ${surface}`}
-            >
-              {currentData.items.length ? (
-                <div className="overflow-x-auto">
-                  <table
-                    className={`w-full min-w-[520px] text-left text-[13px] ${isLight ? "text-[#383838]" : "text-[#E4E4E7]"}`}
-                  >
-                    <thead
-                      className={
-                        isLight
-                          ? "bg-[#F4F4F5] text-[#666666]"
-                          : "bg-[#2C2C2C] text-[#A1A1AA]"
-                      }
-                    >
-                      <tr className="h-[36px]">
-                        <th className="rounded-l-[6px] px-3 py-2 text-xs font-semibold">
-                          รหัส
-                        </th>
-                        <th className="px-3 py-2 text-xs font-semibold">
-                          ชื่อ
-                        </th>
-                        <th className="w-[120px] px-3 py-2 text-xs font-semibold">
-                          สถานะ
-                        </th>
-                        <th
-                          className="w-[88px] rounded-r-[6px] px-3 py-2"
-                          aria-label="การทำงาน"
-                        />
-                      </tr>
-                    </thead>
-                    <tbody
-                      className={`divide-y ${isLight ? "divide-[#E4E4E7]" : "divide-[#444444]"}`}
-                    >
-                      {visibleRows.map((row) => (
-                        <tr
-                          key={row.id}
-                          className={`h-[56px] transition-colors ${isLight ? "hover:bg-slate-50" : "hover:bg-white/[0.02]"}`}
-                        >
-                          <td className="px-3 py-3 font-mono">
-                            {row.sku ?? row.code ?? row.id}
-                          </td>
-                          <td className="px-3 py-3 font-medium">{row.name}</td>
-                          <td className="px-3 py-3">
-                            <span
-                              className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                                row.active === false
-                                  ? "bg-[#E74C3C]/15 text-[#E74C3C]"
-                                  : "bg-[#2EC4B6]/15 text-[#2EC4B6]"
-                              }`}
-                            >
-                              {row.active === false ? "ปิดใช้" : "ใช้งาน"}
-                            </span>
-                          </td>
-                          <td className="px-3 py-2 text-right">
-                            {canEdit && (
-                              <button
-                                type="button"
-                                className={`rounded-[4px] px-2 py-1 font-semibold transition-colors cursor-pointer ${isLight ? "text-[#222222] hover:bg-[#E4E4E7]" : "text-white hover:bg-[#444444]"}`}
-                                onClick={() => openForm(row)}
-                              >
-                                แก้ไข
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <Empty text="ยังไม่มีข้อมูล เพิ่มรายการแรกจากปุ่มด้านบน" />
-              )}
+            <section className={`w-full ${dataTableFrameClassName(isLight)}`}>
+              <DataTable
+                columns={columns}
+                data={visibleRows}
+                keyExtractor={(row) => row.id}
+                minWidth="520px"
+                emptyTitle="ยังไม่มีข้อมูล เพิ่มรายการแรกจากปุ่มด้านบน"
+              />
             </section>
             <Pagination
               currentPage={displayedPage}

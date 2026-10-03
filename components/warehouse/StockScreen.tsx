@@ -9,6 +9,8 @@ import {
 } from "react";
 import WarehousePageTemplate from "@/app/warehouse/_components/WarehousePageTemplate";
 import { Pagination } from "@/components/common";
+import { dataTableFrameClassName } from "@/components/common/DataTable";
+import { useTheme } from "@/context/ThemeContext";
 import { useOptionalWarehouseAccount } from "@/context/WarehouseAccountContext";
 import {
   warehouseApi,
@@ -216,12 +218,15 @@ export default function StockScreen({
 }
 
 function BalanceList({ rows }: { rows: StockBalance[] }) {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
   return (
     <>
       <h2 className="mb-4 text-lg font-bold">ยอดคงเหลือ</h2>
       {rows.length ? (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+        <div className={dataTableFrameClassName(isLight)}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200">
                 <th className="pb-2">สินค้า</th>
@@ -247,7 +252,8 @@ function BalanceList({ rows }: { rows: StockBalance[] }) {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       ) : (
         <Empty text="ยังไม่มียอดสต๊อก" />

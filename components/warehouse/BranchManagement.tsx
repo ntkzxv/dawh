@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Building2, Plus, Save } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import DataTable, { type DataTableColumn } from "@/components/common/DataTable";
+import DataTable, {
+  dataTableFrameClassName,
+  type DataTableColumn,
+} from "@/components/common/DataTable";
 import SearchInput from "@/components/common/SearchInput";
 import CommonButton from "@/components/common/Button";
 import FilterButton from "@/components/common/FilterButton";
@@ -167,8 +170,8 @@ export default function BranchManagement({ onTotalChange }: { onTotalChange: (to
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white dark:border-[#444444] dark:bg-[#383838]">
-        <div className="flex flex-col gap-3 border-b border-[#E4E4E7] p-4 dark:border-[#444444] sm:flex-row sm:items-center sm:justify-between sm:p-5">
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <SearchInput
               value={search}
@@ -228,7 +231,7 @@ export default function BranchManagement({ onTotalChange }: { onTotalChange: (to
             </CommonButton>
           )}
         </div>
-        <div className="overflow-hidden">
+        <section className={dataTableFrameClassName(isLight)}>
           <DataTable
             columns={columns}
             data={rows}
@@ -237,17 +240,14 @@ export default function BranchManagement({ onTotalChange }: { onTotalChange: (to
             skeletonRowCount={6}
             minWidth="760px"
             className="w-full"
-            tableClassName="!border-separate !border-spacing-0 !border-0 bg-transparent"
             emptyIcon={<Building2 size={24} />}
             emptyTitle={search.trim() || statusFilter !== "all" ? (isThai ? "ไม่พบสาขาที่ตรงกับคำค้นหาหรือตัวกรอง" : "No branches match the search or filters") : (isThai ? "ยังไม่มีสาขา" : "No branches yet")}
           />
-          {totalPages > 1 && (
-            <div className={`border-t ${isLight ? "border-[#E4E4E7]" : "border-[#555555]"}`}>
-              <Pagination currentPage={page} totalPages={totalPages} totalItems={data?.page.total ?? 0} pageSize={PAGE_SIZE} onPageChange={setPage} showTotalItems={false} className="!justify-center px-4" />
-            </div>
-          )}
-        </div>
-      </section>
+        </section>
+        {(data?.page.total ?? 0) > 0 && (
+          <Pagination currentPage={page} totalPages={totalPages} totalItems={data?.page.total ?? 0} pageSize={PAGE_SIZE} onPageChange={setPage} className="px-1" />
+        )}
+      </div>
 
       {panelOpen && canEdit && (
         <SidePanel item={null} onClose={() => setPanelOpen(false)} title={editing ? (isThai ? "แก้ไขข้อมูลสาขา" : "Edit branch") : (isThai ? "เพิ่มสาขา" : "Add branch")}>

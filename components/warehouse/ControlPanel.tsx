@@ -5,7 +5,11 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import { AnimatePresence, motion } from "framer-motion";
 import { Ellipsis, Eye, EyeOff, Loader2, UserPlus, X } from "lucide-react";
 import { createPortal } from "react-dom";
-import DataTable, { type DataTableColumn } from "@/components/common/DataTable";
+import DataTable, {
+  dataTableFrameClassName,
+  type DataTableColumn,
+} from "@/components/common/DataTable";
+import Pagination from "@/components/common/Pagination";
 import CustomDropdown, { type DropdownOption } from "@/components/common/CustomDropdown";
 import FilterDropdown from "@/components/common/FilterDropdown";
 import FilterButton from "@/components/common/FilterButton";
@@ -73,6 +77,7 @@ const blankProfile: MemberProfile = {
   emergencyContactName: null,
   emergencyContactPhone: null,
 };
+const TABLE_PAGE_SIZE = 10;
 
 export default function ControlPanel() {
   const { theme } = useTheme();
@@ -120,6 +125,8 @@ export default function ControlPanel() {
   const [memberSearch, setMemberSearch] = useState("");
   const [memberRoleFilter, setMemberRoleFilter] = useState<Role | "">("");
   const [memberStatusFilter, setMemberStatusFilter] = useState<"all" | "active" | "deactivated">("all");
+  const [memberPage, setMemberPage] = useState(1);
+  const [auditPage, setAuditPage] = useState(1);
   const [memberFiltersOpen, setMemberFiltersOpen] = useState(false);
   const memberFiltersRef = useRef<HTMLDivElement>(null);
   const [branchCount, setBranchCount] = useState<number | null>(null);
@@ -244,6 +251,11 @@ export default function ControlPanel() {
         : !member.deletedAt);
     return matchesSearch && matchesRole && matchesStatus;
   });
+  const memberTotalPages = Math.ceil(visibleMembers.length / TABLE_PAGE_SIZE);
+  const paginatedMembers = visibleMembers.slice(
+    (memberPage - 1) * TABLE_PAGE_SIZE,
+    memberPage * TABLE_PAGE_SIZE,
+  );
   const isAdmin = me.role === "ADMIN";
   const canViewAudit = ["ADMIN", "CEO"].includes(me.role);
   const memberRoleOptions: DropdownOption<Role | "">[] = [
@@ -265,6 +277,27 @@ export default function ControlPanel() {
       auditCategory === ALL_AUDIT_CATEGORIES ||
       selectedAuditCategory?.actions.includes(event.action) === true,
   );
+  const auditTotalPages = Math.ceil(visibleAudit.length / TABLE_PAGE_SIZE);
+  const paginatedAudit = visibleAudit.slice(
+    (auditPage - 1) * TABLE_PAGE_SIZE,
+    auditPage * TABLE_PAGE_SIZE,
+  );
+
+  useEffect(() => {
+    setMemberPage(1);
+  }, [normalizedMemberSearch, memberRoleFilter, memberStatusFilter]);
+
+  useEffect(() => {
+    setMemberPage((current) => Math.min(current, Math.max(1, memberTotalPages)));
+  }, [memberTotalPages]);
+
+  useEffect(() => {
+    setAuditPage(1);
+  }, [auditCategory]);
+
+  useEffect(() => {
+    setAuditPage((current) => Math.min(current, Math.max(1, auditTotalPages)));
+  }, [auditTotalPages]);
   const auditColumns: DataTableColumn<AuditEvent>[] = [
     {
       key: "created_at",
@@ -436,15 +469,12 @@ export default function ControlPanel() {
                 </button>
               </div>
             )}
-            <section className={`${panel} space-y-4`}>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="shrink-0 text-sm font-semibold text-slate-600 dark:text-zinc-300">
-                {isThai ? `ผู้ใช้ทั้งหมด ${members.length} คน` : `All users (${members.length})`}
-              </div>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+            <div className="space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-start">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-start">
                 <SearchInput
                   value={memberSearch}
-                  onChange={setMemberSearch}
+                  onChange={(value) => { setMemberSearch(value); setMemberPage(1); }}
                   placeholder={
                     isThai
                       ? "ค้นหาชื่อ, ID, ตำแหน่ง หรือสาขา"
@@ -478,7 +508,7 @@ export default function ControlPanel() {
                           <span>{isThai ? "ตำแหน่ง" : "Role"}</span>
                           <FilterDropdown
                             value={memberRoleFilter}
-                            onChange={setMemberRoleFilter}
+                            onChange={(value) => { setMemberRoleFilter(value); setMemberPage(1); }}
                             options={memberRoleOptions.filter((opt): opt is { value: Role; label: string } => Boolean(opt.value))}
                             placeholder={isThai ? "ทุกตำแหน่ง" : "All roles"}
                             className="w-full"
@@ -488,7 +518,7 @@ export default function ControlPanel() {
                           <span>{isThai ? "สถานะ" : "Status"}</span>
                           <FilterDropdown
                             value={memberStatusFilter}
-                            onChange={setMemberStatusFilter}
+                            onChange={(value) => { setMemberStatusFilter(value); setMemberPage(1); }}
                             options={memberStatusOptions}
                             placeholder={isThai ? "ทุกสถานะ" : "All statuses"}
                             className="w-full"
@@ -502,6 +532,7 @@ export default function ControlPanel() {
                               onClick={() => {
                                 setMemberRoleFilter("");
                                 setMemberStatusFilter("all");
+                                setMemberPage(1);
                                 setMemberFiltersOpen(false);
                               }}
                             >
@@ -515,25 +546,38 @@ export default function ControlPanel() {
                 </div>
               </div>
             </div>
-              <DataTable
-                columns={memberColumns}
-                data={visibleMembers}
-                keyExtractor={(member) => member.id}
-                isLoading={membersLoading}
-                skeletonRowCount={6}
-                minWidth="1040px"
-                className="w-full"
-                emptyTitle={
-                  normalizedMemberSearch || memberRoleFilter || memberStatusFilter !== "all"
-                    ? isThai
-                      ? "ไม่พบผู้ใช้ที่ตรงกับคำค้นหาหรือตัวกรอง"
-                      : "No users match the search or filters"
-                    : isThai
-                      ? "ยังไม่มีผู้ใช้ในสาขาที่คุณดูได้"
-                      : "No users are available for your branches"
-                }
-              />
-            </section>
+              <div className={dataTableFrameClassName(isLight)}>
+                <DataTable
+                  columns={memberColumns}
+                  data={paginatedMembers}
+                  keyExtractor={(member) => member.id}
+                  isLoading={membersLoading}
+                  skeletonRowCount={6}
+                  minWidth="1040px"
+                  className="w-full"
+                  emptyTitle={
+                    normalizedMemberSearch || memberRoleFilter || memberStatusFilter !== "all"
+                      ? isThai
+                        ? "ไม่พบผู้ใช้ที่ตรงกับคำค้นหาหรือตัวกรอง"
+                        : "No users match the search or filters"
+                      : isThai
+                        ? "ยังไม่มีผู้ใช้ในสาขาที่คุณดูได้"
+                        : "No users are available for your branches"
+                  }
+                />
+              </div>
+              {visibleMembers.length > 0 && (
+                <Pagination
+                  currentPage={memberPage}
+                  totalPages={memberTotalPages}
+                  totalItems={visibleMembers.length}
+                  pageSize={TABLE_PAGE_SIZE}
+                  onPageChange={setMemberPage}
+                  isThai={isThai}
+                  className="px-1"
+                />
+              )}
+            </div>
           </div>
         )}
 
@@ -556,23 +600,36 @@ export default function ControlPanel() {
                 </p>
               </div>
             </div>
-            <DataTable
-              columns={auditColumns}
-              data={visibleAudit}
-              keyExtractor={(event) => event.id}
-              isLoading={auditLoading}
-              skeletonRowCount={5}
-              minWidth="1040px"
-              emptyTitle={
-                auditCategory === ALL_AUDIT_CATEGORIES
-                  ? isThai
-                    ? "ยังไม่มีบันทึกการตรวจสอบ"
-                    : "No audit events yet"
-                  : isThai
-                    ? "ไม่พบบันทึกในหมวดนี้"
-                    : "No events in this category"
-              }
-            />
+            <div className={dataTableFrameClassName(isLight)}>
+              <DataTable
+                columns={auditColumns}
+                data={paginatedAudit}
+                keyExtractor={(event) => event.id}
+                isLoading={auditLoading}
+                skeletonRowCount={5}
+                minWidth="1040px"
+                emptyTitle={
+                  auditCategory === ALL_AUDIT_CATEGORIES
+                    ? isThai
+                      ? "ยังไม่มีบันทึกการตรวจสอบ"
+                      : "No audit events yet"
+                    : isThai
+                      ? "ไม่พบบันทึกในหมวดนี้"
+                      : "No events in this category"
+                }
+              />
+            </div>
+            {visibleAudit.length > 0 && (
+              <Pagination
+                currentPage={auditPage}
+                totalPages={auditTotalPages}
+                totalItems={visibleAudit.length}
+                pageSize={TABLE_PAGE_SIZE}
+                onPageChange={setAuditPage}
+                isThai={isThai}
+                className="px-1"
+              />
+            )}
           </section>
         )}
       </main>}
@@ -795,9 +852,11 @@ export default function ControlPanel() {
   );
 }
 function ControlPanelMemberSkeleton({ isThai }: { isThai: boolean }) {
+  const { theme } = useTheme();
   return (
     <section className={`${panel} space-y-4`} aria-hidden="true">
       <SkeletonBox className="h-6 w-40 rounded-md" />
+      <div className={dataTableFrameClassName(theme === "light")}>
       <DataTable
         columns={[
           { key: "name", header: isThai ? "ชื่อผู้ใช้" : "User" },
@@ -812,6 +871,7 @@ function ControlPanelMemberSkeleton({ isThai }: { isThai: boolean }) {
         skeletonRowCount={6}
         minWidth="1040px"
       />
+      </div>
     </section>
   );
 }
