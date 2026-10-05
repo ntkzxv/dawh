@@ -34,6 +34,17 @@ const tables: Record<Kind, string> = {
   products: "products",
 };
 
+const lookupColumns: Record<Exclude<Kind, "products">, string> = {
+  branches: "id,code,name,active",
+  warehouses: "id,branch_id,code,name,active",
+  suppliers: "id,code,name,active",
+  units: "id,code,name",
+  "product-groups": "id,name",
+  "product-categories": "id,group_id,name",
+  brands: "id,name",
+  "product-models": "id,brand_id,name",
+};
+
 const editableColumns: Record<Kind, Record<string, string>> = {
   branches: {
     code: "code",
@@ -226,12 +237,33 @@ export async function listCatalog(
     return result.rows;
   }
   const scoped = !isGlobalRole(actor.role);
-  const where =
+  let where =
     scoped && kind === "branches"
       ? "WHERE id = ANY($1::integer[])"
       : scoped && kind === "warehouses"
         ? "WHERE branch_id = ANY($1::integer[])"
         : "";
+  const params: unknown[] = where ? [actor.branchIds] : [];
+  if (kind === "warehouses" && search?.has("branchId")) {
+    params.push(id(search.get("branchId"), "branchId"));
+    where += `${where ? " AND" : "WHERE"} branch_id=$${params.length}`;
+  }
+  if (kind !== "products" && search?.get("lookup") === "1") {
+    const query = search.get("q")?.trim() ?? "";
+    if (query.length > 100)
+      throw new ValidationError({ q: "Use at most 100 characters." });
+    params.push(query);
+    const q = `$${params.length}`;
+    const searchable = ["branches", "warehouses", "suppliers", "units"].includes(kind)
+      ? `(code ILIKE '%'||${q}||'%' OR name ILIKE '%'||${q}||'%')`
+      : `name ILIKE '%'||${q}||'%'`;
+    where += `${where ? " AND" : "WHERE"} (${q}::text='' OR ${searchable})`;
+    const result = await timedPoolQuery(
+      `SELECT ${lookupColumns[kind]} FROM app.${table} ${where} ORDER BY id DESC LIMIT 50`,
+      params,
+    );
+    return result.rows;
+  }
   const columns =
     actor.role === "EMPLOYEE"
       ? kind === "products"
@@ -240,7 +272,7 @@ export async function listCatalog(
       : "*";
   const result = await timedPoolQuery(
     `SELECT ${columns} FROM app.${table} ${where} ORDER BY id DESC LIMIT 500`,
-    where ? [actor.branchIds] : [],
+    params,
   );
   return result.rows;
 }
@@ -265,6 +297,10 @@ export async function listCatalogPage(
   if (scoped && (kind === "branches" || kind === "warehouses")) {
     params.push(actor.branchIds);
     scope = `${kind === "branches" ? "id" : "branch_id"}=ANY($1::integer[])`;
+  }
+  if (kind === "warehouses" && search.has("branchId")) {
+    params.push(id(search.get("branchId"), "branchId"));
+    scope += ` AND branch_id=$${params.length}`;
   }
   let statusFilter = "true";
   if (kind === "branches") {

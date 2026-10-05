@@ -19,6 +19,7 @@ import {
   type Actor,
 } from "@/lib/warehouse/core";
 import { cursorPageResult, parseCursorPage } from "@/lib/warehouse/cursor-pagination";
+import { optionalBoolean } from "@/lib/warehouse/read-options";
 
 type NewLine = { productId: number; quantity: string; unitPrice: string };
 function parseOrderLines(value: unknown): NewLine[] {
@@ -45,6 +46,10 @@ export async function listPurchaseOrders(actor: Actor, search: URLSearchParams) 
   const { limit, cursor } = parseCursorPage(search);
   const query = search.get("q")?.trim() ?? "";
   if (query.length > 100) throw new ValidationError({ q: "Use at most 100 characters." });
+  const closed = optionalBoolean(search, "closed");
+  const params: unknown[] = [query, cursor?.parentId ?? null];
+  const closedFilter = closed === null ? "" : `AND (po.closed_at IS NOT NULL) = $${params.push(closed)}::boolean`;
+  params.push(limit + 1);
   const result = await timedPoolQuery<Record<string, unknown> & { id: number }>(`
     SELECT po.id,po.record_no,po.supplier_id,po.ordered_at,po.note,po.created_at,po.closed_at,
       s.name AS supplier_name, ceo_user.name AS ordered_by_ceo, recorder.name AS recorded_by,
@@ -54,11 +59,12 @@ export async function listPurchaseOrders(actor: Actor, search: URLSearchParams) 
     JOIN app.app_users recording_user ON recording_user.id=po.recorded_by_id JOIN public."user" recorder ON recorder.id=recording_user.auth_user_id
     WHERE ($1::text = '' OR po.record_no ILIKE '%' || $1 || '%')
       AND ($2::bigint IS NULL OR po.id < $2)
-    ORDER BY po.id DESC LIMIT $3`,
-  [query, cursor?.parentId ?? null, limit + 1]);
+      ${closedFilter}
+    ORDER BY po.id DESC LIMIT $${params.length}`,
+  params);
   return cursorPageResult(result.rows, limit, (row) => ({ parentId: row.id }));
 }
-export async function getPurchaseOrder(actor: Actor, poId: number) {
+export async function getPurchaseOrder(actor: Actor, poId: number, view: "full" | "lines" = "full") {
   requireRole(actor, ["ADMIN", "CEO", "MANAGER", "COUNTER_STAFF", "EMPLOYEE"]);
   const head = await timedPoolQuery<Record<string, unknown> & { closed_at: Date | null }>(
     `SELECT po.*,s.code AS supplier_code,s.name AS supplier_name FROM app.purchase_orders po JOIN app.suppliers s ON s.id=po.supplier_id WHERE po.id=$1`,
@@ -73,13 +79,14 @@ export async function getPurchaseOrder(actor: Actor, poId: number) {
         JOIN app.units u ON u.id=p.unit_id WHERE l.purchase_order_id=$1 ORDER BY l.id`,
         [poId],
       ),
-      timedPoolQuery(
+      view === "lines" ? Promise.resolve({ rows: [] }) : timedPoolQuery(
         `SELECT cr.*,dc.receiving_branch_id,dc.received_at,dc.actual_package_count
         FROM app.carrier_receipts cr LEFT JOIN app.delivery_confirmations dc ON dc.carrier_receipt_id=cr.id
         WHERE cr.purchase_order_id=$1 ORDER BY cr.id`,
         [poId],
       ),
     ]);
+    if (view === "lines") return { ...head.rows[0], lines: lines.rows };
     return {
       ...head.rows[0],
       lines: lines.rows,
@@ -103,23 +110,24 @@ export async function getPurchaseOrder(actor: Actor, poId: number) {
       FROM app.purchase_order_lines l JOIN app.products p ON p.id=l.product_id JOIN app.units u ON u.id=p.unit_id WHERE l.purchase_order_id=$1 ORDER BY l.id`,
         [poId],
       ),
-      timedPoolQuery(
+      view === "lines" ? Promise.resolve({ rows: [] }) : timedPoolQuery(
         `SELECT * FROM app.supplier_receipts WHERE purchase_order_id=$1 ORDER BY id`,
         [poId],
       ),
-      timedPoolQuery(
+      view === "lines" ? Promise.resolve({ rows: [] }) : timedPoolQuery(
         `SELECT cr.*,dc.receiving_branch_id,dc.received_at,dc.actual_package_count FROM app.carrier_receipts cr LEFT JOIN app.delivery_confirmations dc ON dc.carrier_receipt_id=cr.id WHERE cr.purchase_order_id=$1 ORDER BY cr.id`,
         [poId],
       ),
-      timedPoolQuery(
+      view === "lines" ? Promise.resolve({ rows: [] }) : timedPoolQuery(
         `SELECT gr.* FROM app.goods_receipts gr JOIN app.carrier_receipts cr ON cr.id=gr.carrier_receipt_id WHERE cr.purchase_order_id=$1 ORDER BY gr.id`,
         [poId],
       ),
-      timedPoolQuery(
+      view === "lines" ? Promise.resolve({ rows: [] }) : timedPoolQuery(
         `SELECT revision_no,before_data,after_data,changed_by_id,created_at FROM app.document_revisions WHERE entity_type='PURCHASE_ORDER' AND entity_id=$1 ORDER BY revision_no`,
         [poId],
       ),
     ]);
+  if (view === "lines") return { ...head.rows[0], lines: lines.rows };
   return {
     ...head.rows[0],
     lines: lines.rows,

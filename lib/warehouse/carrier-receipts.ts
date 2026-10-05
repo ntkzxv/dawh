@@ -7,10 +7,18 @@ import { audit, id, optionalCount, optionalDate, optionalMoney, optionalText, qu
 import { duplicateWarnings } from "@/lib/warehouse/document-support";
 import { attachEvidence } from "@/lib/warehouse/media";
 import { cursorPageResult, parseCursorPage } from "@/lib/warehouse/cursor-pagination";
+import { optionalBoolean } from "@/lib/warehouse/read-options";
 
 export async function listCarrierReceipts(actor: Actor, search: URLSearchParams) {
   requireRole(actor, ["ADMIN", "CEO", "MANAGER", "COUNTER_STAFF", "EMPLOYEE"]);
   const { limit, cursor } = parseCursorPage(search);
+  const received = optionalBoolean(search, "received");
+  const hasGoodsReceipt = optionalBoolean(search, "hasGoodsReceipt");
+  const params: unknown[] = [actor.role === "ADMIN" || actor.role === "CEO", actor.branchIds, cursor?.parentId ?? null];
+  const filters: string[] = [];
+  if (received !== null) filters.push(`AND (dc.received_at IS NOT NULL) = $${params.push(received)}::boolean`);
+  if (hasGoodsReceipt !== null) filters.push(`AND EXISTS(SELECT 1 FROM app.goods_receipts gr WHERE gr.carrier_receipt_id=cr.id) = $${params.push(hasGoodsReceipt)}::boolean`);
+  params.push(limit + 1);
   const result = await timedPoolQuery<Record<string, unknown> & { id: number }>(`
     SELECT cr.*,po.record_no AS purchase_order_no,dc.receiving_branch_id,dc.received_at,dc.actual_package_count,
       EXISTS(SELECT 1 FROM app.goods_receipts gr WHERE gr.carrier_receipt_id=cr.id) AS has_goods_receipt
@@ -18,20 +26,22 @@ export async function listCarrierReceipts(actor: Actor, search: URLSearchParams)
     LEFT JOIN app.delivery_confirmations dc ON dc.carrier_receipt_id=cr.id
     WHERE ($1::boolean OR dc.receiving_branch_id IS NULL OR dc.receiving_branch_id=ANY($2::integer[]))
       AND ($3::bigint IS NULL OR cr.id < $3)
-    ORDER BY cr.id DESC LIMIT $4`, [actor.role === "ADMIN" || actor.role === "CEO", actor.branchIds, cursor?.parentId ?? null, limit + 1]);
+      ${filters.join("\n      ")}
+    ORDER BY cr.id DESC LIMIT $${params.length}`, params);
   return cursorPageResult(result.rows, limit, (row) => ({ parentId: row.id }));
 }
-export async function getCarrierReceipt(actor: Actor, receiptId: number) {
+export async function getCarrierReceipt(actor: Actor, receiptId: number, view: "full" | "confirmation" = "full") {
   requireRole(actor, ["ADMIN", "CEO", "MANAGER", "COUNTER_STAFF", "EMPLOYEE"]);
   const head = await timedPoolQuery<{ receiving_branch_id: number | null } & Record<string, unknown>>(`SELECT cr.*,po.record_no AS purchase_order_no,dc.receiving_branch_id FROM app.carrier_receipts cr JOIN app.purchase_orders po ON po.id=cr.purchase_order_id LEFT JOIN app.delivery_confirmations dc ON dc.carrier_receipt_id=cr.id WHERE cr.id=$1`, [receiptId]);
   if (!head.rowCount) throw new NotFoundError("Carrier receipt");
   if (head.rows[0].receiving_branch_id != null) requireBranch(actor, head.rows[0].receiving_branch_id);
   const [lines, confirmation, media, revisions] = await Promise.all([
-    timedPoolQuery(`SELECT l.*,p.sku,p.name AS product_name FROM app.carrier_receipt_lines l JOIN app.products p ON p.id=l.product_id WHERE l.carrier_receipt_id=$1 ORDER BY l.id`, [receiptId]),
+    view === "confirmation" ? Promise.resolve({ rows: [] }) : timedPoolQuery(`SELECT l.*,p.sku,p.name AS product_name FROM app.carrier_receipt_lines l JOIN app.products p ON p.id=l.product_id WHERE l.carrier_receipt_id=$1 ORDER BY l.id`, [receiptId]),
     timedPoolQuery(`SELECT * FROM app.delivery_confirmations WHERE carrier_receipt_id=$1`, [receiptId]),
-    timedPoolQuery(`SELECT e.media_asset_id,e.page_number,m.sha256,m.mime_type FROM app.evidence_links e JOIN app.media_assets m ON m.id=e.media_asset_id WHERE e.carrier_receipt_id=$1 ORDER BY e.page_number`, [receiptId]),
-    timedPoolQuery(`SELECT revision_no,before_data,after_data,changed_by_id,created_at FROM app.document_revisions WHERE entity_type='CARRIER_RECEIPT' AND entity_id=$1 ORDER BY revision_no`, [receiptId]),
+    view === "confirmation" ? Promise.resolve({ rows: [] }) : timedPoolQuery(`SELECT e.media_asset_id,e.page_number,m.sha256,m.mime_type FROM app.evidence_links e JOIN app.media_assets m ON m.id=e.media_asset_id WHERE e.carrier_receipt_id=$1 ORDER BY e.page_number`, [receiptId]),
+    view === "confirmation" ? Promise.resolve({ rows: [] }) : timedPoolQuery(`SELECT revision_no,before_data,after_data,changed_by_id,created_at FROM app.document_revisions WHERE entity_type='CARRIER_RECEIPT' AND entity_id=$1 ORDER BY revision_no`, [receiptId]),
   ]);
+  if (view === "confirmation") return { ...head.rows[0], confirmation: confirmation.rows[0] ?? null };
   return { ...head.rows[0], lines: lines.rows, confirmation: confirmation.rows[0] ?? null, media: media.rows, revisions: revisions.rows };
 }
 

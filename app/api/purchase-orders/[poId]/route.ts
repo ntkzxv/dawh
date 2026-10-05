@@ -3,6 +3,7 @@ import { jsonOk } from "@/lib/core/http/response";
 import { getActor, id } from "@/lib/warehouse/core";
 import { getPurchaseOrder, updatePurchaseOrder } from "@/lib/warehouse/purchase-orders";
 import { parseJsonObject } from "@/lib/core/http/body";
+import { readView } from "@/lib/warehouse/read-options";
 export const runtime = "nodejs";
-export const GET = apiRoute<{ params: Promise<{ poId: string }> }>(async (request, context) => jsonOk(request, await getPurchaseOrder(await getActor(request), id((await context.params).poId))));
+export const GET = apiRoute<{ params: Promise<{ poId: string }> }>(async (request, context) => jsonOk(request, await getPurchaseOrder(await getActor(request), id((await context.params).poId), readView(new URL(request.url).searchParams, "lines"))));
 export const PATCH = apiRoute<{ params: Promise<{ poId: string }> }>(async (request, context) => jsonOk(request, await updatePurchaseOrder(await getActor(request), id((await context.params).poId), await parseJsonObject(request))));
