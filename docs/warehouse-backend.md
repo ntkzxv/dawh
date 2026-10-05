@@ -21,7 +21,7 @@ This is the backend contract for the single-organization warehouse rebuild. The 
 
 ## API conventions
 
-Every domain API requires a Better Auth session cookie. JSON responses use `{ "data": ..., "meta": { "requestId": "..." } }`; paginated reads also include `page: { page, limit, total, hasMore, nextCursor: null }`. Errors use `{ "error": { "code", "message", "requestId" } }`. IDs are positive integers. Counts use decimal values with up to three places; money uses THB with up to two places. The browser cannot assert its own role or branch membership. `GET /api/me` returns the authenticated member's ID, role, branch IDs, name, email, and image for shared navigation.
+Every domain API requires a Better Auth session cookie. JSON responses use `{ "data": ..., "meta": { "requestId": "..." } }`. Offset-paginated reads also include `page: { page, limit, total, hasMore, nextCursor: null }`; cursor-paginated document reads include `page: { limit, hasMore, nextCursor }` without a total. Errors use `{ "error": { "code", "message", "requestId" } }`. IDs are positive integers. Counts use decimal values with up to three places; money uses THB with up to two places. The browser cannot assert its own role or branch membership. `GET /api/me` returns the authenticated member's ID, role, branch IDs, name, email, and image for shared navigation.
 
 | Area | Routes |
 |---|---|
@@ -44,6 +44,62 @@ Only ADMIN can create, soft-delete, restore, reset passwords, or edit another me
 `POST /api/stock/documents` and `POST /api/goods-receipts/{receiptId}/post` require an `Idempotency-Key` header (8–120 letters, digits, `_` or `-`). Posted stock movements are immutable; reversals create new documents and movements. GET balance and ledger routes accept `warehouseId` and `productId`; balance also accepts `branchId`; ledger also accepts `from` and `to` in `YYYY-MM-DD` form. The receipt report accepts `supplierId`, `productId`, `branchId`, `from`, and `to`.
 
 Inventory, catalog, balance, and ledger list screens request `page` (starting at 1) and `limit` (1–100); the default page size is 20. Inventory accepts `q`, `categoryId`, `warehouseId`, and `status` (`in_stock`, `low_stock`, `out_of_stock`) and computes stock within the actor's branches. Catalog accepts `q`; `GET /api/catalog/products?lookup=1&q=...` returns up to 50 active SKU/name matches for product selectors. Catalog, balance, and ledger routes retain their previous unpaginated response when `page` is omitted so existing callers continue to work.
+
+## Optional reads for Warehouse forms
+
+These options allow callers to request eligible records and smaller details on demand. Existing calls without the new options keep their previous fields, permissions, ordering, and pagination. This backend change does not change frontend loading, deduplicate browser requests, or introduce a shared cache; the frontend must adopt these options to benefit from them.
+
+### Document filters
+
+| Request | Meaning |
+|---|---|
+| `GET /api/purchase-orders?closed=false&limit=20` | Only POs with `closed_at IS NULL`; `closed=true` selects closed POs. This is the stored closing state, not a calculation of outstanding quantity. Existing `q` and `cursor` still work. |
+| `GET /api/carrier-receipts?received=true&hasGoodsReceipt=false&limit=20` | Only carrier documents with a non-null delivery confirmation `received_at` and no linked goods receipt. Suitable for the count-form selector. |
+| `GET /api/carrier-receipts?received=false` | Carrier documents without a recorded receipt time, including documents without a delivery confirmation. |
+| `GET /api/carrier-receipts?hasGoodsReceipt=true` | Carrier documents with any linked goods receipt; posted/reversed state does not change this existence check. |
+| `GET /api/catalog/warehouses?branchId=7` | Only warehouses in branch 7, intersected with the actor's existing branch scope. Also works with `page`, `q` in paginated mode, or `lookup=1`. An inaccessible branch returns an empty list, never broader access. |
+
+The document filters are applied before the existing descending-ID cursor limit. Both boolean filters on carriers can be combined; omitting either leaves that criterion unfiltered. Boolean values must be exactly `true` or `false`; empty/invalid values return 400. `branchId` must be a positive PostgreSQL integer. Document page sizes remain 1–100, default 20; selectors must follow `nextCursor` when more results are needed.
+
+### Compact detail views
+
+| Request | `data` fields | Business database query calls |
+|---|---|---|
+| `GET /api/purchase-orders/12?view=lines` | Existing PO header and `lines`, including the original line calculations and Employee-specific projection. Omits `supplierReceipts`, `carrierReceipts`, `goodsReceipts`, and `revisions`. | 2 instead of 6; Employee: 2 instead of 3. |
+| `GET /api/carrier-receipts/12?view=confirmation` | Existing carrier header and `confirmation` (object or `null`). Omits `lines`, `media`, and `revisions`. | 2 instead of 5. |
+
+Omitting `view` or passing `view=full` keeps the full detail response. Unknown or empty `view` returns 400. Missing documents and permission checks retain their existing behavior. The query counts above exclude authentication and actor lookup; they are verified with mocked query calls, not a live database latency benchmark. The PO line query still performs its existing quantity calculations.
+
+### Catalog selectors
+
+Use `GET /api/catalog/{kind}?lookup=1&q=...` **without `page`** for a compact selector list. Searches trim `q`, accept at most 100 characters, and return up to 50 records with no pagination metadata or total. For longer lists, refine the search or use the existing paginated catalog API. When `page` is present, the route retains its original paginated catalog behavior, even if `lookup=1` is also supplied.
+
+| Kind | Returned columns | Search / ordering |
+|---|---|---|
+| `branches` | `id, code, name, active` | code or name / descending ID |
+| `warehouses` | `id, branch_id, code, name, active` | code or name / descending ID; optional `branchId` |
+| `suppliers` | `id, code, name, active` | code or name / descending ID |
+| `units` | `id, code, name` | code or name / descending ID |
+| `product-groups`, `brands` | `id, name` | name / descending ID |
+| `product-categories` | `id, group_id, name` | name / descending ID |
+| `product-models` | `id, brand_id, name` | name / descending ID |
+| `products` | `id, sku, name, unit_id, serial_tracked, active` | SKU or name / SKU, then ID; active products only, as before |
+
+The new non-product lookups do not exclude inactive records; callers receive `active` where the catalog supports it. Branch and warehouse scope is enforced exactly as for the existing list. Employee access remains limited to branches and products. Calls without `lookup=1` keep the previous catalog shape and limits.
+
+## Stock document HTTP entry points
+
+The routes below expose the existing stock posting and reversal services. Service rules, transaction boundaries, ledger/serial handling, audit events, and authorization are unchanged. Both require an authenticated ADMIN, CEO, or MANAGER and the existing warehouse branch permissions.
+
+`POST /api/stock/documents` returns 201 with the existing service result inside `data`. Include `Idempotency-Key: movement-key-123` and a JSON body such as:
+
+```json
+{"kind":"ISSUE","warehouseId":7,"reason":"Internal use","lines":[{"productId":3,"quantity":"2","serialNumbers":[]}]}
+```
+
+`kind` supports `ISSUE`, `ADJUSTMENT`, and `TRANSFER`. Adjustment lines use `quantityDelta` instead of `quantity`; transfers also require `destinationWarehouseId`. The service still validates quantities, reason, active warehouses/products, and serials. A new result contains `inventoryDocumentId`, `destinationDocumentId` (nullable), and `repeated: false`. An existing-key replay returns the original `inventoryDocumentId` and `repeated: true`; a reused key with different data returns 409. Missing/invalid keys return 400.
+
+`POST /api/stock/documents/12/reverse` accepts `{"reason":"Correction"}` and returns 200 with `data: { reversalDocumentIds: [...] }`. It delegates to the existing reversal rules, including transfer pairs, serial validation, and conflict handling. It does not require an `Idempotency-Key`; a duplicate reversal remains subject to the service's existing conflict checks. Both routes use the standard JSON error envelope and request ID.
 
 ## Key request bodies
 
