@@ -266,12 +266,7 @@ export default function CatalogScreen({
 
         {!currentData && !error && (
           <div className="w-full">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <h2
-                className={`text-base font-bold ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}
-              >
-                รายการทั้งหมด
-              </h2>
+            <div className="mb-4 flex items-center justify-end gap-3">
               <SkeletonBox className="h-[33px] w-32 rounded-[6px]" />
             </div>
             <section
@@ -293,12 +288,7 @@ export default function CatalogScreen({
 
         {currentData && (
           <div className="w-full">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <h2
-                className={`text-base font-bold ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}
-              >
-                รายการทั้งหมด
-              </h2>
+            <div className="mb-4 flex items-center justify-end gap-3">
               {canEdit && (
                 <button
                   type="button"

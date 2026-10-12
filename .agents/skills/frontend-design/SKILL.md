@@ -12,6 +12,12 @@ Use `Button` with the appropriate variant for primary actions such as Add/Create
 
 If a page needs a reusable style that is missing or inconsistent, update or add it in `components/common`, then use that shared implementation on the page. For filter popovers, use `FilterButton` as the trigger and follow the responsive panel structure, theme colors, active-filter count, and dismiss behavior of `audit-filter-panel`. Avoid per-page overrides that conflict with the common component defaults. Before finalizing, compare the rendered controls with an existing common toolbar and check both themes and responsive widths.
 
+## Warehouse list tables
+
+Use `/warehouse/inventory?kind=products` as the toolbar reference and `/test` tab 2 as the table and pagination reference. Place a single responsive toolbar above the table frame: `SearchInput` followed by `FilterButton` on the left; relevant secondary actions followed by the primary add/create button on the right. Name the primary action for the item being added, such as “เพิ่มสินค้า”. Let the groups wrap on narrow screens while keeping their order. Keep filter choices inside the filter popover.
+
+Do not place a generic heading or duplicate count such as “รายการทั้งหมด”, “รายการ”, or “All items” at the top-left of the table. The page heading already identifies the content; show the total in pagination below the table. Retain a specific section heading only when it distinguishes multiple different tables on one page. Use `DataTable` with `dataTableFrameClassName` for the bordered surface and keep `Pagination` outside the frame. See `docs/table-layout-guidelines.md` for the full warehouse table layout.
+
 ---
 
 ## 🎨 DAWH Official Design System & Theme Tokens

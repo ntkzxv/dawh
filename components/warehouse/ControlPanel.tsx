@@ -203,29 +203,7 @@ export default function ControlPanel() {
     }
   };
 
-  if (account?.loading)
-    return (
-      <WarehousePageTemplate
-        titleEn="Admin Control Panel"
-        titleTh="แผงควบคุมผู้ดูแลระบบ"
-        routePath="/controlpanel"
-        fullBleed={tab === "members"}
-      >
-        <main className={`w-full min-w-0 space-y-5 ${tab === "members" ? "p-6 sm:p-10" : ""}`} aria-busy="true" aria-label="Loading control panel">
-          <ControlPanelMemberSkeleton isThai={isThai} />
-        </main>
-      </WarehousePageTemplate>
-    );
-  if (!account?.me)
-    return (
-      <main className="mx-auto max-w-6xl p-8">
-        <p>{account?.error || "กรุณาเข้าสู่ระบบ"}</p>
-        <Link className="underline" href="/auth/login?from=/controlpanel">
-          เข้าสู่ระบบ
-        </Link>
-      </main>
-    );
-  const me = account.me;
+  const me = account?.me;
   const members = memberData?.members ?? [];
   const branches = memberData?.branches ?? [];
   const normalizedMemberSearch = memberSearch.trim().toLocaleLowerCase();
@@ -256,8 +234,8 @@ export default function ControlPanel() {
     (memberPage - 1) * TABLE_PAGE_SIZE,
     memberPage * TABLE_PAGE_SIZE,
   );
-  const isAdmin = me.role === "ADMIN";
-  const canViewAudit = ["ADMIN", "CEO"].includes(me.role);
+  const isAdmin = me?.role === "ADMIN";
+  const canViewAudit = me ? ["ADMIN", "CEO"].includes(me.role) : false;
   const memberRoleOptions: DropdownOption<Role | "">[] = [
     { value: "", label: isThai ? "ทุกตำแหน่ง" : "All roles" },
     ...warehouseRoles.map((role) => ({ value: role, label: isThai ? roleName[role] : roleNameEn[role] })),
@@ -298,6 +276,30 @@ export default function ControlPanel() {
   useEffect(() => {
     setAuditPage((current) => Math.min(current, Math.max(1, auditTotalPages)));
   }, [auditTotalPages]);
+
+  if (account?.loading)
+    return (
+      <WarehousePageTemplate
+        titleEn="Admin Control Panel"
+        titleTh="แผงควบคุมผู้ดูแลระบบ"
+        routePath="/controlpanel"
+        fullBleed={tab === "members"}
+      >
+        <main className={`w-full min-w-0 space-y-5 ${tab === "members" ? "p-6 sm:p-10" : ""}`} aria-busy="true" aria-label="Loading control panel">
+          <ControlPanelMemberSkeleton isThai={isThai} />
+        </main>
+      </WarehousePageTemplate>
+    );
+  if (!me)
+    return (
+      <main className="mx-auto max-w-6xl p-8">
+        <p>{account?.error || "กรุณาเข้าสู่ระบบ"}</p>
+        <Link className="underline" href="/auth/login?from=/controlpanel">
+          เข้าสู่ระบบ
+        </Link>
+      </main>
+    );
+
   const auditColumns: DataTableColumn<AuditEvent>[] = [
     {
       key: "created_at",
@@ -454,24 +456,8 @@ export default function ControlPanel() {
 
         {tab === "members" && (
           <div className="w-full min-w-0">
-            {isAdmin && (
-              <div className="mb-4 flex justify-end">
-                <button
-                  type="button"
-                  className="inline-flex items-center justify-center h-[33px] gap-1.5 rounded-[6px] px-4 py-2 text-[13px] transition-colors cursor-pointer select-none bg-white hover:bg-[#F4F4F5] text-[#222222] font-semibold shadow-xs dark:bg-white dark:hover:bg-[#F4F4F5] dark:text-[#222222]"
-                  onClick={() => {
-                    setSelectedMember(null);
-                    setIsCreatePanelOpen(true);
-                  }}
-                >
-                  <UserPlus className="h-4 w-4" aria-hidden="true" />
-                  {isThai ? "เพิ่มผู้ใช้" : "Add user"}
-                </button>
-              </div>
-            )}
-            <div className="space-y-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-start">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-start">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
                 <SearchInput
                   value={memberSearch}
                   onChange={(value) => { setMemberSearch(value); setMemberPage(1); }}
@@ -545,7 +531,21 @@ export default function ControlPanel() {
                   </AnimatePresence>
                 </div>
               </div>
+              {isAdmin && (
+                <button
+                  type="button"
+                  className="inline-flex h-[33px] shrink-0 items-center justify-center gap-1.5 self-start rounded-[6px] bg-white px-4 py-2 text-[13px] font-semibold text-[#222222] shadow-xs transition-colors hover:bg-[#F4F4F5] dark:bg-white dark:text-[#222222] dark:hover:bg-[#F4F4F5] sm:self-auto"
+                  onClick={() => {
+                    setSelectedMember(null);
+                    setIsCreatePanelOpen(true);
+                  }}
+                >
+                  <UserPlus className="h-4 w-4" aria-hidden="true" />
+                  {isThai ? "เพิ่มผู้ใช้" : "Add user"}
+                </button>
+              )}
             </div>
+            <div className="space-y-4">
               <div className={dataTableFrameClassName(isLight)}>
                 <DataTable
                   columns={memberColumns}
@@ -1069,7 +1069,7 @@ function MemberEditDialog({
           <>
             <form className="space-y-4" onSubmit={(event) => void save(event)}>
               <div className="grid gap-3 sm:grid-cols-2">
-                <Field label={isThai ? "ชื่อ" : "Name"}>
+                <Field label={isThai ? "ชื่อ" : "name"}>
                   <input className={input} value={name} maxLength={160} required onChange={(event) => setName(event.target.value)} />
                 </Field>
                 {isAdmin && (
@@ -1190,7 +1190,7 @@ function CreateMember({
   const activeBranches = branches.filter((branch) => branch.active !== false);
   const branchRequired = role !== "ADMIN" && role !== "CEO";
   const roleOptions: DropdownOption<Role | "">[] = [
-    { value: "", label: isThai ? "ตำแหน่ง" : "Role" },
+    { value: "", label: isThai ? "ตำแหน่ง" : "Choose role" },
     ...warehouseRoles.map((item) => ({
       value: item,
       label: isThai ? roleName[item] : roleNameEn[item],
@@ -1200,7 +1200,7 @@ function CreateMember({
     {
       value: "",
       label: activeBranches.length
-        ? isThai ? "เลือกสาขา" : "Branch"
+        ? isThai ? "เลือกสาขา" : "Choose branch"
         : isThai ? "ไม่มีสาขาที่ใช้งาน" : "No active branches",
     },
     ...activeBranches.map((branch) => ({
@@ -1262,24 +1262,24 @@ function CreateMember({
         />
       </Field>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label={isThai ? "ชื่อจริง" : "FirstName"}>
+        <Field label={isThai ? "ชื่อจริง" : "First name"}>
           <input
             className={createMemberInput}
             type="text"
             autoComplete="given-name"
-            placeholder={isThai ? "ชื่อจริง" : "FirstName"}
+            placeholder={isThai ? "ชื่อจริง" : "First name"}
             value={firstName}
             required
             maxLength={120}
             onChange={(event) => setFirstName(event.target.value)}
           />
         </Field>
-        <Field label={isThai ? "นามสกุล" : "LastName"}>
+        <Field label={isThai ? "นามสกุล" : "Last name"}>
           <input
             className={createMemberInput}
             type="text"
             autoComplete="family-name"
-            placeholder={isThai ? "นามสกุล" : "LastName"}
+            placeholder={isThai ? "นามสกุล" : "Last name"}
             value={lastName}
             required
             maxLength={120}
@@ -1292,7 +1292,7 @@ function CreateMember({
           className={createMemberInput}
           type="email"
           autoComplete="email"
-          placeholder={isThai ? "อีเมล" : "Email"}
+          placeholder="youremail@dawh.co.th"
           value={email}
           required
           onChange={(event) => setEmail(event.target.value)}
@@ -1306,7 +1306,7 @@ function CreateMember({
             setFormError(null);
           }}
           options={roleOptions}
-          placeholder={isThai ? "ตำแหน่ง" : "Role"}
+          placeholder={isThai ? "ตำแหน่ง" : "Choose role"}
           className="w-full"
           triggerClassName="!min-h-10 !rounded-xl !px-3 !py-2 !text-sm"
         />
@@ -1319,7 +1319,7 @@ function CreateMember({
             setFormError(null);
           }}
           options={branchOptions}
-          placeholder={isThai ? "เลือกสาขา" : "Branch"}
+          placeholder={isThai ? "เลือกสาขา" : "Choose branch"}
           disabled={!activeBranches.length}
           className="w-full"
           triggerClassName="!min-h-10 !rounded-xl !px-3 !py-2 !text-sm"
