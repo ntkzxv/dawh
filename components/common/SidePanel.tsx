@@ -26,7 +26,24 @@ export interface SidePanelProps {
   canEdit?: boolean;
   onEdit?: (item: ProductDetailItem) => void;
   title?: ReactNode;
+  eyebrow?: ReactNode;
   children?: ReactNode;
+}
+
+export function sidePanelFormStyles(isLight: boolean) {
+  return {
+    form: "flex-1 flex flex-col justify-between pt-6 text-xs min-h-0",
+    content: "space-y-6 overflow-y-auto pr-1",
+    section: "flex flex-col gap-3",
+    dividedSection: "flex flex-col gap-3 border-t border-[#444444]/20 pt-2",
+    field: "flex flex-col gap-1.5",
+    label: `text-[12px] font-bold ${isLight ? "text-[#444444]" : "text-[#E4E4E7]"}`,
+    input: `h-[38px] w-full rounded-[8px] border px-3.5 text-[13px] outline-none transition-colors ${isLight ? "border-[#E5E5E5] bg-[#F5F5F5] text-[#222222] focus:border-[#222222]" : "border-[#444444] bg-[#222222] text-[#F4F4F5] focus:border-[#E4E4E7]"}`,
+    dropdown: `h-[38px] rounded-[8px] border px-3.5 !text-[13px] ${isLight ? "border-[#E5E5E5] bg-[#F5F5F5] text-[#222222]" : "border-[#444444] bg-[#222222] text-[#F4F4F5]"}`,
+    footer: "mt-6 flex shrink-0 items-center justify-end gap-3 border-t border-[#444444]/30 pt-5",
+    cancel: `h-[42px] rounded-[8px] border px-6 text-[14px] font-bold cursor-pointer transition-colors ${isLight ? "border-[#E4E4E7] bg-white text-[#222222] hover:bg-[#F4F4F5]" : "border-[#444444] bg-[#383838] text-[#F4F4F5] hover:bg-[#444444]"}`,
+    submit: `h-[42px] rounded-[8px] px-6 text-[14px] font-bold cursor-pointer shadow-sm transition-colors disabled:opacity-50 ${isLight ? "bg-[#222222] text-white hover:bg-black" : "bg-white text-[#222222] hover:bg-[#F4F4F5]"}`,
+  };
 }
 
 export default function SidePanel({
@@ -35,6 +52,7 @@ export default function SidePanel({
   canEdit = false,
   onEdit,
   title,
+  eyebrow,
   children,
 }: SidePanelProps) {
   const { theme } = useTheme();
@@ -45,7 +63,7 @@ export default function SidePanel({
   if (children !== undefined) {
     return (
       <div
-        className="fixed inset-0 z-[90] flex items-stretch justify-end bg-black/70 backdrop-blur-xs"
+        className="fixed inset-0 z-[100] flex items-stretch justify-end bg-black/70 backdrop-blur-xs animate-in fade-in duration-200"
         onMouseDown={(event) => {
           if (event.target === event.currentTarget) onClose();
         }}
@@ -54,26 +72,38 @@ export default function SidePanel({
           role="dialog"
           aria-modal="true"
           aria-labelledby="side-panel-title"
-          className={`flex h-full w-full max-w-[480px] shrink-0 flex-col overflow-y-auto border-l shadow-2xl transition-colors ${
+          className={`relative flex h-full w-full max-w-[560px] shrink-0 flex-col overflow-hidden border-l p-5 shadow-2xl transition-all animate-in slide-in-from-right duration-300 sm:p-6 ${
             isLight
               ? "border-[#E4E4E7] bg-white"
-              : "border-[#444444] bg-[#383838]"
+              : "border-[#444444] bg-[#282828]"
           }`}
         >
-          <div className="flex w-full items-center justify-between gap-3 border-b border-slate-200 p-5 dark:border-white/10">
-            <h3 id="side-panel-title" className="text-base font-bold">
+          <div className="w-full shrink-0 border-b border-[#444444]/30 pb-3 pr-8">
+            {eyebrow && (
+              <div className="text-[11px] font-bold uppercase tracking-wider text-[#A1A1AA]">
+                {eyebrow}
+              </div>
+            )}
+            <h3
+              id="side-panel-title"
+              className={`text-[18px] font-bold leading-[24px] ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}
+            >
               {title ?? (isThai ? "รายละเอียด" : "Details")}
             </h3>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label={isThai ? "ปิดแผงด้านข้าง" : "Close side panel"}
-              className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-black/5 hover:text-black dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white"
-            >
-              <X size={18} />
-            </button>
           </div>
-          <div className="flex-1 overflow-y-auto">{children}</div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={isThai ? "ปิดแผงด้านข้าง" : "Close side panel"}
+            className={`absolute right-4 top-4 z-10 rounded-[8px] p-1.5 transition-colors ${
+              isLight
+                ? "text-[#666666] hover:bg-[#F4F4F5] hover:text-[#222222]"
+                : "text-[#A1A1AA] hover:bg-[#444444] hover:text-white"
+            }`}
+          >
+            <X size={18} />
+          </button>
+          <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
         </aside>
       </div>
     );
@@ -83,7 +113,7 @@ export default function SidePanel({
 
   return (
     <div
-      className="fixed inset-0 z-[90] flex items-stretch justify-end bg-black/70 backdrop-blur-xs"
+      className="fixed inset-0 z-[90] flex items-stretch justify-end bg-black/70 backdrop-blur-xs animate-in fade-in duration-200"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -92,34 +122,37 @@ export default function SidePanel({
         role="dialog"
         aria-modal="true"
         aria-labelledby="product-detail-title"
-        className={`h-full w-full max-w-[380px] shrink-0 rounded-l-[8px] border-y border-l border-r-0 p-6 flex flex-col gap-5 overflow-y-auto shadow-2xl transition-colors ${
+        className={`relative flex h-full w-full max-w-[560px] shrink-0 flex-col overflow-hidden border-l p-5 shadow-2xl transition-all animate-in slide-in-from-right duration-300 sm:p-6 ${
           isLight
-            ? "bg-white border-[#E4E4E7]"
-            : "bg-[#383838] border-[#444444]"
+            ? "border-[#E4E4E7] bg-white"
+            : "border-[#444444] bg-[#282828]"
         }`}
       >
-        {/* drawer-header */}
-        <div className="w-full flex items-center justify-between">
+        <div className="w-full shrink-0 border-b border-[#444444]/30 pb-3 pr-8">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-[#A1A1AA]">
+            {isThai ? "สินค้า" : "Product"}
+          </div>
           <h3
             id="product-detail-title"
-            className={`font-bold text-[16px] leading-[21px] ${
+            className={`text-[18px] font-bold leading-[24px] ${
               isLight ? "text-[#222222]" : "text-[#F8FAFC]"
             }`}
           >
             {isThai ? "รายละเอียดสินค้า" : "Item Details"}
           </h3>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={isThai ? "ปิดรายละเอียด" : "Close details"}
-            className="text-[#A1A1AA] hover:text-white transition-colors cursor-pointer p-0.5"
-          >
-            <X size={16} />
-          </button>
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={isThai ? "ปิดรายละเอียด" : "Close details"}
+          className={`absolute right-4 top-4 z-10 rounded-[8px] p-1.5 transition-colors ${isLight ? "text-[#666666] hover:bg-[#F4F4F5] hover:text-[#222222]" : "text-[#A1A1AA] hover:bg-[#444444] hover:text-white"}`}
+        >
+          <X size={18} />
+        </button>
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto pt-6">
 
         {/* Product Image Showcase */}
-        <div className="w-full h-[180px] rounded-[8px] border border-[#444444]/40 bg-[#2C2C2C] flex flex-col items-center justify-center text-[#A1A1AA] overflow-hidden relative shadow-inner">
+        <div className={`relative flex h-[180px] w-full flex-col items-center justify-center overflow-hidden rounded-[8px] border text-[#A1A1AA] shadow-inner ${isLight ? "border-[#E4E4E7] bg-[#F5F5F5]" : "border-[#444444] bg-[#222222]"}`}>
           <Package size={48} className="opacity-40" />
           <span className="text-[11.5px] mt-2 font-mono text-[#A1A1AA]/80">
             {item.sku}
@@ -267,6 +300,7 @@ export default function SidePanel({
             </button>
           </div>
         )}
+        </div>
       </aside>
     </div>
   );

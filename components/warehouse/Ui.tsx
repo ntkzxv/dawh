@@ -53,13 +53,17 @@ export function Notice({
 export function Field({
   label,
   children,
+  className = "block space-y-1.5 text-sm font-medium",
+  labelClassName,
 }: {
   label: string;
   children: ReactNode;
+  className?: string;
+  labelClassName?: string;
 }) {
   return (
-    <label className="block space-y-1.5 text-sm font-medium">
-      <span>{label}</span>
+    <label className={className}>
+      <span className={labelClassName}>{label}</span>
       {children}
     </label>
   );

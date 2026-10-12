@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Ellipsis, Eye, EyeOff, Loader2, UserPlus, X } from "lucide-react";
+import { Ellipsis, Eye, EyeOff, KeyRound, Loader2, Pencil, RotateCcw, Trash2, UserPlus, UserRound, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import DataTable, {
   dataTableFrameClassName,
@@ -15,7 +15,7 @@ import FilterDropdown from "@/components/common/FilterDropdown";
 import FilterButton from "@/components/common/FilterButton";
 import SearchInput from "@/components/common/SearchInput";
 import CommonButton from "@/components/common/Button";
-import SidePanel from "@/components/common/SidePanel";
+import SidePanel, { sidePanelFormStyles } from "@/components/common/SidePanel";
 import {
   warehouseApi,
   type AuditEvent,
@@ -636,19 +636,15 @@ export default function ControlPanel() {
       {isCreatePanelOpen && isAdmin && (
         <SidePanel
           item={null}
-          title={
-            <span className="flex min-w-0 flex-col gap-1">
-              <span>{isThai ? "เพิ่มผู้ใช้" : "Add user"}</span>
-              <span className="text-xs font-normal text-slate-500 dark:text-zinc-300">
-                {isThai ? "กรอกข้อมูลบัญชี เลือกตำแหน่งและสาขา" : "Enter account details and choose a role and branch."}
-              </span>
-            </span>
-          }
+          eyebrow={isThai ? "สร้างข้อมูลใหม่" : "New User"}
+          title={isThai ? "เพิ่มผู้ใช้ใหม่" : "Add user"}
           onClose={() => setIsCreatePanelOpen(false)}
         >
           <CreateMember
             branches={branches}
             isThai={isThai}
+            isLight={isLight}
+            onCancel={() => setIsCreatePanelOpen(false)}
             onSave={async (body) => {
               const succeeded = await run(
                 () => warehouseApi.createMember(body),
@@ -665,27 +661,36 @@ export default function ControlPanel() {
           ref={manageMenuRef}
           role="menu"
           aria-label={isThai ? "การจัดการผู้ใช้" : "User actions"}
-          className="fixed z-[110] max-h-[min(70vh,420px)] w-64 space-y-1 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-white/10 dark:bg-[#383838]"
+          className="fixed z-[110] max-h-[min(70vh,420px)] w-64 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-900/10 dark:border-white/10 dark:bg-[#383838] dark:shadow-black/30"
           style={manageMenuPosition}
         >
           {(() => {
             const member = members.find((item) => item.id === openManageMemberId);
             if (!member) return null;
             const mayEdit = !member.deletedAt && (isAdmin || member.id === me.id);
+            const menuItemClass = "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-indigo-500 dark:hover:bg-white/10";
+            const iconClass = "flex size-7 shrink-0 items-center justify-center text-slate-500 dark:text-zinc-300";
             return (
               <>
+                <div className="mb-1 border-b border-slate-200 px-2.5 pb-2.5 pt-1 dark:border-white/10">
+                  <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{member.name}</p>
+                  <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
+                    {member.role}
+                  </p>
+                </div>
                 {mayEdit && (
                   <button
                     type="button"
                     role="menuitem"
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-indigo-500 dark:hover:bg-white/10"
+                    className={menuItemClass}
                     onClick={() => {
                       setOpenManageMemberId(null);
                       setOpenRolePickerMemberId(null);
                       setSelectedMember(member);
                     }}
                   >
-                    {isThai ? "แก้ไข" : "Edit"}
+                    <span className={iconClass}><Pencil className="size-4" aria-hidden="true" /></span>
+                    <span className="font-medium text-slate-800 dark:text-zinc-100">{isThai ? "แก้ไขผู้ใช้" : "Edit user"}</span>
                   </button>
                 )}
                 {isAdmin && !member.deletedAt && (
@@ -694,13 +699,15 @@ export default function ControlPanel() {
                       type="button"
                       role="menuitem"
                       aria-expanded={openRolePickerMemberId === member.id}
-                      className="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-indigo-500 dark:hover:bg-white/10"
+                      className={menuItemClass}
                       onClick={() => setOpenRolePickerMemberId((current) => current === member.id ? null : member.id)}
                     >
-                      {isThai ? "เปลี่ยนตำแหน่ง" : "Change role"}
+                      <span className={iconClass}><UserRound className="size-4" aria-hidden="true" /></span>
+                      <span className="flex-1 font-medium text-slate-800 dark:text-zinc-100">{isThai ? "เปลี่ยนตำแหน่ง" : "Change role"}</span>
+                      <span className="text-xs text-slate-400" aria-hidden="true">{openRolePickerMemberId === member.id ? "−" : "+"}</span>
                     </button>
                     {openRolePickerMemberId === member.id && (
-                      <div className="space-y-2 border-t border-slate-200 px-2 py-2 dark:border-white/10">
+                      <div className="ml-11 mr-1 space-y-2 border-l-2 border-indigo-200 py-2 pl-3 dark:border-indigo-400/40">
                         <p className="text-xs font-medium text-slate-500 dark:text-zinc-300">
                           {isThai ? "เลือกตำแหน่งใหม่" : "Choose a new role"}
                         </p>
@@ -725,14 +732,15 @@ export default function ControlPanel() {
                     <button
                       type="button"
                       role="menuitem"
-                      className="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-indigo-500 dark:hover:bg-white/10"
+                      className={menuItemClass}
                       onClick={() => {
                         setOpenManageMemberId(null);
                         setOpenRolePickerMemberId(null);
                         setResettingMember(member);
                       }}
                     >
-                      {isThai ? "รีเซ็ตรหัสผ่าน" : "Reset password"}
+                      <span className={iconClass}><KeyRound className="size-4" aria-hidden="true" /></span>
+                      <span className="font-medium text-slate-800 dark:text-zinc-100">{isThai ? "รีเซ็ตรหัสผ่าน" : "Reset password"}</span>
                     </button>
                   </>
                 )}
@@ -740,21 +748,22 @@ export default function ControlPanel() {
                   <button
                     type="button"
                     role="menuitem"
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-rose-700 hover:bg-rose-50 focus-visible:outline-2 focus-visible:outline-rose-500 dark:text-rose-300 dark:hover:bg-rose-500/10"
+                    className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm text-rose-700 transition-colors hover:bg-rose-50 focus-visible:outline-2 focus-visible:outline-rose-500 dark:text-rose-300 dark:hover:bg-rose-500/10"
                     onClick={() => {
                       setOpenManageMemberId(null);
                       setOpenRolePickerMemberId(null);
                       setDeletingMember(member);
                     }}
                   >
-                    {isThai ? "ลบ" : "Delete"}
+                    <span className="flex size-7 shrink-0 items-center justify-center text-rose-600 dark:text-rose-300"><Trash2 className="size-4" aria-hidden="true" /></span>
+                    <span className="font-medium">{isThai ? "ลบผู้ใช้" : "Delete user"}</span>
                   </button>
                 )}
                 {isAdmin && member.deletedAt && (
                   <button
                     type="button"
                     role="menuitem"
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-indigo-500 dark:hover:bg-white/10"
+                    className={menuItemClass}
                     onClick={async () => {
                       setOpenManageMemberId(null);
                       await run(
@@ -763,7 +772,8 @@ export default function ControlPanel() {
                       );
                     }}
                   >
-                    {isThai ? "กู้คืนผู้ใช้" : "Restore user"}
+                    <span className={iconClass}><RotateCcw className="size-4" aria-hidden="true" /></span>
+                    <span className="font-medium text-slate-800 dark:text-zinc-100">{isThai ? "กู้คืนผู้ใช้" : "Restore user"}</span>
                   </button>
                 )}
               </>
@@ -1162,10 +1172,14 @@ function ResetPasswordDialog({
 function CreateMember({
   branches,
   isThai,
+  isLight,
+  onCancel,
   onSave,
 }: {
   branches: CatalogItem[];
   isThai: boolean;
+  isLight: boolean;
+  onCancel: () => void;
   onSave: (body: {
     name: string;
     email: string;
@@ -1175,9 +1189,9 @@ function CreateMember({
     profile: Partial<MemberProfile>;
   }) => Promise<boolean>;
 }) {
-  const createMemberInput = input
-    .replace("focus:border-indigo-500", "focus:border-black dark:focus:border-white")
-    .replace("focus:ring-indigo-500/15", "focus:ring-black/10 dark:focus:ring-white/15");
+  const panelStyles = sidePanelFormStyles(isLight);
+  const createMemberInput = panelStyles.input;
+  const fieldLabelClass = panelStyles.label;
   const [username, setUsername] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -1186,7 +1200,7 @@ function CreateMember({
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<Role | "">("");
   const [branchId, setBranchId] = useState("");
-  const [formError, setFormError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<string[]>([]);
   const activeBranches = branches.filter((branch) => branch.active !== false);
   const branchRequired = role !== "ADMIN" && role !== "CEO";
   const roleOptions: DropdownOption<Role | "">[] = [
@@ -1208,17 +1222,46 @@ function CreateMember({
       label: branch.name,
     })),
   ];
+  const clearFieldError = (...fields: string[]) => {
+    setFieldErrors((current) => current.filter((field) => !fields.includes(field)));
+  };
+  const fieldErrorText = (field: string) => {
+    if (!fieldErrors.includes(field)) return null;
+    const errors: Record<string, { th: string; en: string }> = {
+      username: { th: "กรุณากรอกชื่อผู้ใช้", en: "Enter a username." },
+      firstName: { th: "กรุณากรอกชื่อจริง", en: "Enter a first name." },
+      lastName: { th: "กรุณากรอกนามสกุล", en: "Enter a last name." },
+      email: { th: "กรุณากรอกอีเมล", en: "Enter an email address." },
+      emailFormat: { th: "รูปแบบอีเมลไม่ถูกต้อง", en: "Enter a valid email address." },
+      role: { th: "กรุณาเลือกตำแหน่ง", en: "Choose a role." },
+      branch: { th: "กรุณาเลือกสาขา", en: "Choose a branch." },
+      password: { th: "กรุณากรอกรหัสผ่าน", en: "Enter a password." },
+      passwordLength: { th: "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร", en: "Password must be at least 8 characters." },
+    };
+    const error = errors[field];
+    return error ? (
+      <span className="mt-1 block text-xs text-[#E74C3C] dark:text-[#E71D36]">
+        {isThai ? error.th : error.en}
+      </span>
+    ) : null;
+  };
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!role) {
-      setFormError(isThai ? "กรุณาเลือกตำแหน่ง" : "Choose a role.");
+    const nextErrors: string[] = [];
+    if (!username.trim()) nextErrors.push("username");
+    if (!firstName.trim()) nextErrors.push("firstName");
+    if (!lastName.trim()) nextErrors.push("lastName");
+    if (!email.trim()) nextErrors.push("email");
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) nextErrors.push("emailFormat");
+    if (!role) nextErrors.push("role");
+    if (role && branchRequired && !branchId) nextErrors.push("branch");
+    if (!password) nextErrors.push("password");
+    else if (password.length < 8) nextErrors.push("passwordLength");
+
+    setFieldErrors(nextErrors);
+    if (nextErrors.length) {
       return;
     }
-    if (branchRequired && !branchId) {
-      setFormError(isThai ? "กรุณาเลือกสาขา" : "Choose a branch.");
-      return;
-    }
-    setFormError(null);
     if (
       await onSave({
         name: `${firstName.trim()} ${lastName.trim()}`,
@@ -1246,104 +1289,119 @@ function CreateMember({
   };
   return (
     <form
-      className="h-fit space-y-3 p-5"
+      className={panelStyles.form}
+      noValidate
       onSubmit={(event) => void submit(event)}
     >
-      <Field label={isThai ? "ชื่อผู้ใช้" : "Username"}>
+      <div className={panelStyles.content}>
+        <section className={panelStyles.section}>
+      <Field label={isThai ? "ชื่อผู้ใช้" : "Username"} className={panelStyles.field} labelClassName={fieldLabelClass}>
         <input
-          className={createMemberInput}
+          className={`${createMemberInput} ${fieldErrors.includes("username") ? "border-[#E74C3C] dark:border-[#E71D36]" : ""}`}
           type="text"
           autoComplete="username"
           placeholder={isThai ? "ชื่อผู้ใช้" : "Username"}
           value={username}
           required
           maxLength={80}
-          onChange={(event) => setUsername(event.target.value)}
+          onChange={(event) => { setUsername(event.target.value); clearFieldError("username"); }}
         />
+        {fieldErrorText("username")}
       </Field>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Field label={isThai ? "ชื่อจริง" : "First name"}>
+      <div className="grid gap-3.5 sm:grid-cols-2">
+        <Field label={isThai ? "ชื่อจริง" : "First name"} className={panelStyles.field} labelClassName={fieldLabelClass}>
           <input
-            className={createMemberInput}
+            className={`${createMemberInput} ${fieldErrors.includes("firstName") ? "border-[#E74C3C] dark:border-[#E71D36]" : ""}`}
             type="text"
             autoComplete="given-name"
             placeholder={isThai ? "ชื่อจริง" : "First name"}
             value={firstName}
             required
             maxLength={120}
-            onChange={(event) => setFirstName(event.target.value)}
+            onChange={(event) => { setFirstName(event.target.value); clearFieldError("firstName"); }}
           />
+          {fieldErrorText("firstName")}
         </Field>
-        <Field label={isThai ? "นามสกุล" : "Last name"}>
+        <Field label={isThai ? "นามสกุล" : "Last name"} className={panelStyles.field} labelClassName={fieldLabelClass}>
           <input
-            className={createMemberInput}
+            className={`${createMemberInput} ${fieldErrors.includes("lastName") ? "border-[#E74C3C] dark:border-[#E71D36]" : ""}`}
             type="text"
             autoComplete="family-name"
             placeholder={isThai ? "นามสกุล" : "Last name"}
             value={lastName}
             required
             maxLength={120}
-            onChange={(event) => setLastName(event.target.value)}
+            onChange={(event) => { setLastName(event.target.value); clearFieldError("lastName"); }}
           />
+          {fieldErrorText("lastName")}
         </Field>
       </div>
-      <Field label={isThai ? "อีเมล" : "Email"}>
+      <Field label={isThai ? "อีเมล" : "Email"} className={panelStyles.field} labelClassName={fieldLabelClass}>
         <input
-          className={createMemberInput}
+          className={`${createMemberInput} ${fieldErrors.includes("email") || fieldErrors.includes("emailFormat") ? "border-[#E74C3C] dark:border-[#E71D36]" : ""}`}
           type="email"
           autoComplete="email"
           placeholder="youremail@dawh.co.th"
           value={email}
           required
-          onChange={(event) => setEmail(event.target.value)}
+          onChange={(event) => { setEmail(event.target.value); clearFieldError("email", "emailFormat"); }}
         />
+        {fieldErrorText("email")}
+        {fieldErrorText("emailFormat")}
       </Field>
-      <Field label={isThai ? "ตำแหน่ง" : "Role"}>
+        </section>
+
+        <section className={panelStyles.dividedSection}>
+      <Field label={isThai ? "ตำแหน่ง" : "Role"} className={panelStyles.field} labelClassName={fieldLabelClass}>
         <CustomDropdown
           value={role}
           onChange={(nextRole) => {
             setRole(nextRole);
-            setFormError(null);
+            clearFieldError("role", "branch");
           }}
           options={roleOptions}
           placeholder={isThai ? "ตำแหน่ง" : "Choose role"}
           className="w-full"
-          triggerClassName="!min-h-10 !rounded-xl !px-3 !py-2 !text-sm"
+          triggerClassName={`${panelStyles.dropdown} ${role ? (isLight ? "" : "!text-white") : "!text-[#A1A1AA]"}`}
         />
+        {fieldErrorText("role")}
       </Field>
-      <Field label={isThai ? "สาขา" : "Branch"}>
+      <Field label={isThai ? "สาขา" : "Branch"} className={panelStyles.field} labelClassName={fieldLabelClass}>
         <CustomDropdown
           value={branchId}
           onChange={(nextBranchId) => {
             setBranchId(nextBranchId);
-            setFormError(null);
+            clearFieldError("branch");
           }}
           options={branchOptions}
           placeholder={isThai ? "เลือกสาขา" : "Choose branch"}
           disabled={!activeBranches.length}
           className="w-full"
-          triggerClassName="!min-h-10 !rounded-xl !px-3 !py-2 !text-sm"
+          triggerClassName={`${panelStyles.dropdown} ${branchId ? (isLight ? "" : "!text-white") : "!text-[#A1A1AA]"}`}
         />
+        {fieldErrorText("branch")}
       </Field>
-      {formError && <p role="alert" className="text-sm text-rose-600 dark:text-rose-300">{formError}</p>}
       {!activeBranches.length && (
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-500 dark:text-[#A1A1AA]">
           {isThai
             ? "ยังไม่มีสาขาให้เลือก ต้องเพิ่มสาขาก่อนสร้างผู้ใช้ที่ต้องระบุสาขา"
             : "No branches are available. Add a branch before creating a user who needs one."}
         </p>
       )}
-      <Field label={isThai ? "รหัสผ่าน" : "Password"}>
+        </section>
+
+        <section className={panelStyles.dividedSection}>
+      <Field label={isThai ? "รหัสผ่าน" : "Password"} className={panelStyles.field} labelClassName={fieldLabelClass}>
         <div className="relative">
           <input
-            className={`${createMemberInput} pr-11`}
+            className={`${createMemberInput} pr-11 ${fieldErrors.includes("password") || fieldErrors.includes("passwordLength") ? "border-[#E74C3C] dark:border-[#E71D36]" : ""}`}
             type={showPassword ? "text" : "password"}
             autoComplete="new-password"
             placeholder={isThai ? "รหัสผ่าน" : "Password"}
             minLength={8}
             value={password}
             required
-            onChange={(event) => setPassword(event.target.value)}
+            onChange={(event) => { setPassword(event.target.value); clearFieldError("password", "passwordLength"); }}
           />
           <button
             type="button"
@@ -1355,13 +1413,26 @@ function CreateMember({
             {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
           </button>
         </div>
+        {fieldErrorText("password")}
+        {fieldErrorText("passwordLength")}
       </Field>
-      <button
-        className={button}
-        disabled={!activeBranches.length && branchRequired}
-      >
-        {isThai ? "เพิ่มผู้ใช้" : "Add user"}
-      </button>
+        </section>
+      </div>
+      <div className={panelStyles.footer}>
+        <button
+          type="button"
+          onClick={onCancel}
+          className={panelStyles.cancel}
+        >
+          {isThai ? "ยกเลิก" : "Cancel"}
+        </button>
+        <button
+          type="submit"
+          className={panelStyles.submit}
+        >
+          {isThai ? "เพิ่มผู้ใช้" : "Add user"}
+        </button>
+      </div>
     </form>
   );
 }

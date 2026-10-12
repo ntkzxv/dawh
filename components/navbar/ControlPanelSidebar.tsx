@@ -11,9 +11,7 @@ import {
   LayoutGrid,
   Building2,
   Database,
-  MapPin,
-  ShieldCheck,
-  Users,
+  Package,
   X,
   UserRound,
 } from "lucide-react";
@@ -75,30 +73,18 @@ export default function ControlPanelSidebar({
   const isAdmin = account?.me?.role === "ADMIN";
   const menuItems: MenuGroup[] = [
     {
-      id: "users",
-      title: isThai ? "จัดการผู้ใช้" : "User Management",
-      icon: Users,
-      children: [
-        { label: isThai ? "ผู้ใช้" : "Users", path: "/controlpanel/users", icon: UserRound },
-        ...(isAdmin ? [{ label: isThai ? "สถานะบัญชี" : "Account Status", path: "/controlpanel/account-status", icon: Users }] : []),
-      ],
-    },
-    {
-      id: "access",
-      title: isThai ? "สิทธิ์และการเข้าถึง" : "Access & Permissions",
-      icon: ShieldCheck,
-      children: isAdmin ? [
-        { label: isThai ? "ตัวอย่างการควบคุมสิทธิ์" : "Access Preview", path: "/controlpanel/access-preview", icon: ShieldCheck },
-        { label: isThai ? "สิทธิ์รายสาขา" : "Branch Access", path: "/controlpanel/user-scopes", icon: MapPin },
-      ] : [],
+      id: "users-management",
+      title: isThai ? "จัดการผู้ใช้" : "Users Management",
+      icon: UserRound,
+      path: "/controlpanel/users",
     },
     {
       id: "master-data",
       title: isThai ? "ข้อมูลหลัก" : "Master Data",
       icon: Database,
       children: [
+        { label: isThai ? "สินค้า" : "Products", path: "/controlpanel/products", icon: Package },
         ...(canManageBranches ? [{ label: isThai ? "สาขา" : "Branches", path: "/controlpanel/branches", icon: Building2 }] : []),
-        ...(isAdmin ? [{ label: isThai ? "ข้อมูลหลัก" : "Master Data", path: "/controlpanel/master-data", icon: Database }] : []),
       ],
     },
     {
@@ -114,7 +100,7 @@ export default function ControlPanelSidebar({
         };
       }) : [],
     },
-  ].filter((group) => group.children?.length);
+  ].filter((group) => group.path || group.children?.length);
 
   const handleToggleMinimize = () => {
     const next = !isMinimized;
@@ -126,6 +112,7 @@ export default function ControlPanelSidebar({
     const nextTab: ControlPanelTab = path.startsWith("/controlpanel/audit-log/")
       ? "audit"
       : path === "/controlpanel/users" ? "members"
+        : path === "/controlpanel/products" ? "master-data"
         : path === "/controlpanel/branches" ? "branches"
           : path === "/controlpanel/access-preview" ? "security"
             : path === "/controlpanel/user-scopes" ? "scopes"

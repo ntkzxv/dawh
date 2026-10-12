@@ -149,27 +149,6 @@ export default function BranchManagement({ onTotalChange }: { onTotalChange: (to
       {notice && <Notice tone="success">{notice}</Notice>}
       {(failure || error) && <Notice tone="error">{failure ?? error}</Notice>}
 
-      <section className="flex flex-col gap-4 rounded-2xl border border-[#E4E4E7] bg-white p-5 dark:border-[#444444] dark:bg-[#383838] sm:flex-row sm:items-center sm:justify-between sm:p-7">
-        <div className="flex min-w-0 items-start gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F4F4F5] text-[#222222] dark:bg-white/10 dark:text-white">
-            <Building2 size={22} aria-hidden="true" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-semibold text-slate-500 dark:text-[#E4E4E7]">{isThai ? "ข้อมูลหลัก" : "Master data"}</p>
-            <h2 className="mt-1 text-xl font-bold tracking-tight sm:text-2xl">{isThai ? "รายชื่อสาขา" : "Branch directory"}</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-[#E4E4E7]">
-              {isThai ? "ค้นหา ตรวจสอบสถานะ และจัดการข้อมูลสาขาที่ใช้งานในระบบ" : "Find branches, review their status, and manage branch records."}
-            </p>
-          </div>
-        </div>
-        <div className="inline-flex w-fit shrink-0 items-baseline gap-2 rounded-xl border border-[#E4E4E7] bg-[#FAFAFA] px-4 py-2.5 dark:border-[#555555] dark:bg-[#323232]">
-          <span className="text-lg font-bold tabular-nums">{data?.page.total ?? "—"}</span>
-          <span className="text-xs text-slate-500 dark:text-[#E4E4E7]">
-            {search.trim() || statusFilter !== "all" ? (isThai ? "ผลลัพธ์" : "Results") : (isThai ? "สาขาทั้งหมด" : "Total branches")}
-          </span>
-        </div>
-      </section>
-
       <div className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

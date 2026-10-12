@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage } from "@/utils/language";
 import { warehouseApi, type CatalogItem } from "@/lib/api/warehouse";
@@ -15,6 +16,7 @@ import {
 import { SkeletonBox } from "@/components/loading_screen/SkeletonLoading";
 import {
   SidePanel,
+  sidePanelFormStyles,
   Pagination,
   Button,
   SecondaryButton,
@@ -23,13 +25,18 @@ import {
   FilterButton,
   type ProductDetailItem,
 } from "@/components/common";
-import { UploadCloud, Download, Plus, X, MoreVertical } from "lucide-react";
+import { UploadCloud, Download, Plus, MoreVertical } from "lucide-react";
 
 export type InventoryRowItem = ProductDetailItem;
 
-export default function ProductInventorySplitView() {
+export default function ProductInventorySplitView({
+  showAddProduct = true,
+}: {
+  showAddProduct?: boolean;
+}) {
   const { theme } = useTheme();
   const isLight = theme === "light";
+  const panelStyles = sidePanelFormStyles(isLight);
   const appLang = useAppLanguage();
   const isThai = appLang === "TH";
   const account = useOptionalWarehouseAccount();
@@ -41,6 +48,8 @@ export default function ProductInventorySplitView() {
   const [selectedWarehouse, setSelectedWarehouse] = useState("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filterDropdownRef = useRef<HTMLDivElement>(null);
+  const filterPanelRef = useRef<HTMLDivElement>(null);
+  const [filterPanelPosition, setFilterPanelPosition] = useState({ top: 0, left: 16 });
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -48,12 +57,20 @@ export default function ProductInventorySplitView() {
   useEffect(() => {
     if (!filtersOpen) return;
     const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!(event.target instanceof Node)) return;
+      if (filterDropdownRef.current?.contains(event.target)) return;
+      if (filterPanelRef.current?.contains(event.target)) return;
+
+      // CustomDropdown renders its options in a portal under document.body.
+      // Keep the filter panel mounted while a user interacts with that portal.
       if (
-        event.target instanceof Node &&
-        !filterDropdownRef.current?.contains(event.target)
+        event.target instanceof Element &&
+        event.target.closest('[role="listbox"]')
       ) {
-        setFiltersOpen(false);
+        return;
       }
+
+      setFiltersOpen(false);
     };
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setFiltersOpen(false);
@@ -63,6 +80,26 @@ export default function ProductInventorySplitView() {
     return () => {
       document.removeEventListener("mousedown", closeOnOutsideClick);
       document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [filtersOpen]);
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const updateFilterPanelPosition = () => {
+      const trigger = filterDropdownRef.current;
+      if (!trigger) return;
+      const rect = trigger.getBoundingClientRect();
+      const panelWidth = Math.min(680, window.innerWidth - 32);
+      setFilterPanelPosition({
+        top: rect.bottom + 8,
+        left: Math.max(16, Math.min(rect.left, window.innerWidth - panelWidth - 16)),
+      });
+    };
+    updateFilterPanelPosition();
+    window.addEventListener("resize", updateFilterPanelPosition);
+    window.addEventListener("scroll", updateFilterPanelPosition, true);
+    return () => {
+      window.removeEventListener("resize", updateFilterPanelPosition);
+      window.removeEventListener("scroll", updateFilterPanelPosition, true);
     };
   }, [filtersOpen]);
   useEffect(() => {
@@ -299,47 +336,64 @@ export default function ProductInventorySplitView() {
 
   return (
     <div
-      className={`w-full flex-1 flex flex-col lg:flex-row items-start justify-start p-0 min-h-0 self-stretch ${
+      className={`w-full flex-1 min-h-full ${
         isLight ? "bg-[#F8FAFC] text-[#222222]" : "bg-[#2C2C2C] text-[#F8FAFC]"
       }`}
       style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
     >
-      {/* ========================================================= */}
-      {/* 📌 [LEFT PANE]: Auto layout padding: 32px gap: 24px      */}
-      {/* ========================================================= */}
-      <div className="flex-1 w-full min-w-0 flex flex-col items-start p-6 lg:p-8 gap-6 self-stretch overflow-y-auto">
+      <main className="mx-auto w-full max-w-[1600px] min-w-0 space-y-6 p-4 pb-10 sm:p-8 lg:p-10">
         {error && <Notice tone="error">{error}</Notice>}
 
-        <div className="flex w-full flex-wrap items-center gap-2.5">
-          <SearchInput
-            value={searchQuery}
-            onChange={(val) => {
-              setSearchQuery(val);
-              setCurrentPage(1);
-            }}
-            placeholder={isThai ? "ค้นหา SKU, ชื่อ..." : "Search SKU, Name..."}
-          />
-          <div className="relative shrink-0" ref={filterDropdownRef}>
-            <FilterButton
-              controls="inventory-filter-panel"
-              expanded={filtersOpen}
-              label={isThai ? "ตัวกรอง" : "Filters"}
-              activeFilterCount={
-                Number(selectedCategory !== "all") +
-                Number(selectedStatus !== "all") +
-                Number(selectedWarehouse !== "all")
-              }
-              onClick={() => setFiltersOpen((open) => !open)}
-            />
-            {filtersOpen && (
-              <div
-                id="inventory-filter-panel"
-                className={`absolute left-0 top-full z-30 mt-2 w-[min(680px,calc(100vw-3rem))] space-y-4 rounded-2xl border p-4 shadow-2xl sm:p-5 ${
-                  isLight
-                    ? "border-[#E4E4E7] bg-white text-[#222222]"
-                    : "border-[#444444] bg-[#383838] text-white"
-                }`}
-              >
+        <div className="space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <SearchInput
+                value={searchQuery}
+                onChange={(val) => {
+                  setSearchQuery(val);
+                  setCurrentPage(1);
+                }}
+                placeholder={isThai ? "ค้นหา SKU, ชื่อ..." : "Search SKU, Name..."}
+                aria-label={isThai ? "ค้นหาสินค้า" : "Search products"}
+                width="w-full sm:w-72"
+              />
+              <div className="relative shrink-0" ref={filterDropdownRef}>
+                <FilterButton
+                  controls="inventory-filter-panel"
+                  expanded={filtersOpen}
+                  label={isThai ? "ตัวกรอง" : "Filters"}
+                  activeFilterCount={
+                    Number(selectedCategory !== "all") +
+                    Number(selectedStatus !== "all") +
+                    Number(selectedWarehouse !== "all")
+                  }
+                  onClick={() => {
+                    if (filtersOpen) {
+                      setFiltersOpen(false);
+                      return;
+                    }
+                    const rect = filterDropdownRef.current?.getBoundingClientRect();
+                    if (rect) {
+                      const panelWidth = Math.min(680, window.innerWidth - 32);
+                      setFilterPanelPosition({
+                        top: rect.bottom + 8,
+                        left: Math.max(16, Math.min(rect.left, window.innerWidth - panelWidth - 16)),
+                      });
+                    }
+                    setFiltersOpen(true);
+                  }}
+                />
+                {filtersOpen && createPortal(
+                  <div
+                    ref={filterPanelRef}
+                    id="inventory-filter-panel"
+                    style={{ top: filterPanelPosition.top, left: filterPanelPosition.left }}
+                    className={`fixed z-[99998] w-[min(680px,calc(100vw-2rem))] space-y-4 rounded-2xl border p-4 shadow-2xl sm:p-5 ${
+                      isLight
+                        ? "border-[#E4E4E7] bg-white text-[#222222]"
+                        : "border-[#444444] bg-[#383838] text-white"
+                    }`}
+                  >
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   <label className="space-y-1.5 text-sm font-medium">
                     <span>{isThai ? "หมวดหมู่" : "Category"}</span>
@@ -412,27 +466,28 @@ export default function ProductInventorySplitView() {
                     {isThai ? "ล้างตัวกรอง" : "Clear filters"}
                   </button>
                 </div>
+                  </div>
+                , document.body)}
               </div>
-            )}
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-2.5 sm:ml-auto">
+              <SecondaryButton icon={<UploadCloud size={14} />}>
+                {isThai ? "ส่งออก" : "Export"}
+              </SecondaryButton>
+              <SecondaryButton icon={<Download size={14} />}>
+                {isThai ? "นำเข้า" : "Import"}
+              </SecondaryButton>
+              {showAddProduct && canEdit && (
+                <Button
+                  variant="primary"
+                  onClick={openAddModal}
+                  icon={<Plus size={14} />}
+                >
+                  {isThai ? "เพิ่มสินค้า" : "Add Product"}
+                </Button>
+              )}
+            </div>
           </div>
-          <div className="ml-auto flex flex-wrap items-center justify-end gap-2.5">
-            <SecondaryButton icon={<UploadCloud size={14} />}>
-              {isThai ? "ส่งออก" : "Export"}
-            </SecondaryButton>
-            <SecondaryButton icon={<Download size={14} />}>
-              {isThai ? "นำเข้า" : "Import"}
-            </SecondaryButton>
-            {canEdit && (
-              <Button
-                variant="primary"
-                onClick={openAddModal}
-                icon={<Plus size={14} />}
-              >
-                {isThai ? "เพิ่มสินค้า" : "Add Product"}
-              </Button>
-            )}
-          </div>
-        </div>
 
         {/* inventory-table-container */}
           {loading && !data ? (
@@ -678,10 +733,11 @@ export default function ProductInventorySplitView() {
             pageSize={pageSize}
             onPageChange={setCurrentPage}
             isThai={isThai}
-            className="w-full px-1"
+            className="px-1"
           />
-        )}
-      </div>
+          )}
+        </div>
+      </main>
 
       {/* Product detail drawer (Shared component) */}
       <SidePanel
@@ -695,69 +751,34 @@ export default function ProductInventorySplitView() {
       {/* 📌 [MODAL / SIDE DRAWER]: Add / Edit Product Form         */}
       {/* ========================================================= */}
       {isModalOpen && canEdit && (
-        <div
-          className="fixed inset-0 z-[100] flex items-stretch justify-end bg-black/70 backdrop-blur-xs animate-in fade-in duration-200"
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) setIsModalOpen(false);
-          }}
+        <SidePanel
+          item={null}
+          onClose={() => setIsModalOpen(false)}
+          eyebrow={
+            editingProduct
+              ? isThai
+                ? "จัดการข้อมูล"
+                : "Manage SKU"
+              : isThai
+                ? "สร้างข้อมูลใหม่"
+                : "New SKU"
+          }
+          title={
+            editingProduct
+              ? isThai
+                ? "แก้ไขข้อมูลสินค้า"
+                : "Edit Product"
+              : isThai
+                ? "เพิ่มสินค้าใหม่"
+                : "Add New Product"
+          }
         >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="product-form-title"
-            className={`relative w-full max-w-[560px] h-full overflow-y-auto border-l p-5 sm:p-6 shadow-2xl transition-all animate-in slide-in-from-right duration-300 flex flex-col justify-between ${
-              isLight
-                ? "bg-white border-[#E4E4E7]"
-                : "bg-[#282828] border-[#444444]"
-            }`}
-          >
-            {/* Absolute Close button at top right */}
-            <button
-              type="button"
-              onClick={() => setIsModalOpen(false)}
-              className={`absolute top-4 right-4 p-1.5 rounded-[8px] transition-colors cursor-pointer z-10 ${
-                isLight
-                  ? "text-[#666666] hover:bg-[#F4F4F5] hover:text-[#222222]"
-                  : "text-[#A1A1AA] hover:bg-[#444444] hover:text-white"
-              }`}
-              aria-label="Close"
-            >
-              <X size={18} />
-            </button>
-
-            {/* Header Title (Not sharing inline space with close button) */}
-            <div className="w-full pb-3 border-b border-[#444444]/30 shrink-0 pr-8">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#A1A1AA]">
-                  {editingProduct
-                    ? isThai
-                      ? "จัดการข้อมูล"
-                      : "Manage SKU"
-                    : isThai
-                      ? "สร้างข้อมูลใหม่"
-                      : "New SKU"}
-                </span>
-                <h3
-                  id="product-form-title"
-                  className={`font-bold text-[18px] leading-[24px] ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}
-                >
-                  {editingProduct
-                    ? isThai
-                      ? "แก้ไขข้อมูลสินค้า"
-                      : "Edit Product"
-                    : isThai
-                      ? "เพิ่มสินค้าใหม่"
-                      : "Add New Product"}
-                </h3>
-              </div>
-            </div>
-
             {/* Form */}
             <form
               onSubmit={handleSaveProduct}
-              className="flex-1 flex flex-col justify-between pt-6 text-xs min-h-0"
+              className={panelStyles.form}
             >
-              <div className="space-y-6 overflow-y-auto pr-1">
+              <div className={panelStyles.content}>
                 {formError && (
                   <div className="p-3.5 rounded-[8px] bg-[#E71D36]/10 border border-[#E71D36]/30 text-[#E71D36] text-[13px] font-medium">
                     {formError}
@@ -773,13 +794,7 @@ export default function ProductInventorySplitView() {
                 )}
 
                 {/* Section 1: ข้อมูลระบุตัวตนสินค้า */}
-                <div className="flex flex-col gap-3">
-                  <span
-                    className={`text-[12px] font-bold uppercase tracking-wider ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}
-                  >
-                    {isThai ? "1. ข้อมูลพื้นฐานสินค้า" : "1. Basic Information"}
-                  </span>
-
+                <div className={panelStyles.section}>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div className="flex flex-col gap-1.5">
                       <label
@@ -794,11 +809,7 @@ export default function ProductInventorySplitView() {
                         value={formSku}
                         onChange={(e) => setFormSku(e.target.value)}
                         placeholder="เช่น SKU-00120"
-                        className={`h-[38px] px-3.5 rounded-[8px] border text-[13px] font-mono outline-none transition-colors ${
-                          isLight
-                            ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222] focus:border-[#222222]"
-                            : "bg-[#222222] border-[#444444] text-[#F4F4F5] focus:border-[#E4E4E7]"
-                        }`}
+                        className={`${panelStyles.input} font-mono`}
                       />
                     </div>
 
@@ -815,26 +826,14 @@ export default function ProductInventorySplitView() {
                         value={formName}
                         onChange={(e) => setFormName(e.target.value)}
                         placeholder="เช่น เครื่องปั่นไฟดีเซล 5KW"
-                        className={`h-[38px] px-3.5 rounded-[8px] border text-[13px] outline-none transition-colors ${
-                          isLight
-                            ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222] focus:border-[#222222]"
-                            : "bg-[#222222] border-[#444444] text-[#F4F4F5] focus:border-[#E4E4E7]"
-                        }`}
+                        className={panelStyles.input}
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* Section 2: การจัดหมวดหมู่และหน่วย */}
-                <div className="flex flex-col gap-3 pt-2 border-t border-[#444444]/20">
-                  <span
-                    className={`text-[12px] font-bold uppercase tracking-wider ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}
-                  >
-                    {isThai
-                      ? "2. การจัดหมวดหมู่และหน่วยนับ"
-                      : "2. Classification & Unit"}
-                  </span>
-
+                <div className={panelStyles.dividedSection}>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                     <div className="flex flex-col gap-1.5">
                       <label
@@ -857,11 +856,7 @@ export default function ProductInventorySplitView() {
                         ]}
                         searchable
                         className="w-full"
-                        triggerClassName={`h-[38px] px-3.5 rounded-[8px] border text-[13px] ${
-                          isLight
-                            ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222]"
-                            : "bg-[#222222] border-[#444444] text-[#F4F4F5]"
-                        }`}
+                        triggerClassName={panelStyles.dropdown}
                       />
                     </div>
 
@@ -886,11 +881,7 @@ export default function ProductInventorySplitView() {
                         ]}
                         searchable
                         className="w-full"
-                        triggerClassName={`h-[38px] px-3.5 rounded-[8px] border text-[13px] ${
-                          isLight
-                            ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222]"
-                            : "bg-[#222222] border-[#444444] text-[#F4F4F5]"
-                        }`}
+                        triggerClassName={panelStyles.dropdown}
                       />
                     </div>
 
@@ -915,26 +906,14 @@ export default function ProductInventorySplitView() {
                         ]}
                         searchable
                         className="w-full"
-                        triggerClassName={`h-[38px] px-3.5 rounded-[8px] border text-[13px] ${
-                          isLight
-                            ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222]"
-                            : "bg-[#222222] border-[#444444] text-[#F4F4F5]"
-                        }`}
+                        triggerClassName={panelStyles.dropdown}
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* Section 3: ราคาและการควบคุมสต็อก */}
-                <div className="flex flex-col gap-3 pt-2 border-t border-[#444444]/20">
-                  <span
-                    className={`text-[12px] font-bold uppercase tracking-wider ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}
-                  >
-                    {isThai
-                      ? "3. ราคาและจุดสั่งซื้อ"
-                      : "3. Pricing & Reorder Point"}
-                  </span>
-
+                <div className={panelStyles.dividedSection}>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                     <div className="flex flex-col gap-1.5">
                       <label
@@ -949,11 +928,7 @@ export default function ProductInventorySplitView() {
                         value={formCost}
                         onChange={(e) => setFormCost(e.target.value)}
                         placeholder="0.00"
-                        className={`h-[38px] px-3.5 rounded-[8px] border text-[13px] font-mono outline-none transition-colors ${
-                          isLight
-                            ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222] focus:border-[#222222]"
-                            : "bg-[#222222] border-[#444444] text-[#F4F4F5] focus:border-[#E4E4E7]"
-                        }`}
+                        className={`${panelStyles.input} font-mono`}
                       />
                     </div>
 
@@ -970,11 +945,7 @@ export default function ProductInventorySplitView() {
                         value={formSalePrice}
                         onChange={(e) => setFormSalePrice(e.target.value)}
                         placeholder="0.00"
-                        className={`h-[38px] px-3.5 rounded-[8px] border text-[13px] font-mono outline-none transition-colors ${
-                          isLight
-                            ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222] focus:border-[#222222]"
-                            : "bg-[#222222] border-[#444444] text-[#F4F4F5] focus:border-[#E4E4E7]"
-                        }`}
+                        className={`${panelStyles.input} font-mono`}
                       />
                     </div>
 
@@ -990,11 +961,7 @@ export default function ProductInventorySplitView() {
                         value={formReorderPoint}
                         onChange={(e) => setFormReorderPoint(e.target.value)}
                         placeholder="10"
-                        className={`h-[38px] px-3.5 rounded-[8px] border text-[13px] font-mono outline-none transition-colors ${
-                          isLight
-                            ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222] focus:border-[#222222]"
-                            : "bg-[#222222] border-[#444444] text-[#F4F4F5] focus:border-[#E4E4E7]"
-                        }`}
+                        className={`${panelStyles.input} font-mono`}
                       />
                     </div>
                   </div>
@@ -1002,27 +969,19 @@ export default function ProductInventorySplitView() {
               </div>
 
               {/* Actions */}
-              <div className="pt-5 border-t border-[#444444]/30 flex justify-end items-center gap-3 shrink-0 mt-6">
+              <div className={panelStyles.footer}>
                 <button
                   type="button"
                   disabled={formSubmitting}
                   onClick={() => setIsModalOpen(false)}
-                  className={`h-[42px] px-6 rounded-[8px] border text-[14px] font-bold transition-colors cursor-pointer ${
-                    isLight
-                      ? "bg-white border-[#E4E4E7] text-[#222222] hover:bg-[#F4F4F5]"
-                      : "bg-[#383838] border-[#444444] text-[#F4F4F5] hover:bg-[#444444]"
-                  }`}
+                  className={panelStyles.cancel}
                 >
                   {isThai ? "ยกเลิก" : "Cancel"}
                 </button>
                 <button
                   type="submit"
                   disabled={formSubmitting || !formRefs}
-                  className={`h-[42px] px-6 rounded-[8px] text-[14px] font-bold cursor-pointer transition-colors shadow-sm disabled:opacity-50 ${
-                    isLight
-                      ? "bg-[#222222] hover:bg-black text-white"
-                      : "bg-white hover:bg-[#F4F4F5] text-[#222222]"
-                  }`}
+                  className={panelStyles.submit}
                 >
                   {formSubmitting
                     ? isThai
@@ -1038,8 +997,7 @@ export default function ProductInventorySplitView() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </SidePanel>
       )}
     </div>
   );

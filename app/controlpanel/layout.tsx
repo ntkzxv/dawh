@@ -51,6 +51,8 @@ export default function ControlPanelLayout({
       ? "security"
       : pathname === "/controlpanel/branches"
         ? "branches"
+        : pathname === "/controlpanel/products"
+          ? "master-data"
         : pathname === "/controlpanel/users"
           ? "members"
           : pathname === "/controlpanel/user-scopes"
