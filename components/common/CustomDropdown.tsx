@@ -20,6 +20,8 @@ export interface CustomDropdownProps<T = string> {
   onChange: (value: T) => void;
   options: DropdownOption<T>[];
   placeholder?: string;
+  placeholderClassName?: string;
+  "aria-invalid"?: boolean;
   className?: string;
   triggerClassName?: string;
   menuClassName?: string;
@@ -37,6 +39,8 @@ export default function CustomDropdown<T = string>({
   onChange,
   options,
   placeholder = "Select option...",
+  placeholderClassName = "",
+  "aria-invalid": ariaInvalid,
   className = "",
   triggerClassName = "",
   menuClassName = "",
@@ -308,6 +312,7 @@ export default function CustomDropdown<T = string>({
         onClick={toggleOpen}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
+        aria-invalid={ariaInvalid}
         aria-controls={`${dropdownId}-listbox`}
         aria-activedescendant={isOpen && activeIndex >= 0 ? `${dropdownId}-option-${activeIndex}` : undefined}
         onKeyDown={handleTriggerKeyDown}
@@ -329,7 +334,7 @@ export default function CustomDropdown<T = string>({
           {(icon || selectedOption?.icon) && (
             <span className="shrink-0 text-current">{icon || selectedOption?.icon}</span>
           )}
-          <span className="truncate">
+          <span className={`truncate ${selectedOption ? "" : placeholderClassName}`}>
             {selectedOption ? selectedOption.label : placeholder}
           </span>
           {selectedOption?.badge && (

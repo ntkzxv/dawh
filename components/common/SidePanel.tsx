@@ -30,6 +30,34 @@ export interface SidePanelProps {
   children?: ReactNode;
 }
 
+export function SidePanelAlert({
+  children,
+  tone = "error",
+}: {
+  children: ReactNode;
+  tone?: "error" | "success";
+}) {
+  const colors = tone === "error"
+    ? "border-[#E71D36]/30 bg-[#E71D36]/10 text-[#E71D36]"
+    : "border-[#2EC4B6]/30 bg-[#2EC4B6]/10 text-[#2EC4B6]";
+
+  return (
+    <div role={tone === "error" ? "alert" : "status"} className={`rounded-[8px] border p-3.5 text-[13px] font-medium ${colors}`}>
+      {children}
+    </div>
+  );
+}
+
+export const sidePanelInvalidFieldClassName = "!border-[#E74C3C] dark:!border-[#E71D36]";
+
+export function SidePanelFieldError({ children }: { children: ReactNode }) {
+  return (
+    <span role="alert" className="mt-1 block text-xs text-[#E74C3C] dark:text-[#E71D36]">
+      {children}
+    </span>
+  );
+}
+
 export function sidePanelFormStyles(isLight: boolean) {
   return {
     form: "flex-1 flex flex-col justify-between pt-6 text-xs min-h-0",

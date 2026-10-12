@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { Building2, Plus, Save } from "lucide-react";
+import { Building2, Ellipsis, Plus, Save } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import DataTable, {
   dataTableFrameClassName,
@@ -11,18 +11,19 @@ import SearchInput from "@/components/common/SearchInput";
 import CommonButton from "@/components/common/Button";
 import FilterButton from "@/components/common/FilterButton";
 import FilterDropdown from "@/components/common/FilterDropdown";
-import SidePanel from "@/components/common/SidePanel";
+import SidePanel, { SidePanelAlert, SidePanelFieldError, sidePanelInvalidFieldClassName } from "@/components/common/SidePanel";
 import { Pagination } from "@/components/common";
 import { warehouseApi, type CatalogItem } from "@/lib/api/warehouse";
 import { canEditCatalog } from "@/lib/contracts/warehouse-policy";
 import { useOptionalWarehouseAccount } from "@/context/WarehouseAccountContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAccountMenu } from "@/hooks/useAccountMenu";
+import { SkeletonBox } from "@/components/loading_screen/SkeletonLoading";
 import { Field, input, message, Notice, useRemote } from "./Ui";
 
 const PAGE_SIZE = 10;
 
-export default function BranchManagement({ onTotalChange }: { onTotalChange: (total: number) => void }) {
+export default function BranchManagement() {
   const { theme } = useTheme();
   const { isThai } = useAccountMenu();
   const account = useOptionalWarehouseAccount();
@@ -37,6 +38,7 @@ export default function BranchManagement({ onTotalChange }: { onTotalChange: (to
   const [panelOpen, setPanelOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<string[]>([]);
   const isLight = theme === "light";
 
   useEffect(() => {
@@ -54,12 +56,6 @@ export default function BranchManagement({ onTotalChange }: { onTotalChange: (to
   const rows = data?.items ?? [];
   const totalPages = Math.ceil((data?.page.total ?? 0) / PAGE_SIZE);
   const activeFilterCount = Number(statusFilter !== "all");
-
-  useEffect(() => {
-    if (data?.page.total !== undefined && !debouncedSearch.trim() && statusFilter === "all") {
-      onTotalChange(data.page.total);
-    }
-  }, [data?.page.total, debouncedSearch, statusFilter, onTotalChange]);
 
   useEffect(() => {
     if (!filtersOpen) return;
@@ -95,7 +91,7 @@ export default function BranchManagement({ onTotalChange }: { onTotalChange: (to
       key: "address",
       header: isThai ? "ที่อยู่" : "Address",
       className: "text-slate-500 dark:text-zinc-300",
-      render: (branch) => branch.address ? String(branch.address) : <span className="text-slate-400">—</span>,
+      render: (branch) => branch.address ? String(branch.address) : <span className="text-slate-400 dark:text-zinc-400">—</span>,
     },
     {
       key: "active",
@@ -112,16 +108,16 @@ export default function BranchManagement({ onTotalChange }: { onTotalChange: (to
       key: "edit",
       header: isThai ? "จัดการ" : "Manage",
       align: "right" as const,
-      className: "w-28",
+      className: "w-14",
       render: (branch: CatalogItem) => (
-        <button type="button" className="rounded-md px-3 py-1.5 font-semibold text-[#222222] hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 dark:text-white dark:hover:bg-white/10" onClick={() => { setEditing(branch); setPanelOpen(true); }}>
-          {isThai ? "แก้ไข" : "Edit"}
+        <button type="button" aria-label={isThai ? `แก้ไขสาขา ${branch.name}` : `Edit branch ${branch.name}`} title={isThai ? "แก้ไข" : "Edit"} className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white" onClick={() => { setEditing(branch); setFieldErrors([]); setFailure(null); setPanelOpen(true); }}>
+          <Ellipsis className="h-5 w-5" aria-hidden="true" />
         </button>
       ),
     }] : []),
   ], [canEdit, isThai]);
 
-  const openCreate = () => { setEditing(null); setPanelOpen(true); };
+  const openCreate = () => { setEditing(null); setFieldErrors([]); setFailure(null); setPanelOpen(true); };
   const save = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -133,6 +129,12 @@ export default function BranchManagement({ onTotalChange }: { onTotalChange: (to
     };
     setFailure(null);
     setNotice(null);
+    const nextErrors = [
+      ...(!body.code ? ["code"] : []),
+      ...(!body.name ? ["name"] : []),
+    ];
+    setFieldErrors(nextErrors);
+    if (nextErrors.length) return;
     try {
       if (editing) await warehouseApi.updateCatalog("branches", editing.id, body);
       else await warehouseApi.createCatalog("branches", body);
@@ -152,19 +154,21 @@ export default function BranchManagement({ onTotalChange }: { onTotalChange: (to
       <div className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <SearchInput
+            {loading ? <SkeletonBox className="h-9 w-full rounded-md sm:w-72" /> : <SearchInput
               value={search}
               onChange={(value) => { setSearch(value); setPage(1); }}
               placeholder={isThai ? "ค้นหารหัสหรือชื่อสาขา" : "Search branch code or name"}
               aria-label={isThai ? "ค้นหาสาขา" : "Search branches"}
               width="w-full sm:w-72"
-            />
-            <div className="relative shrink-0" ref={filtersRef}>
+            />}
+            {loading ? <SkeletonBox className="h-[33px] w-[104px] rounded-md" /> : <div className="relative shrink-0" ref={filtersRef}>
             <FilterButton
               controls="branches-filter-panel"
               expanded={filtersOpen}
               label={isThai ? "ตัวกรอง" : "Filters"}
+              clearLabel={isThai ? "ล้างตัวกรอง" : "Clear filters"}
               activeFilterCount={activeFilterCount}
+              onClear={() => { setStatusFilter("all"); setPage(1); setFiltersOpen(false); }}
               onClick={() => setFiltersOpen((open) => !open)}
             />
             <AnimatePresence initial={false}>
@@ -202,10 +206,10 @@ export default function BranchManagement({ onTotalChange }: { onTotalChange: (to
                 </motion.div>
               )}
             </AnimatePresence>
-            </div>
+            </div>}
           </div>
           {canEdit && (
-            <CommonButton variant="primary" onClick={openCreate} className="shrink-0 sm:ml-auto" icon={<Plus size={14} />}>
+            loading ? <SkeletonBox className="h-9 w-32 rounded-xl sm:ml-auto" /> : <CommonButton variant="primary" onClick={openCreate} className="shrink-0 sm:ml-auto" icon={<Plus size={14} />}>
               {isThai ? "เพิ่มสาขา" : "Add branch"}
             </CommonButton>
           )}
@@ -223,22 +227,25 @@ export default function BranchManagement({ onTotalChange }: { onTotalChange: (to
             emptyTitle={search.trim() || statusFilter !== "all" ? (isThai ? "ไม่พบสาขาที่ตรงกับคำค้นหาหรือตัวกรอง" : "No branches match the search or filters") : (isThai ? "ยังไม่มีสาขา" : "No branches yet")}
           />
         </section>
-        {(data?.page.total ?? 0) > 0 && (
+        {loading ? <SkeletonBox className="ml-auto h-9 w-64 rounded-xl" /> : (data?.page.total ?? 0) > 0 && (
           <Pagination currentPage={page} totalPages={totalPages} totalItems={data?.page.total ?? 0} pageSize={PAGE_SIZE} onPageChange={setPage} className="px-1" />
         )}
       </div>
 
       {panelOpen && canEdit && (
         <SidePanel item={null} onClose={() => setPanelOpen(false)} title={editing ? (isThai ? "แก้ไขข้อมูลสาขา" : "Edit branch") : (isThai ? "เพิ่มสาขา" : "Add branch")}>
-          <form onSubmit={save} className="space-y-5 p-5">
+          <form onSubmit={save} noValidate className="space-y-5 p-5">
+            {failure && <SidePanelAlert>{failure}</SidePanelAlert>}
             <p className="text-sm text-slate-500 dark:text-zinc-300">
               {isThai ? "กรอกข้อมูลที่ใช้ระบุสาขาในระบบ" : "Enter the details used to identify this branch."}
             </p>
             <Field label={isThai ? "รหัสสาขา" : "Branch code"}>
-              <input className={input} name="code" required maxLength={50} defaultValue={editing?.code ?? ""} />
+              <input className={`${input} ${fieldErrors.includes("code") ? sidePanelInvalidFieldClassName : ""}`} name="code" required aria-invalid={fieldErrors.includes("code")} maxLength={50} defaultValue={editing?.code ?? ""} onChange={() => setFieldErrors((errors) => errors.filter((field) => field !== "code"))} />
+              {fieldErrors.includes("code") && <SidePanelFieldError>{isThai ? "กรุณากรอกรหัสสาขา" : "Enter a branch code."}</SidePanelFieldError>}
             </Field>
             <Field label={isThai ? "ชื่อสาขา" : "Branch name"}>
-              <input className={input} name="name" required maxLength={160} defaultValue={editing?.name ?? ""} />
+              <input className={`${input} ${fieldErrors.includes("name") ? sidePanelInvalidFieldClassName : ""}`} name="name" required aria-invalid={fieldErrors.includes("name")} maxLength={160} defaultValue={editing?.name ?? ""} onChange={() => setFieldErrors((errors) => errors.filter((field) => field !== "name"))} />
+              {fieldErrors.includes("name") && <SidePanelFieldError>{isThai ? "กรุณากรอกชื่อสาขา" : "Enter a branch name."}</SidePanelFieldError>}
             </Field>
             <Field label={isThai ? "ที่อยู่" : "Address"}>
               <textarea className={`${input} min-h-24 resize-y`} name="address" maxLength={1000} defaultValue={String(editing?.address ?? "")} />

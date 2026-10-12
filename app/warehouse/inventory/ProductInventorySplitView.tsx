@@ -13,10 +13,13 @@ import {
   DATA_TABLE_STYLES,
   dataTableFrameClassName,
 } from "@/components/common/DataTable";
-import { SkeletonBox } from "@/components/loading_screen/SkeletonLoading";
+import { SkeletonBox, SkeletonDataTable } from "@/components/loading_screen/SkeletonLoading";
 import {
   SidePanel,
+  SidePanelAlert,
+  SidePanelFieldError,
   sidePanelFormStyles,
+  sidePanelInvalidFieldClassName,
   Pagination,
   Button,
   SecondaryButton,
@@ -172,6 +175,7 @@ export default function ProductInventorySplitView({
   );
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [formFieldErrors, setFormFieldErrors] = useState<string[]>([]);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
 
   // New/Edit Form Values
@@ -242,8 +246,9 @@ export default function ProductInventorySplitView({
     setFormUnitId("");
     setFormCost("");
     setFormSalePrice("");
-    setFormReorderPoint("10");
+    setFormReorderPoint("");
     setFormError(null);
+    setFormFieldErrors([]);
     setFormSuccess(null);
     setIsModalOpen(true);
   };
@@ -256,10 +261,11 @@ export default function ProductInventorySplitView({
     setFormCategoryId(String(raw?.category_id || ""));
     setFormBrandId(String(raw?.brand_id || ""));
     setFormUnitId(String(raw?.unit_id || ""));
-    setFormCost(String(raw?.cost || ""));
+    setFormCost(String(raw?.cost ?? ""));
     setFormSalePrice(String(raw?.sale_price ?? raw?.cost ?? item.price ?? ""));
-    setFormReorderPoint(String(raw?.reorder_point || item.minStock || "10"));
+    setFormReorderPoint(String(raw?.reorder_point ?? item.minStock ?? ""));
     setFormError(null);
+    setFormFieldErrors([]);
     setFormSuccess(null);
     setSelectedItem(null);
     setIsModalOpen(true);
@@ -267,8 +273,18 @@ export default function ProductInventorySplitView({
 
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formSku.trim() || !formName.trim()) {
-      setFormError("กรุณากรอกรหัส SKU และชื่อสินค้า");
+    const nextErrors = [
+      ...(!formSku.trim() ? ["sku"] : []),
+      ...(!formName.trim() ? ["name"] : []),
+      ...(!formCategoryId ? ["category"] : []),
+      ...(!formBrandId ? ["brand"] : []),
+      ...(!formUnitId ? ["unit"] : []),
+      ...(!formCost.trim() ? ["cost"] : []),
+      ...(!formSalePrice.trim() ? ["salePrice"] : []),
+      ...(!formReorderPoint.trim() ? ["reorderPoint"] : []),
+    ];
+    setFormFieldErrors(nextErrors);
+    if (nextErrors.length) {
       return;
     }
 
@@ -292,10 +308,10 @@ export default function ProductInventorySplitView({
           editingProduct.id,
           payload,
         );
-        setFormSuccess("แก้ไขข้อมูลสินค้าเรียบร้อย");
+        setFormSuccess(isThai ? "แก้ไขข้อมูลสินค้าเรียบร้อย" : "Product updated successfully.");
       } else {
         await warehouseApi.createCatalog("products", payload);
-        setFormSuccess("สร้างสินค้าใหม่เรียบร้อยแล้ว");
+        setFormSuccess(isThai ? "สร้างสินค้าใหม่เรียบร้อยแล้ว" : "Product created successfully.");
       }
 
       await refresh();
@@ -347,7 +363,7 @@ export default function ProductInventorySplitView({
         <div className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <SearchInput
+              {loading && !data ? <SkeletonBox className="h-9 w-full rounded-md sm:w-72" /> : <SearchInput
                 value={searchQuery}
                 onChange={(val) => {
                   setSearchQuery(val);
@@ -356,17 +372,25 @@ export default function ProductInventorySplitView({
                 placeholder={isThai ? "ค้นหา SKU, ชื่อ..." : "Search SKU, Name..."}
                 aria-label={isThai ? "ค้นหาสินค้า" : "Search products"}
                 width="w-full sm:w-72"
-              />
-              <div className="relative shrink-0" ref={filterDropdownRef}>
+              />}
+              {loading && !data ? <SkeletonBox className="h-[33px] w-[104px] rounded-md" /> : <div className="relative shrink-0" ref={filterDropdownRef}>
                 <FilterButton
                   controls="inventory-filter-panel"
                   expanded={filtersOpen}
                   label={isThai ? "ตัวกรอง" : "Filters"}
+                  clearLabel={isThai ? "ล้างตัวกรอง" : "Clear filters"}
                   activeFilterCount={
                     Number(selectedCategory !== "all") +
                     Number(selectedStatus !== "all") +
                     Number(selectedWarehouse !== "all")
                   }
+                  onClear={() => {
+                    setSelectedCategory("all");
+                    setSelectedStatus("all");
+                    setSelectedWarehouse("all");
+                    setCurrentPage(1);
+                    setFiltersOpen(false);
+                  }}
                   onClick={() => {
                     if (filtersOpen) {
                       setFiltersOpen(false);
@@ -468,9 +492,15 @@ export default function ProductInventorySplitView({
                 </div>
                   </div>
                 , document.body)}
-              </div>
+              </div>}
             </div>
-            <div className="flex flex-wrap items-center justify-end gap-2.5 sm:ml-auto">
+            {loading && !data ? (
+              <div className="flex flex-wrap items-center justify-end gap-2.5 sm:ml-auto">
+                <SkeletonBox className="h-9 w-24 rounded-xl" />
+                <SkeletonBox className="h-9 w-24 rounded-xl" />
+                {showAddProduct && canEdit && <SkeletonBox className="h-9 w-32 rounded-xl" />}
+              </div>
+            ) : <div className="flex flex-wrap items-center justify-end gap-2.5 sm:ml-auto">
               <SecondaryButton icon={<UploadCloud size={14} />}>
                 {isThai ? "ส่งออก" : "Export"}
               </SecondaryButton>
@@ -486,82 +516,12 @@ export default function ProductInventorySplitView({
                   {isThai ? "เพิ่มสินค้า" : "Add Product"}
                 </Button>
               )}
-            </div>
+            </div>}
           </div>
 
         {/* inventory-table-container */}
           {loading && !data ? (
-            <div
-              role="status"
-              aria-label={
-                isThai ? "กำลังโหลดข้อมูลสินค้า" : "Loading inventory"
-              }
-              className={`${dataTableFrameClassName(isLight)} w-full overflow-x-auto`}
-            >
-              <table
-                className={DATA_TABLE_STYLES.table}
-                aria-hidden="true"
-              >
-                <thead>
-                  <tr
-                    className={`${DATA_TABLE_STYLES.headerRow} ${isLight ? "bg-[#F4F4F5]" : "bg-[#2C2C2C]"}`}
-                  >
-                    {[
-                      "w-[190px]",
-                      "",
-                      "w-[130px]",
-                      "w-[120px]",
-                      "w-[120px]",
-                      "w-[90px]",
-                      "w-[120px]",
-                      "w-[100px]",
-                      "w-[48px]",
-                    ].map((width, index) => (
-                      <th key={index} className={`${DATA_TABLE_STYLES.headerCell} ${width}`}>
-                        <SkeletonBox
-                          className={`h-3 ${index === 1 ? "w-3/4" : "w-2/3"}`}
-                        />
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody
-                  className={`${DATA_TABLE_STYLES.body} ${isLight ? "divide-[#E4E4E7]" : "divide-[#444444]"}`}
-                >
-                  {Array.from({ length: 6 }).map((_, row) => (
-                    <tr key={row} className="h-[56px]">
-                      <td className="px-3 py-3">
-                        <SkeletonBox className="h-3.5 w-3/4" />
-                      </td>
-                      <td className="px-3 py-3">
-                        <SkeletonBox className="h-3.5 w-20" />
-                      </td>
-                      <td className="px-3 py-3">
-                        <SkeletonBox className="h-3.5 w-20" />
-                      </td>
-                      <td className="px-3 py-3">
-                        <SkeletonBox className="h-3.5 w-20" />
-                      </td>
-                      <td className="px-3 py-3">
-                        <SkeletonBox className="ml-auto h-3.5 w-12" />
-                      </td>
-                      <td className="px-3 py-3">
-                        <SkeletonBox className="h-3.5 w-14" />
-                      </td>
-                      <td className="px-3 py-3">
-                        <SkeletonBox className="ml-auto h-3.5 w-12" />
-                      </td>
-                      <td className="px-3 py-3">
-                        <SkeletonBox className="h-5 w-14 rounded-full" />
-                      </td>
-                      <td className="px-3 py-3">
-                        <SkeletonBox className="ml-auto size-8 rounded-[6px]" />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <SkeletonDataTable rows={6} columns={9} showToolbar={false} minWidth="1080px" ariaLabel={isThai ? "กำลังโหลดข้อมูลสินค้า" : "Loading inventory"} />
           ) : !data && error ? (
             <div className={`${dataTableFrameClassName(isLight)} w-full py-12 text-center text-sm`}>
               <button
@@ -725,7 +685,7 @@ export default function ProductInventorySplitView({
               </table>
             </div>
           )}
-        {filteredItems.length > 0 && (
+        {loading && !data ? <SkeletonBox className="ml-auto h-9 w-64 rounded-xl" /> : filteredItems.length > 0 && (
           <Pagination
             currentPage={displayedPage}
             totalPages={totalPages}
@@ -776,21 +736,22 @@ export default function ProductInventorySplitView({
             {/* Form */}
             <form
               onSubmit={handleSaveProduct}
+              noValidate
               className={panelStyles.form}
             >
               <div className={panelStyles.content}>
                 {formError && (
-                  <div className="p-3.5 rounded-[8px] bg-[#E71D36]/10 border border-[#E71D36]/30 text-[#E71D36] text-[13px] font-medium">
+                  <SidePanelAlert>
                     {formError}
-                  </div>
+                  </SidePanelAlert>
                 )}
                 {formRefsError && (
-                  <p className="text-rose-600">{formRefsError}</p>
+                  <SidePanelAlert>{formRefsError}</SidePanelAlert>
                 )}
                 {formSuccess && (
-                  <div className="p-3.5 rounded-[8px] bg-[#2EC4B6]/10 border border-[#2EC4B6]/30 text-[#2EC4B6] text-[13px] font-medium">
+                  <SidePanelAlert tone="success">
                     {formSuccess}
-                  </div>
+                  </SidePanelAlert>
                 )}
 
                 {/* Section 1: ข้อมูลระบุตัวตนสินค้า */}
@@ -800,34 +761,50 @@ export default function ProductInventorySplitView({
                       <label
                         className={`text-[12px] font-bold ${isLight ? "text-[#444444]" : "text-[#E4E4E7]"}`}
                       >
-                        {isThai ? "รหัสสินค้า (SKU)" : "SKU Code"}{" "}
-                        <span className="text-[#E71D36]">*</span>
+                        {isThai ? "รหัสสินค้า (SKU)" : "SKU Code"}
                       </label>
                       <input
                         type="text"
-                        required
+                        aria-invalid={formFieldErrors.includes("sku")}
                         value={formSku}
-                        onChange={(e) => setFormSku(e.target.value)}
-                        placeholder="เช่น SKU-00120"
-                        className={`${panelStyles.input} font-mono`}
+                        onChange={(e) => {
+                          setFormSku(e.target.value);
+                          setFormError(null);
+                          setFormFieldErrors((errors) => errors.filter((field) => field !== "sku"));
+                        }}
+                        placeholder={isThai ? "เช่น SKU-00120" : "e.g. SKU-00120"}
+                        className={`${panelStyles.input} font-mono ${formFieldErrors.includes("sku") ? sidePanelInvalidFieldClassName : ""}`}
                       />
+                      {formFieldErrors.includes("sku") && (
+                        <SidePanelFieldError>
+                          {isThai ? "กรุณากรอกรหัสสินค้า (SKU)" : "Enter a SKU code."}
+                        </SidePanelFieldError>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-1.5">
                       <label
                         className={`text-[12px] font-bold ${isLight ? "text-[#444444]" : "text-[#E4E4E7]"}`}
                       >
-                        {isThai ? "ชื่อสินค้า" : "Product Name"}{" "}
-                        <span className="text-[#E71D36]">*</span>
+                        {isThai ? "ชื่อสินค้า" : "Product Name"}
                       </label>
                       <input
                         type="text"
-                        required
+                        aria-invalid={formFieldErrors.includes("name")}
                         value={formName}
-                        onChange={(e) => setFormName(e.target.value)}
-                        placeholder="เช่น เครื่องปั่นไฟดีเซล 5KW"
-                        className={panelStyles.input}
+                        onChange={(e) => {
+                          setFormName(e.target.value);
+                          setFormError(null);
+                          setFormFieldErrors((errors) => errors.filter((field) => field !== "name"));
+                        }}
+                        placeholder={isThai ? "เช่น เครื่องปั่นไฟดีเซล 5KW" : "e.g. 5 kW diesel generator"}
+                        className={`${panelStyles.input} ${formFieldErrors.includes("name") ? sidePanelInvalidFieldClassName : ""}`}
                       />
+                      {formFieldErrors.includes("name") && (
+                        <SidePanelFieldError>
+                          {isThai ? "กรุณากรอกชื่อสินค้า" : "Enter a product name."}
+                        </SidePanelFieldError>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -843,12 +820,14 @@ export default function ProductInventorySplitView({
                       </label>
                       <CustomDropdown
                         value={formCategoryId}
-                        onChange={setFormCategoryId}
+                        onChange={(value) => {
+                          setFormCategoryId(value);
+                          setFormFieldErrors((errors) => errors.filter((field) => field !== "category"));
+                        }}
+                        placeholder="Select"
+                        placeholderClassName="!text-[#A1A1AA]"
+                        aria-invalid={formFieldErrors.includes("category")}
                         options={[
-                          {
-                            value: "",
-                            label: isThai ? "- เลือกหมวดหมู่ -" : "- Select -",
-                          },
                           ...(filters?.categories || []).map((c) => ({
                             value: String(c.id),
                             label: c.name,
@@ -856,8 +835,13 @@ export default function ProductInventorySplitView({
                         ]}
                         searchable
                         className="w-full"
-                        triggerClassName={panelStyles.dropdown}
+                        triggerClassName={`${panelStyles.dropdown} ${formFieldErrors.includes("category") ? sidePanelInvalidFieldClassName : ""}`}
                       />
+                      {formFieldErrors.includes("category") && (
+                        <SidePanelFieldError>
+                          {isThai ? "กรุณาเลือกหมวดหมู่สินค้า" : "Select a category."}
+                        </SidePanelFieldError>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-1.5">
@@ -868,12 +852,14 @@ export default function ProductInventorySplitView({
                       </label>
                       <CustomDropdown
                         value={formBrandId}
-                        onChange={setFormBrandId}
+                        onChange={(value) => {
+                          setFormBrandId(value);
+                          setFormFieldErrors((errors) => errors.filter((field) => field !== "brand"));
+                        }}
+                        placeholder="Select"
+                        placeholderClassName="!text-[#A1A1AA]"
+                        aria-invalid={formFieldErrors.includes("brand")}
                         options={[
-                          {
-                            value: "",
-                            label: isThai ? "- เลือกยี่ห้อ -" : "- Select -",
-                          },
                           ...(formRefs?.brands || []).map((b) => ({
                             value: String(b.id),
                             label: b.name,
@@ -881,8 +867,13 @@ export default function ProductInventorySplitView({
                         ]}
                         searchable
                         className="w-full"
-                        triggerClassName={panelStyles.dropdown}
+                        triggerClassName={`${panelStyles.dropdown} ${formFieldErrors.includes("brand") ? sidePanelInvalidFieldClassName : ""}`}
                       />
+                      {formFieldErrors.includes("brand") && (
+                        <SidePanelFieldError>
+                          {isThai ? "กรุณาเลือกยี่ห้อ / แบรนด์" : "Select a brand."}
+                        </SidePanelFieldError>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-1.5">
@@ -893,12 +884,14 @@ export default function ProductInventorySplitView({
                       </label>
                       <CustomDropdown
                         value={formUnitId}
-                        onChange={setFormUnitId}
+                        onChange={(value) => {
+                          setFormUnitId(value);
+                          setFormFieldErrors((errors) => errors.filter((field) => field !== "unit"));
+                        }}
+                        placeholder="Select"
+                        placeholderClassName="!text-[#A1A1AA]"
+                        aria-invalid={formFieldErrors.includes("unit")}
                         options={[
-                          {
-                            value: "",
-                            label: isThai ? "- เลือกหน่วย -" : "- Select -",
-                          },
                           ...(formRefs?.units || []).map((u) => ({
                             value: String(u.id),
                             label: u.name,
@@ -906,8 +899,13 @@ export default function ProductInventorySplitView({
                         ]}
                         searchable
                         className="w-full"
-                        triggerClassName={panelStyles.dropdown}
+                        triggerClassName={`${panelStyles.dropdown} ${formFieldErrors.includes("unit") ? sidePanelInvalidFieldClassName : ""}`}
                       />
+                      {formFieldErrors.includes("unit") && (
+                        <SidePanelFieldError>
+                          {isThai ? "กรุณาเลือกหน่วยนับ" : "Select a unit."}
+                        </SidePanelFieldError>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -926,10 +924,19 @@ export default function ProductInventorySplitView({
                         step="0.01"
                         min="0"
                         value={formCost}
-                        onChange={(e) => setFormCost(e.target.value)}
+                        aria-invalid={formFieldErrors.includes("cost")}
+                        onChange={(e) => {
+                          setFormCost(e.target.value);
+                          setFormFieldErrors((errors) => errors.filter((field) => field !== "cost"));
+                        }}
                         placeholder="0.00"
-                        className={`${panelStyles.input} font-mono`}
+                        className={`${panelStyles.input} font-mono ${formFieldErrors.includes("cost") ? sidePanelInvalidFieldClassName : ""}`}
                       />
+                      {formFieldErrors.includes("cost") && (
+                        <SidePanelFieldError>
+                          {isThai ? "กรุณากรอกต้นทุน" : "Enter a cost."}
+                        </SidePanelFieldError>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-1.5">
@@ -943,10 +950,19 @@ export default function ProductInventorySplitView({
                         step="0.01"
                         min="0"
                         value={formSalePrice}
-                        onChange={(e) => setFormSalePrice(e.target.value)}
+                        aria-invalid={formFieldErrors.includes("salePrice")}
+                        onChange={(e) => {
+                          setFormSalePrice(e.target.value);
+                          setFormFieldErrors((errors) => errors.filter((field) => field !== "salePrice"));
+                        }}
                         placeholder="0.00"
-                        className={`${panelStyles.input} font-mono`}
+                        className={`${panelStyles.input} font-mono ${formFieldErrors.includes("salePrice") ? sidePanelInvalidFieldClassName : ""}`}
                       />
+                      {formFieldErrors.includes("salePrice") && (
+                        <SidePanelFieldError>
+                          {isThai ? "กรุณากรอกราคาขาย" : "Enter a sale price."}
+                        </SidePanelFieldError>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-1.5">
@@ -959,10 +975,19 @@ export default function ProductInventorySplitView({
                         type="number"
                         min="0"
                         value={formReorderPoint}
-                        onChange={(e) => setFormReorderPoint(e.target.value)}
-                        placeholder="10"
-                        className={`${panelStyles.input} font-mono`}
+                        aria-invalid={formFieldErrors.includes("reorderPoint")}
+                        onChange={(e) => {
+                          setFormReorderPoint(e.target.value);
+                          setFormFieldErrors((errors) => errors.filter((field) => field !== "reorderPoint"));
+                        }}
+                        placeholder="0"
+                        className={`${panelStyles.input} font-mono ${formFieldErrors.includes("reorderPoint") ? sidePanelInvalidFieldClassName : ""}`}
                       />
+                      {formFieldErrors.includes("reorderPoint") && (
+                        <SidePanelFieldError>
+                          {isThai ? "กรุณากรอกจุดสั่งซื้อ" : "Enter a reorder point."}
+                        </SidePanelFieldError>
+                      )}
                     </div>
                   </div>
                 </div>

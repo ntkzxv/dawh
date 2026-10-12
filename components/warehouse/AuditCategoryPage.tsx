@@ -9,13 +9,15 @@ import DataTable, {
 import CustomDropdown, { type DropdownOption } from "@/components/common/CustomDropdown";
 import DatePicker from "@/components/common/DatePicker";
 import Pagination from "@/components/common/Pagination";
-import { Ellipsis, Search, SlidersHorizontal, X } from "lucide-react";
+import FilterButton from "@/components/common/FilterButton";
+import { Ellipsis, Search, X } from "lucide-react";
 import { ApiRequestError } from "@/lib/api/client";
 import { warehouseApi, type AuditEvent } from "@/lib/api/warehouse";
 import { useAccountMenu } from "@/hooks/useAccountMenu";
 import { useTheme } from "@/context/ThemeContext";
 import { AUDIT_CATEGORIES, getAuditActionLabel, getAuditEntityTypeLabel } from "./auditLog";
-import { input, panel } from "./Ui";
+import { input } from "./Ui";
+import { SkeletonBox } from "@/components/loading_screen/SkeletonLoading";
 
 const PAGE_SIZE = 25;
 
@@ -256,7 +258,7 @@ export default function AuditCategoryPage({ categoryId }: { categoryId: string }
     <main className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4 sm:p-6 lg:p-8">
       <div className="relative z-30 flex items-center gap-2">
           {/* Search Input */}
-          <div
+          {loading ? <SkeletonBox className="h-10 min-w-0 flex-1 rounded-md" /> : <div
             className={`relative flex items-center px-3 py-1.5 min-w-0 flex-1 rounded-[6px] border text-[13px] transition-colors ${
               isLight
                 ? "bg-white border-[#E4E4E7] text-[#222222]"
@@ -288,30 +290,31 @@ export default function AuditCategoryPage({ categoryId }: { categoryId: string }
                 <X className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
             )}
-          </div>
+          </div>}
           <div className="relative shrink-0" ref={filterDropdownRef}>
-          <button
-            type="button"
-            aria-expanded={filtersOpen}
-            aria-controls="audit-filter-panel"
-            onClick={() => {
-              if (!filtersOpen) {
-                setDraftFrom(from);
-                setDraftTo(to);
-                setDraftAction(action);
-                setDraftEntityType(entityType);
-                setDraftSort(sort);
-              }
-              setFiltersOpen((open) => !open);
-            }}
-            className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${isLight ? "border-[#E4E4E7] bg-white text-[#222222] hover:bg-slate-50" : "border-[#444444] bg-[#383838] text-white hover:bg-white/5"}`}
-          >
-            <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-            {isThai ? "ตัวกรอง" : "Filters"}
-            {activeFilterCount > 0 && (
-              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#6366F1] px-1 text-xs text-white">{activeFilterCount}</span>
-            )}
-          </button>
+            {loading ? <SkeletonBox className="h-[33px] w-[104px] rounded-md" /> : <>
+            <FilterButton
+              controls="audit-filter-panel"
+              expanded={filtersOpen}
+              label={isThai ? "ตัวกรอง" : "Filters"}
+              clearLabel={isThai ? "ล้างตัวกรอง" : "Clear filters"}
+              activeFilterCount={activeFilterCount}
+              onClear={() => {
+                setSearchInput("");
+                setFiltersOpen(false);
+                pushFilters({ q: "", from: "", to: "", action: "", entityType: "", sort: "date_desc", page: 1 });
+              }}
+              onClick={() => {
+                if (!filtersOpen) {
+                  setDraftFrom(from);
+                  setDraftTo(to);
+                  setDraftAction(action);
+                  setDraftEntityType(entityType);
+                  setDraftSort(sort);
+                }
+                setFiltersOpen((open) => !open);
+              }}
+            />
           {filtersOpen && (
             <form
               key={searchKey}
@@ -400,24 +403,23 @@ export default function AuditCategoryPage({ categoryId }: { categoryId: string }
               </div>
             </form>
           )}
+            </>}
           </div>
       </div>
 
-      <section className={`${panel} space-y-4`}>
-        {error && <div role="alert" className="rounded-xl border border-[#E74C3C]/30 bg-[#E74C3C]/10 px-4 py-3 text-sm text-[#E74C3C]">{error}</div>}
-        <div className={dataTableFrameClassName(isLight)}>
-          <DataTable
-            columns={columns}
-            data={events}
-            keyExtractor={(event) => event.id}
-            isLoading={loading}
-            skeletonRowCount={5}
-            minWidth="1080px"
-            emptyTitle={isThai ? "ไม่พบบันทึกในหมวดนี้" : "No events in this category"}
-          />
-        </div>
-      </section>
-      {total > 0 && (
+      {error && <div role="alert" className="rounded-xl border border-[#E74C3C]/30 bg-[#E74C3C]/10 px-4 py-3 text-sm text-[#E74C3C]">{error}</div>}
+      <div className={dataTableFrameClassName(isLight)}>
+        <DataTable
+          columns={columns}
+          data={events}
+          keyExtractor={(event) => event.id}
+          isLoading={loading}
+          skeletonRowCount={5}
+          minWidth="1080px"
+          emptyTitle={isThai ? "ไม่พบบันทึกในหมวดนี้" : "No events in this category"}
+        />
+      </div>
+      {loading ? <SkeletonBox className="ml-auto h-9 w-64 rounded-xl" /> : total > 0 && (
         <Pagination
           currentPage={page}
           totalPages={Math.ceil(total / PAGE_SIZE)}

@@ -3,6 +3,7 @@
 import React, { ReactNode } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { Package } from "lucide-react";
+import { SkeletonBox } from "@/components/loading_screen/SkeletonLoading";
 
 export const DATA_TABLE_STYLES = {
   table: "w-full border-separate border-spacing-0 border-0 bg-transparent text-left text-[13px]",
@@ -92,9 +93,9 @@ export default function DataTable<T>({
                   <th
                     key={col.key}
                     className={`${DATA_TABLE_STYLES.headerCell} ${alignClass} first:rounded-l-[6px] last:rounded-r-[6px] ${col.headerClassName || ""}`}
-                  >
-                    {col.header}
-                  </th>
+                 >
+                    {isLoading ? <SkeletonBox className="h-3 w-2/3" /> : col.header}
+                 </th>
                 );
               })}
             </tr>
@@ -106,7 +107,7 @@ export default function DataTable<T>({
           >
             {isLoading ? (
               Array.from({ length: skeletonRowCount }).map((_, rIdx) => (
-                <tr key={`skeleton-${rIdx}`} className="h-[56px] animate-pulse">
+                <tr key={`skeleton-${rIdx}`} className="h-[56px]">
                   {columns.map((col, cIdx) => {
                     const alignClass =
                       col.align === "right"
@@ -118,22 +119,21 @@ export default function DataTable<T>({
                     return (
                       <td key={`skeleton-cell-${rIdx}-${col.key || cIdx}`} className="px-3 py-3">
                         <div className={`flex items-center ${alignClass}`}>
-                          {cIdx === 0 ? (
-                            <div className="flex flex-col gap-2 w-full max-w-[200px]">
-                              <div className="h-3.5 w-24 bg-zinc-300 dark:bg-zinc-700 rounded" />
-                              <div className="h-4 w-44 bg-zinc-200 dark:bg-zinc-800 rounded" />
-                            </div>
-                          ) : (
-                            <div
-                              className={`h-3.5 bg-zinc-200 dark:bg-zinc-800 rounded ${
-                                col.align === "right"
-                                  ? "w-14"
-                                  : col.align === "center"
-                                  ? "w-4 h-4"
-                                  : "w-20"
-                              }`}
-                            />
-                          )}
+                          <SkeletonBox
+                            className={`${
+                              cIdx === 0
+                                ? "h-3.5 w-3/4 max-w-[200px]"
+                                : col.key.toLowerCase().includes("action") || col.key.toLowerCase().includes("edit")
+                                  ? "size-8 rounded-[6px]"
+                                  : col.key.toLowerCase().includes("status")
+                                    ? "h-5 w-14 rounded-full"
+                                    : col.align === "center"
+                                      ? "h-3.5 w-14"
+                                      : col.align === "right"
+                                        ? "h-3.5 w-12"
+                                        : "h-3.5 w-20"
+                            }`}
+                          />
                         </div>
                       </td>
                     );

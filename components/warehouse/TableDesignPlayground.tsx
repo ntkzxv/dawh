@@ -373,7 +373,7 @@ function StatusFilterControl({ value, onChange, isThai, isLight }: { value: "all
 
   return (
     <div className="relative shrink-0" ref={rootRef}>
-      <FilterButton controls="preview-filter-panel" expanded={open} label={isThai ? "ตัวกรอง" : "Filters"} activeFilterCount={activeFilterCount} onClick={() => setOpen((current) => !current)} />
+      <FilterButton controls="preview-filter-panel" expanded={open} label={isThai ? "ตัวกรอง" : "Filters"} clearLabel={isThai ? "ล้างตัวกรอง" : "Clear filters"} activeFilterCount={activeFilterCount} onClear={() => { onChange("all"); setOpen(false); }} onClick={() => setOpen((current) => !current)} />
       {open && (
         <div id="preview-filter-panel" role="region" aria-label={isThai ? "ตัวกรองสถานะ" : "Status filters"} className={`absolute right-0 top-full z-30 mt-2 w-[min(300px,calc(100vw-2rem))] space-y-4 rounded-xl border p-4 shadow-xl ${isLight ? "border-[#E4E4E7] bg-white text-[#222222]" : "border-[#444444] bg-[#383838] text-white"}`}>
           <label className="block space-y-1.5 text-sm font-medium">

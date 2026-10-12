@@ -248,8 +248,8 @@ export default function ControlPanelSidebar({
               onClick={() =>
                 navigateWithLoading(
                   "/workspace",
-                  "กำลังเปิดศูนย์รวมโมดูล...",
-                  "กำลังโหลดโมดูลและสิทธิ์การใช้งาน...",
+                  isThai ? "กำลังเปิดศูนย์รวมโมดูล..." : "Opening workspace hub...",
+                  isThai ? "กำลังโหลดโมดูลและสิทธิ์การใช้งาน..." : "Loading modules and access permissions...",
                 )
               }
               className={`flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] group cursor-pointer overflow-hidden ${

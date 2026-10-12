@@ -15,7 +15,7 @@ import FilterDropdown from "@/components/common/FilterDropdown";
 import FilterButton from "@/components/common/FilterButton";
 import SearchInput from "@/components/common/SearchInput";
 import CommonButton from "@/components/common/Button";
-import SidePanel, { sidePanelFormStyles } from "@/components/common/SidePanel";
+import SidePanel, { SidePanelAlert, SidePanelFieldError, sidePanelFormStyles, sidePanelInvalidFieldClassName } from "@/components/common/SidePanel";
 import {
   warehouseApi,
   type AuditEvent,
@@ -129,8 +129,6 @@ export default function ControlPanel() {
   const [auditPage, setAuditPage] = useState(1);
   const [memberFiltersOpen, setMemberFiltersOpen] = useState(false);
   const memberFiltersRef = useRef<HTMLDivElement>(null);
-  const [branchCount, setBranchCount] = useState<number | null>(null);
-  const onBranchTotalChange = useCallback((total: number) => setBranchCount(total), []);
 
   useEffect(() => {
     if (openManageMemberId === null) return;
@@ -213,9 +211,9 @@ export default function ControlPanel() {
       [
         member.name,
         String(member.id),
-        roleName[member.role],
+        roleName[member.role], roleNameEn[member.role],
         member.role,
-        branchLabels(member.branchIds, branches),
+        branchLabels(member.branchIds, branches, isThai),
         member.deletedAt ? "ปิดบัญชีแล้ว Deactivated" : "ใช้งาน Active",
       ]
         .join(" ")
@@ -285,17 +283,17 @@ export default function ControlPanel() {
         routePath="/controlpanel"
         fullBleed={tab === "members"}
       >
-        <main className={`w-full min-w-0 space-y-5 ${tab === "members" ? "p-6 sm:p-10" : ""}`} aria-busy="true" aria-label="Loading control panel">
-          <ControlPanelMemberSkeleton isThai={isThai} />
+        <main className={`w-full min-w-0 space-y-5 ${tab === "members" ? "p-6 sm:p-10" : ""}`} aria-busy="true" aria-label={isThai ? "กำลังโหลดแผงควบคุม" : "Loading control panel"}>
+          <ControlPanelMemberSkeleton isThai={isThai} isAudit={tab === "audit"} />
         </main>
       </WarehousePageTemplate>
     );
   if (!me)
     return (
-      <main className="mx-auto max-w-6xl p-8">
-        <p>{account?.error || "กรุณาเข้าสู่ระบบ"}</p>
+      <main className={`mx-auto max-w-6xl p-8 ${isLight ? "text-[#222222]" : "text-[#E4E4E7]"}`}>
+        <p>{account?.error || (isThai ? "กรุณาเข้าสู่ระบบ" : "Please sign in")}</p>
         <Link className="underline" href="/auth/login?from=/controlpanel">
-          เข้าสู่ระบบ
+          {isThai ? "เข้าสู่ระบบ" : "Sign in"}
         </Link>
       </main>
     );
@@ -379,13 +377,13 @@ export default function ControlPanel() {
       key: "role",
       header: isThai ? "ตำแหน่ง" : "Role",
       className: "whitespace-nowrap",
-      render: (member) => roleName[member.role],
+      render: (member) => isThai ? roleName[member.role] : roleNameEn[member.role],
     },
     {
       key: "branches",
       header: isThai ? "สาขาที่รับผิดชอบ" : "Assigned branches",
       className: "min-w-48",
-      render: (member) => branchLabels(member.branchIds, branches),
+      render: (member) => branchLabels(member.branchIds, branches, isThai),
     },
     {
       key: "status",
@@ -440,12 +438,12 @@ export default function ControlPanel() {
 
   return (
     <WarehousePageTemplate
-      titleEn={tab === "members" ? "Users" : tab === "branches" ? `Branches${branchCount === null ? "" : ` (${branchCount})`}` : "Admin Control Panel"}
-      titleTh={tab === "members" ? "ผู้ใช้" : tab === "branches" ? `สาขา${branchCount === null ? "" : ` (${branchCount})`}` : "แผงควบคุมผู้ดูแลระบบ"}
+      titleEn={tab === "members" ? "Users" : tab === "branches" ? "Branches" : "Admin Control Panel"}
+      titleTh={tab === "members" ? "ผู้ใช้" : tab === "branches" ? "สาขา" : "แผงควบคุมผู้ดูแลระบบ"}
       routePath="/controlpanel"
       fullBleed={tab === "members" || tab === "branches"}
     >
-      {tab === "branches" ? <BranchManagement onTotalChange={onBranchTotalChange} /> : <main className={`w-full min-w-0 space-y-6 ${tab === "members" ? "p-6 sm:p-10" : ""}`}>
+      {tab === "branches" ? <BranchManagement /> : <main className={`w-full min-w-0 space-y-6 ${tab === "members" ? "p-6 sm:p-10" : ""}`}>
         {notice && <Notice tone="success">{notice}</Notice>}
         {failure && <Notice tone="error">{failure}</Notice>}
         {(tab === "members" ? membersError : auditError) && (
@@ -458,7 +456,7 @@ export default function ControlPanel() {
           <div className="w-full min-w-0">
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
-                <SearchInput
+                {membersLoading ? <SkeletonBox className="h-9 w-full rounded-md sm:w-72" /> : <SearchInput
                   value={memberSearch}
                   onChange={(value) => { setMemberSearch(value); setMemberPage(1); }}
                   placeholder={
@@ -468,13 +466,20 @@ export default function ControlPanel() {
                   }
                   aria-label={isThai ? "ค้นหาผู้ใช้" : "Search users"}
                   width="w-full sm:w-72"
-                />
-                <div className="relative shrink-0" ref={memberFiltersRef}>
+                />}
+                {membersLoading ? <SkeletonBox className="h-[33px] w-[104px] rounded-md" /> : <div className="relative shrink-0" ref={memberFiltersRef}>
                   <FilterButton
                     controls="users-filter-panel"
                     expanded={memberFiltersOpen}
                     label={isThai ? "ตัวกรอง" : "Filters"}
+                    clearLabel={isThai ? "ล้างตัวกรอง" : "Clear filters"}
                     activeFilterCount={activeMemberFilterCount}
+                    onClear={() => {
+                      setMemberRoleFilter("");
+                      setMemberStatusFilter("all");
+                      setMemberPage(1);
+                      setMemberFiltersOpen(false);
+                    }}
                     onClick={() => setMemberFiltersOpen((open) => !open)}
                   />
                   <AnimatePresence initial={false}>
@@ -529,14 +534,15 @@ export default function ControlPanel() {
                       </motion.div>
                   )}
                   </AnimatePresence>
-                </div>
+                </div>}
               </div>
-              {isAdmin && (
+              {isAdmin && (membersLoading ? <SkeletonBox className="h-[33px] w-32 rounded-md sm:ml-auto" /> :
                 <button
                   type="button"
-                  className="inline-flex h-[33px] shrink-0 items-center justify-center gap-1.5 self-start rounded-[6px] bg-white px-4 py-2 text-[13px] font-semibold text-[#222222] shadow-xs transition-colors hover:bg-[#F4F4F5] dark:bg-white dark:text-[#222222] dark:hover:bg-[#F4F4F5] sm:self-auto"
+                  className={`inline-flex h-[33px] shrink-0 items-center justify-center gap-1.5 self-start rounded-[6px] px-4 py-2 text-[13px] font-semibold shadow-xs transition-colors sm:self-auto ${isLight ? "bg-[#222222] text-white hover:bg-[#383838]" : "bg-white text-[#222222] hover:bg-[#F4F4F5]"}`}
                   onClick={() => {
                     setSelectedMember(null);
+                    setFailure(null);
                     setIsCreatePanelOpen(true);
                   }}
                 >
@@ -566,7 +572,7 @@ export default function ControlPanel() {
                   }
                 />
               </div>
-              {visibleMembers.length > 0 && (
+              {membersLoading ? <SkeletonBox className="ml-auto h-9 w-64 rounded-xl" /> : visibleMembers.length > 0 && (
                 <Pagination
                   currentPage={memberPage}
                   totalPages={memberTotalPages}
@@ -585,19 +591,19 @@ export default function ControlPanel() {
           <section className={`${panel} space-y-4`}>
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <h2 className="text-lg font-bold">
+                {auditLoading ? <SkeletonBox className="h-6 w-40 rounded-md" /> : <h2 className="text-lg font-bold">
                   {isThai ? "บันทึกการตรวจสอบ" : "Audit Log"}
-                </h2>
-                <p className="mt-1 text-sm text-slate-500 dark:text-zinc-300">
+                </h2>}
+                {auditLoading ? <SkeletonBox className="mt-2 h-4 w-64 rounded-md" /> : <p className="mt-1 text-sm text-slate-500 dark:text-zinc-300">
                   {isThai
                     ? `แสดง ${visibleAudit.length} จาก ${audit?.length ?? 0} รายการที่บันทึกไว้`
                     : `Showing ${visibleAudit.length} of ${audit?.length ?? 0} recorded events`}
-                </p>
-                <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
+                </p>}
+                {auditLoading ? <SkeletonBox className="mt-2 h-3 w-72 rounded-md" /> : <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
                   {isThai
                     ? "ระบบยังไม่ได้บันทึกประวัติการเข้าสู่ระบบหรือออกจากระบบ"
                     : "Login and logout history is not currently recorded."}
-                </p>
+                </p>}
               </div>
             </div>
             <div className={dataTableFrameClassName(isLight)}>
@@ -619,7 +625,7 @@ export default function ControlPanel() {
                 }
               />
             </div>
-            {visibleAudit.length > 0 && (
+            {auditLoading ? <SkeletonBox className="ml-auto h-9 w-64 rounded-xl" /> : visibleAudit.length > 0 && (
               <Pagination
                 currentPage={auditPage}
                 totalPages={auditTotalPages}
@@ -642,6 +648,7 @@ export default function ControlPanel() {
         >
           <CreateMember
             branches={branches}
+            error={failure}
             isThai={isThai}
             isLight={isLight}
             onCancel={() => setIsCreatePanelOpen(false)}
@@ -861,14 +868,34 @@ export default function ControlPanel() {
     </WarehousePageTemplate>
   );
 }
-function ControlPanelMemberSkeleton({ isThai }: { isThai: boolean }) {
+function ControlPanelMemberSkeleton({ isThai, isAudit = false }: { isThai: boolean; isAudit?: boolean }) {
   const { theme } = useTheme();
   return (
     <section className={`${panel} space-y-4`} aria-hidden="true">
-      <SkeletonBox className="h-6 w-40 rounded-md" />
+      {isAudit ? (
+        <div className="space-y-2">
+          <SkeletonBox className="h-6 w-40 rounded-md" />
+          <SkeletonBox className="h-4 w-64 rounded-md" />
+          <SkeletonBox className="h-3 w-72 rounded-md" />
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-1 flex-wrap gap-3">
+            <SkeletonBox className="h-9 w-full rounded-md sm:w-72" />
+            <SkeletonBox className="h-[33px] w-[104px] rounded-md" />
+          </div>
+          <SkeletonBox className="h-[33px] w-32 rounded-md" />
+        </div>
+      )}
       <div className={dataTableFrameClassName(theme === "light")}>
       <DataTable
-        columns={[
+        columns={isAudit ? [
+          { key: "date", header: isThai ? "วันที่และเวลา" : "Date and time" },
+          { key: "event", header: isThai ? "เหตุการณ์" : "Event" },
+          { key: "record", header: isThai ? "รายการที่เกี่ยวข้อง" : "Related record" },
+          { key: "actor", header: isThai ? "ผู้ดำเนินการ" : "Actor" },
+          { key: "details", header: isThai ? "รายละเอียด" : "Details" },
+        ] : [
           { key: "name", header: isThai ? "ชื่อผู้ใช้" : "User" },
           { key: "role", header: isThai ? "ตำแหน่ง" : "Role" },
           { key: "branches", header: isThai ? "สาขาที่รับผิดชอบ" : "Assigned branches" },
@@ -882,57 +909,80 @@ function ControlPanelMemberSkeleton({ isThai }: { isThai: boolean }) {
         minWidth="1040px"
       />
       </div>
+      {!isAudit && <SkeletonBox className="ml-auto h-9 w-64 rounded-xl" />}
     </section>
   );
 }
 
-function branchLabels(ids: number[], branches: CatalogItem[]) {
+function branchLabels(ids: number[], branches: CatalogItem[], isThai: boolean) {
   return (
     ids
       .map(
         (id) =>
-          branches.find((branch) => branch.id === id)?.name ?? `สาขา ${id}`,
+          branches.find((branch) => branch.id === id)?.name ?? `${isThai ? "สาขา" : "Branch"} ${id}`,
       )
-      .join(", ") || "ไม่ระบุสาขา"
+      .join(", ") || (isThai ? "ไม่ระบุสาขา" : "No branch assigned")
   );
 }
 
-function BranchPicker({
+function BranchDropdownPicker({
   branches,
   value,
   onChange,
+  isThai,
+  invalid = false,
 }: {
   branches: CatalogItem[];
   value: number[];
   onChange: (next: number[]) => void;
+  isThai: boolean;
+  invalid?: boolean;
 }) {
+  const [selectedBranch, setSelectedBranch] = useState("");
+  const options: DropdownOption<string>[] = branches
+    .filter((branch) => branch.active !== false && !value.includes(branch.id))
+    .map((branch) => ({ value: String(branch.id), label: branch.name }));
+
   return (
-    <fieldset>
-      <legend className="mb-1.5 text-sm font-medium">สาขาที่รับผิดชอบ</legend>
-      <div className="flex flex-wrap gap-3">
-        {branches
-          .filter((branch) => branch.active !== false)
-          .map((branch) => (
-            <label
-              key={branch.id}
-              className="inline-flex items-center gap-1.5 text-sm"
-            >
-              <input
-                type="checkbox"
-                checked={value.includes(branch.id)}
-                onChange={(event) =>
-                  onChange(
-                    event.target.checked
-                      ? [...value, branch.id]
-                      : value.filter((id) => id !== branch.id),
-                  )
-                }
-              />
-              {branch.name}
-            </label>
-          ))}
+    <div className="space-y-2">
+      <Field label={isThai ? "สาขา" : "Branches"}>
+        <CustomDropdown
+          value={selectedBranch}
+          onChange={(next) => {
+            if (!next) return;
+            const id = Number(next);
+            if (Number.isFinite(id) && !value.includes(id)) onChange([...value, id]);
+            setSelectedBranch("");
+          }}
+          options={options}
+          placeholder={isThai ? "เลือก" : "Select"}
+          searchable
+          className="w-full"
+          triggerClassName={`${input} ${invalid ? sidePanelInvalidFieldClassName : ""}`}
+          aria-invalid={invalid}
+        />
+      </Field>
+      {value.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {value.map((id) => {
+            const branch = branches.find((item) => item.id === id);
+            return (
+              <span key={id} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-white/10 dark:text-zinc-200">
+                {branch?.name ?? `${isThai ? "สาขา" : "Branch"} ${id}`}
+                <button
+                  type="button"
+                  aria-label={isThai ? `นำออก ${branch?.name ?? id}` : `Remove ${branch?.name ?? id}`}
+                  onClick={() => onChange(value.filter((branchId) => branchId !== id))}
+                  className="rounded-full p-0.5 text-slate-500 hover:bg-black/10 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white"
+                >
+                  <X className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+              </span>
+            );
+          })}
+        </div>
+      )}
       </div>
-    </fieldset>
   );
 }
 
@@ -961,6 +1011,11 @@ function MemberEditDialog({
   const [email, setEmail] = useState(member.detailLevel === "FULL" ? member.email : "");
   const [role, setRole] = useState(member.role);
   const [branchIds, setBranchIds] = useState(member.branchIds);
+  const initialProfile = member.detailLevel === "FULL" ? member.profile : blankProfile;
+  const [username, setUsername] = useState(initialProfile.username ?? "");
+  const [fieldErrors, setFieldErrors] = useState<string[]>([]);
+  const [confirmSave, setConfirmSave] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<ProfileForm>(
     profileForm(member.detailLevel === "FULL" ? member.profile : blankProfile),
   );
@@ -979,6 +1034,7 @@ function MemberEditDialog({
         setEmail(loaded.email);
         setRole(loaded.role);
         setBranchIds(loaded.branchIds);
+        setUsername(loaded.profile.username ?? "");
         setProfile(profileForm(loaded.profile));
       })
       .catch((cause) => {
@@ -990,10 +1046,22 @@ function MemberEditDialog({
     return () => {
       active = false;
     };
-  }, [member.id, full]);
+  }, [member.id, full, isThai]);
 
   const save = async (event: FormEvent) => {
     event.preventDefault();
+    const nextErrors = [
+      ...(isAdmin && !username.trim() ? ["username"] : []),
+      ...(isAdmin && !email.trim() ? ["email"] : []),
+      ...(isAdmin && email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ? ["emailFormat"] : []),
+      ...(isAdmin && role !== "ADMIN" && role !== "CEO" && branchIds.length === 0 ? ["branch"] : []),
+    ];
+    setFieldErrors(nextErrors);
+    if (nextErrors.length) return;
+    setConfirmSave(true);
+  };
+
+  const confirmUpdate = async () => {
     const personal = {
       phone: profile.phone,
       address: profile.address,
@@ -1002,18 +1070,21 @@ function MemberEditDialog({
     };
     const body: MemberUpdate = isAdmin
       ? {
-          name,
           email,
           role,
           branchIds,
           profile: {
-            ...personal,
-            employeeCode: profile.employeeCode,
-            startedOn: profile.startedOn,
+            username: username.trim(),
           },
         }
       : { name, profile: personal };
-    if (await onUpdate(body)) onClose();
+    setSaving(true);
+    try {
+      if (await onUpdate(body)) onClose();
+    } finally {
+      setSaving(false);
+      setConfirmSave(false);
+    }
   };
 
   return (
@@ -1028,7 +1099,7 @@ function MemberEditDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="edit-user-title"
-        className="h-[min(90dvh,760px)] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-white/10 dark:bg-[#383838] sm:p-6"
+        className="max-h-[90dvh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-white/10 dark:bg-[#383838] sm:p-6"
       >
         <header className="mb-5 flex items-center justify-between gap-4">
           <h2 id="edit-user-title" className="text-lg font-bold">{isThai ? "แก้ไขผู้ใช้" : "Edit user"}</h2>
@@ -1044,15 +1115,13 @@ function MemberEditDialog({
             </div>
             {isAdmin && <div className="space-y-2"><SkeletonBox className="h-4 w-16 rounded" /><SkeletonBox className="h-10 w-full rounded-xl" /></div>}
             {isAdmin && (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <SkeletonBox className="h-4 w-36 rounded" />
-                <div className="flex flex-wrap gap-3 rounded-xl border border-slate-200 p-3 dark:border-white/10">
-                  <SkeletonBox className="h-4 w-24 rounded" />
-                  <SkeletonBox className="h-4 w-24 rounded" />
-                  <SkeletonBox className="h-4 w-24 rounded" />
-                </div>
+                <SkeletonBox className="h-10 w-full rounded-xl" />
+                <div className="flex gap-2"><SkeletonBox className="h-6 w-24 rounded-full" /><SkeletonBox className="h-6 w-24 rounded-full" /></div>
               </div>
             )}
+            {!isAdmin && (
             <div className="grid gap-3 sm:grid-cols-2">
               {Array.from({ length: 3 }, (_, index) => (
                 <div key={index} className="space-y-2">
@@ -1069,36 +1138,51 @@ function MemberEditDialog({
                   <SkeletonBox className="h-4 w-32 rounded" />
                   <SkeletonBox className="h-10 w-full rounded-xl" />
                 </div>
-              ))}
+            ))}
             </div>
+            )}
             <div className="flex justify-end"><SkeletonBox className="h-10 w-32 rounded-xl" /></div>
           </div>
         )}
         {detailError && <Notice tone="error">{detailError}</Notice>}
         {full && (
           <>
-            <form className="space-y-4" onSubmit={(event) => void save(event)}>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label={isThai ? "ชื่อ" : "name"}>
+            <form className="space-y-4" noValidate onSubmit={(event) => void save(event)}>
+              {isAdmin ? (
+                <>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label={isThai ? "ชื่อผู้ใช้" : "Username"}>
+                    <input className={`${input} ${fieldErrors.includes("username") ? sidePanelInvalidFieldClassName : ""}`} value={username} maxLength={80} required aria-invalid={fieldErrors.includes("username")} autoComplete="username" onChange={(event) => { setUsername(event.target.value); setFieldErrors((errors) => errors.filter((field) => field !== "username")); }} />
+                    {fieldErrors.includes("username") && <SidePanelFieldError>{isThai ? "กรุณากรอกชื่อผู้ใช้" : "Enter a username."}</SidePanelFieldError>}
+                  </Field>
+                  <Field label={isThai ? "อีเมล" : "Email"}>
+                    <input className={`${input} ${fieldErrors.includes("email") || fieldErrors.includes("emailFormat") ? sidePanelInvalidFieldClassName : ""}`} type="email" value={email} required aria-invalid={fieldErrors.includes("email") || fieldErrors.includes("emailFormat")} autoComplete="email" onChange={(event) => { setEmail(event.target.value); setFieldErrors((errors) => errors.filter((field) => field !== "email" && field !== "emailFormat")); }} />
+                    {(fieldErrors.includes("email") || fieldErrors.includes("emailFormat")) && <SidePanelFieldError>{isThai ? (fieldErrors.includes("emailFormat") ? "รูปแบบอีเมลไม่ถูกต้อง" : "กรุณากรอกอีเมล") : (fieldErrors.includes("emailFormat") ? "Enter a valid email address." : "Enter an email address.")}</SidePanelFieldError>}
+                  </Field>
+                  </div>
+                </>
+              ) : (
+                <Field label={isThai ? "ชื่อ" : "Name"}>
                   <input className={input} value={name} maxLength={160} required onChange={(event) => setName(event.target.value)} />
                 </Field>
-                {isAdmin && (
-                  <Field label={isThai ? "อีเมล" : "Email"}>
-                    <input className={input} type="email" value={email} required onChange={(event) => setEmail(event.target.value)} />
-                  </Field>
-                )}
-              </div>
+              )}
               {isAdmin && (
                 <>
                   <Field label={isThai ? "ตำแหน่ง" : "Role"}>
-                    <select className={input} value={role} onChange={(event) => setRole(event.target.value as Role)}>
-                      {warehouseRoles.map((item) => <option key={item} value={item}>{roleName[item]}</option>)}
-                    </select>
+                    <CustomDropdown<Role>
+                      value={role}
+                      onChange={setRole}
+                      options={warehouseRoles.map((item) => ({ value: item, label: isThai ? roleName[item] : roleNameEn[item] }))}
+                      placeholder={isThai ? "เลือก" : "Select"}
+                      className="w-full"
+                      triggerClassName={input}
+                    />
                   </Field>
-                  <BranchPicker branches={branches} value={branchIds} onChange={setBranchIds} />
+                  <BranchDropdownPicker branches={branches} value={branchIds} onChange={(next) => { setBranchIds(next); setFieldErrors((errors) => errors.filter((field) => field !== "branch")); }} isThai={isThai} invalid={fieldErrors.includes("branch")} />
+                  {fieldErrors.includes("branch") && <SidePanelFieldError>{isThai ? "กรุณาเลือกสาขา" : "Choose a branch."}</SidePanelFieldError>}
                 </>
               )}
-              <MemberProfileFields value={profile} onChange={setProfile} employmentEditable={isAdmin} />
+              {!isAdmin && <MemberProfileFields value={profile} onChange={setProfile} employmentEditable={false} isThai={isThai} />}
               <div className="flex justify-end">
                 <button className={button}>{isThai ? "บันทึกข้อมูล" : "Save changes"}</button>
               </div>
@@ -1106,6 +1190,29 @@ function MemberEditDialog({
           </>
         )}
       </section>
+      {confirmSave && (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 p-4"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !saving) setConfirmSave(false);
+          }}
+        >
+          <section role="alertdialog" aria-modal="true" aria-labelledby="confirm-edit-user-title" className="w-full max-w-sm space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-white/10 dark:bg-[#383838]">
+            <div>
+              <h2 id="confirm-edit-user-title" className="font-bold">{isThai ? "ยืนยันการแก้ไขผู้ใช้" : "Confirm user changes"}</h2>
+              <p className="mt-2 text-sm text-slate-600 dark:text-zinc-300">{isThai ? "ต้องการบันทึกการเปลี่ยนแปลงนี้หรือไม่" : "Save these changes?"}</p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button type="button" className={subtleButton} onClick={() => setConfirmSave(false)} disabled={saving}>{isThai ? "ยกเลิก" : "Cancel"}</button>
+              <button type="button" className={button} onClick={() => void confirmUpdate()} disabled={saving}>
+                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
+                {isThai ? "ยืนยัน" : "Confirm"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
@@ -1171,12 +1278,14 @@ function ResetPasswordDialog({
 
 function CreateMember({
   branches,
+  error,
   isThai,
   isLight,
   onCancel,
   onSave,
 }: {
   branches: CatalogItem[];
+  error: string | null;
   isThai: boolean;
   isLight: boolean;
   onCancel: () => void;
@@ -1201,6 +1310,7 @@ function CreateMember({
   const [role, setRole] = useState<Role | "">("");
   const [branchId, setBranchId] = useState("");
   const [fieldErrors, setFieldErrors] = useState<string[]>([]);
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const activeBranches = branches.filter((branch) => branch.active !== false);
   const branchRequired = role !== "ADMIN" && role !== "CEO";
   const roleOptions: DropdownOption<Role | "">[] = [
@@ -1240,13 +1350,14 @@ function CreateMember({
     };
     const error = errors[field];
     return error ? (
-      <span className="mt-1 block text-xs text-[#E74C3C] dark:text-[#E71D36]">
+      <SidePanelFieldError>
         {isThai ? error.th : error.en}
-      </span>
+      </SidePanelFieldError>
     ) : null;
   };
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    setHasAttemptedSubmit(true);
     const nextErrors: string[] = [];
     if (!username.trim()) nextErrors.push("username");
     if (!firstName.trim()) nextErrors.push("firstName");
@@ -1294,10 +1405,12 @@ function CreateMember({
       onSubmit={(event) => void submit(event)}
     >
       <div className={panelStyles.content}>
+        {error && <SidePanelAlert>{error}</SidePanelAlert>}
         <section className={panelStyles.section}>
       <Field label={isThai ? "ชื่อผู้ใช้" : "Username"} className={panelStyles.field} labelClassName={fieldLabelClass}>
         <input
-          className={`${createMemberInput} ${fieldErrors.includes("username") ? "border-[#E74C3C] dark:border-[#E71D36]" : ""}`}
+          className={`${createMemberInput} ${fieldErrors.includes("username") ? sidePanelInvalidFieldClassName : ""}`}
+          aria-invalid={fieldErrors.includes("username")}
           type="text"
           autoComplete="username"
           placeholder={isThai ? "ชื่อผู้ใช้" : "Username"}
@@ -1311,7 +1424,8 @@ function CreateMember({
       <div className="grid gap-3.5 sm:grid-cols-2">
         <Field label={isThai ? "ชื่อจริง" : "First name"} className={panelStyles.field} labelClassName={fieldLabelClass}>
           <input
-            className={`${createMemberInput} ${fieldErrors.includes("firstName") ? "border-[#E74C3C] dark:border-[#E71D36]" : ""}`}
+            className={`${createMemberInput} ${fieldErrors.includes("firstName") ? sidePanelInvalidFieldClassName : ""}`}
+            aria-invalid={fieldErrors.includes("firstName")}
             type="text"
             autoComplete="given-name"
             placeholder={isThai ? "ชื่อจริง" : "First name"}
@@ -1324,7 +1438,8 @@ function CreateMember({
         </Field>
         <Field label={isThai ? "นามสกุล" : "Last name"} className={panelStyles.field} labelClassName={fieldLabelClass}>
           <input
-            className={`${createMemberInput} ${fieldErrors.includes("lastName") ? "border-[#E74C3C] dark:border-[#E71D36]" : ""}`}
+            className={`${createMemberInput} ${fieldErrors.includes("lastName") ? sidePanelInvalidFieldClassName : ""}`}
+            aria-invalid={fieldErrors.includes("lastName")}
             type="text"
             autoComplete="family-name"
             placeholder={isThai ? "นามสกุล" : "Last name"}
@@ -1338,7 +1453,8 @@ function CreateMember({
       </div>
       <Field label={isThai ? "อีเมล" : "Email"} className={panelStyles.field} labelClassName={fieldLabelClass}>
         <input
-          className={`${createMemberInput} ${fieldErrors.includes("email") || fieldErrors.includes("emailFormat") ? "border-[#E74C3C] dark:border-[#E71D36]" : ""}`}
+          className={`${createMemberInput} ${fieldErrors.includes("email") || fieldErrors.includes("emailFormat") ? sidePanelInvalidFieldClassName : ""}`}
+          aria-invalid={fieldErrors.includes("email") || fieldErrors.includes("emailFormat")}
           type="email"
           autoComplete="email"
           placeholder="youremail@dawh.co.th"
@@ -1355,20 +1471,29 @@ function CreateMember({
       <Field label={isThai ? "ตำแหน่ง" : "Role"} className={panelStyles.field} labelClassName={fieldLabelClass}>
         <CustomDropdown
           value={role}
+          aria-invalid={fieldErrors.includes("role")}
           onChange={(nextRole) => {
             setRole(nextRole);
-            clearFieldError("role", "branch");
+            setFieldErrors((current) => {
+              const nextErrors = current.filter((field) => field !== "role" && field !== "branch");
+              const nextRoleRequiresBranch = Boolean(nextRole) && nextRole !== "ADMIN" && nextRole !== "CEO";
+              if (nextRoleRequiresBranch && !branchId && (hasAttemptedSubmit || current.includes("branch"))) {
+                nextErrors.push("branch");
+              }
+              return nextErrors;
+            });
           }}
           options={roleOptions}
           placeholder={isThai ? "ตำแหน่ง" : "Choose role"}
           className="w-full"
-          triggerClassName={`${panelStyles.dropdown} ${role ? (isLight ? "" : "!text-white") : "!text-[#A1A1AA]"}`}
+          triggerClassName={`${panelStyles.dropdown} ${role ? (isLight ? "" : "!text-white") : "!text-[#A1A1AA]"} ${fieldErrors.includes("role") ? sidePanelInvalidFieldClassName : ""}`}
         />
         {fieldErrorText("role")}
       </Field>
       <Field label={isThai ? "สาขา" : "Branch"} className={panelStyles.field} labelClassName={fieldLabelClass}>
         <CustomDropdown
           value={branchId}
+          aria-invalid={fieldErrors.includes("branch")}
           onChange={(nextBranchId) => {
             setBranchId(nextBranchId);
             clearFieldError("branch");
@@ -1377,7 +1502,7 @@ function CreateMember({
           placeholder={isThai ? "เลือกสาขา" : "Choose branch"}
           disabled={!activeBranches.length}
           className="w-full"
-          triggerClassName={`${panelStyles.dropdown} ${branchId ? (isLight ? "" : "!text-white") : "!text-[#A1A1AA]"}`}
+          triggerClassName={`${panelStyles.dropdown} ${branchId ? (isLight ? "" : "!text-white") : "!text-[#A1A1AA]"} ${fieldErrors.includes("branch") ? sidePanelInvalidFieldClassName : ""}`}
         />
         {fieldErrorText("branch")}
       </Field>
@@ -1394,7 +1519,8 @@ function CreateMember({
       <Field label={isThai ? "รหัสผ่าน" : "Password"} className={panelStyles.field} labelClassName={fieldLabelClass}>
         <div className="relative">
           <input
-            className={`${createMemberInput} pr-11 ${fieldErrors.includes("password") || fieldErrors.includes("passwordLength") ? "border-[#E74C3C] dark:border-[#E71D36]" : ""}`}
+            className={`${createMemberInput} pr-11 ${fieldErrors.includes("password") || fieldErrors.includes("passwordLength") ? sidePanelInvalidFieldClassName : ""}`}
+            aria-invalid={fieldErrors.includes("password") || fieldErrors.includes("passwordLength")}
             type={showPassword ? "text" : "password"}
             autoComplete="new-password"
             placeholder={isThai ? "รหัสผ่าน" : "Password"}
