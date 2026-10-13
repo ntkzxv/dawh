@@ -1,6 +1,7 @@
 import "server-only";
 
 import { timedPoolQuery } from "@/lib/core/http/request-timing";
+import { ValidationError } from "@/lib/core/http/errors";
 import { date, id, requireRole, type Actor } from "@/lib/warehouse/core";
 import { pageResult, parsePage } from "@/lib/warehouse/pagination";
 import { isGlobalRole } from "@/lib/contracts/warehouse-policy";
@@ -65,6 +66,13 @@ function ledgerFilters(actor: Actor, search?: URLSearchParams) {
     : null;
   const from = search?.get("from") ? date(search.get("from"), "from") : null;
   const to = search?.get("to") ? date(search.get("to"), "to") : null;
+  const kind = search?.get("kind") || null;
+  if (kind && !["GOODS_RECEIPT", "ISSUE", "TRANSFER", "ADJUSTMENT", "REVERSAL"].includes(kind))
+    throw new ValidationError({ kind: "Invalid movement type." });
+  const operatorId = search?.get("operatorId")
+    ? id(search.get("operatorId"), "operatorId")
+    : null;
+  const query = search?.get("q")?.trim().slice(0, 100) || null;
   return [
     isGlobalRole(actor.role),
     actor.branchIds,
@@ -72,17 +80,26 @@ function ledgerFilters(actor: Actor, search?: URLSearchParams) {
     productId,
     from,
     to,
+    kind,
+    operatorId,
+    query ? `%${query}%` : null,
   ];
 }
 
 const ledgerSelect = `SELECT sm.id,sm.product_id,sm.warehouse_id,sm.quantity_delta::text AS quantity_delta,sm.occurred_at,
-  doc.id AS document_id,doc.record_no,doc.kind,doc.goods_receipt_id,doc.reason,w.branch_id,w.name AS warehouse_name,p.sku,p.name AS product_name
+  doc.id AS document_id,doc.record_no,doc.kind,doc.goods_receipt_id,doc.reason,doc.posted_by_id AS operator_id,
+  operator_user.name AS operator_name,w.branch_id,w.name AS warehouse_name,p.sku,p.name AS product_name
   FROM app.stock_movements sm JOIN app.inventory_document_lines dl ON dl.id=sm.document_line_id
   JOIN app.inventory_documents doc ON doc.id=dl.document_id JOIN app.warehouses w ON w.id=sm.warehouse_id
   JOIN app.products p ON p.id=sm.product_id
+  LEFT JOIN app.app_users posted_user ON posted_user.id=doc.posted_by_id
+  LEFT JOIN public."user" operator_user ON operator_user.id=posted_user.auth_user_id
   WHERE ($1::boolean OR w.branch_id=ANY($2::integer[])) AND ($3::integer IS NULL OR sm.warehouse_id=$3)
     AND ($4::integer IS NULL OR sm.product_id=$4) AND ($5::date IS NULL OR sm.occurred_at >= $5::date)
-    AND ($6::date IS NULL OR sm.occurred_at < $6::date+interval '1 day')`;
+    AND ($6::date IS NULL OR sm.occurred_at < $6::date+interval '1 day')
+    AND ($7::text IS NULL OR doc.kind=$7) AND ($8::integer IS NULL OR doc.posted_by_id=$8)
+    AND ($9::text IS NULL OR doc.record_no ILIKE $9 OR p.sku ILIKE $9 OR p.name ILIKE $9
+      OR w.name ILIKE $9 OR COALESCE(operator_user.name,'') ILIKE $9)`;
 export async function listLedger(actor: Actor, search?: URLSearchParams) {
   requireRole(actor, ["ADMIN", "CEO", "MANAGER", "COUNTER_STAFF"]);
   const result = await timedPoolQuery(
@@ -102,12 +119,105 @@ export async function listLedgerPage(actor: Actor, search: URLSearchParams) {
     WITH filtered AS (${ledgerSelect})
     SELECT (SELECT COUNT(*)::integer FROM filtered) AS total,
       COALESCE((SELECT jsonb_agg(to_jsonb(rows) ORDER BY rows.id DESC)
-        FROM (SELECT * FROM filtered ORDER BY id DESC LIMIT $7 OFFSET $8) rows),'[]'::jsonb) AS items
+        FROM (SELECT * FROM filtered ORDER BY id DESC LIMIT $10 OFFSET $11) rows),'[]'::jsonb) AS items
   `,
     [...ledgerFilters(actor, search), limit, offset],
   );
   return pageResult(result.rows[0].items, result.rows[0].total, page, limit);
 }
+
+export async function listStockTransfersPage(
+  actor: Actor,
+  search: URLSearchParams,
+) {
+  requireRole(actor, ["ADMIN", "CEO", "MANAGER", "COUNTER_STAFF"]);
+  const { page, limit, offset } = parsePage(search);
+  const warehouseId = search.get("warehouseId")
+    ? id(search.get("warehouseId"), "warehouseId")
+    : null;
+  const from = search.get("from") ? date(search.get("from"), "from") : null;
+  const to = search.get("to") ? date(search.get("to"), "to") : null;
+  const query = search.get("q")?.trim().slice(0, 100) || null;
+  const result = await timedPoolQuery<{
+    items: Record<string, unknown>[];
+    total: number;
+    total_lines: number;
+    month_total: number;
+    reversed_total: number;
+  }>(
+    `
+    WITH transfer_docs AS (
+      SELECT doc.id,doc.record_no,doc.posted_at,doc.reason,
+        doc.posted_by_id AS operator_id,COALESCE(operator_user.name,'') AS operator_name,
+        source.id AS source_warehouse_id,source.name AS source_warehouse_name,
+        destination.id AS destination_warehouse_id,destination.name AS destination_warehouse_name,
+        COUNT(line.id)::integer AS line_count,
+        COALESCE(jsonb_agg(jsonb_build_object(
+          'product_id',product.id,'sku',product.sku,'product_name',product.name,
+          'quantity',ABS(line.quantity)::text,'unit_code',unit.code,
+          'serial_numbers',line.serial_numbers
+        ) ORDER BY product.sku) FILTER (WHERE line.id IS NOT NULL),'[]'::jsonb) AS lines,
+        CASE WHEN EXISTS (
+          SELECT 1 FROM app.inventory_documents reversal
+          WHERE reversal.kind='REVERSAL'
+            AND reversal.reverses_document_id IN (doc.id,destination_doc.id)
+        ) THEN 'REVERSED' ELSE 'COMPLETED' END AS status
+      FROM app.inventory_documents doc
+      JOIN app.inventory_documents destination_doc
+        ON destination_doc.id=doc.transfer_pair_id
+      JOIN app.warehouses source ON source.id=doc.warehouse_id
+      JOIN app.warehouses destination ON destination.id=destination_doc.warehouse_id
+      LEFT JOIN app.inventory_document_lines line ON line.document_id=doc.id
+      LEFT JOIN app.products product ON product.id=line.product_id
+      LEFT JOIN app.units unit ON unit.id=product.unit_id
+      LEFT JOIN app.app_users posted_user ON posted_user.id=doc.posted_by_id
+      LEFT JOIN public."user" operator_user ON operator_user.id=posted_user.auth_user_id
+      WHERE doc.kind='TRANSFER' AND destination_doc.kind='TRANSFER'
+        AND doc.id < destination_doc.id
+        AND ($1::boolean OR (source.branch_id=ANY($2::integer[]) AND destination.branch_id=ANY($2::integer[])))
+        AND ($3::integer IS NULL OR source.id=$3 OR destination.id=$3)
+        AND ($4::date IS NULL OR doc.posted_at >= $4::date)
+        AND ($5::date IS NULL OR doc.posted_at < $5::date+interval '1 day')
+      GROUP BY doc.id,doc.record_no,doc.posted_at,doc.reason,doc.posted_by_id,
+        operator_user.name,source.id,source.name,destination_doc.id,destination.id,destination.name
+    ), filtered AS (
+      SELECT * FROM transfer_docs
+      WHERE ($6::text IS NULL OR record_no ILIKE $6 OR source_warehouse_name ILIKE $6
+        OR destination_warehouse_name ILIKE $6 OR COALESCE(reason,'') ILIKE $6
+        OR operator_name ILIKE $6 OR EXISTS (
+          SELECT 1 FROM jsonb_array_elements(lines) AS line_item(value)
+          WHERE line_item.value->>'sku' ILIKE $6 OR line_item.value->>'product_name' ILIKE $6
+        ))
+    )
+    SELECT COALESCE((SELECT jsonb_agg(to_jsonb(rows) ORDER BY rows.posted_at DESC,rows.id DESC)
+      FROM (SELECT * FROM filtered ORDER BY posted_at DESC,id DESC LIMIT $7 OFFSET $8) rows),'[]'::jsonb) AS items,
+      (SELECT COUNT(*)::integer FROM filtered) AS total,
+      COALESCE((SELECT SUM(line_count)::integer FROM filtered),0) AS total_lines,
+      (SELECT COUNT(*)::integer FROM filtered WHERE posted_at >= date_trunc('month',now())) AS month_total,
+      (SELECT COUNT(*)::integer FROM filtered WHERE status='REVERSED') AS reversed_total
+    `,
+    [
+      isGlobalRole(actor.role),
+      actor.branchIds,
+      warehouseId,
+      from,
+      to,
+      query ? `%${query}%` : null,
+      limit,
+      offset,
+    ],
+  );
+  return {
+    ...pageResult(result.rows[0].items, result.rows[0].total, page, limit),
+    summary: {
+      total: result.rows[0].total,
+      totalLines: result.rows[0].total_lines,
+      monthTotal: result.rows[0].month_total,
+      reversedTotal: result.rows[0].reversed_total,
+    },
+  };
+}
+
 export async function listAudit(
   actor: Actor,
   filters: {

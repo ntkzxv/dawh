@@ -23,6 +23,11 @@ export const DATA_TABLE_FRAME_STYLES = {
 export const dataTableFrameClassName = (isLight: boolean) =>
   `${DATA_TABLE_FRAME_STYLES.base} ${isLight ? DATA_TABLE_FRAME_STYLES.light : DATA_TABLE_FRAME_STYLES.dark}`;
 
+export const dataTableStripedRowClassName = (isLight: boolean) =>
+  isLight
+    ? "odd:bg-white even:bg-[#F7F7F7] hover:!bg-[#EEEEEE]"
+    : "odd:bg-[#383838] even:bg-[#414141] hover:!bg-[#4A4A4A]";
+
 export interface DataTableColumn<T> {
   key: string;
   header: ReactNode;
@@ -175,9 +180,7 @@ export default function DataTable<T>({
                         ? isLight
                           ? "bg-slate-100/90"
                           : "bg-white/[0.08]"
-                        : isLight
-                        ? "hover:bg-slate-50"
-                          : "hover:bg-white/[0.02]"
+                        : dataTableStripedRowClassName(isLight)
                     }`}
                   >
                     {columns.map((col) => {

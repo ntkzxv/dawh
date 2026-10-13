@@ -3,6 +3,7 @@
 import React, { ReactNode } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { Package } from "lucide-react";
+import { dataTableStripedRowClassName } from "../DataTable";
 
 export interface DataTableColumn<T> {
   key: string;
@@ -163,9 +164,7 @@ export default function DataTable<T>({
                         ? isLight
                           ? "bg-slate-100/90"
                           : "bg-white/[0.08]"
-                        : isLight
-                        ? "hover:bg-slate-50"
-                        : "hover:bg-white/[0.03]"
+                        : dataTableStripedRowClassName(isLight)
                     }`}
                   >
                     {columns.map((col) => {

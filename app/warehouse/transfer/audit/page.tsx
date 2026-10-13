@@ -1,2 +1,5 @@
-import { redirect } from "next/navigation";
-export default function Page() { redirect("/warehouse/issues"); }
+import TransferAuditBoard from "@/components/warehouse/TransferAuditBoard";
+
+export default function Page() {
+  return <TransferAuditBoard />;
+}

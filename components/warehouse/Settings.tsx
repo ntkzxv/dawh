@@ -238,7 +238,7 @@ export default function Settings() {
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-[#444444]/20 flex flex-col gap-2.5">
+                <div className="mt-4 pt-4 border-t border-slate-200 dark:border-white/10 flex flex-col gap-2.5">
                   <div className="flex items-center justify-between text-xs">
                     <span className={isLight ? "text-slate-500" : "text-[#A1A1AA]"}>
                       {isThai ? "สถาปัตยกรรม:" : "Architecture:"}
@@ -349,7 +349,7 @@ export default function Settings() {
                         isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444] text-white"
                       }`}
                     >
-                      <div className="flex items-center justify-between border-b pb-4 border-[#444444]/20 mb-5">
+                      <div className="flex items-center justify-between border-b pb-4 border-slate-200 dark:border-white/10 mb-5">
                         <div className="flex items-center gap-2.5">
                           <Cpu size={18} className="text-indigo-500" />
                           <h3
@@ -408,7 +408,7 @@ export default function Settings() {
                       }`}
                     >
                       <h3
-                        className="font-bold text-[16px] mb-4 pb-3 border-b border-[#444444]/20"
+                        className="font-bold text-[16px] mb-4 pb-3 border-b border-slate-200 dark:border-white/10"
                         style={{ fontFamily: "var(--font-outfit), sans-serif" }}
                       >
                         {isThai ? "ค่าเริ่มต้นทางสถาปัตยกรรมคลังสินค้า" : "Default Architectural Parameters"}
@@ -463,7 +463,7 @@ export default function Settings() {
                         isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444] text-white"
                       }`}
                     >
-                      <div className="border-b pb-4 border-[#444444]/20">
+                      <div className="border-b pb-4 border-slate-200 dark:border-white/10">
                         <div className="flex items-center gap-2.5">
                           <Building2 size={20} className="text-indigo-500" />
                           <h3
@@ -481,11 +481,9 @@ export default function Settings() {
                       </div>
 
                       {orgLoading ? (
-                        <div className="py-12 flex flex-col items-center justify-center gap-3">
-                          <RefreshCw size={24} className="animate-spin text-indigo-500" />
-                          <span className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-400"}`}>
-                            {isThai ? "กำลังโหลดข้อมูลองค์กร..." : "Loading organization record..."}
-                          </span>
+                        <div className="py-12 flex items-center justify-center" role="status" aria-label={isThai ? "กำลังโหลดข้อมูลองค์กร" : "Loading organization record"}>
+                          <RefreshCw size={24} className="animate-spin text-indigo-500" aria-hidden="true" />
+                          <span className="sr-only">{isThai ? "กำลังโหลดข้อมูลองค์กร" : "Loading organization record"}</span>
                         </div>
                       ) : (
                         <div className="flex flex-col gap-4">
@@ -542,7 +540,7 @@ export default function Settings() {
                             />
                           </label>
 
-                          <div className="pt-4 border-t border-[#444444]/20 flex items-center justify-between">
+                          <div className="pt-4 border-t border-slate-200 dark:border-white/10 flex items-center justify-between">
                             <span className={`text-xs ${isLight ? "text-slate-500" : "text-[#A1A1AA]"}`}>
                               {isGlobalAdmin
                                 ? isThai ? "คุณมีสิทธิ์ผู้บริหารในการปรับปรุงข้อมูลส่วนกลาง" : "Authorized with Admin/CEO credentials"
@@ -558,7 +556,7 @@ export default function Settings() {
                               }`}
                             >
                               {isSavingOrg
-                                ? isThai ? "กำลังบันทึก..." : "Saving..."
+                                ? <><RefreshCw size={15} className="mr-2 animate-spin" aria-hidden="true" /><span className="sr-only">{isThai ? "กำลังบันทึก" : "Saving"}</span></>
                                 : isThai ? "บันทึกข้อมูลองค์กร" : "Save Organization Profile"}
                             </button>
                           </div>
@@ -582,7 +580,7 @@ export default function Settings() {
                         isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444] text-white"
                       }`}
                     >
-                      <div className="border-b pb-4 border-[#444444]/20 mb-6">
+                      <div className="border-b pb-4 border-slate-200 dark:border-white/10 mb-6">
                         <div className="flex items-center gap-2.5">
                           <Sliders size={20} className="text-indigo-500" />
                           <h3
@@ -759,7 +757,7 @@ export default function Settings() {
                           </div>
                         </div>
 
-                        <div className="pt-4 border-t border-[#444444]/20 flex justify-end">
+                        <div className="pt-4 border-t border-slate-200 dark:border-white/10 flex justify-end">
                           <button
                             type="button"
                             onClick={handleSavePreferences}
@@ -791,7 +789,7 @@ export default function Settings() {
                         isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444] text-white"
                       }`}
                     >
-                      <div className="border-b pb-4 border-[#444444]/20 mb-6">
+                      <div className="border-b pb-4 border-slate-200 dark:border-white/10 mb-6">
                         <div className="flex items-center gap-2.5">
                           <Lock size={20} className="text-indigo-500" />
                           <h3
@@ -841,7 +839,7 @@ export default function Settings() {
                         />
                       </div>
 
-                      <div className="mt-6 pt-5 border-t border-[#444444]/20 flex items-center justify-between">
+                      <div className="mt-6 pt-5 border-t border-slate-200 dark:border-white/10 flex items-center justify-between">
                         <span className={`text-xs ${isLight ? "text-slate-500" : "text-zinc-400"}`}>
                           {isThai ? "ต้องการดูประวัติกิจกรรมการใช้งานทั้งหมด?" : "Need to inspect full audit event logs?"}
                         </span>

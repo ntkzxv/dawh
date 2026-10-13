@@ -2,16 +2,26 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { warehouseApi } from "@/lib/api/warehouse";
+import CustomDropdown from "@/components/common/CustomDropdown";
+import { Loader2 } from "lucide-react";
 import { Field, input, useRemote } from "./Ui";
 
 export function ProductSearchSelect({
   value,
   onChange,
   label = "สินค้า",
+  isThai = true,
+  useCommonDropdown = false,
+  invalid = false,
+  dropdownTriggerClassName,
 }: {
   value: string;
   onChange: (value: string) => void;
   label?: string;
+  isThai?: boolean;
+  useCommonDropdown?: boolean;
+  invalid?: boolean;
+  dropdownTriggerClassName?: string;
 }) {
   const [typed, setTyped] = useState("");
   const [activated, setActivated] = useState(false);
@@ -32,6 +42,12 @@ export function ProductSearchSelect({
   const items = data?.query === query ? data.items : null;
   const selectedIsListed =
     items?.some((item) => String(item.id) === value) ?? false;
+  const productOptions = [
+    ...(value && !selectedIsListed
+      ? [{ value, label: selectedLabel || `${isThai ? "สินค้า" : "Product"} #${value}` }]
+      : []),
+    ...(items ?? []).map((item) => ({ value: String(item.id), label: `${item.sku} · ${item.name}` })),
+  ];
 
   return (
     <Field label={label}>
@@ -45,8 +61,23 @@ export function ProductSearchSelect({
             setActivated(true);
             setTyped(event.target.value);
           }}
-          placeholder="ค้นหา SKU หรือชื่อสินค้า"
+          placeholder={isThai ? "ค้นหา SKU หรือชื่อสินค้า" : "Search SKU or product name"}
         />
+        {useCommonDropdown ? (
+          <CustomDropdown
+            value={value}
+            onChange={(nextValue) => {
+              onChange(nextValue);
+              setSelectedLabel(productOptions.find((item) => item.value === nextValue)?.label ?? "");
+            }}
+            options={productOptions}
+            placeholder={isThai ? "ค้นหาก่อนเลือก" : "Search before selecting"}
+            className="w-full"
+            triggerClassName={dropdownTriggerClassName}
+            aria-invalid={invalid}
+            icon={loading ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : undefined}
+          />
+        ) : (
         <select
           className={input}
           required
@@ -61,13 +92,13 @@ export function ProductSearchSelect({
         >
           <option value="">
             {!activated
-              ? "ค้นหาก่อนเลือก"
+              ? (isThai ? "ค้นหาก่อนเลือก" : "Search before selecting")
               : loading
-                ? "กำลังค้นหา..."
-                : "เลือกสินค้า"}
+                ? (isThai ? "กำลังค้นหา..." : "Searching...")
+                : (isThai ? "เลือกสินค้า" : "Select product")}
           </option>
           {value && !selectedIsListed && (
-            <option value={value}>{selectedLabel || `สินค้า #${value}`}</option>
+            <option value={value}>{selectedLabel || `${isThai ? "สินค้า" : "Product"} #${value}`}</option>
           )}
           {items?.map((item) => (
             <option key={item.id} value={item.id}>
@@ -75,6 +106,7 @@ export function ProductSearchSelect({
             </option>
           ))}
         </select>
+        )}
         {error && <span className="text-xs text-rose-600">{error}</span>}
       </div>
     </Field>

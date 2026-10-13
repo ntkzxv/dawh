@@ -196,7 +196,7 @@ export default function ControlPanel() {
       setNotice(success);
       return true;
     } catch (cause) {
-      setFailure(message(cause));
+      setFailure(message(cause, isThai));
       return false;
     }
   };
@@ -282,6 +282,8 @@ export default function ControlPanel() {
         titleTh="แผงควบคุมผู้ดูแลระบบ"
         routePath="/controlpanel"
         fullBleed={tab === "members"}
+        loading
+        loadingLabel={isThai ? "กำลังโหลดแผงควบคุม" : "Loading control panel"}
       >
         <main className={`w-full min-w-0 space-y-5 ${tab === "members" ? "p-6 sm:p-10" : ""}`} aria-busy="true" aria-label={isThai ? "กำลังโหลดแผงควบคุม" : "Loading control panel"}>
           <ControlPanelMemberSkeleton isThai={isThai} isAudit={tab === "audit"} />
@@ -442,6 +444,8 @@ export default function ControlPanel() {
       titleTh={tab === "members" ? "ผู้ใช้" : tab === "branches" ? "สาขา" : "แผงควบคุมผู้ดูแลระบบ"}
       routePath="/controlpanel"
       fullBleed={tab === "members" || tab === "branches"}
+      loading={tab === "members" ? membersLoading : tab === "audit" && auditLoading}
+      loadingLabel={isThai ? "กำลังโหลดแผงควบคุม" : "Loading control panel"}
     >
       {tab === "branches" ? <BranchManagement /> : <main className={`w-full min-w-0 space-y-6 ${tab === "members" ? "p-6 sm:p-10" : ""}`}>
         {notice && <Notice tone="success">{notice}</Notice>}
@@ -1038,7 +1042,7 @@ function MemberEditDialog({
         setProfile(profileForm(loaded.profile));
       })
       .catch((cause) => {
-        if (active) setDetailError(message(cause));
+        if (active) setDetailError(message(cause, isThai));
       })
       .finally(() => {
         if (active) setDetailBusy(false);

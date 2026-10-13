@@ -6,12 +6,14 @@ import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage } from "@/utils/language";
 import { warehouseApi, type CatalogItem } from "@/lib/api/warehouse";
 import { useOptionalWarehouseAccount } from "@/context/WarehouseAccountContext";
+import WarehousePageTemplate from "@/app/warehouse/_components/WarehousePageTemplate";
 import { canEditCatalog } from "@/lib/contracts/warehouse-policy";
 import { useRemote, Notice, message } from "@/components/warehouse/Ui";
 import CustomDropdown from "@/components/common/CustomDropdown";
 import {
   DATA_TABLE_STYLES,
   dataTableFrameClassName,
+  dataTableStripedRowClassName,
 } from "@/components/common/DataTable";
 import { SkeletonBox, SkeletonDataTable } from "@/components/loading_screen/SkeletonLoading";
 import {
@@ -28,7 +30,7 @@ import {
   FilterButton,
   type ProductDetailItem,
 } from "@/components/common";
-import { UploadCloud, Download, Plus, MoreVertical } from "lucide-react";
+import { UploadCloud, Download, Plus, MoreVertical, Loader2 } from "lucide-react";
 
 export type InventoryRowItem = ProductDetailItem;
 
@@ -351,12 +353,20 @@ export default function ProductInventorySplitView({
   };
 
   return (
-    <div
-      className={`w-full flex-1 min-h-full ${
-        isLight ? "bg-[#F8FAFC] text-[#222222]" : "bg-[#2C2C2C] text-[#F8FAFC]"
-      }`}
-      style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
+    <WarehousePageTemplate
+      titleEn="Product Master & SKU Catalog"
+      titleTh="ข้อมูลสินค้าหลัก"
+      routePath="/warehouse/inventory"
+      fullBleed
+      loading={loading && !data}
+      loadingLabel={isThai ? "กำลังโหลดข้อมูลสินค้า" : "Loading product inventory"}
     >
+      <div
+        className={`w-full flex-1 min-h-full ${
+          isLight ? "bg-[#F8FAFC] text-[#222222]" : "bg-[#2C2C2C] text-[#F8FAFC]"
+        }`}
+        style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
+      >
       <main className="mx-auto w-full max-w-[1600px] min-w-0 space-y-6 p-4 pb-10 sm:p-8 lg:p-10">
         {error && <Notice tone="error">{error}</Notice>}
 
@@ -533,7 +543,7 @@ export default function ProductInventorySplitView({
               </button>
             </div>
           ) : filteredItems.length === 0 ? (
-            <div className={`${dataTableFrameClassName(isLight)} w-full py-12 text-center text-sm text-[#A1A1AA]`}>
+            <div className={`${dataTableFrameClassName(isLight)} w-full py-12 text-center text-sm ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
               {isThai ? "ไม่พบรายการสินค้าที่ค้นหา" : "No products found."}
             </div>
           ) : (
@@ -587,11 +597,9 @@ export default function ProductInventorySplitView({
                         className={`${DATA_TABLE_STYLES.bodyRow} ${
                           isSelected
                             ? isLight
-                              ? "bg-slate-100"
-                              : "bg-[#2C2C2C]"
-                            : isLight
-                              ? "hover:bg-slate-50"
-                              : "hover:bg-white/[0.02]"
+                              ? "!bg-slate-100"
+                              : "!bg-[#2C2C2C]"
+                            : dataTableStripedRowClassName(isLight)
                         }`}
                       >
                         {/* SKU */}
@@ -613,12 +621,12 @@ export default function ProductInventorySplitView({
                         </td>
 
                         {/* Category */}
-                        <td className={`${DATA_TABLE_STYLES.bodyCell} text-[#A1A1AA] text-xs`}>
+                        <td className={`${DATA_TABLE_STYLES.bodyCell} ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"} text-xs`}>
                           {item.category}
                         </td>
 
                         {/* Brand */}
-                        <td className={`${DATA_TABLE_STYLES.bodyCell} text-[#A1A1AA] text-xs`}>
+                        <td className={`${DATA_TABLE_STYLES.bodyCell} ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"} text-xs`}>
                           {item.brand}
                         </td>
 
@@ -824,8 +832,8 @@ export default function ProductInventorySplitView({
                           setFormCategoryId(value);
                           setFormFieldErrors((errors) => errors.filter((field) => field !== "category"));
                         }}
-                        placeholder="Select"
-                        placeholderClassName="!text-[#A1A1AA]"
+                        placeholder={isThai ? "เลือก" : "Select"}
+                        placeholderClassName={isLight ? "!text-[#777777]" : "!text-[#A1A1AA]"}
                         aria-invalid={formFieldErrors.includes("category")}
                         options={[
                           ...(filters?.categories || []).map((c) => ({
@@ -856,8 +864,8 @@ export default function ProductInventorySplitView({
                           setFormBrandId(value);
                           setFormFieldErrors((errors) => errors.filter((field) => field !== "brand"));
                         }}
-                        placeholder="Select"
-                        placeholderClassName="!text-[#A1A1AA]"
+                        placeholder={isThai ? "เลือก" : "Select"}
+                        placeholderClassName={isLight ? "!text-[#777777]" : "!text-[#A1A1AA]"}
                         aria-invalid={formFieldErrors.includes("brand")}
                         options={[
                           ...(formRefs?.brands || []).map((b) => ({
@@ -888,8 +896,8 @@ export default function ProductInventorySplitView({
                           setFormUnitId(value);
                           setFormFieldErrors((errors) => errors.filter((field) => field !== "unit"));
                         }}
-                        placeholder="Select"
-                        placeholderClassName="!text-[#A1A1AA]"
+                        placeholder={isThai ? "เลือก" : "Select"}
+                        placeholderClassName={isLight ? "!text-[#777777]" : "!text-[#A1A1AA]"}
                         aria-invalid={formFieldErrors.includes("unit")}
                         options={[
                           ...(formRefs?.units || []).map((u) => ({
@@ -1009,9 +1017,7 @@ export default function ProductInventorySplitView({
                   className={panelStyles.submit}
                 >
                   {formSubmitting
-                    ? isThai
-                      ? "กำลังบันทึก..."
-                      : "Saving..."
+                    ? <><Loader2 size={15} className="mr-2 animate-spin" aria-hidden="true" /><span className="sr-only">{isThai ? "กำลังบันทึก" : "Saving"}</span></>
                     : editingProduct
                       ? isThai
                         ? "บันทึกการแก้ไข"
@@ -1024,6 +1030,7 @@ export default function ProductInventorySplitView({
             </form>
         </SidePanel>
       )}
-    </div>
+      </div>
+    </WarehousePageTemplate>
   );
 }

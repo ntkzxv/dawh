@@ -25,8 +25,9 @@ export default async function InventoryPage({
   searchParams: Promise<{ kind?: string | string[] }>;
 }) {
   const requestedKind = (await searchParams).kind;
-  const kind = typeof requestedKind === "string" && catalogKinds.includes(requestedKind as CatalogKind)
-    ? requestedKind as CatalogKind
+  const normalizedKind = requestedKind === "branchs" ? "branches" : requestedKind;
+  const kind = typeof normalizedKind === "string" && catalogKinds.includes(normalizedKind as CatalogKind)
+    ? normalizedKind as CatalogKind
     : "products";
 
   return <InventoryContent kind={kind} />;

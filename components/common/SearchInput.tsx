@@ -13,6 +13,7 @@ export interface SearchInputProps
   inputClassName?: string;
   width?: string;
   showClearButton?: boolean;
+  clearLabel?: string;
 }
 
 export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
@@ -26,6 +27,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
       inputClassName = "",
       width = "w-[180px] sm:w-[220px]",
       showClearButton = true,
+      clearLabel = "Clear search",
       disabled = false,
       ...rest
     },
@@ -79,7 +81,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
           <button
             type="button"
             onClick={handleClear}
-            aria-label="Clear search"
+            aria-label={clearLabel}
             className={`absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors cursor-pointer ${
               isLight
                 ? "text-[#A1A1AA] hover:text-[#222222] hover:bg-zinc-100"

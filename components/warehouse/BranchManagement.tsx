@@ -142,7 +142,7 @@ export default function BranchManagement() {
       setNotice(editing ? (isThai ? "บันทึกการแก้ไขสาขาแล้ว" : "Branch updated") : (isThai ? "เพิ่มสาขาแล้ว" : "Branch added"));
       await refresh();
     } catch (cause) {
-      setFailure(message(cause));
+      setFailure(message(cause, isThai));
     }
   };
 

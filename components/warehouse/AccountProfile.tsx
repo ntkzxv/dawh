@@ -330,13 +330,14 @@ export default function AccountProfile() {
 }
 
 function AccountPageSkeleton({ isLight }: { isLight: boolean }) {
+  const isThai = useAppLanguage() === "TH";
   const card = isLight
     ? "bg-white border-[#E4E4E7] shadow-sm"
     : "bg-[#383838] border-[#444444] shadow-lg";
   return (
     <div
       className="w-full flex flex-col gap-6"
-      aria-label="Loading account"
+      aria-label={isThai ? "กำลังโหลดบัญชี" : "Loading account"}
       aria-busy="true"
     >
       <div
@@ -377,7 +378,7 @@ function AccountPageSkeleton({ isLight }: { isLight: boolean }) {
           {[3, 4, 2].map((columns, group) => (
             <div
               key={group}
-              className={`w-full flex flex-col gap-3 ${group ? "pt-3 border-t border-[#444444]/20" : ""}`}
+              className={`w-full flex flex-col gap-3 ${group ? "pt-3 border-t border-slate-200 dark:border-white/10" : ""}`}
             >
               <SkeletonBox className="h-3 w-40 rounded-[4px]" />
               <div
@@ -499,7 +500,7 @@ function SecuritySettings({
           : "Your login email has been updated.",
       });
     } catch (cause) {
-      setEmailError(message(cause));
+      setEmailError(message(cause, isThai));
     } finally {
       setEmailBusy(false);
     }
@@ -541,7 +542,7 @@ function SecuritySettings({
           : "Your new password has been saved.",
       });
     } catch (cause) {
-      setPasswordError(message(cause));
+      setPasswordError(message(cause, isThai));
     } finally {
       setPasswordBusy(false);
     }
@@ -640,14 +641,7 @@ function SecuritySettings({
           </p>
           <div className="flex justify-end">
             <button disabled={emailBusy} className={actionClass}>
-              {emailBusy && <Loader2 size={13} className="animate-spin" />}
-              {emailBusy
-                ? isThai
-                  ? "กำลังบันทึก..."
-                  : "Saving..."
-                : isThai
-                  ? "บันทึกอีเมลใหม่"
-                  : "Update Email"}
+              {emailBusy ? <><Loader2 size={13} className="animate-spin" aria-hidden="true" /><span className="sr-only">{isThai ? "กำลังบันทึก" : "Saving"}</span></> : (isThai ? "บันทึกอีเมลใหม่" : "Update Email")}
             </button>
           </div>
         </form>
@@ -744,14 +738,7 @@ function SecuritySettings({
           </div>
           <div className="flex justify-end">
             <button disabled={passwordBusy} className={actionClass}>
-              {passwordBusy && <Loader2 size={13} className="animate-spin" />}
-              {passwordBusy
-                ? isThai
-                  ? "กำลังบันทึก..."
-                  : "Saving..."
-                : isThai
-                  ? "บันทึกรหัสผ่านใหม่"
-                  : "Update Password"}
+              {passwordBusy ? <><Loader2 size={13} className="animate-spin" aria-hidden="true" /><span className="sr-only">{isThai ? "กำลังบันทึก" : "Saving"}</span></> : (isThai ? "บันทึกรหัสผ่านใหม่" : "Update Password")}
             </button>
           </div>
         </form>

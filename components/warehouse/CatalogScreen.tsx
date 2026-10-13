@@ -8,7 +8,7 @@ import {
   useState,
   type FormEvent,
 } from "react";
-import { Plus, X } from "lucide-react";
+import { EllipsisVertical, Plus, X } from "lucide-react";
 import WarehousePageTemplate from "@/app/warehouse/_components/WarehousePageTemplate";
 import {
   warehouseApi,
@@ -22,10 +22,21 @@ import DataTable, {
 import { message, Notice, useRemote } from "./Ui";
 import { useTheme } from "@/context/ThemeContext";
 import CustomDropdown from "@/components/common/CustomDropdown";
+import SearchInput from "@/components/common/SearchInput";
+import FilterButton from "@/components/common/FilterButton";
+import FilterDropdown from "@/components/common/FilterDropdown";
+import CommonButton from "@/components/common/Button";
+import SidePanel, {
+  SidePanelAlert,
+  SidePanelFieldError,
+  sidePanelInvalidFieldClassName,
+  sidePanelFormStyles,
+} from "@/components/common/SidePanel";
 import { SkeletonBox } from "@/components/loading_screen/SkeletonLoading";
 import { Pagination } from "@/components/common";
 import { useOptionalWarehouseAccount } from "@/context/WarehouseAccountContext";
 import { canEditCatalog } from "@/lib/contracts/warehouse-policy";
+import { useAccountMenu } from "@/hooks/useAccountMenu";
 
 const kinds: Array<{ key: CatalogKind; label: string }> = [
   { key: "branches", label: "สาขา" },
@@ -101,8 +112,39 @@ export default function CatalogScreen({
 }) {
   const account = useOptionalWarehouseAccount();
   const { theme } = useTheme();
+  const { isThai } = useAccountMenu();
   const isLight = theme === "light";
   const kind = initialKind;
+  const supportsStatusFilter = ["branches", "warehouses", "suppliers"].includes(kind);
+  const supportsUsageFilter = ["units", "product-groups", "product-categories", "brands", "product-models"].includes(kind);
+  const supportsSearchAndFilters = supportsStatusFilter || supportsUsageFilter;
+  const usesSidePanel = [
+    "branches",
+    "warehouses",
+    "suppliers",
+    "units",
+    "product-groups",
+    "product-categories",
+    "brands",
+    "product-models",
+  ].includes(kind);
+  const kindItemEn = kind === "branches"
+    ? "branch"
+    : kind === "warehouses"
+      ? "warehouse"
+      : kind === "suppliers"
+        ? "supplier"
+        : kind === "units"
+          ? "unit"
+          : kind === "product-groups"
+            ? "product group"
+            : kind === "product-categories"
+              ? "product category"
+              : kind === "brands"
+                ? "brand"
+                : kind === "product-models"
+                  ? "product model"
+                  : "item";
   const [editing, setEditing] = useState<CatalogItem | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [popoverPosition, setPopoverPosition] = useState({ top: 0, right: 16 });
@@ -110,7 +152,39 @@ export default function CatalogScreen({
   const [failure, setFailure] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [branchFilter, setBranchFilter] = useState("all");
+  const [usageFilter, setUsageFilter] = useState<"all" | "assigned" | "unassigned">("all");
+  const [groupFilter, setGroupFilter] = useState("all");
+  const [brandFilter, setBrandFilter] = useState("all");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filtersRef = useRef<HTMLDivElement>(null);
   const pageSize = 10;
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setDebouncedSearch(search), 250);
+    return () => window.clearTimeout(timeout);
+  }, [search]);
+
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element) || target.closest('[role="listbox"]')) return;
+      if (!filtersRef.current?.contains(target)) setFiltersOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setFiltersOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [filtersOpen]);
 
   const requiredRefs = useMemo(
     () => [
@@ -128,9 +202,17 @@ export default function CatalogScreen({
         page: String(currentPage),
         limit: String(pageSize),
       });
+      if (supportsSearchAndFilters) {
+        if (debouncedSearch.trim()) params.set("q", debouncedSearch.trim());
+        if (supportsStatusFilter && statusFilter !== "all") params.set("status", statusFilter);
+        if (kind === "warehouses" && branchFilter !== "all") params.set("branchId", branchFilter);
+        if (supportsUsageFilter && usageFilter !== "all") params.set("usage", usageFilter);
+        if (kind === "product-categories" && groupFilter !== "all") params.set("groupId", groupFilter);
+        if (kind === "product-models" && brandFilter !== "all") params.set("brandId", brandFilter);
+      }
       return warehouseApi.catalogPage(kind, params, signal);
     },
-    [kind, currentPage],
+    [kind, currentPage, debouncedSearch, statusFilter, branchFilter, usageFilter, groupFilter, brandFilter, supportsSearchAndFilters, supportsStatusFilter, supportsUsageFilter],
   );
   const loadRefs = useCallback(
     async (signal: AbortSignal) => {
@@ -145,9 +227,11 @@ export default function CatalogScreen({
     },
     [requiredRefs],
   );
-  const { data: refs } = useRemote(loadRefs, { enabled: isFormOpen });
+  const { data: refs } = useRemote(loadRefs, {
+    enabled: isFormOpen || (filtersOpen && (kind === "warehouses" || kind === "product-categories" || kind === "product-models")),
+  });
 
-  const { data, error, refresh } = useRemote(load);
+  const { data, loading, error, refresh } = useRemote(load);
   const currentData = data?.page.page === currentPage ? data : null;
   const totalItems = data?.page.total ?? 0;
   const totalPages = Math.ceil(totalItems / pageSize);
@@ -174,17 +258,47 @@ export default function CatalogScreen({
       } else {
         await warehouseApi.createCatalog(kind, body);
       }
-      setSuccess(editing ? "แก้ไขแล้ว" : "เพิ่มข้อมูลแล้ว");
+      setSuccess(editing
+        ? (isThai ? "แก้ไขแล้ว" : `${kindItemEn[0].toUpperCase()}${kindItemEn.slice(1)} updated`)
+        : (isThai ? "เพิ่มข้อมูลแล้ว" : `${kindItemEn[0].toUpperCase()}${kindItemEn.slice(1)} added`));
       setEditing(null);
       setIsFormOpen(false);
       await refresh();
     } catch (cause) {
-      setFailure(message(cause));
+      setFailure(message(cause, isThai));
     }
   };
 
   const kindLabel =
     kinds.find((item) => item.key === kind)?.label ?? "ข้อมูลหลัก";
+  const kindLabelEn = kind === "branches" ? "Branches"
+    : kind === "warehouses" ? "Warehouses"
+      : kind === "suppliers" ? "Suppliers"
+        : kind === "units" ? "Units"
+          : kind === "product-groups" ? "Product groups"
+            : kind === "product-categories" ? "Product categories"
+              : kind === "brands" ? "Brands"
+                : kind === "product-models" ? "Product models"
+                  : "Master data";
+  const searchPlaceholder = kind === "branches" ? (isThai ? "ค้นหารหัสหรือชื่อสาขา" : "Search branch code or name")
+    : kind === "warehouses" ? (isThai ? "ค้นหารหัสหรือชื่อคลัง" : "Search warehouse code or name")
+      : kind === "suppliers" ? (isThai ? "ค้นหารหัสหรือชื่อผู้ขาย" : "Search supplier code or name")
+        : isThai ? `ค้นหา${kindLabel}` : `Search ${kindLabelEn.toLowerCase()}`;
+  const filterPanelLabel = isThai ? `ตัวกรอง${kindLabel}` : `${kindLabelEn} filters`;
+  const activeFilterCount = Number(supportsStatusFilter && statusFilter !== "all")
+    + Number(kind === "warehouses" && branchFilter !== "all")
+    + Number(supportsUsageFilter && usageFilter !== "all")
+    + Number(kind === "product-categories" && groupFilter !== "all")
+    + Number(kind === "product-models" && brandFilter !== "all");
+  const clearFilters = () => {
+    setStatusFilter("all");
+    setBranchFilter("all");
+    setUsageFilter("all");
+    setGroupFilter("all");
+    setBrandFilter("all");
+    setCurrentPage(1);
+    setFiltersOpen(false);
+  };
   const openForm = useCallback((item: CatalogItem | null) => {
     setEditing(item);
     const rect = addButtonRef.current?.getBoundingClientRect();
@@ -196,25 +310,32 @@ export default function CatalogScreen({
     }
     setIsFormOpen(true);
   }, []);
+  const hasCodeColumn = ["branches", "warehouses", "suppliers", "units"].includes(kind);
   const columns = useMemo<DataTableColumn<CatalogItem>[]>(() => [
     {
       key: "code",
-      header: "รหัส",
+      header: hasCodeColumn
+        ? (kind === "units" ? (isThai ? "รหัสหน่วย" : "Unit code") : isThai ? `รหัส${kindLabel}` : `${kindItemEn[0].toUpperCase()}${kindItemEn.slice(1)} code`)
+        : (isThai ? "รหัส" : "ID"),
       className: "font-mono",
       render: (row) => row.sku ?? row.code ?? row.id,
     },
-    { key: "name", header: "ชื่อ", className: "font-medium" },
-    {
+    { key: "name", header: supportsSearchAndFilters
+      ? (isThai ? `ชื่อ${kindLabel}` : `${kindItemEn[0].toUpperCase()}${kindItemEn.slice(1)} name`)
+      : "ชื่อ", className: "font-medium" },
+    ...(supportsStatusFilter ? [{
       key: "status",
-      header: "สถานะ",
+      header: isThai ? "สถานะ" : "Status",
       headerClassName: "w-[120px]",
       className: "whitespace-nowrap",
-      render: (row) => (
+      render: (row: CatalogItem) => (
         <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${row.active === false ? "bg-[#E74C3C]/15 text-[#E74C3C]" : "bg-[#2EC4B6]/15 text-[#2EC4B6]"}`}>
-          {row.active === false ? "ปิดใช้" : "ใช้งาน"}
+          {row.active === false
+            ? (isThai ? "ปิดใช้งาน" : "Inactive")
+            : (isThai ? "ใช้งาน" : "Active")}
         </span>
       ),
-    },
+    }] : []),
     {
       key: "actions",
       header: null,
@@ -223,14 +344,20 @@ export default function CatalogScreen({
       render: (row) => canEdit ? (
         <button
           type="button"
-          className={`rounded-[4px] px-2 py-1 font-semibold transition-colors cursor-pointer ${isLight ? "text-[#222222] hover:bg-[#E4E4E7]" : "text-white hover:bg-[#444444]"}`}
+          aria-label={supportsSearchAndFilters
+            ? (isThai ? `แก้ไข${kindLabel} ${row.name}` : `Edit ${kindItemEn} ${row.name}`)
+            : (isThai ? `แก้ไข${kindLabel}` : `Edit ${kindLabelEn}`)}
+          title={supportsSearchAndFilters ? (isThai ? "แก้ไข" : "Edit") : undefined}
+          className={supportsSearchAndFilters
+            ? "inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white"
+            : `rounded-[4px] px-2 py-1 font-semibold transition-colors cursor-pointer ${isLight ? "text-[#222222] hover:bg-[#E4E4E7]" : "text-white hover:bg-[#444444]"}`}
           onClick={() => openForm(row)}
         >
-          แก้ไข
+          {supportsSearchAndFilters ? <EllipsisVertical className="h-5 w-5" aria-hidden="true" /> : (isThai ? "แก้ไข" : "Edit")}
         </button>
       ) : null,
     },
-  ], [canEdit, isLight, openForm]);
+  ], [canEdit, hasCodeColumn, isLight, isThai, kind, kindItemEn, kindLabel, kindLabelEn, openForm, supportsSearchAndFilters, supportsStatusFilter]);
   const closeForm = useCallback(() => {
     setEditing(null);
     setIsFormOpen(false);
@@ -242,22 +369,26 @@ export default function CatalogScreen({
       if (event.key === "Escape") closeForm();
     };
     window.addEventListener("keydown", closeOnEscape);
-    window.addEventListener("resize", closeForm);
-    window.addEventListener("scroll", closeForm, true);
+    if (!usesSidePanel) {
+      window.addEventListener("resize", closeForm);
+      window.addEventListener("scroll", closeForm, true);
+    }
     return () => {
       window.removeEventListener("keydown", closeOnEscape);
       window.removeEventListener("resize", closeForm);
       window.removeEventListener("scroll", closeForm, true);
     };
-  }, [isFormOpen, closeForm]);
+  }, [isFormOpen, closeForm, usesSidePanel]);
 
   return (
     <WarehousePageTemplate
-      titleEn="Master data"
+      titleEn={kindLabelEn}
       titleTh={kindLabel}
       routePath="/warehouse/inventory"
       iconName="box"
       fullBleed
+      loading={loading && !data}
+      loadingLabel={isThai ? `กำลังโหลด${kindLabel}` : `Loading ${kindLabelEn.toLowerCase()}`}
     >
       <div className="flex w-full min-h-0 flex-1 flex-col gap-6 self-stretch overflow-y-auto p-6 lg:p-8">
         {error && <Notice tone="error">{error}</Notice>}
@@ -266,12 +397,120 @@ export default function CatalogScreen({
 
         {!currentData && !error && (
           <div className="w-full">
-            <div className="mb-4 flex items-center justify-end gap-3">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              {supportsSearchAndFilters && (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <SearchInput
+                    value={search}
+                    onChange={(value) => { setSearch(value); setCurrentPage(1); }}
+                    placeholder={searchPlaceholder}
+                    aria-label={isThai ? `ค้นหา${kindLabel}` : `Search ${kindLabelEn.toLowerCase()}`}
+                    clearLabel={isThai ? "ล้างคำค้นหา" : "Clear search"}
+                    width="w-full sm:w-72"
+                  />
+                  <div className="relative shrink-0" ref={filtersRef}>
+                    <FilterButton
+                      controls="catalog-filter-panel"
+                      expanded={filtersOpen}
+                      label={isThai ? "ตัวกรอง" : "Filters"}
+                      clearLabel={isThai ? "ล้างตัวกรอง" : "Clear filters"}
+                      activeFilterCount={activeFilterCount}
+                      onClear={clearFilters}
+                      onClick={() => setFiltersOpen((open) => !open)}
+                    />
+                    {filtersOpen && (
+                      <div id="catalog-filter-panel" role="region" aria-label={filterPanelLabel} className={`absolute left-0 top-full z-30 mt-2 w-[min(320px,calc(100vw-2rem))] space-y-4 rounded-2xl border p-4 shadow-2xl sm:left-auto sm:right-0 ${isLight ? "border-[#E4E4E7] bg-white text-[#222222]" : "border-[#444444] bg-[#383838] text-white"}`}>
+                        {supportsStatusFilter && <label className="space-y-1.5 text-sm font-medium">
+                          <span>{isThai ? "สถานะ" : "Status"}</span>
+                          <FilterDropdown<"all" | "active" | "inactive">
+                            value={statusFilter}
+                            onChange={(value) => { setStatusFilter(value); setCurrentPage(1); }}
+                            options={[
+                              { value: "all", label: isThai ? "ทุกสถานะ" : "All statuses" },
+                              { value: "active", label: isThai ? "ใช้งาน" : "Active" },
+                              { value: "inactive", label: isThai ? "ปิดใช้งาน" : "Inactive" },
+                            ]}
+                            className="w-full"
+                          />
+                        </label>}
+                        {kind === "warehouses" && (
+                          <label className="space-y-1.5 text-sm font-medium">
+                            <span>{isThai ? "สาขา" : "Branch"}</span>
+                            <FilterDropdown<string>
+                              value={branchFilter}
+                              onChange={(value) => { setBranchFilter(value); setCurrentPage(1); }}
+                              options={[
+                                { value: "all", label: isThai ? "ทุกสาขา" : "All branches" },
+                                ...(refs?.branches ?? []).map((branch) => ({ value: String(branch.id), label: branch.name })),
+                              ]}
+                              className="w-full"
+                            />
+                          </label>
+                        )}
+                        {supportsUsageFilter && (
+                          <label className="space-y-1.5 text-sm font-medium">
+                            <span>{isThai ? "การใช้งานสินค้า" : "Product assignment"}</span>
+                            <FilterDropdown<"all" | "assigned" | "unassigned">
+                              value={usageFilter}
+                              onChange={(value) => { setUsageFilter(value); setCurrentPage(1); }}
+                              options={[
+                                { value: "all", label: isThai ? "ทั้งหมด" : "All" },
+                                { value: "assigned", label: isThai ? "มีสินค้าใช้งาน" : "Used by products" },
+                                { value: "unassigned", label: isThai ? "ยังไม่มีสินค้าใช้งาน" : "Not used by products" },
+                              ]}
+                              className="w-full"
+                            />
+                          </label>
+                        )}
+                        {kind === "product-categories" && (
+                          <label className="space-y-1.5 text-sm font-medium">
+                            <span>{isThai ? "กลุ่มสินค้า" : "Product group"}</span>
+                            <FilterDropdown<string>
+                              value={groupFilter}
+                              onChange={(value) => { setGroupFilter(value); setCurrentPage(1); }}
+                              options={[
+                                { value: "all", label: isThai ? "ทุกกลุ่ม" : "All groups" },
+                                { value: "none", label: isThai ? "ไม่มีกลุ่ม" : "No group" },
+                                ...(refs?.["product-groups"] ?? []).map((group) => ({ value: String(group.id), label: group.name })),
+                              ]}
+                              className="w-full"
+                              searchable
+                            />
+                          </label>
+                        )}
+                        {kind === "product-models" && (
+                          <label className="space-y-1.5 text-sm font-medium">
+                            <span>{isThai ? "ยี่ห้อ" : "Brand"}</span>
+                            <FilterDropdown<string>
+                              value={brandFilter}
+                              onChange={(value) => { setBrandFilter(value); setCurrentPage(1); }}
+                              options={[
+                                { value: "all", label: isThai ? "ทุกยี่ห้อ" : "All brands" },
+                                { value: "none", label: isThai ? "ไม่มียี่ห้อ" : "No brand" },
+                                ...(refs?.brands ?? []).map((brand) => ({ value: String(brand.id), label: brand.name })),
+                              ]}
+                              className="w-full"
+                              searchable
+                            />
+                          </label>
+                        )}
+                        {activeFilterCount > 0 && (
+                          <div className="flex justify-end border-t border-slate-200 pt-3 dark:border-white/10">
+                            <CommonButton variant="outline" onClick={clearFilters}>
+                              {isThai ? "ล้างตัวกรอง" : "Clear filters"}
+                            </CommonButton>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
               <SkeletonBox className="h-[33px] w-32 rounded-[6px]" />
             </div>
             <section
               role="status"
-              aria-label="กำลังโหลดข้อมูล"
+              aria-label={isThai ? "กำลังโหลดข้อมูล" : "Loading data"}
               className={`w-full ${dataTableFrameClassName(isLight)}`}
             >
               <DataTable
@@ -288,17 +527,130 @@ export default function CatalogScreen({
 
         {currentData && (
           <div className="w-full">
-            <div className="mb-4 flex items-center justify-end gap-3">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              {supportsSearchAndFilters && (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <SearchInput
+                    value={search}
+                    onChange={(value) => { setSearch(value); setCurrentPage(1); }}
+                    placeholder={searchPlaceholder}
+                    aria-label={isThai ? `ค้นหา${kindLabel}` : `Search ${kindLabelEn.toLowerCase()}`}
+                    clearLabel={isThai ? "ล้างคำค้นหา" : "Clear search"}
+                    width="w-full sm:w-72"
+                  />
+                  <div className="relative shrink-0" ref={filtersRef}>
+                    <FilterButton
+                      controls="catalog-filter-panel"
+                      expanded={filtersOpen}
+                      label={isThai ? "ตัวกรอง" : "Filters"}
+                      clearLabel={isThai ? "ล้างตัวกรอง" : "Clear filters"}
+                      activeFilterCount={activeFilterCount}
+                      onClear={clearFilters}
+                      onClick={() => setFiltersOpen((open) => !open)}
+                    />
+                    {filtersOpen && (
+                      <div
+                        id="catalog-filter-panel"
+                        role="region"
+                        aria-label={filterPanelLabel}
+                        className={`absolute left-0 top-full z-30 mt-2 w-[min(320px,calc(100vw-2rem))] space-y-4 rounded-2xl border p-4 shadow-2xl sm:left-auto sm:right-0 ${isLight ? "border-[#E4E4E7] bg-white text-[#222222]" : "border-[#444444] bg-[#383838] text-white"}`}
+                      >
+                        {supportsStatusFilter && <label className="space-y-1.5 text-sm font-medium">
+                          <span>{isThai ? "สถานะ" : "Status"}</span>
+                          <FilterDropdown<"all" | "active" | "inactive">
+                            value={statusFilter}
+                            onChange={(value) => { setStatusFilter(value); setCurrentPage(1); }}
+                            options={[
+                              { value: "all", label: isThai ? "ทุกสถานะ" : "All statuses" },
+                              { value: "active", label: isThai ? "ใช้งาน" : "Active" },
+                              { value: "inactive", label: isThai ? "ปิดใช้งาน" : "Inactive" },
+                            ]}
+                            className="w-full"
+                          />
+                        </label>}
+                        {kind === "warehouses" && (
+                          <label className="space-y-1.5 text-sm font-medium">
+                            <span>{isThai ? "สาขา" : "Branch"}</span>
+                            <FilterDropdown<string>
+                              value={branchFilter}
+                              onChange={(value) => { setBranchFilter(value); setCurrentPage(1); }}
+                              options={[
+                                { value: "all", label: isThai ? "ทุกสาขา" : "All branches" },
+                                ...(refs?.branches ?? []).map((branch) => ({ value: String(branch.id), label: branch.name })),
+                              ]}
+                              className="w-full"
+                            />
+                          </label>
+                        )}
+                        {supportsUsageFilter && (
+                          <label className="space-y-1.5 text-sm font-medium">
+                            <span>{isThai ? "การใช้งานสินค้า" : "Product assignment"}</span>
+                            <FilterDropdown<"all" | "assigned" | "unassigned">
+                              value={usageFilter}
+                              onChange={(value) => { setUsageFilter(value); setCurrentPage(1); }}
+                              options={[
+                                { value: "all", label: isThai ? "ทั้งหมด" : "All" },
+                                { value: "assigned", label: isThai ? "มีสินค้าใช้งาน" : "Used by products" },
+                                { value: "unassigned", label: isThai ? "ยังไม่มีสินค้าใช้งาน" : "Not used by products" },
+                              ]}
+                              className="w-full"
+                            />
+                          </label>
+                        )}
+                        {kind === "product-categories" && (
+                          <label className="space-y-1.5 text-sm font-medium">
+                            <span>{isThai ? "กลุ่มสินค้า" : "Product group"}</span>
+                            <FilterDropdown<string>
+                              value={groupFilter}
+                              onChange={(value) => { setGroupFilter(value); setCurrentPage(1); }}
+                              options={[
+                                { value: "all", label: isThai ? "ทุกกลุ่ม" : "All groups" },
+                                { value: "none", label: isThai ? "ไม่มีกลุ่ม" : "No group" },
+                                ...(refs?.["product-groups"] ?? []).map((group) => ({ value: String(group.id), label: group.name })),
+                              ]}
+                              className="w-full"
+                              searchable
+                            />
+                          </label>
+                        )}
+                        {kind === "product-models" && (
+                          <label className="space-y-1.5 text-sm font-medium">
+                            <span>{isThai ? "ยี่ห้อ" : "Brand"}</span>
+                            <FilterDropdown<string>
+                              value={brandFilter}
+                              onChange={(value) => { setBrandFilter(value); setCurrentPage(1); }}
+                              options={[
+                                { value: "all", label: isThai ? "ทุกยี่ห้อ" : "All brands" },
+                                { value: "none", label: isThai ? "ไม่มียี่ห้อ" : "No brand" },
+                                ...(refs?.brands ?? []).map((brand) => ({ value: String(brand.id), label: brand.name })),
+                              ]}
+                              className="w-full"
+                              searchable
+                            />
+                          </label>
+                        )}
+                        {activeFilterCount > 0 && (
+                          <div className="flex justify-end border-t border-slate-200 pt-3 dark:border-white/10">
+                            <CommonButton variant="outline" onClick={clearFilters}>
+                              {isThai ? "ล้างตัวกรอง" : "Clear filters"}
+                            </CommonButton>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
               {canEdit && (
                 <button
                   type="button"
                   ref={addButtonRef}
-                  aria-label={`เพิ่ม${kindLabel}`}
+                  aria-label={isThai ? `เพิ่ม${kindLabel}` : `Add ${kindItemEn}`}
                   className={`inline-flex h-[33px] shrink-0 items-center gap-1.5 rounded-[6px] px-4 text-[13px] font-semibold transition-colors cursor-pointer ${isLight ? "bg-[#222222] text-white hover:bg-black" : "bg-white text-[#222222] hover:bg-[#F4F4F5]"}`}
                   onClick={() => openForm(null)}
                 >
                   <Plus size={14} />
-                  เพิ่ม{kindLabel}
+                  {isThai ? `เพิ่ม${kindLabel}` : `Add ${kindItemEn}`}
                 </button>
               )}
             </div>
@@ -309,7 +661,17 @@ export default function CatalogScreen({
                 data={visibleRows}
                 keyExtractor={(row) => row.id}
                 minWidth="520px"
-                emptyTitle="ยังไม่มีข้อมูล เพิ่มรายการแรกจากปุ่มด้านบน"
+                emptyTitle={supportsSearchAndFilters && (
+                  search.trim() ||
+                  statusFilter !== "all" ||
+                  (kind === "warehouses" && branchFilter !== "all")
+                )
+                  ? (isThai
+                    ? `ไม่พบ${kindLabel}ที่ตรงกับคำค้นหาหรือตัวกรอง`
+                    : `No ${kindLabelEn.toLowerCase()} match your search or filters`)
+                  : (isThai
+                    ? `ยังไม่มี${kindLabel} เพิ่มรายการแรกจากปุ่มด้านบน`
+                    : `No ${kindLabelEn.toLowerCase()} yet. Add the first item using the button above.`)}
               />
             </section>
             <Pagination
@@ -317,13 +679,42 @@ export default function CatalogScreen({
               totalPages={totalPages}
               totalItems={totalItems}
               pageSize={pageSize}
+              isThai={isThai}
               onPageChange={setCurrentPage}
               className="px-1"
             />
           </div>
         )}
 
-        {isFormOpen && canEdit && currentData && (
+        {isFormOpen && canEdit && currentData && usesSidePanel && (
+          <SidePanel
+            item={null}
+            onClose={closeForm}
+            eyebrow={editing
+              ? (isThai ? "จัดการข้อมูล" : `Manage ${kindItemEn}`)
+              : (isThai ? "สร้างข้อมูลใหม่" : `New ${kindItemEn}`)}
+            title={editing
+              ? (isThai ? `แก้ไขข้อมูล${kindLabel}` : `Edit ${kindItemEn}`)
+              : (isThai ? `เพิ่ม${kindLabel}ใหม่` : `Add ${kindItemEn}`)}
+          >
+            {requiredRefs.length > 0 && !refs ? null : (
+              <CatalogForm
+                key={`${kind}-${editing?.id ?? "new"}`}
+                kind={kind}
+                current={editing}
+                refs={refs ?? {}}
+                isLight={isLight}
+                onSave={save}
+                onCancel={closeForm}
+                sidePanel
+                formAlert={failure}
+                isThai={isThai}
+              />
+            )}
+          </SidePanel>
+        )}
+
+        {isFormOpen && canEdit && currentData && !usesSidePanel && (
           <div
             className="fixed inset-0 z-[100]"
             onMouseDown={(event) => {
@@ -376,6 +767,7 @@ export default function CatalogScreen({
                   isLight={isLight}
                   onSave={save}
                   onCancel={closeForm}
+                  isThai={isThai}
                 />
               )}
             </div>
@@ -393,6 +785,9 @@ function CatalogForm({
   isLight,
   onSave,
   onCancel,
+  sidePanel = false,
+  formAlert,
+  isThai = true,
 }: {
   kind: CatalogKind;
   current: CatalogItem | null;
@@ -400,7 +795,11 @@ function CatalogForm({
   isLight: boolean;
   onSave: (body: Record<string, unknown>) => void;
   onCancel: () => void;
+  sidePanel?: boolean;
+  formAlert?: string | null;
+  isThai?: boolean;
 }) {
+  const [fieldErrors, setFieldErrors] = useState<string[]>([]);
   const [values, setValues] = useState<Record<string, string | boolean>>(
     () =>
       Object.fromEntries(
@@ -413,6 +812,14 @@ function CatalogForm({
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
+    const missingFields = sidePanel
+      ? fields[kind].filter((key) =>
+          ["code", "name"].includes(key) && !String(values[key] ?? "").trim(),
+        )
+      : [];
+    setFieldErrors(missingFields);
+    if (missingFields.length) return;
+
     const body: Record<string, unknown> = {};
     for (const key of fields[kind]) {
       const value = values[key];
@@ -423,7 +830,9 @@ function CatalogForm({
             ? value
               ? Number(value)
               : null
-            : value === "" && !["sku", "code", "name"].includes(key)
+            : ["code", "name", "sku"].includes(key)
+              ? String(value ?? "").trim()
+              : value === "" && !["sku", "code", "name"].includes(key)
               ? null
               : value;
     }
@@ -438,36 +847,79 @@ function CatalogForm({
 
   const isMultiField = formFields.length > 1;
 
-  const inputFrameStyle = `box-border flex flex-row items-center px-[12px] py-[10px] gap-2 w-full max-w-[160px] h-[38px] rounded-[8px] border text-[13px] leading-[17px] font-normal outline-none transition-colors ${
+  const panelStyles = sidePanelFormStyles(isLight);
+  const itemEnglish = kind === "branches"
+    ? "branch"
+    : kind === "warehouses"
+      ? "warehouse"
+      : kind === "suppliers"
+        ? "supplier"
+        : kind === "units"
+          ? "unit"
+          : kind === "product-groups"
+            ? "product group"
+            : kind === "product-categories"
+              ? "product category"
+              : kind === "brands"
+                ? "brand"
+                : kind === "product-models"
+                  ? "product model"
+                  : "item";
+  const itemThai = kinds.find((item) => item.key === kind)?.label ?? "ข้อมูล";
+  const inputFrameStyle = sidePanel ? panelStyles.input : `box-border flex flex-row items-center px-[12px] py-[10px] gap-2 w-full max-w-[160px] h-[38px] rounded-[8px] border text-[13px] leading-[17px] font-normal outline-none transition-colors ${
     isLight
       ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222] focus:border-[#222222]"
       : "bg-[#2C2C2C] border-[#444444] text-[#F4F4F5] focus:border-[#E4E4E7]"
   }`;
 
-  const labelStyle = `font-bold text-[12px] leading-[16px] ${isLight ? "text-[#555555]" : "text-[#E4E4E7]"}`;
+  const labelStyle = sidePanel ? panelStyles.label : `font-bold text-[12px] leading-[16px] ${isLight ? "text-[#555555]" : "text-[#E4E4E7]"}`;
+  const fieldLabel = (key: string) => {
+    if (!sidePanel || !["branches", "warehouses", "suppliers"].includes(kind))
+      return labels[key] ?? key;
+    const itemLabel = kinds.find((item) => item.key === kind)?.label ?? "ข้อมูล";
+    if (isThai) {
+      const thaiLabels: Record<string, string> = {
+        code: `รหัส${itemLabel}`,
+        name: `ชื่อ${itemLabel}`,
+        address: "ที่อยู่",
+        contact: "ผู้ติดต่อ",
+        phone: "โทรศัพท์",
+        branchId: "สาขา",
+      };
+      return thaiLabels[key] ?? labels[key] ?? key;
+    }
+    const englishLabels: Record<string, string> = {
+      code: `${itemEnglish[0].toUpperCase()}${itemEnglish.slice(1)} code`,
+      name: `${itemEnglish[0].toUpperCase()}${itemEnglish.slice(1)} name`,
+      address: "Address",
+      contact: "Contact person",
+      phone: "Phone",
+      branchId: "Branch",
+    };
+    return englishLabels[key] ?? key;
+  };
 
   return (
     <form
-      className="ml-auto flex w-full max-w-[320px] flex-col items-center gap-5"
+      className={sidePanel ? panelStyles.form : "ml-auto flex w-full max-w-[320px] flex-col items-center gap-5"}
+      noValidate={sidePanel}
       onSubmit={submit}
     >
-      <div
-        className={`w-full ${formFields.length === 1 ? "max-w-[160px]" : isMultiField ? "grid grid-cols-1 sm:grid-cols-2 gap-3" : "flex flex-col gap-3"}`}
-      >
+      <div className={sidePanel ? panelStyles.content : "w-full"}>
+        {sidePanel && formAlert && <SidePanelAlert>{formAlert}</SidePanelAlert>}
+        <div className={`w-full ${formFields.length === 1 && !sidePanel ? "max-w-[160px]" : isMultiField ? "grid grid-cols-1 sm:grid-cols-2 gap-3" : "flex flex-col gap-3"}`}>
         {formFields.map((key) => {
-          const isFullWidth =
-            key === "address" ||
-            (key === "name" &&
-              (kind === "suppliers" ||
-                kind === "branches" ||
-                kind === "warehouses"));
+          const isFullWidth = key === "address" ||
+            (sidePanel && kind === "warehouses" && key === "branchId") ||
+            (!sidePanel && key === "name" &&
+              (kind === "suppliers" || kind === "warehouses"));
           return (
             <div
               key={key}
-              className={`flex flex-col items-start gap-[6px] w-full ${isFullWidth ? "sm:col-span-2" : ""}`}
+              className={`${sidePanel ? panelStyles.field : "flex flex-col items-start gap-[6px]"} w-full ${isFullWidth ? "sm:col-span-2" : ""}`}
             >
               <label className={labelStyle}>
-                {labels[key] ?? key}{" "}
+                {fieldLabel(key)}{" "}
                 {["sku", "code", "name"].includes(key) && (
                   <span className="text-[#E71D36]">*</span>
                 )}
@@ -477,7 +929,7 @@ function CatalogForm({
                 <label className="flex items-center gap-2 cursor-pointer text-[13px] h-[38px]">
                   <input
                     type="checkbox"
-                    className="rounded border-[#444444] bg-[#2C2C2C] text-[#222222] focus:ring-0"
+                    className={`rounded focus:ring-0 ${isLight ? "border-[#A1A1AA] bg-white text-[#222222]" : "border-[#444444] bg-[#2C2C2C] text-white"}`}
                     checked={values[key] === true}
                     onChange={(event) =>
                       setValues({ ...values, [key]: event.target.checked })
@@ -486,7 +938,7 @@ function CatalogForm({
                   <span
                     className={isLight ? "text-[#222222]" : "text-[#F4F4F5]"}
                   >
-                    เปิดใช้งานการติดตาม Serial
+                    {isThai ? "เปิดใช้งานการติดตาม Serial" : "Enable serial tracking"}
                   </span>
                 </label>
               ) : referenceKind[key] ? (
@@ -494,7 +946,7 @@ function CatalogForm({
                   value={String(values[key] ?? "")}
                   onChange={(value) => setValues({ ...values, [key]: value })}
                   options={[
-                    { value: "", label: `เลือก${labels[key]}` },
+                    { value: "", label: isThai ? `เลือก${fieldLabel(key)}` : `Select ${fieldLabel(key).toLowerCase()}` },
                     ...(refs[referenceKind[key]] ?? [])
                       .filter((item) => item.active !== false)
                       .map((item) => ({
@@ -509,20 +961,17 @@ function CatalogForm({
               ) : key === "address" ? (
                 <textarea
                   rows={2}
-                  className={`box-border flex w-full rounded-[8px] border p-2.5 text-[13px] leading-[18px] font-normal outline-none transition-colors resize-none ${
-                    isLight
-                      ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222] focus:border-[#222222]"
-                      : "bg-[#2C2C2C] border-[#444444] text-[#F4F4F5] focus:border-[#E4E4E7]"
-                  }`}
+                  className={sidePanel ? `${panelStyles.input} min-h-24 resize-y py-2.5` : `box-border flex w-full rounded-[8px] border p-2.5 text-[13px] leading-[18px] font-normal outline-none transition-colors resize-none ${isLight ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222] focus:border-[#222222]" : "bg-[#2C2C2C] border-[#444444] text-[#F4F4F5] focus:border-[#E4E4E7]"}`}
                   value={String(values[key] ?? "")}
                   onChange={(event) =>
                     setValues({ ...values, [key]: event.target.value })
                   }
-                  placeholder={`กรอก${labels[key] ?? key}`}
+                  placeholder={isThai ? `กรอก${fieldLabel(key)}` : `Enter ${fieldLabel(key).toLowerCase()}`}
                 />
               ) : (
                 <input
-                  className={inputFrameStyle}
+                  className={`${inputFrameStyle} ${fieldErrors.includes(key) ? sidePanelInvalidFieldClassName : ""}`}
+                  aria-invalid={fieldErrors.includes(key)}
                   required={["sku", "code", "name"].includes(key)}
                   type={
                     ["cost", "salePrice", "reorderPoint"].includes(key)
@@ -540,11 +989,19 @@ function CatalogForm({
                         : undefined
                   }
                   value={String(values[key] ?? "")}
-                  onChange={(event) =>
-                    setValues({ ...values, [key]: event.target.value })
-                  }
-                  placeholder={`กรอก${labels[key] ?? key}`}
+                  onChange={(event) => {
+                    setValues({ ...values, [key]: event.target.value });
+                    if (sidePanel) setFieldErrors((errors) => errors.filter((field) => field !== key));
+                  }}
+                  placeholder={isThai ? `กรอก${fieldLabel(key)}` : `Enter ${fieldLabel(key).toLowerCase()}`}
                 />
+              )}
+              {fieldErrors.includes(key) && (
+                <SidePanelFieldError>
+                  {isThai
+                    ? `กรุณากรอก${fieldLabel(key)}`
+                    : `Enter ${fieldLabel(key).toLowerCase()}.`}
+                </SidePanelFieldError>
               )}
             </div>
           );
@@ -552,50 +1009,53 @@ function CatalogForm({
 
         {current && "active" in current && (
           <div
-            className={`flex flex-col items-start gap-[6px] w-full ${isMultiField ? "sm:col-span-2" : ""}`}
+            className={`${sidePanel ? panelStyles.field : "flex flex-col items-start gap-[6px]"} w-full ${isMultiField ? "sm:col-span-2" : ""}`}
           >
-            <label className={labelStyle}>สถานะการใช้งาน</label>
+            <label className={labelStyle}>{isThai ? "สถานะการใช้งาน" : "Status"}</label>
             <CustomDropdown
               value={String(values.active ?? current.active ?? true)}
               onChange={(value) =>
                 setValues({ ...values, active: value === "true" })
               }
               options={[
-                { value: "true", label: "ใช้งาน" },
-                { value: "false", label: "ปิดใช้" },
+                { value: "true", label: isThai ? "ใช้งาน" : "Active" },
+                { value: "false", label: isThai ? "ปิดใช้งาน" : "Inactive" },
               ]}
               className="w-full"
               triggerClassName={inputFrameStyle}
             />
           </div>
         )}
+        </div>
       </div>
 
       {/* Actions (Bottom-Right aligned) */}
-      <div className="flex flex-row justify-end items-center gap-[10px] w-full pt-1">
+      <div className={sidePanel ? panelStyles.footer : "flex flex-row justify-end items-center gap-[10px] w-full pt-4"}>
         {/* btn-secondary */}
         <button
           type="button"
           onClick={onCancel}
-          className={`box-border flex flex-row justify-center items-center px-5 py-2.5 min-w-[84px] h-[38px] rounded-[8px] border font-bold text-[13px] leading-[18px] transition-colors cursor-pointer ${
+          className={sidePanel ? panelStyles.cancel : `box-border flex flex-row justify-center items-center px-5 py-2.5 min-w-[84px] h-[38px] rounded-[8px] border font-bold text-[13px] leading-[18px] transition-colors cursor-pointer ${
             isLight
               ? "bg-[#FFFFFF] border-[#E4E4E7] text-[#222222] hover:bg-[#F4F4F5]"
               : "bg-[#383838] border-[#444444] text-[#F4F4F5] hover:bg-[#444444]"
           }`}
         >
-          ยกเลิก
+          {isThai ? "ยกเลิก" : "Cancel"}
         </button>
 
         {/* btn-primary */}
         <button
           type="submit"
-          className={`box-border flex flex-row justify-center items-center px-5 py-2.5 min-w-[96px] h-[38px] rounded-[8px] font-bold text-[13px] leading-[18px] transition-colors cursor-pointer ${
+          className={sidePanel ? panelStyles.submit : `box-border flex flex-row justify-center items-center px-5 py-2.5 min-w-[96px] h-[38px] rounded-[8px] font-bold text-[13px] leading-[18px] transition-colors cursor-pointer ${
             isLight
               ? "bg-[#222222] text-[#F4F4F5] hover:bg-black"
               : "bg-white hover:bg-[#F4F4F5] text-[#222222]"
           }`}
         >
-          {current ? "บันทึก" : "เพิ่มข้อมูล"}
+          {current
+            ? (isThai ? "บันทึก" : "Save changes")
+            : (isThai ? `เพิ่ม${itemThai}` : `Add ${itemEnglish}`)}
         </button>
       </div>
     </form>

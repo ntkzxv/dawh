@@ -303,11 +303,40 @@ export async function listCatalogPage(
     scope += ` AND branch_id=$${params.length}`;
   }
   let statusFilter = "true";
-  if (kind === "branches") {
+  if (["branches", "warehouses", "suppliers"].includes(kind)) {
     const status = search.get("status");
     if (status === "active" || status === "inactive") {
       params.push(status === "active");
       statusFilter = `active=$${params.length}`;
+    }
+  }
+  const filters = [scope, statusFilter];
+  const usage = search.get("usage");
+  const usageColumns: Partial<Record<Kind, string>> = {
+    units: "unit_id",
+    "product-groups": "group_id",
+    "product-categories": "category_id",
+    brands: "brand_id",
+    "product-models": "model_id",
+  };
+  if (usage != null) {
+    if (!usageColumns[kind] || (usage !== "assigned" && usage !== "unassigned"))
+      throw new ValidationError({ usage: "Choose assigned or unassigned." });
+    const assigned = `EXISTS (SELECT 1 FROM app.products p WHERE p.${usageColumns[kind]}=${table}.id)`;
+    filters.push(usage === "assigned" ? assigned : `NOT ${assigned}`);
+  }
+  const parentFilter = kind === "product-categories"
+    ? { queryKey: "groupId", column: "group_id" }
+    : kind === "product-models"
+      ? { queryKey: "brandId", column: "brand_id" }
+      : null;
+  if (parentFilter && search.has(parentFilter.queryKey)) {
+    const value = search.get(parentFilter.queryKey);
+    if (value === "none") {
+      filters.push(`${parentFilter.column} IS NULL`);
+    } else {
+      params.push(id(value, parentFilter.queryKey));
+      filters.push(`${parentFilter.column}=$${params.length}`);
     }
   }
   const query = search.get("q")?.trim() ?? "";
@@ -321,7 +350,7 @@ export async function listCatalogPage(
       : ["branches", "warehouses", "suppliers", "units"].includes(kind)
         ? `(code ILIKE '%'||${q}||'%' OR name ILIKE '%'||${q}||'%')`
         : `name ILIKE '%'||${q}||'%'`;
-  const where = `WHERE ${scope} AND ${statusFilter} AND (${q}::text='' OR ${searchable})`;
+  const where = `WHERE ${filters.join(" AND ")} AND (${q}::text='' OR ${searchable})`;
   const columns =
     actor.role === "EMPLOYEE"
       ? kind === "products"

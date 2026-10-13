@@ -4,6 +4,8 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { ApiRequestError, ApiTimeoutError } from "@/lib/api/client";
 import { warehouseApi } from "@/lib/api/warehouse";
 import { useNotification } from "@/context/NotificationContext";
+import { useAppLanguage } from "@/utils/language";
+import { Loader2 } from "lucide-react";
 
 export const panel =
   "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#383838]";
@@ -15,16 +17,16 @@ export const subtleButton =
   "inline-flex items-center justify-center rounded-xl bg-[#F4F4F5] px-4 py-2 text-sm font-medium text-[#222222] transition hover:bg-[#E4E4E7] disabled:opacity-50 dark:bg-white/10 dark:text-white dark:hover:bg-white/15";
 export { useRemote } from "@/hooks/useRemoteResource";
 
-export function message(error: unknown): string {
+export function message(error: unknown, isThai = true): string {
   if (error instanceof ApiTimeoutError)
-    return "การโหลดข้อมูลใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง";
+    return isThai ? "การโหลดข้อมูลใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง" : "The request timed out. Please try again.";
   if (error instanceof ApiRequestError) {
     if (error.code === "STORAGE_NOT_CONFIGURED")
-      return "ระบบเก็บรูปยังไม่ได้ตั้งค่า กรุณาแจ้งผู้ดูแลระบบ";
-    if (error.code === "FORBIDDEN") return "บัญชีนี้ไม่มีสิทธิ์ทำรายการนี้";
+      return isThai ? "ระบบเก็บรูปยังไม่ได้ตั้งค่า กรุณาแจ้งผู้ดูแลระบบ" : "File storage is not configured. Contact your administrator.";
+    if (error.code === "FORBIDDEN") return isThai ? "บัญชีนี้ไม่มีสิทธิ์ทำรายการนี้" : "Your account is not allowed to perform this action.";
     return error.message;
   }
-  return error instanceof Error ? error.message : "ไม่สามารถทำรายการได้";
+  return error instanceof Error ? error.message : (isThai ? "ไม่สามารถทำรายการได้" : "The action could not be completed.");
 }
 
 export function Notice({
@@ -34,19 +36,20 @@ export function Notice({
   children: ReactNode;
   tone?: "info" | "error" | "success";
 }) {
+  const isThai = useAppLanguage() === "TH";
   const { notify } = useNotification();
   const messageText =
-    typeof children === "string" ? children : "มีการแจ้งเตือนจากระบบ";
+    typeof children === "string" ? children : (isThai ? "มีการแจ้งเตือนจากระบบ" : "You have a system notification.");
   const notifyCurrent = notify[tone];
   useEffect(() => {
     const title =
       tone === "error"
-        ? "เกิดข้อผิดพลาด"
+        ? (isThai ? "เกิดข้อผิดพลาด" : "Something went wrong")
         : tone === "success"
-          ? "ดำเนินการสำเร็จ"
-          : "แจ้งเตือน";
+          ? (isThai ? "ดำเนินการสำเร็จ" : "Completed")
+          : (isThai ? "แจ้งเตือน" : "Notification");
     notifyCurrent(title, { message: messageText });
-  }, [messageText, notifyCurrent, tone]);
+  }, [isThai, messageText, notifyCurrent, tone]);
   return null;
 }
 
@@ -69,10 +72,11 @@ export function Field({
   );
 }
 
-export function Empty({ text = "ยังไม่มีข้อมูล" }: { text?: string }) {
+export function Empty({ text }: { text?: string }) {
+  const isThai = useAppLanguage() === "TH";
   return (
     <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500 dark:border-white/20 dark:text-zinc-400">
-      {text}
+      {text ?? (isThai ? "ยังไม่มีข้อมูล" : "No data available.")}
     </div>
   );
 }
@@ -84,6 +88,7 @@ export function EvidencePicker({
   onChange: (ids: number[]) => void;
   required?: boolean;
 }) {
+  const isThai = useAppLanguage() === "TH";
   const [files, setFiles] = useState<File[]>([]);
   const [uploaded, setUploaded] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -98,7 +103,7 @@ export function EvidencePicker({
       onChange(ids);
       setUploaded(ids.length);
     } catch (cause) {
-      setError(message(cause));
+      setError(message(cause, isThai));
       onChange([]);
       setUploaded(0);
     } finally {
@@ -110,8 +115,8 @@ export function EvidencePicker({
       <Field
         label={
           required
-            ? "รูปหรือ PDF หลักฐานทุกหน้า (จำเป็น)"
-            : "รูปหรือ PDF หลักฐาน"
+            ? (isThai ? "รูปหรือ PDF หลักฐานทุกหน้า (จำเป็น)" : "Evidence images or PDF (all pages required)")
+            : (isThai ? "รูปหรือ PDF หลักฐาน" : "Evidence images or PDF")
         }
       >
         <input
@@ -132,10 +137,10 @@ export function EvidencePicker({
         disabled={!files.length || busy}
         onClick={(event) => void upload(event)}
       >
-        {busy ? "กำลังอัปโหลด..." : "อัปโหลดไฟล์ที่เลือก"}
+        {busy ? <Loader2 size={16} className="animate-spin" aria-label={isThai ? "กำลังอัปโหลด" : "Uploading"} /> : (isThai ? "อัปโหลดไฟล์ที่เลือก" : "Upload selected files")}
       </button>
       {uploaded > 0 && (
-        <Notice tone="success">อัปโหลดแล้ว {uploaded} ไฟล์</Notice>
+        <Notice tone="success">{isThai ? `อัปโหลดแล้ว ${uploaded} ไฟล์` : `${uploaded} files uploaded.`}</Notice>
       )}
       {error && <Notice tone="error">{error}</Notice>}
     </div>
@@ -147,6 +152,7 @@ export function EvidenceLinks({
 }: {
   media?: Array<{ media_asset_id: number; page_number: number }>;
 }) {
+  const isThai = useAppLanguage() === "TH";
   if (!media?.length) return null;
   return (
     <div className="flex flex-wrap gap-2">
@@ -158,7 +164,7 @@ export function EvidenceLinks({
           target="_blank"
           rel="noreferrer"
         >
-          ดูหลักฐานหน้า {item.page_number}
+          {isThai ? `ดูหลักฐานหน้า ${item.page_number}` : `View evidence, page ${item.page_number}`}
         </a>
       ))}
     </div>

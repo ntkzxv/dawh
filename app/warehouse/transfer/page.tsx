@@ -1,2 +1,5 @@
-import StockScreen from "@/components/warehouse/StockScreen";
-export default function Page() { return <StockScreen />; }
+import TransferScreen from "@/components/warehouse/TransferScreen";
+
+export default function Page() {
+  return <TransferScreen />;
+}

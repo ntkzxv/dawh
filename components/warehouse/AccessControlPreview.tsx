@@ -5,7 +5,7 @@ import WarehousePageTemplate from "@/app/warehouse/_components/WarehousePageTemp
 import { warehouseRoles, type Role } from "@/lib/contracts/warehouse";
 import { useAppLanguage } from "@/utils/language";
 import { useTheme } from "@/context/ThemeContext";
-import { dataTableFrameClassName } from "@/components/common/DataTable";
+import { dataTableFrameClassName, dataTableStripedRowClassName } from "@/components/common/DataTable";
 
 const roleLabels: Record<Role, { th: string; en: string }> = {
   ADMIN: { th: "ผู้ดูแลระบบ", en: "Admin" },
@@ -81,8 +81,8 @@ export default function AccessControlPreview() {
               </thead>
               <tbody className="divide-y divide-[#E4E4E7] dark:divide-[#444444]">
                 {rules.map((rule) => (
-                  <tr key={rule.en} className="transition-colors hover:bg-[#F8FAFC] dark:hover:bg-white/5">
-                    <th scope="row" className="sticky left-0 z-10 bg-white px-4 py-4 font-medium text-[#222222] dark:bg-[#383838] dark:text-[#F4F4F5]">{isThai ? rule.th : rule.en}</th>
+                  <tr key={rule.en} className={`transition-colors ${dataTableStripedRowClassName(isLight)}`}>
+                    <th scope="row" className="sticky left-0 z-10 bg-inherit px-4 py-4 font-medium text-[#222222] dark:text-[#F4F4F5]">{isThai ? rule.th : rule.en}</th>
                     {warehouseRoles.map((role) => {
                       const allowed = rule.roles.includes(role);
                       return (

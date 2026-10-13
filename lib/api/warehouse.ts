@@ -191,10 +191,47 @@ export type StockMovement = {
   document_id: number;
   record_no: string;
   kind: string;
+  reason: string | null;
+  operator_id: number;
+  operator_name: string | null;
   warehouse_name: string;
   sku: string;
   product_name: string;
   [key: string]: unknown;
+};
+export type StockTransferLine = {
+  product_id: number;
+  sku: string;
+  product_name: string;
+  quantity: string;
+  unit_code: string;
+  serial_numbers: string[];
+};
+export type StockTransfer = {
+  id: number;
+  record_no: string;
+  posted_at: string;
+  reason: string | null;
+  operator_id: number;
+  operator_name: string;
+  source_warehouse_id: number;
+  source_warehouse_name: string;
+  destination_warehouse_id: number;
+  destination_warehouse_name: string;
+  line_count: number;
+  lines: StockTransferLine[];
+  status: "COMPLETED" | "REVERSED";
+};
+export type StockTransferSummary = {
+  total: number;
+  totalLines: number;
+  monthTotal: number;
+  reversedTotal: number;
+};
+export type StockTransferPage = {
+  items: StockTransfer[];
+  page: ApiPage;
+  summary: StockTransferSummary;
 };
 export type Issue = {
   id: number;
@@ -251,6 +288,30 @@ export type WarehouseOverview = {
   stockItems: number;
   openIssues: number;
 };
+export type WarehouseDashboard = {
+  summary: {
+    activeProducts: number | null;
+    stockedProducts: number | null;
+    receivedToday: number | null;
+    issuedToday: number | null;
+    lowStockProducts: number | null;
+    outOfStockProducts: number | null;
+    openIssues: number | null;
+    overdueClaims: number | null;
+  };
+  monthlyMovements: Array<{ month: string; inbound: number; outbound: number }>;
+  categoryMix: Array<{ category: string; products: number }>;
+  branchStock: Array<{ branchId: number; branch: string; stockedProducts: number }>;
+  lowStockItems: Array<{
+    id: number;
+    sku: string;
+    name: string;
+    onHand: string;
+    reorderPoint: string;
+    status: "low_stock" | "out_of_stock";
+  }>;
+  recentMovements: StockMovement[];
+};
 export type InventoryProduct = CatalogItem & {
   category_id: number | null;
   category_name: string | null;
@@ -303,6 +364,8 @@ export const warehouseApi = {
   me: getCurrentMe,
   overview: (signal?: AbortSignal) =>
     data(apiGet<WarehouseOverview>("/api/warehouse/overview", { signal })),
+  dashboard: (signal?: AbortSignal) =>
+    data(apiGet<WarehouseDashboard>("/api/warehouse/dashboard", { signal })),
   inventoryProducts: async (
     params: URLSearchParams,
     signal?: AbortSignal,
@@ -498,6 +561,22 @@ export const warehouseApi = {
     if (!response.page)
       throw new Error("Ledger response has no page information.");
     return { items: response.data, page: response.page };
+  },
+  stockTransfersPage: async (
+    params: URLSearchParams,
+    signal?: AbortSignal,
+  ): Promise<StockTransferPage> => {
+    const response = await apiGet<{
+      items: StockTransfer[];
+      summary: StockTransferSummary;
+    }>(`/api/stock/transfers?${params}`, { signal });
+    if (!response.page)
+      throw new Error("Transfer response has no page information.");
+    return {
+      items: response.data.items,
+      summary: response.data.summary,
+      page: response.page,
+    };
   },
   createStockDocument: (body: Record<string, unknown>) =>
     data(
