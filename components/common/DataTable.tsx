@@ -14,6 +14,11 @@ export const DATA_TABLE_STYLES = {
   bodyCell: "py-3 px-3",
 } as const;
 
+export const DATA_TABLE_MIN_BODY_ROWS = 10;
+export const DATA_TABLE_BODY_ROW_HEIGHT = 60;
+export const getDataTablePlaceholderRowCount = (rowCount: number) =>
+  rowCount > 0 ? Math.max(0, DATA_TABLE_MIN_BODY_ROWS - rowCount) : 0;
+
 export const DATA_TABLE_FRAME_STYLES = {
   base: "overflow-hidden rounded-xl border",
   light: "border-[#D4D4D8] bg-white",
@@ -70,6 +75,10 @@ export default function DataTable<T>({
 }: DataTableProps<T>) {
   const { theme } = useTheme();
   const isLight = theme === "light";
+  const placeholderRowCount = !isLoading
+    ? getDataTablePlaceholderRowCount(data.length)
+    : 0;
+  const paginatedRowStyle = { height: DATA_TABLE_BODY_ROW_HEIGHT };
 
   return (
     <div className={`w-full overflow-hidden ${className}`}>
@@ -108,7 +117,7 @@ export default function DataTable<T>({
           <tbody
             className={`${DATA_TABLE_STYLES.body} ${
               isLight ? "divide-[#E4E4E7]" : "divide-[#444444]"
-            }`}
+            } whitespace-nowrap`}
           >
             {isLoading ? (
               Array.from({ length: skeletonRowCount }).map((_, rIdx) => (
@@ -173,6 +182,7 @@ export default function DataTable<T>({
                   <tr
                     key={key}
                     onClick={() => onRowClick && onRowClick(item, idx)}
+                    style={paginatedRowStyle}
                     className={`${DATA_TABLE_STYLES.bodyRow} ${
                       isClickable ? "cursor-pointer" : ""
                     } ${
@@ -208,6 +218,19 @@ export default function DataTable<T>({
                 );
               })
             )}
+            {Array.from({ length: placeholderRowCount }, (_, index) => (
+              <tr
+                key={`placeholder-${index}`}
+                aria-hidden="true"
+                style={paginatedRowStyle}
+                className={`${DATA_TABLE_STYLES.bodyRow} ${dataTableStripedRowClassName(isLight)}`}
+              >
+                <td
+                  colSpan={columns.length}
+                  style={{ height: DATA_TABLE_BODY_ROW_HEIGHT, padding: 0 }}
+                />
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

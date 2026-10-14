@@ -6,14 +6,21 @@ import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage } from "@/utils/language";
 import { warehouseApi, type CatalogItem } from "@/lib/api/warehouse";
 import { useOptionalWarehouseAccount } from "@/context/WarehouseAccountContext";
+import {
+  getCachedCatalogReference,
+  getWarehouseReferenceScope,
+} from "@/lib/api/warehouse-reference-cache";
+import { WAREHOUSE_TABLE_PAGE_SIZE } from "@/lib/warehouse/pagination-config";
 import WarehousePageTemplate from "@/app/warehouse/_components/WarehousePageTemplate";
 import { canEditCatalog } from "@/lib/contracts/warehouse-policy";
 import { useRemote, Notice, message } from "@/components/warehouse/Ui";
 import CustomDropdown from "@/components/common/CustomDropdown";
 import {
+  DATA_TABLE_BODY_ROW_HEIGHT,
   DATA_TABLE_STYLES,
   dataTableFrameClassName,
   dataTableStripedRowClassName,
+  getDataTablePlaceholderRowCount,
 } from "@/components/common/DataTable";
 import { SkeletonBox, SkeletonDataTable } from "@/components/loading_screen/SkeletonLoading";
 import {
@@ -45,6 +52,7 @@ export default function ProductInventorySplitView({
   const appLang = useAppLanguage();
   const isThai = appLang === "TH";
   const account = useOptionalWarehouseAccount();
+  const warehouseCacheScope = getWarehouseReferenceScope(account?.me);
 
   // Filters State
   const [searchQuery, setSearchQuery] = useState("");
@@ -56,7 +64,7 @@ export default function ProductInventorySplitView({
   const filterPanelRef = useRef<HTMLDivElement>(null);
   const [filterPanelPosition, setFilterPanelPosition] = useState({ top: 0, left: 16 });
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
+  const pageSize = WAREHOUSE_TABLE_PAGE_SIZE;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState("");
   useEffect(() => {
@@ -149,11 +157,13 @@ export default function ProductInventorySplitView({
     (signal: AbortSignal) =>
       Promise.all([
         warehouseApi.catalog("product-categories", signal),
-        warehouseApi.catalog("warehouses", signal),
+        getCachedCatalogReference("warehouses", warehouseCacheScope, signal),
       ]).then(([categories, warehouses]) => ({ categories, warehouses })),
-    [],
+    [warehouseCacheScope],
   );
-  const { data: filters } = useRemote(loadFilters);
+  const { data: filters } = useRemote(loadFilters, {
+    enabled: Boolean(warehouseCacheScope),
+  });
   const loadFormRefs = useCallback(
     (signal: AbortSignal) =>
       Promise.all([
@@ -358,8 +368,6 @@ export default function ProductInventorySplitView({
       titleTh="ข้อมูลสินค้าหลัก"
       routePath="/warehouse/inventory"
       fullBleed
-      loading={loading && !data}
-      loadingLabel={isThai ? "กำลังโหลดข้อมูลสินค้า" : "Loading product inventory"}
     >
       <div
         className={`w-full flex-1 min-h-full ${
@@ -367,7 +375,7 @@ export default function ProductInventorySplitView({
         }`}
         style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
       >
-      <main className="mx-auto w-full max-w-[1600px] min-w-0 space-y-6 p-4 pb-10 sm:p-8 lg:p-10">
+      <main className="mx-auto w-full max-w-[1600px] min-w-0 space-y-6 p-6 pb-10 lg:p-8">
         {error && <Notice tone="error">{error}</Notice>}
 
         <div className="space-y-4">
@@ -587,13 +595,14 @@ export default function ProductInventorySplitView({
 
                 {/* table rows */}
                 <tbody
-                  className={`divide-y ${isLight ? "divide-[#E4E4E7]" : "divide-[#444444]"}`}
+                  className={`divide-y whitespace-nowrap ${isLight ? "divide-[#E4E4E7]" : "divide-[#444444]"}`}
                 >
                   {paginatedItems.map((item) => {
                     const isSelected = activeDetailItem?.id === item.id;
                     return (
                       <tr
                         key={item.id}
+                        style={{ height: DATA_TABLE_BODY_ROW_HEIGHT }}
                         className={`${DATA_TABLE_STYLES.bodyRow} ${
                           isSelected
                             ? isLight
@@ -689,6 +698,22 @@ export default function ProductInventorySplitView({
                       </tr>
                     );
                   })}
+                  {Array.from(
+                    { length: getDataTablePlaceholderRowCount(paginatedItems.length) },
+                    (_, index) => (
+                      <tr
+                        key={`placeholder-${index}`}
+                        aria-hidden="true"
+                        style={{ height: DATA_TABLE_BODY_ROW_HEIGHT }}
+                        className={`${DATA_TABLE_STYLES.bodyRow} ${dataTableStripedRowClassName(isLight)}`}
+                      >
+                        <td
+                          colSpan={9}
+                          style={{ height: DATA_TABLE_BODY_ROW_HEIGHT, padding: 0 }}
+                        />
+                      </tr>
+                    ),
+                  )}
                 </tbody>
               </table>
             </div>

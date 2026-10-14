@@ -41,6 +41,10 @@ import {
   useRemote,
 } from "./Ui";
 import { useOptionalWarehouseAccount } from "@/context/WarehouseAccountContext";
+import {
+  getCachedCatalogReference,
+  getWarehouseReferenceScope,
+} from "@/lib/api/warehouse-reference-cache";
 import { useTheme } from "@/context/ThemeContext";
 import { warehouseRoles } from "@/lib/contracts/warehouse";
 import WarehousePageTemplate from "@/app/warehouse/_components/WarehousePageTemplate";
@@ -54,6 +58,7 @@ import {
 import { useAccountMenu } from "@/hooks/useAccountMenu";
 import { SkeletonBox } from "@/components/loading_screen/SkeletonLoading";
 import BranchManagement from "./BranchManagement";
+import { WAREHOUSE_TABLE_PAGE_SIZE } from "@/lib/warehouse/pagination-config";
 
 const roleName: Record<Role, string> = {
   ADMIN: "ผู้ดูแลระบบ",
@@ -77,12 +82,13 @@ const blankProfile: MemberProfile = {
   emergencyContactName: null,
   emergencyContactPhone: null,
 };
-const TABLE_PAGE_SIZE = 10;
+const TABLE_PAGE_SIZE = WAREHOUSE_TABLE_PAGE_SIZE;
 
 export default function ControlPanel() {
   const { theme } = useTheme();
   const isLight = theme === "light";
   const account = useOptionalWarehouseAccount();
+  const branchCacheScope = getWarehouseReferenceScope(account?.me);
   const {
     tab,
     auditCategory,
@@ -93,10 +99,10 @@ export default function ControlPanel() {
   const loadMembers = useCallback(async (signal: AbortSignal) => {
     const [members, branches] = await Promise.all([
       warehouseApi.membersSummary(signal),
-      warehouseApi.catalog("branches", signal),
+      getCachedCatalogReference("branches", branchCacheScope, signal),
     ]);
-    return { members, branches };
-  }, []);
+    return { members, branches, scope: branchCacheScope };
+  }, [branchCacheScope]);
   const loadAudit = useCallback(
     (signal: AbortSignal) => warehouseApi.audit(signal),
     [],
@@ -106,7 +112,7 @@ export default function ControlPanel() {
     loading: membersLoading,
     error: membersError,
     refresh: refreshMembers,
-  } = useRemote(loadMembers, { enabled: tab === "members" });
+  } = useRemote(loadMembers, { enabled: tab === "members" && Boolean(branchCacheScope) });
   const {
     data: audit,
     loading: auditLoading,
@@ -202,8 +208,9 @@ export default function ControlPanel() {
   };
 
   const me = account?.me;
-  const members = memberData?.members ?? [];
-  const branches = memberData?.branches ?? [];
+  const scopedMemberData = memberData?.scope === branchCacheScope ? memberData : null;
+  const members = scopedMemberData?.members ?? [];
+  const branches = scopedMemberData?.branches ?? [];
   const normalizedMemberSearch = memberSearch.trim().toLocaleLowerCase();
   const visibleMembers = members.filter((member) => {
     const matchesSearch =

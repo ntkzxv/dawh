@@ -22,9 +22,14 @@ import FilterButton from "@/components/common/FilterButton";
 import DatePicker from "@/components/common/DatePicker";
 import SearchInput from "@/components/common/SearchInput";
 import SidePanel, { SidePanelAlert, SidePanelFieldError, sidePanelFormStyles, sidePanelInvalidFieldClassName } from "@/components/common/SidePanel";
-import { SkeletonDataTable } from "@/components/loading_screen/SkeletonLoading";
+import { SkeletonBox, SkeletonDataTable } from "@/components/loading_screen/SkeletonLoading";
 import { useTheme } from "@/context/ThemeContext";
 import { useOptionalWarehouseAccount } from "@/context/WarehouseAccountContext";
+import {
+  getCachedCatalogReference,
+  getWarehouseReferenceScope,
+} from "@/lib/api/warehouse-reference-cache";
+import { WAREHOUSE_TABLE_PAGE_SIZE } from "@/lib/warehouse/pagination-config";
 import { useAppLanguage } from "@/utils/language";
 import {
   warehouseApi,
@@ -43,7 +48,7 @@ import { ProductSearchSelect } from "./ProductSearchSelect";
 import { canManageStock } from "@/lib/contracts/warehouse-policy";
 
 type Tab = "balances" | "ledger";
-const pageSize = 20;
+const pageSize = WAREHOUSE_TABLE_PAGE_SIZE;
 const movementKinds = [
   { value: "GOODS_RECEIPT", th: "รับสินค้าเข้า", en: "Receipt" },
   { value: "ISSUE", th: "เบิกออก", en: "Issue" },
@@ -74,6 +79,7 @@ export default function StockScreen({
   showTabs?: boolean;
 }) {
   const account = useOptionalWarehouseAccount();
+  const warehouseCacheScope = getWarehouseReferenceScope(account?.me);
   const { theme } = useTheme();
   const isLight = theme === "light";
   const isThai = useAppLanguage() === "TH";
@@ -117,10 +123,13 @@ export default function StockScreen({
   );
   const { data, loading, error, refresh } = useRemote(load);
   const loadWarehouses = useCallback(
-    (signal: AbortSignal) => warehouseApi.catalog("warehouses", signal),
-    [],
+    (signal: AbortSignal) =>
+      getCachedCatalogReference("warehouses", warehouseCacheScope, signal),
+    [warehouseCacheScope],
   );
-  const { data: warehouses } = useRemote(loadWarehouses);
+  const { data: warehouses } = useRemote(loadWarehouses, {
+    enabled: Boolean(warehouseCacheScope),
+  });
   const loadOperators = useCallback(
     (signal: AbortSignal) => warehouseApi.membersSummary(signal),
     [],
@@ -269,8 +278,6 @@ export default function StockScreen({
       routePath="/warehouse/stock"
       iconName="layers"
       fullBleed
-      loading={loading && !activeData}
-      loadingLabel={isThai ? "กำลังโหลดข้อมูลสต๊อก" : "Loading stock data"}
     >
       <main className="mx-auto w-full max-w-[1600px] space-y-6 p-4 pb-10 sm:p-8">
         {error && <Notice tone="error">{error}</Notice>}
@@ -280,13 +287,17 @@ export default function StockScreen({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             {!showTabs && tab === "ledger" && (
-              <SearchInput
-                value={search}
-                onChange={(value) => { setSearch(value); setPage(1); }}
-                placeholder={isThai ? "ค้นหาเอกสาร สินค้า หรือคลัง" : "Search document, product, or warehouse"}
-                width="w-full sm:w-[300px]"
-                clearLabel={isThai ? "ล้างคำค้นหา" : "Clear search"}
-              />
+              loading && !activeData ? (
+                <SkeletonBox className="h-9 w-full rounded-md sm:w-[300px]" />
+              ) : (
+                <SearchInput
+                  value={search}
+                  onChange={(value) => { setSearch(value); setPage(1); }}
+                  placeholder={isThai ? "ค้นหาเอกสาร สินค้า หรือคลัง" : "Search document, product, or warehouse"}
+                  width="w-full sm:w-[300px]"
+                  clearLabel={isThai ? "ล้างคำค้นหา" : "Clear search"}
+                />
+              )
             )}
             {showTabs && (
             <div
@@ -318,7 +329,9 @@ export default function StockScreen({
               ))}
             </div>
             )}
-            <div className="relative" ref={filtersRef}>
+            {loading && !activeData ? (
+              <SkeletonBox className="h-[33px] w-[104px] rounded-md" />
+            ) : <div className="relative" ref={filtersRef}>
             <FilterButton
               controls="stock-filter-panel"
               expanded={filtersOpen}
@@ -379,9 +392,14 @@ export default function StockScreen({
                 )}
               </div>
             )}
-            </div>
+            </div>}
           </div>
-          <div className="flex flex-wrap items-center justify-end gap-2.5 sm:ml-auto">
+          {loading && !activeData ? (
+            <div className="flex flex-wrap items-center justify-end gap-2.5 sm:ml-auto">
+              <SkeletonBox className="h-9 w-24 rounded-xl" />
+              {mayManageStock && <SkeletonBox className="h-9 w-40 rounded-xl" />}
+            </div>
+          ) : <div className="flex flex-wrap items-center justify-end gap-2.5 sm:ml-auto">
             <SecondaryButton onClick={exportCurrentPage} disabled={!activeData?.items.length} icon={<Download size={14} />}>
               {isThai ? "ส่งออก" : "Export"}
             </SecondaryButton>
@@ -395,7 +413,7 @@ export default function StockScreen({
                 {isThai ? "บันทึกการเคลื่อนไหว" : "Record movement"}
               </Button>
             )}
-          </div>
+          </div>}
         </div>
 
         {activeData ? (

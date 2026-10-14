@@ -4,9 +4,9 @@ import { getActor, requireRole } from "@/lib/warehouse/core";
 import { listAudit } from "@/lib/warehouse/stock";
 import { AUDIT_CATEGORIES } from "@/components/warehouse/auditLog";
 import { ValidationError } from "@/lib/core/http/errors";
+import { WAREHOUSE_TABLE_PAGE_SIZE } from "@/lib/warehouse/pagination-config";
 
 export const runtime = "nodejs";
-const PAGE_SIZE = 25;
 
 function validDate(value: string | null, field: string) {
   if (!value) return undefined;
@@ -65,7 +65,7 @@ export const GET = apiRoute(async (request) => {
     to,
     sort: sortValue as (typeof allowedSorts)[number],
     page,
-    limit: PAGE_SIZE,
+    limit: WAREHOUSE_TABLE_PAGE_SIZE,
   });
   return jsonOk(request, result);
 });

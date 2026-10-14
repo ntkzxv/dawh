@@ -13,6 +13,7 @@ import FilterDropdown from "@/components/common/FilterDropdown";
 import FilterButton from "@/components/common/FilterButton";
 import CommonButton from "@/components/common/Button";
 import { Pagination } from "@/components/common";
+import { WAREHOUSE_TABLE_PAGE_SIZE } from "@/lib/warehouse/pagination-config";
 import { useTheme } from "@/context/ThemeContext";
 import { useAccountMenu } from "@/hooks/useAccountMenu";
 import WarehousePageTemplate from "@/app/warehouse/_components/WarehousePageTemplate";
@@ -114,7 +115,7 @@ function PreviewSection({ kind, isThai, isLight }: { kind: DesignKind; isThai: b
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"all" | Status>("all");
   const [page, setPage] = useState(1);
-  const pageSize = 5;
+  const pageSize = WAREHOUSE_TABLE_PAGE_SIZE;
   const allRows = rows;
   const title = isThai ? "สาขา" : "Branches";
   const filteredRows = useMemo(() => allRows.filter((row) => {

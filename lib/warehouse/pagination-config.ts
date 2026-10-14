@@ -1,0 +1,1 @@
+export const WAREHOUSE_TABLE_PAGE_SIZE = 10;

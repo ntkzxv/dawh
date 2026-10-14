@@ -18,8 +18,9 @@ import { useTheme } from "@/context/ThemeContext";
 import { AUDIT_CATEGORIES, getAuditActionLabel, getAuditEntityTypeLabel } from "./auditLog";
 import { input } from "./Ui";
 import { SkeletonBox } from "@/components/loading_screen/SkeletonLoading";
+import { WAREHOUSE_TABLE_PAGE_SIZE } from "@/lib/warehouse/pagination-config";
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE = WAREHOUSE_TABLE_PAGE_SIZE;
 
 export default function AuditCategoryPage({ categoryId }: { categoryId: string }) {
   const { isThai } = useAccountMenu();

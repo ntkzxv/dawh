@@ -7,6 +7,7 @@ import { button, Empty, EvidenceLinks, EvidencePicker, Field, input, message, No
 import { useCursorResource } from "@/hooks/useCursorResource";
 import { useAppLanguage } from "@/utils/language";
 import { Loader2 } from "lucide-react";
+import { IssuesRouteSkeleton } from "@/components/loading_screen/WarehouseRouteSkeletons";
 
 const next: Record<string, string[]> = {
   OPEN: ["FOLLOWING_UP", "RESOLVED", "CLOSED"],
@@ -74,7 +75,15 @@ export default function IssuesScreen() {
   };
 
   return (
-    <WarehousePageTemplate titleEn="Issues" titleTh="ปัญหาและการติดตามเคลม" routePath="/warehouse/issues" iconName="alert" loading={loading && items.length === 0} loadingLabel={isThai ? "กำลังโหลดปัญหาและการติดตามเคลม" : "Loading issues and claim follow-ups"}>
+    <WarehousePageTemplate
+      titleEn="Issues"
+      titleTh="ปัญหาและการติดตามเคลม"
+      routePath="/warehouse/issues"
+      iconName="alert"
+      loading={loading && items.length === 0}
+      loadingLabel={isThai ? "กำลังโหลดปัญหาและการติดตามเคลม" : "Loading issues and claim follow-ups"}
+      loadingContent={loading && items.length === 0 ? <IssuesRouteSkeleton /> : undefined}
+    >
       {error && <Notice tone="error">{error}</Notice>}
       {failure && <Notice tone="error">{failure}</Notice>}
       {success && <Notice tone="success">{success}</Notice>}

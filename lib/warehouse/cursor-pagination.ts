@@ -1,4 +1,5 @@
 import { ValidationError } from "@/lib/core/http/errors";
+import { WAREHOUSE_TABLE_PAGE_SIZE } from "@/lib/warehouse/pagination-config";
 
 export type WarehouseCursor = {
   parentId: number;
@@ -11,7 +12,10 @@ export type CursorPageInfo = {
   hasMore: boolean;
 };
 
-export function parseCursorPage(search: URLSearchParams, defaultLimit = 20) {
+export function parseCursorPage(
+  search: URLSearchParams,
+  defaultLimit = WAREHOUSE_TABLE_PAGE_SIZE,
+) {
   const rawLimit = search.get("limit");
   const limit = Number(rawLimit ?? defaultLimit);
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {

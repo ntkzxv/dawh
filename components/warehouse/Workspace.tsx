@@ -114,7 +114,7 @@ export default function Workspace() {
     return () => document.removeEventListener("mousedown", closeOnOutsideClick);
   }, []);
 
-  if (!loading && !me)
+  if (!loading && !me && !isLoading)
     return (
       <main className="min-h-screen p-8">
         <p>{error || (isThai ? "กรุณาเข้าสู่ระบบ" : "Please sign in")}</p>

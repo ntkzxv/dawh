@@ -1,6 +1,10 @@
 import { ValidationError } from "@/lib/core/http/errors";
+import { WAREHOUSE_TABLE_PAGE_SIZE } from "@/lib/warehouse/pagination-config";
 
-export function parsePage(search: URLSearchParams, defaultLimit = 20) {
+export function parsePage(
+  search: URLSearchParams,
+  defaultLimit = WAREHOUSE_TABLE_PAGE_SIZE,
+) {
   const page = Number(search.get("page") ?? 1);
   const limit = Number(search.get("limit") ?? defaultLimit);
   if (!Number.isSafeInteger(page) || page < 1 || page > 1_000_000) {

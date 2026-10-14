@@ -174,10 +174,10 @@ export function SkeletonChartCard() {
 }
 
 // =========================================================================
-// 3. FULL PAGE SKELETON TEMPLATES (WAREHOUSE & DATACENTER)
+// 3. FULL PAGE SKELETON TEMPLATES (DASHBOARD & DATACENTER)
 // =========================================================================
 
-export function SkeletonWarehousePage() {
+export function SkeletonDashboardPage() {
   return (
     <div className="w-full space-y-6 animate-in fade-in-50 duration-300">
       {/* Top Breadcrumb & Action Banner */}
@@ -245,19 +245,19 @@ export function SkeletonDatacenterPage() {
 export interface SkeletonWrapperProps {
   isLoading: boolean;
   children: React.ReactNode;
-  variant?: "warehouse" | "datacenter" | "table" | "stat";
+  variant?: "dashboard" | "datacenter" | "table" | "stat";
   fallback?: React.ReactNode;
 }
 
 export function SkeletonWrapper({
   isLoading,
   children,
-  variant = "warehouse",
+  variant = "dashboard",
   fallback,
 }: SkeletonWrapperProps) {
   if (isLoading) {
     if (fallback) return <>{fallback}</>;
-    if (variant === "warehouse") return <SkeletonWarehousePage />;
+    if (variant === "dashboard") return <SkeletonDashboardPage />;
     if (variant === "datacenter") return <SkeletonDatacenterPage />;
     if (variant === "table") return <SkeletonDataTable />;
     if (variant === "stat") return <SkeletonStatGrid />;

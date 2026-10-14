@@ -68,7 +68,7 @@ export function useAccountMenu(
 
   const accountSubtitle = role
     ? getWarehouseRoleLabel(role, activeLanguage)
-    : profile.email || "dawh.internal";
+    : profile.email || "";
   return {
     profile,
     fullName,
@@ -89,7 +89,6 @@ export function useAccountMenu(
     isComplete: true,
     handleLogout: async () => {
       await logout();
-      warehouseAccount?.clear();
     },
     handleGuardedNavigate: (target, fallbackPath) => {
       if (fallbackPath) navigateWithLoading(fallbackPath);

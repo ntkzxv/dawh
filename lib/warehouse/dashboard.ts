@@ -3,6 +3,7 @@ import "server-only";
 import { timedPoolQuery } from "@/lib/core/http/request-timing";
 import { requireRole, type Actor } from "@/lib/warehouse/core";
 import { isGlobalRole } from "@/lib/contracts/warehouse-policy";
+import { WAREHOUSE_TABLE_PAGE_SIZE } from "@/lib/warehouse/pagination-config";
 
 export type WarehouseDashboard = {
   summary: {
@@ -169,7 +170,7 @@ export async function getWarehouseDashboard(actor: Actor): Promise<WarehouseDash
       LEFT JOIN app.app_users posted_user ON posted_user.id=doc.posted_by_id
       LEFT JOIN public."user" operator_user ON operator_user.id=posted_user.auth_user_id
       WHERE $1::boolean OR w.branch_id=ANY($2::integer[])
-      ORDER BY sm.occurred_at DESC,sm.id DESC LIMIT 8`, scope),
+      ORDER BY sm.occurred_at DESC,sm.id DESC LIMIT ${WAREHOUSE_TABLE_PAGE_SIZE}`, scope),
   ]);
 
   const dailyTotals = daily.rows[0];

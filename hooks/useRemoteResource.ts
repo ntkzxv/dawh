@@ -17,9 +17,10 @@ function errorMessage(error: unknown): string {
 
 export function useRemote<T>(
   load: (signal: AbortSignal) => Promise<T>,
-  options: { enabled?: boolean } = {},
+  options: { enabled?: boolean; resetDataOnLoadChange?: boolean } = {},
 ) {
   const enabled = options.enabled ?? true;
+  const resetDataOnLoadChange = options.resetDataOnLoadChange ?? false;
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +50,10 @@ export function useRemote<T>(
   useEffect(() => {
     if (!enabled) return;
     let active = true;
+    if (resetDataOnLoadChange) {
+      setData(null);
+      setError(null);
+    }
     queueMicrotask(() => {
       if (active) void refresh();
     });
@@ -57,7 +62,7 @@ export function useRemote<T>(
       requestId.current += 1;
       controller.current?.abort();
     };
-  }, [enabled, refresh]);
+  }, [enabled, refresh, resetDataOnLoadChange]);
 
   return { data, loading, error, refresh, setData };
 }

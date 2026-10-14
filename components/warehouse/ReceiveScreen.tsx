@@ -20,6 +20,7 @@ import Button from "@/components/common/Button";
 import SidePanel from "@/components/common/SidePanel";
 import { useTheme } from "@/context/ThemeContext";
 import { SkeletonBox } from "@/components/loading_screen/SkeletonLoading";
+import { ReceivingContentSkeleton } from "@/components/loading_screen/WarehouseRouteSkeletons";
 import {
   Empty,
   message,
@@ -29,6 +30,10 @@ import {
   useRemote,
 } from "./Ui";
 import { useOptionalWarehouseAccount } from "@/context/WarehouseAccountContext";
+import {
+  getCachedCatalogReference,
+  getWarehouseReferenceScope,
+} from "@/lib/api/warehouse-reference-cache";
 import { useAppLanguage } from "@/utils/language";
 import { PoDetails, PoForm } from "./receive/ReceivePo";
 import { SupplierForm, SupplierRow } from "./receive/ReceiveSupplier";
@@ -52,6 +57,7 @@ type ReceiveData = {
 };
 type ReceiveReferences = {
   step: Step;
+  scope: string | null;
   suppliers?: CatalogItem[];
   ceos?: Array<{ id: number; name: string }>;
   branches?: CatalogItem[];
@@ -68,6 +74,7 @@ const stepLabel = (step: Step, isThai: boolean) => ({
 export default function ReceiveScreen() {
   const reduceMotion = useReducedMotion();
   const account = useOptionalWarehouseAccount();
+  const warehouseCacheScope = getWarehouseReferenceScope(account?.me);
   const { theme } = useTheme();
   const isLight = theme === "light";
   const isThai = useAppLanguage() === "TH";
@@ -140,36 +147,65 @@ export default function ReceiveScreen() {
   });
   const loadReferences = useCallback(
     async (signal: AbortSignal): Promise<ReceiveReferences> => {
-      const me = account?.me;
-      if (!me) throw new Error(isThai ? "ยังไม่ได้โหลดข้อมูลบัญชี" : "Account information has not loaded yet.");
-      const activeStep: Step = me.role === "EMPLOYEE" ? "carrier" : step;
+      const role = account?.me?.role;
+      if (!role) throw new Error(isThai ? "ยังไม่ได้โหลดข้อมูลบัญชี" : "Account information has not loaded yet.");
+      const activeStep: Step = role === "EMPLOYEE" ? "carrier" : step;
       if (activeStep === "po") {
         const [suppliers, ceos] = await Promise.all([
           warehouseApi.catalog("suppliers", signal),
           warehouseApi.ceos(signal),
         ]);
-        return { step: activeStep, suppliers, ceos };
+        return {
+          step: activeStep,
+          scope: warehouseCacheScope,
+          suppliers,
+          ceos,
+        };
       }
       if (activeStep === "carrier")
         return {
           step: activeStep,
-          branches: await warehouseApi.catalog("branches", signal),
+          scope: warehouseCacheScope,
+          branches: await getCachedCatalogReference(
+            "branches",
+            warehouseCacheScope,
+            signal,
+          ),
         };
       if (activeStep === "count")
         return {
           step: activeStep,
-          warehouses: await warehouseApi.catalog("warehouses", signal),
+          scope: warehouseCacheScope,
+          warehouses: await getCachedCatalogReference(
+            "warehouses",
+            warehouseCacheScope,
+            signal,
+          ),
         };
-      return { step: activeStep };
+      return { step: activeStep, scope: warehouseCacheScope };
     },
-    [step, account?.me, isThai],
+    [step, account?.me?.role, isThai, warehouseCacheScope],
   );
-  const { data: references, error: referencesError } = useRemote(
-    loadReferences,
-    { enabled: !!account?.me },
-  );
+  const [po, setPo] = useState<PurchaseOrder | null>(null);
+  const [carrier, setCarrier] = useState<CarrierReceipt | null>(null);
   const activeStep = data?.me.role === "EMPLOYEE" ? "carrier" : step;
-  const activeReferences = references?.step === activeStep ? references : null;
+  const needsCarrierBranches =
+    activeStep === "carrier" && !!carrier && !carrier.confirmation;
+  const referencesNeededNow =
+    (formOpen && (activeStep === "po" || activeStep === "count")) ||
+    needsCarrierBranches;
+  const {
+    data: references,
+    error: referencesError,
+    loading: referencesLoading,
+    refresh: refreshReferences,
+  } = useRemote(loadReferences, {
+    enabled: !!account?.me && referencesNeededNow,
+  });
+  const activeReferences =
+    references?.step === activeStep && references.scope === warehouseCacheScope
+      ? references
+      : null;
   const activeData = data?.step === activeStep
     ? {
         ...data,
@@ -179,8 +215,13 @@ export default function ReceiveScreen() {
         warehouses: activeReferences?.warehouses ?? data.warehouses,
       }
     : null;
-  const [po, setPo] = useState<PurchaseOrder | null>(null);
-  const [carrier, setCarrier] = useState<CarrierReceipt | null>(null);
+  const formReferencesReady = activeStep === "po"
+    ? !referencesLoading &&
+      activeReferences?.suppliers !== undefined &&
+      activeReferences?.ceos !== undefined
+    : activeStep === "count"
+      ? !referencesLoading && activeReferences?.warehouses !== undefined
+      : true;
   useEffect(() => {
     if (!selectedPoId) return;
     const controller = new AbortController();
@@ -278,10 +319,17 @@ export default function ReceiveScreen() {
       titleTh="สั่งสินค้าและตรวจรับ"
       routePath="/warehouse/receive"
       iconName="inbound"
-      loading={loading && !data}
-      loadingLabel={isThai ? "กำลังโหลดข้อมูลรับสินค้า" : "Loading receiving data"}
     >
-      <nav aria-label={isThai ? "ขั้นตอนการรับสินค้า" : "Goods receiving steps"} className={`flex flex-wrap gap-1 rounded-xl border p-1 ${isLight ? "border-[#E4E4E7] bg-[#F4F4F5]" : "border-[#444444] bg-[#303030]"}`}>
+      {loading && !data ? (
+        <div aria-hidden="true" className={`flex flex-wrap gap-1 rounded-xl border p-1 ${isLight ? "border-[#E4E4E7]/70" : "border-white/[0.08]"}`}>
+          {steps.map((key) => (
+            <div key={key} className="flex h-11 min-w-36 flex-1 items-center justify-center gap-2 rounded-lg">
+              <SkeletonBox className="size-6 rounded-full" />
+              <SkeletonBox className="h-3.5 w-20 rounded" />
+            </div>
+          ))}
+        </div>
+      ) : <nav aria-label={isThai ? "ขั้นตอนการรับสินค้า" : "Goods receiving steps"} className={`flex flex-wrap gap-1 rounded-xl border p-1 ${isLight ? "border-[#E4E4E7] bg-[#F4F4F5]" : "border-[#444444] bg-[#303030]"}`}>
         {steps
           .filter((key) => data?.me.role !== "EMPLOYEE" || key === "carrier")
           .map((key, index) => {
@@ -309,16 +357,14 @@ export default function ReceiveScreen() {
               </button>
             );
           })}
-      </nav>
+      </nav>}
       {error && <Notice tone="error">{error}</Notice>}
-      {referencesError && <Notice tone="error">{referencesError}</Notice>}
       {failure && <Notice tone="error">{failure}</Notice>}
       {notice && <Notice tone="success">{notice}</Notice>}
 
       {!activeData && loading && (
-        <div className="space-y-4" aria-label={isThai ? "กำลังโหลดข้อมูลรับสินค้า" : "Loading receiving data"}>
-          <SkeletonBox className="h-36 w-full rounded-xl" />
-          <SkeletonBox className="h-[360px] w-full rounded-xl" />
+        <div aria-label={isThai ? "กำลังโหลดข้อมูลรับสินค้า" : "Loading receiving data"}>
+          <ReceivingContentSkeleton />
         </div>
       )}
 
@@ -420,16 +466,38 @@ export default function ReceiveScreen() {
                 )}
                 {activeData.pages.carriers?.hasMore && <button className={`${subtleButton} mt-3`} disabled={loadingMore.has("carriers")} onClick={() => void loadMore("carriers")}>{loadingMore.has("carriers") ? <Loader2 size={16} className="animate-spin" aria-label={isThai ? "กำลังโหลด" : "Loading"} /> : (isThai ? "โหลดใบขนส่งเพิ่ม" : "Load more delivery notes")}</button>}
                 {carrier && (
-                  <CarrierDetails
-                    carrier={carrier}
-                    branches={activeData.branches}
-                    onConfirm={(body) =>
-                      run(
-                        () => warehouseApi.confirmDelivery(carrier.id, body),
-                        isThai ? "ยืนยันรับจากขนส่งแล้ว ยังไม่เพิ่มสต๊อก" : "Delivery arrival confirmed. Stock has not been updated yet.",
-                      )
-                    }
-                  />
+                  needsCarrierBranches &&
+                  (referencesLoading || activeReferences?.branches === undefined) ? (
+                    <div className="mt-5 space-y-3" aria-busy={referencesLoading}>
+                      {referencesError ? (
+                        <>
+                          <Notice tone="error">{referencesError}</Notice>
+                          <Button variant="secondary" onClick={() => void refreshReferences()}>
+                            {isThai ? "ลองโหลดสาขาอีกครั้ง" : "Retry loading branches"}
+                          </Button>
+                        </>
+                      ) : (
+                        <div
+                          className="flex justify-center rounded-xl border border-slate-200 p-6 dark:border-white/10"
+                          role="status"
+                          aria-label={isThai ? "กำลังโหลดสาขา" : "Loading branches"}
+                        >
+                          <Loader2 size={20} className="animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <CarrierDetails
+                      carrier={carrier}
+                      branches={activeReferences?.branches ?? []}
+                      onConfirm={(body) =>
+                        run(
+                          () => warehouseApi.confirmDelivery(carrier.id, body),
+                          isThai ? "ยืนยันรับจากขนส่งแล้ว ยังไม่เพิ่มสต๊อก" : "Delivery arrival confirmed. Stock has not been updated yet.",
+                        )
+                      }
+                    />
+                  )
                 )}
               </section>
             </div>
@@ -477,10 +545,33 @@ export default function ReceiveScreen() {
           eyebrow={isThai ? "การรับสินค้า" : "GOODS RECEIVING"}
           title={activeStep === "po" ? (isThai ? "สร้างใบสั่งซื้อ" : "Create purchase order") : activeStep === "supplier" ? (isThai ? "เพิ่มเอกสารผู้ขาย" : "Add supplier document") : activeStep === "carrier" ? (isThai ? "เพิ่มใบขนส่ง" : "Add delivery note") : (isThai ? "เพิ่มใบตรวจรับ" : "Add goods receipt")}
         >
-          {activeStep === "po" && <PoForm suppliers={activeData.suppliers} ceos={activeData.ceos} sidePanel onCancel={() => setFormOpen(false)} onSave={(body) => run(() => warehouseApi.createPurchaseOrder(body), isThai ? "บันทึก PO แล้ว" : "Purchase order saved.")} />}
-          {activeStep === "supplier" && <SupplierForm orders={activeData.purchaseOrders} selectedPoId={selectedPoId} sidePanel onCancel={() => setFormOpen(false)} onSave={(body) => run(() => warehouseApi.createSupplierReceipt(body), isThai ? "บันทึกเอกสารผู้ขายแล้ว" : "Supplier document saved.")} />}
-          {activeStep === "carrier" && <CarrierForm orders={activeData.purchaseOrders} sidePanel onCancel={() => setFormOpen(false)} onSave={(body) => run(() => warehouseApi.createCarrierReceipt(body), isThai ? "บันทึกใบขนส่งแล้ว" : "Delivery note saved.")} />}
-          {activeStep === "count" && <CountForm carriers={activeData.carriers.filter((item) => !countedCarrierIds.has(item.id))} warehouses={activeData.warehouses} sidePanel onCancel={() => setFormOpen(false)} onSave={(body) => run(() => warehouseApi.createGoodsReceipt(body), isThai ? "บันทึกผลนับแล้ว รอลงสต๊อก" : "Count saved. The receipt is waiting for stock posting.")} />}
+          {!formReferencesReady ? (
+            <div className="space-y-3 py-6" aria-busy={referencesLoading}>
+              {referencesError ? (
+                <>
+                  <Notice tone="error">{referencesError}</Notice>
+                  <Button variant="secondary" onClick={() => void refreshReferences()}>
+                    {isThai ? "ลองโหลดข้อมูลอีกครั้ง" : "Retry loading references"}
+                  </Button>
+                </>
+              ) : (
+                <div
+                  className="flex justify-center rounded-xl border border-slate-200 p-6 dark:border-white/10"
+                  role="status"
+                  aria-label={isThai ? "กำลังโหลดข้อมูลอ้างอิง" : "Loading references"}
+                >
+                  <Loader2 size={20} className="animate-spin" />
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              {activeStep === "po" && <PoForm suppliers={activeData.suppliers} ceos={activeData.ceos} sidePanel onCancel={() => setFormOpen(false)} onSave={(body) => run(() => warehouseApi.createPurchaseOrder(body), isThai ? "บันทึก PO แล้ว" : "Purchase order saved.")} />}
+              {activeStep === "supplier" && <SupplierForm orders={activeData.purchaseOrders} selectedPoId={selectedPoId} sidePanel onCancel={() => setFormOpen(false)} onSave={(body) => run(() => warehouseApi.createSupplierReceipt(body), isThai ? "บันทึกเอกสารผู้ขายแล้ว" : "Supplier document saved.")} />}
+              {activeStep === "carrier" && <CarrierForm orders={activeData.purchaseOrders} sidePanel onCancel={() => setFormOpen(false)} onSave={(body) => run(() => warehouseApi.createCarrierReceipt(body), isThai ? "บันทึกใบขนส่งแล้ว" : "Delivery note saved.")} />}
+              {activeStep === "count" && <CountForm carriers={activeData.carriers.filter((item) => !countedCarrierIds.has(item.id))} warehouses={activeData.warehouses} sidePanel onCancel={() => setFormOpen(false)} onSave={(body) => run(() => warehouseApi.createGoodsReceipt(body), isThai ? "บันทึกผลนับแล้ว รอลงสต๊อก" : "Count saved. The receipt is waiting for stock posting.")} />}
+            </>
+          )}
         </SidePanel>
       )}
     </WarehousePageTemplate>

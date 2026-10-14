@@ -13,6 +13,7 @@ import type {
   Role,
 } from "@/lib/contracts/warehouse";
 import type { ApiPage } from "@/lib/api/client";
+import { WAREHOUSE_TABLE_PAGE_SIZE } from "@/lib/warehouse/pagination-config";
 
 export type {
   CatalogKind,
@@ -340,7 +341,9 @@ async function cursorPage<T>(
 }
 
 function cursorParams(cursor?: string | null) {
-  const params = new URLSearchParams({ limit: "20" });
+  const params = new URLSearchParams({
+    limit: String(WAREHOUSE_TABLE_PAGE_SIZE),
+  });
   if (cursor) params.set("cursor", cursor);
   return params;
 }

@@ -30,8 +30,14 @@ import SidePanel, {
   sidePanelInvalidFieldClassName,
 } from "@/components/common/SidePanel";
 import { SkeletonBox, SkeletonDataTable } from "@/components/loading_screen/SkeletonLoading";
+import { TransferRouteSkeleton } from "@/components/loading_screen/WarehouseRouteSkeletons";
 import { useTheme } from "@/context/ThemeContext";
 import { useOptionalWarehouseAccount } from "@/context/WarehouseAccountContext";
+import {
+  getCachedCatalogReference,
+  getWarehouseReferenceScope,
+} from "@/lib/api/warehouse-reference-cache";
+import { WAREHOUSE_TABLE_PAGE_SIZE } from "@/lib/warehouse/pagination-config";
 import {
   warehouseApi,
   type CatalogItem,
@@ -42,7 +48,7 @@ import { useAppLanguage } from "@/utils/language";
 import { Empty, Field, message, Notice, useRemote } from "./Ui";
 import { ProductSearchSelect } from "./ProductSearchSelect";
 
-const pageSize = 20;
+const pageSize = WAREHOUSE_TABLE_PAGE_SIZE;
 type TransferLineDraft = {
   key: number;
   productId: string;
@@ -64,6 +70,7 @@ const csvCell = (value: string | number | null | undefined) =>
 
 export default function TransferScreen() {
   const account = useOptionalWarehouseAccount();
+  const warehouseCacheScope = getWarehouseReferenceScope(account?.me);
   const isThai = useAppLanguage() === "TH";
   const { theme } = useTheme();
   const isLight = theme === "light";
@@ -101,10 +108,13 @@ export default function TransferScreen() {
   );
   const { data, loading, error, refresh } = useRemote(loadTransfers);
   const loadWarehouses = useCallback(
-    (signal: AbortSignal) => warehouseApi.catalog("warehouses", signal),
-    [],
+    (signal: AbortSignal) =>
+      getCachedCatalogReference("warehouses", warehouseCacheScope, signal),
+    [warehouseCacheScope],
   );
-  const { data: warehouses } = useRemote(loadWarehouses);
+  const { data: warehouses, loading: warehousesLoading } = useRemote(loadWarehouses, {
+    enabled: Boolean(warehouseCacheScope),
+  });
   const activeData =
     data?.requestedPage === page &&
     data.requestedSearch === search &&
@@ -116,6 +126,8 @@ export default function TransferScreen() {
   const canCreate = canManageStock(account?.me?.role);
   const activeFilterCount = Number(Boolean(warehouseFilter)) + Number(Boolean(fromDate)) + Number(Boolean(toDate));
   const totalPages = Math.ceil((activeData?.page.total ?? 0) / pageSize);
+  const pageLoading = Boolean(account?.loading) || (!activeData && (loading || !error)) ||
+    (Boolean(warehouseCacheScope) && warehousesLoading && !warehouses);
 
   useEffect(() => {
     if (!filtersOpen) return;
@@ -240,9 +252,9 @@ export default function TransferScreen() {
       routePath="/warehouse/transfer"
       iconName="transfer"
       fullBleed
-      loading={loading && !activeData}
-      loadingLabel={isThai ? "กำลังโหลดรายการโอนสต๊อก" : "Loading stock transfers"}
+      loading={pageLoading}
     >
+      {pageLoading ? <TransferRouteSkeleton /> : (
       <main className="mx-auto w-full max-w-[1600px] space-y-6 p-4 pb-10 sm:p-8">
         {error && <Notice tone="error">{error}</Notice>}
         {failure && !formOpen && <Notice tone="error">{failure}</Notice>}
@@ -257,14 +269,14 @@ export default function TransferScreen() {
 
         <div className={`flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center ${isLight ? "border-[#E4E4E7] bg-white" : "border-[#444444] bg-[#383838]"}`}>
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2.5">
-            <SearchInput
+            {loading && !activeData ? <SkeletonBox className="h-9 w-full rounded-md sm:w-[300px]" /> : <SearchInput
               value={search}
               onChange={(value) => { setSearch(value); setPage(1); }}
               placeholder={isThai ? "ค้นหาเลขที่โอน สินค้า หรือคลัง" : "Search transfer, product, or warehouse"}
               width="w-full sm:w-[300px]"
               clearLabel={isThai ? "ล้างคำค้น" : "Clear search"}
-            />
-            <div className="relative" ref={filtersRef}>
+            />}
+            {loading && !activeData ? <SkeletonBox className="h-[33px] w-[104px] rounded-md" /> : <div className="relative" ref={filtersRef}>
               <FilterButton
                 controls="transfer-filter-panel"
                 expanded={filtersOpen}
@@ -312,9 +324,14 @@ export default function TransferScreen() {
                   )}
                 </div>
               )}
-            </div>
+            </div>}
           </div>
-          <div className="flex flex-wrap items-center gap-2 sm:ml-auto sm:justify-end">
+          {loading && !activeData ? (
+            <div className="flex flex-wrap items-center gap-2 sm:ml-auto sm:justify-end">
+              <SkeletonBox className="h-9 w-24 rounded-xl" />
+              {canCreate && <SkeletonBox className="h-9 w-32 rounded-xl" />}
+            </div>
+          ) : <div className="flex flex-wrap items-center gap-2 sm:ml-auto sm:justify-end">
             <SecondaryButton onClick={exportTransfers} disabled={!activeData?.items.length} icon={<Download size={14} />}>
               {isThai ? "ส่งออก" : "Export"}
             </SecondaryButton>
@@ -323,7 +340,7 @@ export default function TransferScreen() {
                 {isThai ? "สร้างรายการโอน" : "New transfer"}
               </Button>
             )}
-          </div>
+          </div>}
         </div>
 
         {activeData ? (
@@ -389,6 +406,7 @@ export default function TransferScreen() {
           </SidePanel>
         )}
       </main>
+      )}
     </WarehousePageTemplate>
   );
 }

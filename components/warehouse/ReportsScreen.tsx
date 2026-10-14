@@ -9,6 +9,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage } from "@/utils/language";
 import { Loader2 } from "lucide-react";
 import { dataTableFrameClassName, dataTableStripedRowClassName } from "@/components/common/DataTable";
+import { ReportsRouteSkeleton } from "@/components/loading_screen/WarehouseRouteSkeletons";
 
 type ReportTab = "outstanding" | "receipts";
 type ReceiptRow = Record<string, unknown>;
@@ -43,6 +44,7 @@ function ReportList({ tab, isThai, onTabChange }: { tab: ReportTab; isThai: bool
       iconName="history"
       loading={active.loading && rows.length === 0}
       loadingLabel={isThai ? "กำลังโหลดรายงานคลังสินค้า" : "Loading warehouse reports"}
+      loadingContent={active.loading && rows.length === 0 ? <ReportsRouteSkeleton isThai={isThai} /> : undefined}
     >
       <div className="flex gap-2">
         <button className={tab === "outstanding" ? button : subtleButton} onClick={() => onTabChange("outstanding")}>{isThai ? "PO ค้างรับ" : "Outstanding POs"}</button>

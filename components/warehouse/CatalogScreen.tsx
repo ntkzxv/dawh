@@ -35,6 +35,8 @@ import SidePanel, {
 import { SkeletonBox } from "@/components/loading_screen/SkeletonLoading";
 import { Pagination } from "@/components/common";
 import { useOptionalWarehouseAccount } from "@/context/WarehouseAccountContext";
+import { invalidateCatalogReference } from "@/lib/api/warehouse-reference-cache";
+import { WAREHOUSE_TABLE_PAGE_SIZE } from "@/lib/warehouse/pagination-config";
 import { canEditCatalog } from "@/lib/contracts/warehouse-policy";
 import { useAccountMenu } from "@/hooks/useAccountMenu";
 
@@ -161,7 +163,7 @@ export default function CatalogScreen({
   const [brandFilter, setBrandFilter] = useState("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filtersRef = useRef<HTMLDivElement>(null);
-  const pageSize = 10;
+  const pageSize = WAREHOUSE_TABLE_PAGE_SIZE;
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setDebouncedSearch(search), 250);
@@ -231,7 +233,9 @@ export default function CatalogScreen({
     enabled: isFormOpen || (filtersOpen && (kind === "warehouses" || kind === "product-categories" || kind === "product-models")),
   });
 
-  const { data, loading, error, refresh } = useRemote(load);
+  const { data, loading, error, refresh } = useRemote(load, {
+    resetDataOnLoadChange: true,
+  });
   const currentData = data?.page.page === currentPage ? data : null;
   const totalItems = data?.page.total ?? 0;
   const totalPages = Math.ceil(totalItems / pageSize);
@@ -257,6 +261,9 @@ export default function CatalogScreen({
         await warehouseApi.updateCatalog(kind, editing.id, body);
       } else {
         await warehouseApi.createCatalog(kind, body);
+      }
+      if (kind === "warehouses" || kind === "branches") {
+        invalidateCatalogReference(kind);
       }
       setSuccess(editing
         ? (isThai ? "แก้ไขแล้ว" : `${kindItemEn[0].toUpperCase()}${kindItemEn.slice(1)} updated`)
@@ -387,8 +394,6 @@ export default function CatalogScreen({
       routePath="/warehouse/inventory"
       iconName="box"
       fullBleed
-      loading={loading && !data}
-      loadingLabel={isThai ? `กำลังโหลด${kindLabel}` : `Loading ${kindLabelEn.toLowerCase()}`}
     >
       <div className="flex w-full min-h-0 flex-1 flex-col gap-6 self-stretch overflow-y-auto p-6 lg:p-8">
         {error && <Notice tone="error">{error}</Notice>}
@@ -400,110 +405,8 @@ export default function CatalogScreen({
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               {supportsSearchAndFilters && (
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <SearchInput
-                    value={search}
-                    onChange={(value) => { setSearch(value); setCurrentPage(1); }}
-                    placeholder={searchPlaceholder}
-                    aria-label={isThai ? `ค้นหา${kindLabel}` : `Search ${kindLabelEn.toLowerCase()}`}
-                    clearLabel={isThai ? "ล้างคำค้นหา" : "Clear search"}
-                    width="w-full sm:w-72"
-                  />
-                  <div className="relative shrink-0" ref={filtersRef}>
-                    <FilterButton
-                      controls="catalog-filter-panel"
-                      expanded={filtersOpen}
-                      label={isThai ? "ตัวกรอง" : "Filters"}
-                      clearLabel={isThai ? "ล้างตัวกรอง" : "Clear filters"}
-                      activeFilterCount={activeFilterCount}
-                      onClear={clearFilters}
-                      onClick={() => setFiltersOpen((open) => !open)}
-                    />
-                    {filtersOpen && (
-                      <div id="catalog-filter-panel" role="region" aria-label={filterPanelLabel} className={`absolute left-0 top-full z-30 mt-2 w-[min(320px,calc(100vw-2rem))] space-y-4 rounded-2xl border p-4 shadow-2xl sm:left-auto sm:right-0 ${isLight ? "border-[#E4E4E7] bg-white text-[#222222]" : "border-[#444444] bg-[#383838] text-white"}`}>
-                        {supportsStatusFilter && <label className="space-y-1.5 text-sm font-medium">
-                          <span>{isThai ? "สถานะ" : "Status"}</span>
-                          <FilterDropdown<"all" | "active" | "inactive">
-                            value={statusFilter}
-                            onChange={(value) => { setStatusFilter(value); setCurrentPage(1); }}
-                            options={[
-                              { value: "all", label: isThai ? "ทุกสถานะ" : "All statuses" },
-                              { value: "active", label: isThai ? "ใช้งาน" : "Active" },
-                              { value: "inactive", label: isThai ? "ปิดใช้งาน" : "Inactive" },
-                            ]}
-                            className="w-full"
-                          />
-                        </label>}
-                        {kind === "warehouses" && (
-                          <label className="space-y-1.5 text-sm font-medium">
-                            <span>{isThai ? "สาขา" : "Branch"}</span>
-                            <FilterDropdown<string>
-                              value={branchFilter}
-                              onChange={(value) => { setBranchFilter(value); setCurrentPage(1); }}
-                              options={[
-                                { value: "all", label: isThai ? "ทุกสาขา" : "All branches" },
-                                ...(refs?.branches ?? []).map((branch) => ({ value: String(branch.id), label: branch.name })),
-                              ]}
-                              className="w-full"
-                            />
-                          </label>
-                        )}
-                        {supportsUsageFilter && (
-                          <label className="space-y-1.5 text-sm font-medium">
-                            <span>{isThai ? "การใช้งานสินค้า" : "Product assignment"}</span>
-                            <FilterDropdown<"all" | "assigned" | "unassigned">
-                              value={usageFilter}
-                              onChange={(value) => { setUsageFilter(value); setCurrentPage(1); }}
-                              options={[
-                                { value: "all", label: isThai ? "ทั้งหมด" : "All" },
-                                { value: "assigned", label: isThai ? "มีสินค้าใช้งาน" : "Used by products" },
-                                { value: "unassigned", label: isThai ? "ยังไม่มีสินค้าใช้งาน" : "Not used by products" },
-                              ]}
-                              className="w-full"
-                            />
-                          </label>
-                        )}
-                        {kind === "product-categories" && (
-                          <label className="space-y-1.5 text-sm font-medium">
-                            <span>{isThai ? "กลุ่มสินค้า" : "Product group"}</span>
-                            <FilterDropdown<string>
-                              value={groupFilter}
-                              onChange={(value) => { setGroupFilter(value); setCurrentPage(1); }}
-                              options={[
-                                { value: "all", label: isThai ? "ทุกกลุ่ม" : "All groups" },
-                                { value: "none", label: isThai ? "ไม่มีกลุ่ม" : "No group" },
-                                ...(refs?.["product-groups"] ?? []).map((group) => ({ value: String(group.id), label: group.name })),
-                              ]}
-                              className="w-full"
-                              searchable
-                            />
-                          </label>
-                        )}
-                        {kind === "product-models" && (
-                          <label className="space-y-1.5 text-sm font-medium">
-                            <span>{isThai ? "ยี่ห้อ" : "Brand"}</span>
-                            <FilterDropdown<string>
-                              value={brandFilter}
-                              onChange={(value) => { setBrandFilter(value); setCurrentPage(1); }}
-                              options={[
-                                { value: "all", label: isThai ? "ทุกยี่ห้อ" : "All brands" },
-                                { value: "none", label: isThai ? "ไม่มียี่ห้อ" : "No brand" },
-                                ...(refs?.brands ?? []).map((brand) => ({ value: String(brand.id), label: brand.name })),
-                              ]}
-                              className="w-full"
-                              searchable
-                            />
-                          </label>
-                        )}
-                        {activeFilterCount > 0 && (
-                          <div className="flex justify-end border-t border-slate-200 pt-3 dark:border-white/10">
-                            <CommonButton variant="outline" onClick={clearFilters}>
-                              {isThai ? "ล้างตัวกรอง" : "Clear filters"}
-                            </CommonButton>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  <SkeletonBox className="h-9 w-full rounded-xl sm:w-72" />
+                  <SkeletonBox className="h-9 w-28 rounded-xl" />
                 </div>
               )}
               <SkeletonBox className="h-[33px] w-32 rounded-[6px]" />

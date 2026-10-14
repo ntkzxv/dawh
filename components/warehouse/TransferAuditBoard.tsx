@@ -15,6 +15,7 @@ import DataTable, {
   type DataTableColumn,
 } from "@/components/common/DataTable";
 import { SkeletonBox } from "@/components/loading_screen/SkeletonLoading";
+import { TransferAuditRouteSkeleton } from "@/components/loading_screen/WarehouseRouteSkeletons";
 import { useOptionalWarehouseAccount } from "@/context/WarehouseAccountContext";
 import { useTheme } from "@/context/ThemeContext";
 import { warehouseApi, type AuditEvent, type StockTransfer } from "@/lib/api/warehouse";
@@ -22,6 +23,7 @@ import { getAuditActionLabel } from "@/components/warehouse/auditLog";
 import { useAppLanguage } from "@/utils/language";
 import { useRemote } from "@/hooks/useRemoteResource";
 import { Empty, Notice } from "./Ui";
+import { WAREHOUSE_TABLE_PAGE_SIZE } from "@/lib/warehouse/pagination-config";
 
 const dateLabel = (value: string, isThai: boolean) =>
   new Intl.DateTimeFormat(isThai ? "th-TH" : "en-GB", {
@@ -35,9 +37,10 @@ export default function TransferAuditBoard() {
   const isLight = theme === "light";
   const account = useOptionalWarehouseAccount();
   const canViewAudit = account?.me?.role === "ADMIN" || account?.me?.role === "CEO";
+  const accountLoading = account?.loading ?? false;
 
   const loadTransfers = useCallback((signal: AbortSignal) => {
-    return warehouseApi.stockTransfersPage(new URLSearchParams({ page: "1", limit: "8" }), signal);
+    return warehouseApi.stockTransfersPage(new URLSearchParams({ page: "1", limit: String(WAREHOUSE_TABLE_PAGE_SIZE) }), signal);
   }, []);
   const {
     data: transferData,
@@ -47,13 +50,14 @@ export default function TransferAuditBoard() {
 
   const loadAudit = useCallback(async (signal: AbortSignal) => {
     const response = await warehouseApi.auditPage({ category: "stock-movement", page: 1 }, signal);
-    return response.data.items.slice(0, 8);
+    return response.data.items.slice(0, WAREHOUSE_TABLE_PAGE_SIZE);
   }, []);
   const {
     data: auditEvents,
     loading: auditLoading,
     error: auditError,
   } = useRemote(loadAudit, { enabled: Boolean(canViewAudit) });
+  const pageLoading = accountLoading || transfersLoading || (canViewAudit && auditLoading);
 
   const transfers = transferData?.items ?? [];
   const summary = transferData?.summary;
@@ -100,9 +104,9 @@ export default function TransferAuditBoard() {
       routePath="/warehouse/transfer/audit"
       iconName="history"
       fullBleed
-      loading={transfersLoading || (Boolean(canViewAudit) && auditLoading)}
-      loadingLabel={isThai ? "กำลังโหลดกระดานตรวจสอบ" : "Loading audit board"}
+      loading={pageLoading}
     >
+      {pageLoading ? <TransferAuditRouteSkeleton /> : (
       <main className="mx-auto w-full max-w-[1600px] space-y-6 p-4 pb-10 sm:p-8">
         <p className={`max-w-2xl text-sm ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
           {isThai
@@ -204,6 +208,7 @@ export default function TransferAuditBoard() {
           </div>
         </section>
       </main>
+      )}
     </WarehousePageTemplate>
   );
 }

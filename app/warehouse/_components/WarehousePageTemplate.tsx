@@ -4,7 +4,7 @@ import React from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage } from "@/utils/language";
 import { motion, AnimatePresence } from "framer-motion";
-import { SkeletonBox, SkeletonWarehousePage } from "@/components/loading_screen/SkeletonLoading";
+import { SkeletonBox } from "@/components/loading_screen/SkeletonLoading";
 import {
   Box,
   Package,
@@ -85,6 +85,7 @@ export interface WarehousePageTemplateProps {
   headerActions?: React.ReactNode;
   loading?: boolean;
   loadingLabel?: string;
+  loadingContent?: React.ReactNode;
 }
 
 // Keep track of whether user has already entered warehouse module in current session
@@ -99,6 +100,7 @@ export default function WarehousePageTemplate({
   headerActions,
   loading = false,
   loadingLabel,
+  loadingContent,
 }: WarehousePageTemplateProps) {
   const { theme } = useTheme();
   const isLight = theme === "light";
@@ -251,13 +253,13 @@ export default function WarehousePageTemplate({
           </div>
         )}
 
-        {loading ? (
+        {loading && loadingContent ? (
           <div
             className={fullBleed ? "min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8" : ""}
             role="status"
             aria-label={loadingLabel || (isThai ? "กำลังโหลดหน้า" : "Loading page")}
           >
-            <SkeletonWarehousePage />
+            {loadingContent}
           </div>
         ) : children}
         </div>

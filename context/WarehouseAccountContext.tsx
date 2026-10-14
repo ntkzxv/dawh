@@ -6,12 +6,17 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import { usePathname } from "next/navigation";
 import { ApiRequestError } from "@/lib/api/client";
 import { warehouseApi, type Me } from "@/lib/api/warehouse";
+import {
+  clearWarehouseReferenceCache,
+  getWarehouseReferenceScope,
+} from "@/lib/api/warehouse-reference-cache";
 
 type AccountContextValue = {
   me: Me | null;
@@ -46,6 +51,16 @@ export function WarehouseAccountProvider({
   const [me, setMe] = useState<Me | null>(null);
   const [loading, setLoading] = useState(protectedPath);
   const [error, setError] = useState<string | null>(null);
+  const cacheScope = getWarehouseReferenceScope(me);
+  const previousCacheScope = useRef<string | null>(null);
+
+  useEffect(() => {
+    const previous = previousCacheScope.current;
+    if (previous && previous !== cacheScope) {
+      clearWarehouseReferenceCache(previous);
+    }
+    previousCacheScope.current = cacheScope;
+  }, [cacheScope]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -69,6 +84,7 @@ export function WarehouseAccountProvider({
   }, []);
 
   const clear = useCallback(() => {
+    clearWarehouseReferenceCache();
     setMe(null);
     setError(null);
     setLoading(false);

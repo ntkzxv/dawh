@@ -20,8 +20,10 @@ import { useTheme } from "@/context/ThemeContext";
 import { useAccountMenu } from "@/hooks/useAccountMenu";
 import { SkeletonBox } from "@/components/loading_screen/SkeletonLoading";
 import { Field, input, message, Notice, useRemote } from "./Ui";
+import { invalidateCatalogReference } from "@/lib/api/warehouse-reference-cache";
+import { WAREHOUSE_TABLE_PAGE_SIZE } from "@/lib/warehouse/pagination-config";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = WAREHOUSE_TABLE_PAGE_SIZE;
 
 export default function BranchManagement() {
   const { theme } = useTheme();
@@ -138,6 +140,7 @@ export default function BranchManagement() {
     try {
       if (editing) await warehouseApi.updateCatalog("branches", editing.id, body);
       else await warehouseApi.createCatalog("branches", body);
+      invalidateCatalogReference("branches");
       setPanelOpen(false);
       setNotice(editing ? (isThai ? "บันทึกการแก้ไขสาขาแล้ว" : "Branch updated") : (isThai ? "เพิ่มสาขาแล้ว" : "Branch added"));
       await refresh();

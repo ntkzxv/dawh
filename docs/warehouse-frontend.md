@@ -19,6 +19,8 @@ Client transport อยู่ที่ `lib/api/client.ts`; endpoint warehouse �
 
 BE เพิ่ม filter เอกสาร, detail แบบย่อ (`view=lines`, `view=confirmation`) และ catalog lookup สำหรับ selector แล้ว ดู [สัญญา API และตัวอย่าง](warehouse-backend.md#optional-reads-for-warehouse-forms). FE ยังต้องเลือกโหลดตามแท็บ/ฟอร์มที่ใช้งานและเปลี่ยนคำขอไปใช้ options เหล่านี้ จึงจะลดการโหลดซ้ำและใช้ payload ที่เล็กลงได้; รอบนี้ไม่มีการแก้โค้ด FE.
 
+แนวทาง cache และการโหลดข้อมูลร่วมกันฝั่ง FE ที่เสนอไว้ดู [Warehouse FE cache plan](warehouse-frontend-cache.md). เอกสารนั้นแยกสถานะปัจจุบันออกจากงานที่ยังต้องทำ และกำหนดขอบเขต key, freshness, invalidation และการตรวจรับ.
+
 ## ลำดับเริ่มใช้งาน
 
 1. Admin ที่เก็บไว้ลงชื่อเข้าใช้ แล้วตั้งชื่อองค์กรที่ `/controlpanel`.

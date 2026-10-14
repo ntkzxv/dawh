@@ -17,6 +17,7 @@ import DataTable, {
   type DataTableColumn,
 } from "@/components/common/DataTable";
 import { SkeletonBox } from "@/components/loading_screen/SkeletonLoading";
+import { DashboardRouteSkeleton } from "@/components/loading_screen/WarehouseRouteSkeletons";
 import { useOptionalWarehouseAccount } from "@/context/WarehouseAccountContext";
 import { useTheme } from "@/context/ThemeContext";
 import { warehouseApi, type StockMovement, type WarehouseDashboard } from "@/lib/api/warehouse";
@@ -57,6 +58,7 @@ export default function OverviewScreen() {
   const isEmployee = account?.me?.role === "EMPLOYEE";
   const load = useCallback((signal: AbortSignal) => warehouseApi.dashboard(signal), []);
   const { data, loading, error } = useRemote(load);
+  const pageLoading = Boolean(account?.loading) || (!isEmployee && loading && !data);
 
   const columns: DataTableColumn<StockMovement>[] = [
     {
@@ -116,9 +118,9 @@ export default function OverviewScreen() {
       routePath="/warehouse"
       iconName="package"
       fullBleed
-      loading={loading && !data}
-      loadingLabel={isThai ? "กำลังโหลดภาพรวมคลังสินค้า" : "Loading warehouse dashboard"}
+      loading={pageLoading}
     >
+      {pageLoading ? <DashboardRouteSkeleton /> : (
       <div className="flex w-full min-h-0 flex-1 flex-col gap-6 self-stretch overflow-y-auto p-6 lg:p-8">
         {error && <Notice tone="error">{error}</Notice>}
 
@@ -244,6 +246,7 @@ export default function OverviewScreen() {
         </section>
         </>}
       </div>
+      )}
     </WarehousePageTemplate>
   );
 }
