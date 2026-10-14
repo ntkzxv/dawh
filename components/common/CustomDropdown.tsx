@@ -28,6 +28,8 @@ export interface CustomDropdownProps<T = string> {
   disabled?: boolean;
   searchable?: boolean;
   searchPlaceholder?: string;
+  onOpen?: () => void;
+  onSearchChange?: (query: string) => void;
   align?: "left" | "right";
   size?: "sm" | "md";
   icon?: React.ReactNode;
@@ -47,6 +49,8 @@ export default function CustomDropdown<T = string>({
   disabled = false,
   searchable = false,
   searchPlaceholder = "Search...",
+  onOpen,
+  onSearchChange,
   align = "left",
   size = "md",
   icon,
@@ -65,6 +69,11 @@ export default function CustomDropdown<T = string>({
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
+
+  useEffect(() => {
+    if (isOpen) onOpen?.();
+    else onSearchChange?.("");
+  }, [isOpen, onOpen, onSearchChange]);
 
   useEffect(() => {
     setMounted(true);
@@ -387,14 +396,20 @@ export default function CustomDropdown<T = string>({
                     ref={searchInputRef}
                     type="text"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      onSearchChange?.(e.target.value);
+                    }}
                     placeholder={searchPlaceholder}
                     className="w-full bg-transparent outline-none text-xs text-inherit placeholder:opacity-50"
                   />
                   {searchQuery && (
                     <button
                       type="button"
-                      onClick={() => setSearchQuery("")}
+                      onClick={() => {
+                        setSearchQuery("");
+                        onSearchChange?.("");
+                      }}
                       className="opacity-50 hover:opacity-100 cursor-pointer"
                     >
                       <X size={12} />
