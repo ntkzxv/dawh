@@ -42,6 +42,7 @@ import {
   Field,
   message,
   Notice,
+  sanitizeWholeNumberInput,
   useRemote,
 } from "./Ui";
 import { ProductSearchSelect } from "./ProductSearchSelect";
@@ -593,8 +594,8 @@ function StockForm({
   const submit = (event: FormEvent) => {
     event.preventDefault();
     const validQuantity = kind === "ADJUSTMENT"
-      ? /^-?\d{1,15}(?:\.\d{1,3})?$/.test(quantity) && Number(quantity) !== 0
-      : /^\d{1,15}(?:\.\d{1,3})?$/.test(quantity) && Number(quantity) > 0;
+      ? /^-?\d{1,15}$/.test(quantity) && Number(quantity) !== 0
+      : /^\d{1,15}$/.test(quantity) && Number(quantity) > 0;
     const missing = [
       !warehouseId && "warehouse",
       kind === "TRANSFER" && (!destination || destination === warehouseId) && "destination",
@@ -695,12 +696,13 @@ function StockForm({
           className={`${styles.input} ${fieldErrors.includes("quantity") ? sidePanelInvalidFieldClassName : ""}`}
           required
           aria-invalid={fieldErrors.includes("quantity")}
-          type="number"
-          step="0.001"
+          type="text"
+          inputMode={kind === "ADJUSTMENT" ? "text" : "numeric"}
+          pattern={kind === "ADJUSTMENT" ? "-?[0-9]*" : "[0-9]*"}
           value={quantity}
-          onChange={(event) => { setQuantity(event.target.value); clearFieldError("quantity"); }}
+          onChange={(event) => { setQuantity(sanitizeWholeNumberInput(event.target.value, kind === "ADJUSTMENT", quantity)); clearFieldError("quantity"); }}
         />
-        {fieldErrors.includes("quantity") && <SidePanelFieldError>{isThai ? (kind === "ADJUSTMENT" ? "กรุณากรอกจำนวนที่ไม่เป็นศูนย์ (ทศนิยมไม่เกิน 3 ตำแหน่ง)" : "กรุณากรอกจำนวนมากกว่าศูนย์ (ทศนิยมไม่เกิน 3 ตำแหน่ง)") : (kind === "ADJUSTMENT" ? "Enter a nonzero quantity with up to 3 decimals." : "Enter a positive quantity with up to 3 decimals.")}</SidePanelFieldError>}
+        {fieldErrors.includes("quantity") && <SidePanelFieldError>{isThai ? (kind === "ADJUSTMENT" ? "กรุณากรอกจำนวนเต็มที่ไม่เป็นศูนย์" : "กรุณากรอกจำนวนเต็มมากกว่าศูนย์") : (kind === "ADJUSTMENT" ? "Enter a nonzero whole number." : "Enter a positive whole number.")}</SidePanelFieldError>}
       </Field>
       <Field label={isThai ? "เหตุผล" : "Reason"}>
         <textarea

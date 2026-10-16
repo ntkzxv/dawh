@@ -1040,7 +1040,7 @@ export function UserAuthView({
                             }`}
                           >
                             <Users size={14} className={isLight ? "text-slate-800" : "text-white"} />
-                            <span>{lang === "TH" ? "เข้าใช้งานล่าสุด (PIN)" : "Recent Users"}</span>
+                            <span>{lang === "TH" ? "เข้าใช้งานล่าสุด" : "Recent Users"}</span>
                             <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
                           </button>
                         </div>

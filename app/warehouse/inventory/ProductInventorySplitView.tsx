@@ -13,7 +13,7 @@ import {
 import { WAREHOUSE_TABLE_PAGE_SIZE } from "@/lib/warehouse/pagination-config";
 import WarehousePageTemplate from "@/app/warehouse/_components/WarehousePageTemplate";
 import { canEditCatalog } from "@/lib/contracts/warehouse-policy";
-import { useRemote, Notice, message } from "@/components/warehouse/Ui";
+import { useRemote, Notice, message, sanitizeWholeNumberInput } from "@/components/warehouse/Ui";
 import CustomDropdown from "@/components/common/CustomDropdown";
 import {
   DATA_TABLE_BODY_ROW_HEIGHT,
@@ -293,7 +293,7 @@ export default function ProductInventorySplitView({
       ...(!formUnitId ? ["unit"] : []),
       ...(!formCost.trim() ? ["cost"] : []),
       ...(!formSalePrice.trim() ? ["salePrice"] : []),
-      ...(!formReorderPoint.trim() ? ["reorderPoint"] : []),
+      ...(!/^\d{1,15}$/.test(formReorderPoint) ? ["reorderPoint"] : []),
     ];
     setFormFieldErrors(nextErrors);
     if (nextErrors.length) {
@@ -1005,12 +1005,13 @@ export default function ProductInventorySplitView({
                         {isThai ? "จุดสั่งซื้อ (ขั้นต่ำ)" : "Reorder Point"}
                       </label>
                       <input
-                        type="number"
-                        min="0"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         value={formReorderPoint}
                         aria-invalid={formFieldErrors.includes("reorderPoint")}
                         onChange={(e) => {
-                          setFormReorderPoint(e.target.value);
+                          setFormReorderPoint(sanitizeWholeNumberInput(e.target.value, false, formReorderPoint));
                           setFormFieldErrors((errors) => errors.filter((field) => field !== "reorderPoint"));
                         }}
                         placeholder="0"

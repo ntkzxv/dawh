@@ -131,7 +131,7 @@ export default function SidePanel({
           >
             <X size={18} />
           </button>
-          <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+          <div className="-mr-5 min-h-0 flex-1 overflow-y-auto pr-5 sm:-mr-6 sm:pr-6">{children}</div>
         </aside>
       </div>
     );

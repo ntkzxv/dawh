@@ -88,9 +88,40 @@ body.light,
   box-sizing: border-box;
 }
 
+input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
 html {
   height: 100%;
   scroll-behavior: smooth;
+}
+
+html:has(.landing-snap-root) {
+  scroll-snap-type: y mandatory;
+}
+
+.landing-snap-panel {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.landing-snap-stop {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:has(.landing-snap-root) {
+    scroll-behavior: auto;
+  }
 }
 
 /* Universal Theme-Aware Text Selection Styling */

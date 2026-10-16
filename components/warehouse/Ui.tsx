@@ -6,6 +6,10 @@ import { warehouseApi } from "@/lib/api/warehouse";
 import { useNotification } from "@/context/NotificationContext";
 import { useAppLanguage } from "@/utils/language";
 import { Loader2 } from "lucide-react";
+import {
+  SidePanelFieldError,
+  sidePanelInvalidFieldClassName,
+} from "@/components/common/SidePanel";
 
 export const panel =
   "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#383838]";
@@ -72,6 +76,11 @@ export function Field({
   );
 }
 
+export function sanitizeWholeNumberInput(value: string, allowNegative = false, previousValue = "") {
+  const wholeNumberPattern = allowNegative ? /^-?\d*$/ : /^\d*$/;
+  return wholeNumberPattern.test(value) ? value : previousValue;
+}
+
 export function Empty({ text }: { text?: string }) {
   const isThai = useAppLanguage() === "TH";
   return (
@@ -83,14 +92,23 @@ export function Empty({ text }: { text?: string }) {
 
 export function EvidencePicker({
   onChange,
+  onFilesChange,
+  deferUpload = false,
   required = false,
+  invalid = false,
+  errorText,
 }: {
   onChange: (ids: number[]) => void;
+  onFilesChange?: (files: File[], prepared: boolean) => void;
+  deferUpload?: boolean;
   required?: boolean;
+  invalid?: boolean;
+  errorText?: string;
 }) {
   const isThai = useAppLanguage() === "TH";
   const [files, setFiles] = useState<File[]>([]);
   const [uploaded, setUploaded] = useState(0);
+  const [prepared, setPrepared] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const upload = async (event: FormEvent) => {
@@ -120,24 +138,37 @@ export function EvidencePicker({
         }
       >
         <input
-          className={input}
+          className={`${input} ${invalid ? sidePanelInvalidFieldClassName : ""}`}
           type="file"
           accept="image/jpeg,image/png,image/webp,application/pdf"
           multiple
+          aria-invalid={invalid}
           onChange={(event) => {
-            setFiles(Array.from(event.target.files ?? []));
+            const selectedFiles = Array.from(event.target.files ?? []);
+            setFiles(selectedFiles);
             setUploaded(0);
+            setPrepared(false);
+            onFilesChange?.(selectedFiles, false);
             onChange([]);
           }}
         />
       </Field>
+      {invalid && errorText && <SidePanelFieldError>{errorText}</SidePanelFieldError>}
       <button
         type="button"
         className={subtleButton}
-        disabled={!files.length || busy}
-        onClick={(event) => void upload(event)}
+        disabled={!files.length || busy || uploaded > 0 || (deferUpload && prepared)}
+        onClick={(event) => {
+          if (deferUpload) {
+            event.preventDefault();
+            setPrepared(true);
+            onFilesChange?.(files, true);
+            return;
+          }
+          void upload(event);
+        }}
       >
-        {busy ? <Loader2 size={16} className="animate-spin" aria-label={isThai ? "กำลังอัปโหลด" : "Uploading"} /> : (isThai ? "อัปโหลดไฟล์ที่เลือก" : "Upload selected files")}
+        {busy ? <Loader2 size={16} className="animate-spin" aria-label={isThai ? "กำลังอัปโหลด" : "Uploading"} /> : deferUpload ? prepared ? (isThai ? "เตรียมไฟล์แล้ว" : "Files ready") : (isThai ? "เตรียมไฟล์" : "Prepare files") : uploaded > 0 ? (isThai ? "อัปโหลดแล้ว" : "Uploaded") : (isThai ? "อัปโหลดไฟล์ที่เลือก" : "Upload selected files")}
       </button>
       {uploaded > 0 && (
         <Notice tone="success">{isThai ? `อัปโหลดแล้ว ${uploaded} ไฟล์` : `${uploaded} files uploaded.`}</Notice>

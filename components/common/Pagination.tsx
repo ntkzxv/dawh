@@ -17,11 +17,13 @@ type OffsetPaginationProps = CommonPaginationProps & {
   mode?: "offset";
   currentPage: number;
   totalPages: number;
-  totalItems: number;
+  totalItems?: number;
+  pageItemCount?: number;
   pageSize?: number;
   onPageChange: (page: number) => void;
   showTotalItems?: boolean;
   id?: string;
+  isLoading?: boolean;
 };
 
 type CursorPaginationProps = CommonPaginationProps & {
@@ -114,12 +116,14 @@ function CursorPagination({
 function OffsetPagination({
   currentPage,
   totalPages,
-  totalItems,
+  totalItems = 0,
+  pageItemCount,
   onPageChange,
   isThai = true,
   className = "",
   showTotalItems = true,
   id,
+  isLoading = false,
 }: OffsetPaginationProps) {
   const { theme } = useTheme();
   const isLight = theme === "light";
@@ -191,7 +195,23 @@ function OffsetPagination({
       <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
         {showTotalItems && (
           <div className="text-xs opacity-70 flex items-center gap-1.5">
-            {isThai ? (
+            {pageItemCount !== undefined ? (isThai ? (
+              <>
+                <span>หน้า</span>
+                <span className="font-semibold text-zinc-900 dark:text-white">{currentPage}</span>
+                <span className="mx-1" aria-hidden="true">·</span>
+                <span className="font-semibold text-zinc-900 dark:text-white">{pageItemCount.toLocaleString()}</span>
+                <span>รายการในหน้านี้</span>
+              </>
+            ) : (
+              <>
+                <span>Page</span>
+                <span className="font-semibold text-zinc-900 dark:text-white">{currentPage}</span>
+                <span className="mx-1" aria-hidden="true">·</span>
+                <span className="font-semibold text-zinc-900 dark:text-white">{pageItemCount.toLocaleString()}</span>
+                <span>items on this page</span>
+              </>
+            )) : isThai ? (
               <>
                 <span>หน้า</span>
                 <span className="font-semibold text-zinc-900 dark:text-white">{currentPage}</span>
@@ -225,7 +245,7 @@ function OffsetPagination({
           type="button"
           whileTap={{ scale: 0.88 }}
           onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage <= 1}
+          disabled={currentPage <= 1 || isLoading}
           title={isThai ? "ก่อนหน้า" : "Previous Page"}
           className={`p-2 rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-25 ${
             isLight
@@ -260,6 +280,7 @@ function OffsetPagination({
                 type="button"
                 whileTap={{ scale: 0.92 }}
                 onClick={() => onPageChange(page)}
+                disabled={isLoading}
                 transition={{
                   layout: { duration: 0.25, ease: [0.16, 1, 0.3, 1] },
                 }}
@@ -310,7 +331,7 @@ function OffsetPagination({
           type="button"
           whileTap={{ scale: 0.88 }}
           onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage >= totalPages}
+          disabled={currentPage >= totalPages || isLoading}
           title={isThai ? "ถัดไป" : "Next Page"}
           className={`p-2 rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-25 ${
             isLight

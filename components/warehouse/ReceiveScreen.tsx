@@ -16,6 +16,7 @@ import {
 } from "@/lib/api/warehouse";
 import type { ApiPage } from "@/lib/api/client";
 import DataTable, { dataTableFrameClassName } from "@/components/common/DataTable";
+import Pagination from "@/components/common/Pagination";
 import Button from "@/components/common/Button";
 import SidePanel from "@/components/common/SidePanel";
 import { useTheme } from "@/context/ThemeContext";
@@ -25,7 +26,6 @@ import {
   Empty,
   message,
   Notice,
-  panel,
   subtleButton,
   useRemote,
 } from "./Ui";
@@ -36,7 +36,7 @@ import {
 } from "@/lib/api/warehouse-reference-cache";
 import { useAppLanguage } from "@/utils/language";
 import { PoDetails, PoForm } from "./receive/ReceivePo";
-import { SupplierForm, SupplierRow } from "./receive/ReceiveSupplier";
+import { SupplierDetails, SupplierForm } from "./receive/ReceiveSupplier";
 import { CarrierDetails, CarrierForm } from "./receive/ReceiveCarrier";
 import { CountForm } from "./receive/ReceiveCount";
 
@@ -54,6 +54,8 @@ type ReceiveData = {
   supplierReceipts: SupplierReceipt[];
   goodsReceipts: GoodsReceipt[];
   pages: Partial<Record<CursorResource, ApiPage>>;
+  pageIndices: Partial<Record<CursorResource, number>>;
+  cursorHistory: Partial<Record<CursorResource, Array<string | null>>>;
 };
 type ReceiveReferences = {
   step: Step;
@@ -111,11 +113,13 @@ export default function ReceiveScreen() {
         supplierReceipts: [],
         goodsReceipts: [],
         pages: {},
+        pageIndices: {},
+        cursorHistory: {},
       };
 
       if (activeStep === "po") {
         const ordersPage = await warehouseApi.purchaseOrdersPage(null, signal);
-        return { ...emptyData, purchaseOrders: ordersPage.items, pages: { purchaseOrders: ordersPage.page } };
+        return { ...emptyData, purchaseOrders: ordersPage.items, pages: { purchaseOrders: ordersPage.page }, pageIndices: { purchaseOrders: 1 }, cursorHistory: { purchaseOrders: [null] } };
       }
 
       if (activeStep === "supplier") {
@@ -123,7 +127,7 @@ export default function ReceiveScreen() {
           warehouseApi.purchaseOrdersPage(null, signal),
           warehouseApi.supplierReceiptsPage(null, signal),
         ]);
-        return { ...emptyData, purchaseOrders: ordersPage.items, supplierReceipts: receiptsPage.items, pages: { purchaseOrders: ordersPage.page, supplierReceipts: receiptsPage.page } };
+        return { ...emptyData, purchaseOrders: ordersPage.items, supplierReceipts: receiptsPage.items, pages: { purchaseOrders: ordersPage.page, supplierReceipts: receiptsPage.page }, pageIndices: { purchaseOrders: 1, supplierReceipts: 1 }, cursorHistory: { purchaseOrders: [null], supplierReceipts: [null] } };
       }
 
       if (activeStep === "carrier") {
@@ -131,14 +135,14 @@ export default function ReceiveScreen() {
           warehouseApi.purchaseOrdersPage(null, signal),
           warehouseApi.carrierReceiptsPage(null, signal),
         ]);
-        return { ...emptyData, purchaseOrders: ordersPage.items, carriers: carriersPage.items, pages: { purchaseOrders: ordersPage.page, carriers: carriersPage.page } };
+        return { ...emptyData, purchaseOrders: ordersPage.items, carriers: carriersPage.items, pages: { purchaseOrders: ordersPage.page, carriers: carriersPage.page }, pageIndices: { purchaseOrders: 1, carriers: 1 }, cursorHistory: { purchaseOrders: [null], carriers: [null] } };
       }
 
       const [carriersPage, receiptsPage] = await Promise.all([
         warehouseApi.carrierReceiptsPage(null, signal),
         warehouseApi.goodsReceiptsPage(null, signal),
       ]);
-      return { ...emptyData, carriers: carriersPage.items, goodsReceipts: receiptsPage.items, pages: { carriers: carriersPage.page, goodsReceipts: receiptsPage.page } };
+      return { ...emptyData, carriers: carriersPage.items, goodsReceipts: receiptsPage.items, pages: { carriers: carriersPage.page, goodsReceipts: receiptsPage.page }, pageIndices: { carriers: 1, goodsReceipts: 1 }, cursorHistory: { carriers: [null], goodsReceipts: [null] } };
     },
     [step, account?.me, isThai],
   );
@@ -188,6 +192,9 @@ export default function ReceiveScreen() {
   );
   const [po, setPo] = useState<PurchaseOrder | null>(null);
   const [carrier, setCarrier] = useState<CarrierReceipt | null>(null);
+  const [selectedSupplierReceiptId, setSelectedSupplierReceiptId] = useState<number | null>(null);
+  const [supplierDetail, setSupplierDetail] = useState<SupplierReceipt | null>(null);
+  const [supplierDetailLoading, setSupplierDetailLoading] = useState(false);
   const activeStep = data?.me.role === "EMPLOYEE" ? "carrier" : step;
   const needsCarrierBranches =
     activeStep === "carrier" && !!carrier && !carrier.confirmation;
@@ -244,6 +251,23 @@ export default function ReceiveScreen() {
       });
     return () => controller.abort();
   }, [isThai, selectedCarrierId]);
+  useEffect(() => {
+    if (!selectedSupplierReceiptId) return;
+    const controller = new AbortController();
+    setSupplierDetailLoading(true);
+    void warehouseApi
+      .supplierReceipt(selectedSupplierReceiptId)
+      .then((item) => {
+        if (!controller.signal.aborted) setSupplierDetail(item);
+      })
+      .catch((cause) => {
+        if (!controller.signal.aborted) setFailure(message(cause, isThai));
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setSupplierDetailLoading(false);
+      });
+    return () => controller.abort();
+  }, [isThai, selectedSupplierReceiptId]);
   const reload = async () => {
     await refresh();
     if (activeStep === "po" && selectedPoId)
@@ -312,6 +336,54 @@ export default function ReceiveScreen() {
     }
   };
 
+  const changePage = async (resource: CursorResource, targetPage: number) => {
+    const pageIndex = activeData?.pageIndices[resource] ?? 1;
+    const history = activeData?.cursorHistory[resource] ?? [null];
+    const isNextPage = targetPage === pageIndex + 1;
+    const cursor = isNextPage
+      ? activeData?.pages[resource]?.nextCursor
+      : history[targetPage - 1];
+    if (
+      targetPage < 1 ||
+      targetPage === pageIndex ||
+      cursor === undefined ||
+      (isNextPage && !cursor) ||
+      loadingMore.has(resource)
+    ) return;
+
+    const controller = new AbortController();
+    pageControllersRef.current.get(resource)?.abort();
+    pageControllersRef.current.set(resource, controller);
+    setLoadingMore((current) => new Set(current).add(resource));
+    try {
+      let result: ApiListPage<{ id: number }>;
+      if (resource === "purchaseOrders") result = await warehouseApi.purchaseOrdersPage(cursor, controller.signal);
+      else if (resource === "supplierReceipts") result = await warehouseApi.supplierReceiptsPage(cursor, controller.signal);
+      else if (resource === "carriers") result = await warehouseApi.carrierReceiptsPage(cursor, controller.signal);
+      else result = await warehouseApi.goodsReceiptsPage(cursor, controller.signal);
+      setData((current) => {
+        if (!current || current.step !== activeStep) return current;
+        const pages = { ...current.pages, [resource]: result.page };
+        const pageIndices = { ...current.pageIndices, [resource]: targetPage };
+        const cursorHistory = { ...current.cursorHistory };
+        const resourceHistory = [...(cursorHistory[resource] ?? [null])];
+        if (targetPage > pageIndex) resourceHistory[targetPage - 1] = cursor;
+        cursorHistory[resource] = resourceHistory;
+        if (resource === "purchaseOrders") return { ...current, pages, pageIndices, cursorHistory, purchaseOrders: result.items as typeof current.purchaseOrders };
+        if (resource === "supplierReceipts") return { ...current, pages, pageIndices, cursorHistory, supplierReceipts: result.items as typeof current.supplierReceipts };
+        if (resource === "carriers") return { ...current, pages, pageIndices, cursorHistory, carriers: result.items as typeof current.carriers };
+        return { ...current, pages, pageIndices, cursorHistory, goodsReceipts: result.items as typeof current.goodsReceipts };
+      });
+    } catch (cause) {
+      if (!controller.signal.aborted) setFailure(message(cause, isThai));
+    } finally {
+      if (pageControllersRef.current.get(resource) === controller) pageControllersRef.current.delete(resource);
+      if (!controller.signal.aborted) {
+        setLoadingMore((current) => { const next = new Set(current); next.delete(resource); return next; });
+      }
+    }
+  };
+
   const countedCarrierIds = new Set(activeData?.carriers.filter((item) => item.has_goods_receipt).map((item) => item.id) ?? []);
   return (
     <WarehousePageTemplate
@@ -321,18 +393,17 @@ export default function ReceiveScreen() {
       iconName="inbound"
     >
       {loading && !data ? (
-        <div aria-hidden="true" className={`flex flex-wrap gap-1 rounded-xl border p-1 ${isLight ? "border-[#E4E4E7]/70" : "border-white/[0.08]"}`}>
+        <div aria-hidden="true" className={`flex h-[42px] w-full flex-row items-start gap-2 overflow-x-auto border-b select-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${isLight ? "border-[#E4E4E7]/70" : "border-[#444444]"}`}>
           {steps.map((key) => (
-            <div key={key} className="flex h-11 min-w-36 flex-1 items-center justify-center gap-2 rounded-lg">
-              <SkeletonBox className="size-6 rounded-full" />
+            <div key={key} className="flex h-[42px] min-w-max flex-1 basis-0 items-center justify-center px-4">
               <SkeletonBox className="h-3.5 w-20 rounded" />
             </div>
           ))}
         </div>
-      ) : <nav aria-label={isThai ? "ขั้นตอนการรับสินค้า" : "Goods receiving steps"} className={`flex flex-wrap gap-1 rounded-xl border p-1 ${isLight ? "border-[#E4E4E7] bg-[#F4F4F5]" : "border-[#444444] bg-[#303030]"}`}>
+      ) : <nav aria-label={isThai ? "ขั้นตอนการรับสินค้า" : "Goods receiving steps"} className={`flex h-[42px] w-full flex-row items-start gap-2 overflow-x-auto border-b select-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${isLight ? "border-[#E4E4E7]" : "border-[#444444]"}`}>
         {steps
           .filter((key) => data?.me.role !== "EMPLOYEE" || key === "carrier")
-          .map((key, index) => {
+          .map((key) => {
             const isCurrent = activeStep === key;
             return (
               <button
@@ -340,20 +411,17 @@ export default function ReceiveScreen() {
                   type="button"
                   aria-current={isCurrent ? "step" : undefined}
                   onClick={() => { setLoadingMore(new Set()); setFormOpen(false); setStep(key); }}
-                  className={`relative isolate flex min-w-0 basis-[calc(50%-0.25rem)] grow items-center justify-center gap-2 overflow-hidden rounded-lg px-3 py-2.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 xl:basis-0 ${isCurrent ? "font-semibold" : isLight ? "hover:bg-black/5" : "hover:bg-white/5"}`}
+                  className={`relative flex h-[42px] min-w-max flex-1 basis-0 items-center justify-center whitespace-nowrap px-4 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 ${isCurrent ? "font-semibold" : ""}`}
                 >
                   {isCurrent && (
                     <motion.span
                       layoutId="receiving-active-tab"
                       aria-hidden="true"
-                      className={`pointer-events-none absolute inset-0 z-0 rounded-lg shadow-sm ${isLight ? "bg-[#222222]" : "bg-white"}`}
+                      className={`pointer-events-none absolute inset-x-0 bottom-0 z-0 h-0.5 ${isLight ? "bg-[#222222]" : "bg-white"}`}
                       transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 40 }}
                     />
                   )}
-                  <span className={`relative z-10 flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${isCurrent ? (isLight ? "bg-white/15 text-white" : "bg-[#222222]/10 text-[#222222]") : isLight ? "bg-[#E4E4E7] text-[#666666]" : "bg-[#444444] text-[#A1A1AA]"}`}>
-                    {index + 1}
-                  </span>
-                  <span className={`relative z-10 truncate text-sm ${isCurrent ? (isLight ? "text-white" : "text-[#222222]") : (isLight ? "text-[#666666]" : "text-[#A1A1AA]")}`}>{stepLabel(key, isThai)}</span>
+                  <span className={`relative z-10 truncate text-sm transition-colors ${isCurrent ? (isLight ? "text-[#222222]" : "text-[#FFFFFF]") : (isLight ? "text-[#666666]" : "text-[#E4E4E7]")} ${isLight ? "hover:text-[#222222]" : "hover:text-[#FFFFFF]"}`}>{stepLabel(key, isThai)}</span>
               </button>
             );
           })}
@@ -375,7 +443,7 @@ export default function ReceiveScreen() {
         >
           {activeStep === "po" && (
             <div className="space-y-5">
-              <section className={panel}>
+              <section className="p-5">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <h2 className="text-lg font-bold">{isThai ? "PO ที่บันทึกแล้ว" : "Saved purchase orders"}</h2>
                   <Button variant="primary" icon={<Plus size={14} />} onClick={() => setFormOpen(true)}>{isThai ? "สร้าง PO" : "Create PO"}</Button>
@@ -394,7 +462,7 @@ export default function ReceiveScreen() {
                   emptyTitle={isThai ? "ยังไม่มี PO" : "No purchase orders yet"}
                   className={dataTableFrameClassName(isLight)}
                 />
-                {activeData.pages.purchaseOrders?.hasMore && <button className={`${subtleButton} mt-3`} disabled={loadingMore.has("purchaseOrders")} onClick={() => void loadMore("purchaseOrders")}>{loadingMore.has("purchaseOrders") ? <Loader2 size={16} className="animate-spin" aria-label={isThai ? "กำลังโหลด" : "Loading"} /> : (isThai ? "โหลด PO เพิ่ม" : "Load more POs")}</button>}
+                {activeData.pages.purchaseOrders && <Pagination currentPage={activeData.pageIndices.purchaseOrders ?? 1} totalPages={(activeData.pageIndices.purchaseOrders ?? 1) + (activeData.pages.purchaseOrders.hasMore ? 1 : 0)} pageItemCount={activeData.purchaseOrders.length} onPageChange={(targetPage) => void changePage("purchaseOrders", targetPage)} isLoading={loadingMore.has("purchaseOrders")} isThai={isThai} className="mt-3" />}
                 {po && (
                   <PoDetails
                     key={po.id}
@@ -422,29 +490,47 @@ export default function ReceiveScreen() {
 
           {activeStep === "supplier" && (
             <div className="space-y-5">
-              <section className={panel}>
+              <section className="p-5">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <h2 className="text-lg font-bold">{isThai ? "เอกสารผู้ขาย" : "Supplier documents"}</h2>
-                  <Button variant="secondary" icon={<Plus size={14} />} onClick={() => setFormOpen(true)}>{isThai ? "เพิ่มเอกสารผู้ขาย" : "Add supplier document"}</Button>
+                  <Button variant="primary" icon={<Plus size={14} />} onClick={() => setFormOpen(true)}>{isThai ? "เพิ่มเอกสารผู้ขาย" : "Add supplier document"}</Button>
                 </div>
-                {activeData.supplierReceipts.length ? (
-                  activeData.supplierReceipts.map((item) => (
-                    <SupplierRow key={item.id} item={item} />
-                  ))
-                ) : (
-                  <Empty text={isThai ? "ยังไม่มีเอกสารผู้ขาย" : "No supplier documents yet."} />
-                )}
-                {activeData.pages.supplierReceipts?.hasMore && <button className={`${subtleButton} mt-3`} disabled={loadingMore.has("supplierReceipts")} onClick={() => void loadMore("supplierReceipts")}>{loadingMore.has("supplierReceipts") ? <Loader2 size={16} className="animate-spin" aria-label={isThai ? "กำลังโหลด" : "Loading"} /> : (isThai ? "โหลดเอกสารเพิ่ม" : "Load more documents")}</button>}
+                <DataTable
+                  columns={[
+                    { key: "record_no", header: isThai ? "เลขที่เอกสาร" : "Document no.", className: "font-mono font-semibold" },
+                    { key: "purchase_order_no", header: isThai ? "เลขที่ PO" : "PO number", className: "font-mono" },
+                    { key: "supplier_name", header: isThai ? "ผู้ขาย" : "Supplier", render: (item) => item.supplier_name || "—" },
+                    { key: "external_doc_no", header: isThai ? "เลขที่เอกสารผู้ขาย" : "Supplier document no.", render: (item) => item.external_doc_no || "—" },
+                    { key: "document_date", header: isThai ? "วันที่เอกสาร" : "Document date", render: (item) => item.document_date || "—" },
+                    { key: "total_amount", header: isThai ? "ยอดรวมบนใบ" : "Document total", align: "right", render: (item) => item.total_amount || "—" },
+                  ]}
+                  data={activeData.supplierReceipts}
+                  keyExtractor={(item) => item.id}
+                  minWidth="980px"
+                  selectedKey={selectedSupplierReceiptId}
+                  onRowClick={(item) => {
+                    setSupplierDetail(null);
+                    setSelectedSupplierReceiptId((current) => current === item.id ? null : item.id);
+                  }}
+                  emptyTitle={isThai ? "ยังไม่มีเอกสารผู้ขาย" : "No supplier documents yet."}
+                  className={dataTableFrameClassName(isLight)}
+                />
+                {selectedSupplierReceiptId && (supplierDetailLoading ? (
+                  <div className="mt-3 flex justify-center rounded-xl border border-slate-200 p-5 dark:border-white/10" role="status" aria-label={isThai ? "กำลังโหลดรายละเอียดเอกสารผู้ขาย" : "Loading supplier document details"}>
+                    <Loader2 size={20} className="animate-spin" />
+                  </div>
+                ) : supplierDetail ? <SupplierDetails detail={supplierDetail} /> : null)}
+                {activeData.pages.supplierReceipts && <Pagination currentPage={activeData.pageIndices.supplierReceipts ?? 1} totalPages={(activeData.pageIndices.supplierReceipts ?? 1) + (activeData.pages.supplierReceipts.hasMore ? 1 : 0)} pageItemCount={activeData.supplierReceipts.length} onPageChange={(targetPage) => { setSelectedSupplierReceiptId(null); setSupplierDetail(null); void changePage("supplierReceipts", targetPage); }} isLoading={loadingMore.has("supplierReceipts")} isThai={isThai} className="mt-3" />}
               </section>
             </div>
           )}
 
           {activeStep === "carrier" && (
             <div className="space-y-5">
-              <section className={panel}>
+              <section className="p-5">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <h2 className="text-lg font-bold">{isThai ? "ใบขนส่งและสถานะรับจากขนส่ง" : "Delivery notes and arrival status"}</h2>
-                  <Button variant="secondary" icon={<Plus size={14} />} onClick={() => setFormOpen(true)}>{isThai ? "เพิ่มใบขนส่ง" : "Add delivery note"}</Button>
+                  <Button variant="primary" icon={<Plus size={14} />} onClick={() => setFormOpen(true)}>{isThai ? "เพิ่มใบขนส่ง" : "Add delivery note"}</Button>
                 </div>
                 {activeData.carriers.length ? (
                   <DataTable
@@ -464,7 +550,7 @@ export default function ReceiveScreen() {
                 ) : (
                   <Empty text={isThai ? "ยังไม่มีใบขนส่ง" : "No delivery notes yet."} />
                 )}
-                {activeData.pages.carriers?.hasMore && <button className={`${subtleButton} mt-3`} disabled={loadingMore.has("carriers")} onClick={() => void loadMore("carriers")}>{loadingMore.has("carriers") ? <Loader2 size={16} className="animate-spin" aria-label={isThai ? "กำลังโหลด" : "Loading"} /> : (isThai ? "โหลดใบขนส่งเพิ่ม" : "Load more delivery notes")}</button>}
+                {activeData.pages.carriers && <Pagination currentPage={activeData.pageIndices.carriers ?? 1} totalPages={(activeData.pageIndices.carriers ?? 1) + (activeData.pages.carriers.hasMore ? 1 : 0)} pageItemCount={activeData.carriers.length} onPageChange={(targetPage) => void changePage("carriers", targetPage)} isLoading={loadingMore.has("carriers")} isThai={isThai} className="mt-3" />}
                 {carrier && (
                   needsCarrierBranches &&
                   (referencesLoading || activeReferences?.branches === undefined) ? (
@@ -505,10 +591,10 @@ export default function ReceiveScreen() {
 
           {activeStep === "count" && (
             <div className="space-y-5">
-              <section className={panel}>
+              <section className="p-5">
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <h2 className="text-lg font-bold">{isThai ? "ใบตรวจรับ" : "Goods receipts"}</h2>
-                  <Button variant="secondary" icon={<Plus size={14} />} onClick={() => setFormOpen(true)}>{isThai ? "เพิ่มใบตรวจรับ" : "Add goods receipt"}</Button>
+                  <Button variant="primary" icon={<Plus size={14} />} onClick={() => setFormOpen(true)}>{isThai ? "เพิ่มใบตรวจรับ" : "Add goods receipt"}</Button>
                 </div>
                 {activeData.goodsReceipts.length ? (
                   <DataTable
@@ -531,7 +617,7 @@ export default function ReceiveScreen() {
                 ) : (
                   <Empty text={isThai ? "ยังไม่มีใบตรวจรับ" : "No goods receipts yet."} />
                 )}
-                {activeData.pages.goodsReceipts?.hasMore && <button className={`${subtleButton} mt-3`} disabled={loadingMore.has("goodsReceipts")} onClick={() => void loadMore("goodsReceipts")}>{loadingMore.has("goodsReceipts") ? <Loader2 size={16} className="animate-spin" aria-label={isThai ? "กำลังโหลด" : "Loading"} /> : (isThai ? "โหลดใบตรวจรับเพิ่ม" : "Load more goods receipts")}</button>}
+                {activeData.pages.goodsReceipts && <Pagination currentPage={activeData.pageIndices.goodsReceipts ?? 1} totalPages={(activeData.pageIndices.goodsReceipts ?? 1) + (activeData.pages.goodsReceipts.hasMore ? 1 : 0)} pageItemCount={activeData.goodsReceipts.length} onPageChange={(targetPage) => void changePage("goodsReceipts", targetPage)} isLoading={loadingMore.has("goodsReceipts")} isThai={isThai} className="mt-3" />}
               </section>
               {activeData.pages.carriers?.hasMore && <button className={`${subtleButton} mt-3`} disabled={loadingMore.has("carriers")} onClick={() => void loadMore("carriers")}>{loadingMore.has("carriers") ? <Loader2 size={16} className="animate-spin" aria-label={isThai ? "กำลังโหลด" : "Loading"} /> : (isThai ? "โหลดใบขนส่งที่รับแล้วเพิ่ม" : "Load more received delivery notes")}</button>}
             </div>

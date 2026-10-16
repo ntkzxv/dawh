@@ -45,7 +45,7 @@ import {
 } from "@/lib/api/warehouse";
 import { canManageStock } from "@/lib/contracts/warehouse-policy";
 import { useAppLanguage } from "@/utils/language";
-import { Empty, Field, message, Notice, useRemote } from "./Ui";
+import { Empty, Field, message, Notice, sanitizeWholeNumberInput, useRemote } from "./Ui";
 import { ProductSearchSelect } from "./ProductSearchSelect";
 
 const pageSize = WAREHOUSE_TABLE_PAGE_SIZE;
@@ -560,7 +560,7 @@ function TransferForm({
       !reason.trim() && "reason",
       ...lines.flatMap((line) => [
         !line.productId && `line-${line.key}-product`,
-        (!/^\d{1,15}(?:\.\d{1,3})?$/.test(line.quantity) || Number(line.quantity) <= 0) && `line-${line.key}-quantity`,
+        (!/^\d{1,15}$/.test(line.quantity) || Number(line.quantity) <= 0) && `line-${line.key}-quantity`,
       ]),
       new Set(lines.map((line) => line.productId).filter(Boolean)).size !== lines.filter((line) => line.productId).length && "duplicate-product",
     ].filter((error): error is string => Boolean(error));
@@ -583,6 +583,13 @@ function TransferForm({
     <form className={`${styles.form} h-full`} onSubmit={submit} noValidate>
       <div className={`${styles.content} min-h-0 flex-1 px-1 pb-4`}>
         {failure && <SidePanelAlert>{failure}</SidePanelAlert>}
+        {errors.length > 0 && (
+          <SidePanelAlert>
+            {isThai
+              ? "กรุณาตรวจสอบช่องที่กรอกไม่ครบหรือไม่ถูกต้อง"
+              : "Complete or correct the highlighted fields before saving."}
+          </SidePanelAlert>
+        )}
         <div className="rounded-lg border border-[#FF9F1C]/30 bg-[#FF9F1C]/10 p-3 text-xs leading-5 text-[#FF9F1C]">
           {isThai
             ? "เมื่อยืนยัน ระบบจะตัดยอดจากคลังต้นทางและเพิ่มยอดในคลังปลายทางทันที รายการจะถูกบันทึกในประวัติสต๊อก และไม่ผ่านขั้นตอนอนุมัติหรือจัดส่ง"
@@ -629,7 +636,7 @@ function TransferForm({
               <div className="flex items-center justify-between gap-3">
               <span className={`text-xs font-semibold ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>{isThai ? `สินค้า ${index + 1}` : `Product ${index + 1}`}</span>
                 {lines.length > 1 && (
-                  <button type="button" aria-label={isThai ? "ลบสินค้า" : "Remove product"} onClick={() => setLines((current) => current.filter((item) => item.key !== line.key))} className={`rounded-md p-1.5 ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"} transition-colors hover:bg-[#E71D36]/10 hover:text-[#E71D36]`}>
+                    <button type="button" aria-label={isThai ? "ลบสินค้า" : "Remove product"} onClick={() => { setLines((current) => current.filter((item) => item.key !== line.key)); setErrors((current) => current.filter((error) => !error.startsWith(`line-${line.key}-`))); }} className={`rounded-md p-1.5 ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"} transition-colors hover:bg-[#E71D36]/10 hover:text-[#E71D36]`}>
                     <X size={14} aria-hidden="true" />
                   </button>
                 )}
@@ -645,8 +652,8 @@ function TransferForm({
               />
               {hasError(`line-${line.key}-product`) && <SidePanelFieldError>{isThai ? "เลือกสินค้า" : "Select a product."}</SidePanelFieldError>}
               <Field label={isThai ? "จำนวน" : "Quantity"}>
-                <input className={`${styles.input} ${hasError(`line-${line.key}-quantity`) ? sidePanelInvalidFieldClassName : ""}`} type="number" min="0.001" step="0.001" value={line.quantity} onChange={(event) => updateLine(line.key, { quantity: event.target.value })} aria-invalid={hasError(`line-${line.key}-quantity`)} />
-                {hasError(`line-${line.key}-quantity`) && <SidePanelFieldError>{isThai ? "ระบุจำนวนมากกว่าศูนย์และทศนิยมไม่เกิน 3 ตำแหน่ง" : "Enter a positive quantity with up to 3 decimal places."}</SidePanelFieldError>}
+                <input className={`${styles.input} ${hasError(`line-${line.key}-quantity`) ? sidePanelInvalidFieldClassName : ""}`} type="text" inputMode="numeric" pattern="[0-9]*" value={line.quantity} onChange={(event) => updateLine(line.key, { quantity: sanitizeWholeNumberInput(event.target.value, false, line.quantity) })} aria-invalid={hasError(`line-${line.key}-quantity`)} />
+                {hasError(`line-${line.key}-quantity`) && <SidePanelFieldError>{isThai ? "ระบุจำนวนสินค้าเป็นจำนวนเต็มมากกว่า 0" : "Enter a whole number greater than 0."}</SidePanelFieldError>}
               </Field>
               <Field label={isThai ? "หมายเลขประจำสินค้า ถ้ามี" : "Serial numbers (if applicable)"}>
                 <textarea className={`${styles.input} min-h-16 py-2.5`} value={line.serials} onChange={(event) => updateLine(line.key, { serials: event.target.value })} placeholder={isThai ? "คั่นแต่ละหมายเลขด้วยจุลภาคหรือขึ้นบรรทัดใหม่" : "Separate serials with commas or new lines"} />

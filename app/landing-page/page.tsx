@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence, useScroll, useTransform, useSpring } from "framer-motion";
 import { getDawhLogo } from "@/config/brand";
@@ -160,26 +160,95 @@ export default function DawhLandingPage() {
 
   const ctaPointerEvents = useTransform(smoothScrollY, (val) => (val >= 115 ? "none" : "auto"));
 
-  // 4. Hero Dashboard Showcase Card: Aceternity-style 3D Container Scroll (Fixed Width, No Expansion)
-  // Stage 1 (0px - 180px / 3 scrolls): Starts at 15deg tilt and un-tilts to 0deg (scale 0.96 -> 1)
-  // Stage 2 (180px - 320px): Holds completely intact at 0deg (0% cut) so users can view the full dashboard
-  // Stage 3 (320px - 560px): Slows down cut speed by more than half (spread over 240px) for a gentle, gradual wipe
-  const cardRotateX = useTransform(smoothScrollY, [0, 180, 320], [15, 0, 0]);
-  const cardScale = useTransform(smoothScrollY, [0, 180, 320, 560], [0.96, 1, 1, 0.96]);
-  const cardTranslateY = useTransform(smoothScrollY, [0, 180, 320, 560], [0, -20, -20, -50]);
+  useEffect(() => {
+    let isSnapping = false;
+    let accumulatedDelta = 0;
+    let accumulationTimer: ReturnType<typeof setTimeout> | undefined;
+    let unlockTimer: ReturnType<typeof setTimeout> | undefined;
 
-  const cardOutProgress = useTransform(smoothScrollY, [320, 560], [0, 100]);
-  const cardClip = useTransform(cardOutProgress, (val) => (val <= 0 ? "none" : `inset(0% -60px ${val}% -60px)`));
-  const cardOpacity = useTransform(smoothScrollY, [530, 560], [1, 0]);
-  const cardPointerEvents = useTransform(smoothScrollY, (val) => (val >= 560 ? "none" : "auto"));
+    const unlock = () => {
+      if (unlockTimer) clearTimeout(unlockTimer);
+      unlockTimer = setTimeout(() => {
+        isSnapping = false;
+      }, 120);
+    };
 
-  // 5. Analytics & Content Flow: Glides up with balanced spacing below the floating island
-  const analyticsY = useTransform(smoothScrollY, [0, 320, 560, 9999], [0, 0, -465, -465]);
-  const headingOpacity = useTransform(smoothScrollY, [370, 520], [0, 1]);
-  const headingY = useTransform(smoothScrollY, [370, 520], [25, 0]);
+    const handleWheel = (event: WheelEvent) => {
+      if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+      if (event.target instanceof Element && event.target.closest("input, textarea, select, [contenteditable='true']")) return;
+
+      event.preventDefault();
+      if (isSnapping) return;
+
+      accumulatedDelta += event.deltaY;
+      if (accumulationTimer) clearTimeout(accumulationTimer);
+      accumulationTimer = setTimeout(() => {
+        accumulatedDelta = 0;
+      }, 140);
+
+      if (Math.abs(accumulatedDelta) < 28) return;
+
+      const direction = Math.sign(accumulatedDelta);
+      accumulatedDelta = 0;
+      const stops = Array.from(document.querySelectorAll<HTMLElement>("[data-landing-snap-stop]"))
+        .map((element) => ({
+          element,
+          top: element.getBoundingClientRect().top + window.scrollY,
+        }))
+        .sort((a, b) => a.top - b.top);
+      const currentScrollY = window.scrollY;
+      const activeIndex = stops.reduce(
+        (index, stop, stopIndex) => stop.top <= currentScrollY + 32 ? stopIndex : index,
+        0,
+      );
+      const activeStop = stops[activeIndex];
+      const nextStop = stops[activeIndex + 1];
+      const previousStop = stops[activeIndex - 1];
+      const viewportStep = Math.max(window.innerHeight * 0.92, 480);
+      let targetTop: number | undefined;
+
+      if (direction > 0 && nextStop) {
+        const isIntroToAnalytics = activeStop?.element.dataset.landingSnapName === "intro"
+          && nextStop.element.dataset.landingSnapName === "analytics";
+        targetTop = isIntroToAnalytics || nextStop.top - currentScrollY <= viewportStep * 1.12
+          ? nextStop.top
+          : Math.min(currentScrollY + viewportStep, nextStop.top);
+      } else if (direction < 0 && activeStop) {
+        if (!previousStop && currentScrollY > activeStop.top + 8) {
+          targetTop = activeStop.top;
+        } else {
+          targetTop = currentScrollY - activeStop.top > viewportStep * 0.72
+            ? Math.max(currentScrollY - viewportStep, activeStop.top)
+            : previousStop?.top;
+        }
+      }
+
+      if (targetTop === undefined) return;
+
+      isSnapping = true;
+      window.scrollTo({
+        top: targetTop,
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      });
+      if (unlockTimer) clearTimeout(unlockTimer);
+      unlockTimer = setTimeout(() => {
+        isSnapping = false;
+      }, 1200);
+    };
+
+    window.addEventListener("wheel", handleWheel, { passive: false });
+    window.addEventListener("scrollend", unlock);
+
+    return () => {
+      window.removeEventListener("wheel", handleWheel);
+      window.removeEventListener("scrollend", unlock);
+      if (accumulationTimer) clearTimeout(accumulationTimer);
+      if (unlockTimer) clearTimeout(unlockTimer);
+    };
+  }, []);
 
   return (
-    <div className={`w-full min-h-screen transition-colors duration-300 relative overflow-x-clip font-sans ${
+    <div className={`landing-snap-root w-full min-h-screen transition-colors duration-300 relative overflow-x-clip font-sans ${
       isDark ? "bg-[#181818] text-white selection:bg-white/25 selection:text-white" : "bg-[#F8FAFC] text-slate-900 selection:bg-[#222222] selection:text-white"
     }`}>
       {/* Background Subtle Gradient Blobs (Theme-aligned with DAWH canvas) */}
@@ -320,7 +389,8 @@ export default function DawhLandingPage() {
       {/* ========================================================= */}
       {/* 2. HERO SECTION                                           */}
       {/* ========================================================= */}
-      <section className="relative pt-32 pb-10 md:pt-44 md:pb-14 overflow-visible">
+      <div className="landing-snap-panel landing-snap-panel--intro relative" data-landing-snap-stop data-landing-snap-name="intro">
+      <section className="landing-snap-panel--heading relative pt-32 pb-10 md:pt-44 md:pb-14 overflow-visible">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto flex flex-col items-center">
             {/* Main Headline (2 Separate Animated Lines with Same Color) */}
@@ -400,9 +470,13 @@ export default function DawhLandingPage() {
           </div>
         </div>
 
-        {/* Dynamic Floating Hero Dashboard Showcase (Aceternity-style 3D Container Scroll) */}
+      </section>
+
+      {/* Dashboard showcase remains between the intro and analytics snap panels. */}
+      <section className="landing-dashboard-showcase relative pt-0 pb-12 md:pb-20 overflow-visible">
+        {/* Dashboard visual between heading panels */}
         <div 
-          className="relative mt-8 sm:mt-14 w-full flex justify-center overflow-visible px-4 sm:px-6 lg:px-8"
+          className="relative w-full flex justify-center overflow-visible px-4 sm:px-6 lg:px-8"
           style={{ perspective: "1000px" }}
         >
           <motion.div
@@ -412,15 +486,13 @@ export default function DawhLandingPage() {
             className="relative flex justify-center w-full"
             style={{ transformStyle: "preserve-3d" }}
           >
-            {/* Main Dashboard Card Container: Aceternity-style 3D Container Scroll */}
+            {/* Main Dashboard Card Container */}
             <motion.div
               style={{
-                rotateX: cardRotateX,
-                scale: cardScale,
-                y: cardTranslateY,
-                clipPath: cardClip,
-                opacity: cardOpacity,
-                pointerEvents: cardPointerEvents,
+                rotateX: 15,
+                scale: 0.96,
+                y: 0,
+                opacity: 1,
                 transformOrigin: "center top",
                 transformStyle: "preserve-3d",
               }}
@@ -728,14 +800,13 @@ export default function DawhLandingPage() {
     </section>
 
       {/* ========================================================= */}
-      {/* 3. ANALYTICS & METRICS SECTION (Rises up to Enterprise Operations position) */}
+      {/* 3. ANALYTICS & METRICS (PART OF THE INTRO PANEL) */}
       {/* ========================================================= */}
-      <motion.section id="analytics" style={{ marginTop: analyticsY }} className="pt-6 md:pt-8 pb-20 relative">
+      <section id="analytics" className="landing-snap-stop landing-snap-panel--heading pt-32 md:pt-44 pb-20 relative" data-landing-snap-stop data-landing-snap-name="analytics">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Section Heading: Appears slower and later, gracefully fading in as card finishes cut */}
             <div className="text-center max-w-2xl mx-auto mb-16">
               <motion.h2 
-                style={{ opacity: headingOpacity, y: headingY }}
                 className={`text-3xl sm:text-5xl font-extrabold tracking-tight mb-3 ${
                   isDark ? "text-white" : "text-neutral-900"
                 }`}
@@ -1094,12 +1165,13 @@ export default function DawhLandingPage() {
             </div>
           </ScrollFadeCard>
         </div>
-      </motion.section>
+      </section>
+      </div>
 
       {/* ========================================================= */}
       {/* 4. FEATURES BENTO GRID                                    */}
       {/* ========================================================= */}
-      <section id="features" className="py-20 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="features" className="landing-snap-panel landing-snap-panel--heading min-h-svh pt-32 md:pt-44 pb-20 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8" data-landing-snap-stop data-landing-snap-name="features">
         <div className="text-center max-w-3xl mx-auto mb-12">
           <motion.h2 
             initial={{ opacity: 0, y: 32 }}
@@ -1346,7 +1418,7 @@ export default function DawhLandingPage() {
       {/* ========================================================= */}
       {/* 5. FAQ SECTION (Accordion)                                */}
       {/* ========================================================= */}
-      <section id="faq" className="py-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="faq" className="landing-snap-panel landing-snap-panel--heading min-h-svh pt-32 md:pt-44 pb-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8" data-landing-snap-stop data-landing-snap-name="faq">
         <div className="text-center mb-16">
           <motion.h2 
             initial={{ opacity: 0, y: 32 }}
@@ -1421,7 +1493,8 @@ export default function DawhLandingPage() {
       {/* ========================================================= */}
       {/* 6. FINAL CTA BANNER                                       */}
       {/* ========================================================= */}
-      <section className="pt-5 pb-[74px] px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+      <section className="landing-snap-panel landing-snap-panel--closing min-h-svh flex flex-col pt-[12vh] px-4 sm:px-6 lg:px-8" data-landing-snap-stop data-landing-snap-name="closing">
+        <div className="w-full max-w-6xl mx-auto">
         {/* Large Rounded CTA Banner (Reduced by 1/8, half spacing & half shadow) */}
         <motion.div 
           initial={{ opacity: 0, y: 36, scale: 0.97 }}
@@ -1465,7 +1538,7 @@ export default function DawhLandingPage() {
             </div>
           </div>
         </motion.div>
-      </section>
+        </div>
 
       {/* ========================================================= */}
       {/* 7. GLOBAL FOOTER (LOCKED AT THE VERY BOTTOM OF PAGE)      */}
@@ -1573,6 +1646,7 @@ export default function DawhLandingPage() {
           </div>
         </div>
       </footer>
+      </section>
 
       {/* Bottom-Right Floating Island: Theme & Language Buttons (Lighter Elevated Island) */}
       <div className={`fixed bottom-5 sm:bottom-6 right-5 sm:right-6 z-50 flex items-center gap-1 p-1.5 rounded-full backdrop-blur-xl border shadow-xl transition-all ${

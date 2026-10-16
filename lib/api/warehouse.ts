@@ -94,6 +94,7 @@ export type PurchaseOrderLine = {
   product_id: number;
   sku: string;
   product_name: string;
+  serial_tracked: boolean;
   quantity: string;
   unit_price: string;
   unit_code: string;

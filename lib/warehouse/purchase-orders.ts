@@ -74,7 +74,7 @@ export async function getPurchaseOrder(actor: Actor, poId: number, view: "full" 
   if (actor.role === "EMPLOYEE") {
     const [lines, carrierReceipts] = await Promise.all([
       timedPoolQuery(
-        `SELECT l.id,l.purchase_order_id,l.product_id,l.quantity,p.sku,p.name AS product_name,u.code AS unit_code
+        `SELECT l.id,l.purchase_order_id,l.product_id,l.quantity,p.sku,p.name AS product_name,p.serial_tracked,u.code AS unit_code
         FROM app.purchase_order_lines l JOIN app.products p ON p.id=l.product_id
         JOIN app.units u ON u.id=p.unit_id WHERE l.purchase_order_id=$1 ORDER BY l.id`,
         [poId],
@@ -99,7 +99,7 @@ export async function getPurchaseOrder(actor: Actor, poId: number, view: "full" 
   const [lines, supplierReceipts, carrierReceipts, goodsReceipts, revisions] =
     await Promise.all([
       timedPoolQuery(
-        `SELECT l.*,p.sku,p.name AS product_name,u.code AS unit_code,
+        `SELECT l.*,p.sku,p.name AS product_name,p.serial_tracked,u.code AS unit_code,
       COALESCE((SELECT sum(srl.quantity) FROM app.supplier_receipt_lines srl WHERE srl.purchase_order_line_id=l.id),0) AS supplier_quantity,
       (SELECT sum(crl.quantity) FROM app.carrier_receipt_lines crl JOIN app.carrier_receipts cr ON cr.id=crl.carrier_receipt_id WHERE cr.purchase_order_id=l.purchase_order_id AND crl.product_id=l.product_id) AS carrier_document_quantity,
       COALESCE((SELECT sum(gl.good_quantity) FROM app.goods_receipt_lines gl JOIN app.goods_receipts gr ON gr.id=gl.goods_receipt_id WHERE gl.purchase_order_line_id=l.id AND gr.reversed_at IS NULL),0) AS counted_good_quantity,
