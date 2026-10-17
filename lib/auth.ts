@@ -24,6 +24,9 @@ const baseURL = normalizeAuthOrigin(
 const authEmailEnabled = process.env.AUTH_EMAIL_ENABLED === "true";
 const trustedOrigins = [
   baseURL,
+  // Keep the production app origin trusted even if BETTER_AUTH_URL is missing
+  // or contains an auth route instead of the site origin.
+  "https://dawh.vercel.app",
   ...(process.env.BETTER_AUTH_TRUSTED_ORIGINS ?? "")
     .split(",")
     .map(normalizeAuthOrigin)
