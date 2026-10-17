@@ -5,13 +5,28 @@ import { sendVerificationEmail } from "@/lib/auth/email";
 import { dbPool } from "@/lib/core/db/pool";
 
 const oneDay = 60 * 60 * 24;
-const baseURL = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
+function normalizeAuthOrigin(value: string) {
+  const candidate = value.trim();
+  try {
+    const url = new URL(candidate);
+    if (url.protocol === "http:" || url.protocol === "https:") {
+      return url.origin;
+    }
+  } catch {
+    // Keep host-only and wildcard patterns supported by Better Auth.
+  }
+  return candidate.replace(/\/+$/, "");
+}
+
+const baseURL = normalizeAuthOrigin(
+  process.env.BETTER_AUTH_URL?.trim() || "http://localhost:3000",
+);
 const authEmailEnabled = process.env.AUTH_EMAIL_ENABLED === "true";
 const trustedOrigins = [
   baseURL,
   ...(process.env.BETTER_AUTH_TRUSTED_ORIGINS ?? "")
     .split(",")
-    .map((origin) => origin.trim())
+    .map(normalizeAuthOrigin)
     .filter(Boolean),
 ];
 
