@@ -1,9 +1,22 @@
 "use client";
 
 import { useState, useRef, type FormEvent } from "react";
-import { ArrowLeft, Check, ChevronDown, FileText, Loader2, Lock, User, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  FileText,
+  Loader2,
+  Lock,
+  User,
+  X,
+} from "lucide-react";
 import { useNotification } from "@/context/NotificationContext";
-import { warehouseApi, type MemberFull, type MemberProfile } from "@/lib/api/warehouse";
+import {
+  warehouseApi,
+  type MemberFull,
+  type MemberProfile,
+} from "@/lib/api/warehouse";
 import { message } from "@/components/warehouse/Ui";
 import { PRESET_RELIGIONS } from "../types";
 import { FormCustomSelect } from "../selectors/FormCustomSelect";
@@ -31,6 +44,8 @@ const toDraft = (profile: MemberProfile): ProfileDraft => ({
   nationality: profile.nationality ?? "",
   religion: profile.religion ?? "",
   department: profile.department ?? "",
+  employmentStatus: profile.employmentStatus ?? "",
+  endedOn: profile.endedOn ?? "",
   educationLevel: profile.educationLevel ?? "",
   majorSubject: profile.majorSubject ?? "",
   universityNameTh: profile.universityNameTh ?? "",
@@ -131,7 +146,9 @@ export function SecondaryRegModal({
     event.preventDefault();
     setError(null);
     if (!name.trim()) {
-      setError(isThai ? "กรุณากรอกชื่อบัญชี" : "Please enter the account name.");
+      setError(
+        isThai ? "กรุณากรอกชื่อบัญชี" : "Please enter the account name.",
+      );
       return;
     }
     setStep("review");
@@ -142,10 +159,13 @@ export function SecondaryRegModal({
     setError(null);
     try {
       const profile = Object.fromEntries(
-        Object.entries(form).map(([key, value]) => [key, value.trim() || null])
+        Object.entries(form).map(([key, value]) => [key, value.trim() || null]),
       ) as Partial<MemberProfile>;
 
-      await warehouseApi.updateMember(member.id, { name: name.trim(), profile });
+      await warehouseApi.updateMember(member.id, {
+        name: name.trim(),
+        profile,
+      });
       await onSuccess();
       notify.success(
         isThai ? "บันทึกข้อมูลโปรไฟล์เรียบร้อย" : "Profile updated",
@@ -153,7 +173,7 @@ export function SecondaryRegModal({
           message: isThai
             ? "ข้อมูลส่วนตัวของคุณได้รับการอัปเดตแล้ว"
             : "Your personal information has been updated.",
-        }
+        },
       );
       onClose();
     } catch (cause) {
@@ -170,13 +190,17 @@ export function SecondaryRegModal({
         aria-modal="true"
         aria-labelledby="secondary-profile-title"
         className={`w-full max-w-[760px] max-h-[90vh] rounded-[20px] border shadow-2xl flex flex-col overflow-hidden ${
-          isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
+          isLight
+            ? "bg-white border-[#E4E4E7]"
+            : "bg-[#383838] border-[#444444]"
         }`}
       >
         {/* Header */}
         <header
           className={`flex items-center justify-between p-5 sm:p-6 border-b shrink-0 ${
-            isLight ? "border-[#E4E4E7] bg-white" : "border-[#444444]/60 bg-[#383838]"
+            isLight
+              ? "border-[#E4E4E7] bg-white"
+              : "border-[#444444]/60 bg-[#383838]"
           }`}
         >
           <div className="flex items-center gap-3 min-w-0">
@@ -199,12 +223,12 @@ export function SecondaryRegModal({
                     ? "แก้ไขข้อมูลโปรไฟล์"
                     : "Edit Profile Information"
                   : step === "review"
-                  ? isThai
-                  ? "ตรวจสอบข้อมูลก่อนบันทึก"
-                  : "Review Profile Information"
-                  : isThai
-                  ? "ข้อกำหนดการให้บริการ"
-                  : "Terms of Service"}
+                    ? isThai
+                      ? "ตรวจสอบข้อมูลก่อนบันทึก"
+                      : "Review Profile Information"
+                    : isThai
+                      ? "ข้อกำหนดการให้บริการ"
+                      : "Terms of Service"}
               </h4>
               <p
                 className={`text-[12px] mt-0.5 ${
@@ -216,12 +240,12 @@ export function SecondaryRegModal({
                     ? "ขั้นตอนที่ 1 จาก 3 : แก้ไขข้อมูลส่วนตัว ข้อมูลการศึกษา และที่อยู่"
                     : "Step 1 of 3: Update personal, education, and address details"
                   : step === "review"
-                  ? isThai
-                    ? "ขั้นตอนที่ 2 จาก 3 : ตรวจสอบความถูกต้องของข้อมูล"
-                    : "Step 2 of 3: Verify your information"
-                  : isThai
-                  ? "ขั้นตอนที่ 3 จาก 3 : อ่านข้อกำหนดก่อนยืนยัน"
-                  : "Step 3 of 3: Read the terms before confirming"}
+                    ? isThai
+                      ? "ขั้นตอนที่ 2 จาก 3 : ตรวจสอบความถูกต้องของข้อมูล"
+                      : "Step 2 of 3: Verify your information"
+                    : isThai
+                      ? "ขั้นตอนที่ 3 จาก 3 : อ่านข้อกำหนดก่อนยืนยัน"
+                      : "Step 3 of 3: Read the terms before confirming"}
               </p>
             </div>
           </div>
@@ -242,7 +266,10 @@ export function SecondaryRegModal({
 
         {/* Body */}
         {step === "fill" ? (
-          <form onSubmit={proceed} className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
+          <form
+            onSubmit={proceed}
+            className="flex-1 flex flex-col min-h-0 overflow-hidden relative"
+          >
             {/* Scroll-to-bottom Down Arrow Button */}
             {!isFormAtBottom && (
               <button
@@ -277,11 +304,16 @@ export function SecondaryRegModal({
 
               {/* 1. Account & Name */}
               <Section
-                title={isThai ? "ข้อมูลชื่อและบัญชีผู้ใช้" : "Name & Account Details"}
+                title={
+                  isThai ? "ข้อมูลชื่อและบัญชีผู้ใช้" : "Name & Account Details"
+                }
                 isLight={isLight}
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Field label={isThai ? "ชื่อบัญชี" : "Account Name"} labelClass={label}>
+                  <Field
+                    label={isThai ? "ชื่อบัญชี" : "Account Name"}
+                    labelClass={label}
+                  >
                     <div className="relative flex items-center">
                       <input
                         type="text"
@@ -290,25 +322,35 @@ export function SecondaryRegModal({
                         value={name}
                         className={`${readOnlyInput} pr-9`}
                       />
-                      <div className={`absolute right-3 pointer-events-none ${isLight ? "text-slate-400" : "text-slate-500"}`}>
+                      <div
+                        className={`absolute right-3 pointer-events-none ${isLight ? "text-slate-400" : "text-slate-500"}`}
+                      >
                         <Lock size={13} />
                       </div>
                     </div>
                   </Field>
-                  <Field label={isThai ? "คำนำหน้าชื่อ" : "Prefix"} labelClass={label}>
+                  <Field
+                    label={isThai ? "คำนำหน้าชื่อ" : "Prefix"}
+                    labelClass={label}
+                  >
                     <FormCustomSelect
                       id="prefix"
                       value={form.prefix}
                       placeholder={isThai ? "คำนำหน้าชื่อ" : "Select Prefix"}
                       options={[
-                        { value: "", label: isThai ? "- ไม่ระบุ -" : "- None -" },
+                        {
+                          value: "",
+                          label: isThai ? "- ไม่ระบุ -" : "- None -",
+                        },
                         { value: "mr", label: isThai ? "นาย" : "Mr." },
                         { value: "mrs", label: isThai ? "นาง" : "Mrs." },
                         { value: "miss", label: isThai ? "นางสาว" : "Miss" },
                       ]}
                       isOpen={activeDropdownId === "prefix"}
                       onToggle={() =>
-                        setActiveDropdownId((prev) => (prev === "prefix" ? null : "prefix"))
+                        setActiveDropdownId((prev) =>
+                          prev === "prefix" ? null : "prefix",
+                        )
                       }
                       onSelect={(val) => {
                         update("prefix", val);
@@ -321,21 +363,30 @@ export function SecondaryRegModal({
 
                 {/* Thai Name */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <Field label={isThai ? "ชื่อจริง (ภาษาไทย)" : "First Name (Thai)"} labelClass={label}>
+                  <Field
+                    label={isThai ? "ชื่อจริง (ภาษาไทย)" : "First Name (Thai)"}
+                    labelClass={label}
+                  >
                     <input
                       className={input}
                       value={form.firstNameTh}
                       onChange={(e) => update("firstNameTh", e.target.value)}
                     />
                   </Field>
-                  <Field label={isThai ? "นามสกุล (ภาษาไทย)" : "Last Name (Thai)"} labelClass={label}>
+                  <Field
+                    label={isThai ? "นามสกุล (ภาษาไทย)" : "Last Name (Thai)"}
+                    labelClass={label}
+                  >
                     <input
                       className={input}
                       value={form.lastNameTh}
                       onChange={(e) => update("lastNameTh", e.target.value)}
                     />
                   </Field>
-                  <Field label={isThai ? "ชื่อเล่น (ภาษาไทย)" : "Nickname (Thai)"} labelClass={label}>
+                  <Field
+                    label={isThai ? "ชื่อเล่น (ภาษาไทย)" : "Nickname (Thai)"}
+                    labelClass={label}
+                  >
                     <input
                       className={input}
                       value={form.nicknameTh}
@@ -346,21 +397,36 @@ export function SecondaryRegModal({
 
                 {/* English Name */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <Field label={isThai ? "ชื่อจริง (ภาษาอังกฤษ)" : "First Name (English)"} labelClass={label}>
+                  <Field
+                    label={
+                      isThai ? "ชื่อจริง (ภาษาอังกฤษ)" : "First Name (English)"
+                    }
+                    labelClass={label}
+                  >
                     <input
                       className={input}
                       value={form.firstNameEn}
                       onChange={(e) => update("firstNameEn", e.target.value)}
                     />
                   </Field>
-                  <Field label={isThai ? "นามสกุล (ภาษาอังกฤษ)" : "Last Name (English)"} labelClass={label}>
+                  <Field
+                    label={
+                      isThai ? "นามสกุล (ภาษาอังกฤษ)" : "Last Name (English)"
+                    }
+                    labelClass={label}
+                  >
                     <input
                       className={input}
                       value={form.lastNameEn}
                       onChange={(e) => update("lastNameEn", e.target.value)}
                     />
                   </Field>
-                  <Field label={isThai ? "ชื่อเล่น (ภาษาอังกฤษ)" : "Nickname (English)"} labelClass={label}>
+                  <Field
+                    label={
+                      isThai ? "ชื่อเล่น (ภาษาอังกฤษ)" : "Nickname (English)"
+                    }
+                    labelClass={label}
+                  >
                     <input
                       className={input}
                       value={form.nicknameEn}
@@ -372,7 +438,11 @@ export function SecondaryRegModal({
 
               {/* 2. Personal Identity */}
               <Section
-                title={isThai ? "ข้อมูลส่วนบุคคลและเอกสารประจำตัว" : "Personal Identity & Details"}
+                title={
+                  isThai
+                    ? "ข้อมูลส่วนบุคคลและเอกสารประจำตัว"
+                    : "Personal Identity & Details"
+                }
                 isLight={isLight}
               >
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
@@ -386,20 +456,31 @@ export function SecondaryRegModal({
                       inputMode="numeric"
                       pattern="[0-9]*"
                       maxLength={13}
-                      placeholder={isThai ? "เลขบัตรประชาชน 13 หลัก" : "13-digit citizen ID"}
+                      placeholder={
+                        isThai
+                          ? "เลขบัตรประชาชน 13 หลัก"
+                          : "13-digit citizen ID"
+                      }
                       className={`${input} font-mono tracking-wider`}
                       value={form.citizenId}
                       onChange={(e) => {
-                        const digitsOnly = e.target.value.replace(/\D/g, "").slice(0, 13);
+                        const digitsOnly = e.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 13);
                         update("citizenId", digitsOnly);
                       }}
                     />
                   </Field>
-                  <Field label={isThai ? "วันเกิด" : "Birth Date"} labelClass={label}>
+                  <Field
+                    label={isThai ? "วันเกิด" : "Birth Date"}
+                    labelClass={label}
+                  >
                     <DatePicker
                       value={form.birthDate}
                       onChange={(date) => update("birthDate", date)}
-                      placeholder={isThai ? "เลือกวันเกิด" : "Select birth date"}
+                      placeholder={
+                        isThai ? "เลือกวันเกิด" : "Select birth date"
+                      }
                       isThai={isThai}
                       triggerClassName="h-[38px]"
                     />
@@ -410,14 +491,19 @@ export function SecondaryRegModal({
                       value={form.gender || "ชาย"}
                       placeholder={isThai ? "เพศ" : "Gender"}
                       options={[
-                        { value: "", label: isThai ? "- ไม่ระบุ -" : "- None -" },
+                        {
+                          value: "",
+                          label: isThai ? "- ไม่ระบุ -" : "- None -",
+                        },
                         { value: "ชาย", label: isThai ? "ชาย" : "Male" },
                         { value: "หญิง", label: isThai ? "หญิง" : "Female" },
                         { value: "อื่นๆ", label: isThai ? "อื่นๆ" : "Other" },
                       ]}
                       isOpen={activeDropdownId === "gender"}
                       onToggle={() =>
-                        setActiveDropdownId((prev) => (prev === "gender" ? null : "gender"))
+                        setActiveDropdownId((prev) =>
+                          prev === "gender" ? null : "gender",
+                        )
                       }
                       onSelect={(val) => {
                         update("gender", val);
@@ -429,13 +515,21 @@ export function SecondaryRegModal({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                  <Field label={isThai ? "กรุ๊ปเลือด" : "Blood Type"} labelClass={label}>
+                  <Field
+                    label={isThai ? "กรุ๊ปเลือด" : "Blood Type"}
+                    labelClass={label}
+                  >
                     <FormCustomSelect
                       id="bloodType"
                       value={form.bloodType}
-                      placeholder={isThai ? "เลือกกรุ๊ปเลือด" : "Select Blood Type"}
+                      placeholder={
+                        isThai ? "เลือกกรุ๊ปเลือด" : "Select Blood Type"
+                      }
                       options={[
-                        { value: "", label: isThai ? "- ไม่ระบุ -" : "- None -" },
+                        {
+                          value: "",
+                          label: isThai ? "- ไม่ระบุ -" : "- None -",
+                        },
                         { value: "A", label: "A" },
                         { value: "B", label: "B" },
                         { value: "AB", label: "AB" },
@@ -443,7 +537,9 @@ export function SecondaryRegModal({
                       ]}
                       isOpen={activeDropdownId === "bloodType"}
                       onToggle={() =>
-                        setActiveDropdownId((prev) => (prev === "bloodType" ? null : "bloodType"))
+                        setActiveDropdownId((prev) =>
+                          prev === "bloodType" ? null : "bloodType",
+                        )
                       }
                       onSelect={(val) => {
                         update("bloodType", val);
@@ -453,22 +549,31 @@ export function SecondaryRegModal({
                     />
                   </Field>
 
-                  <Field label={isThai ? "สถานภาพสมรส" : "Marital Status"} labelClass={label}>
+                  <Field
+                    label={isThai ? "สถานภาพสมรส" : "Marital Status"}
+                    labelClass={label}
+                  >
                     <FormCustomSelect
                       id="maritalStatus"
                       value={form.maritalStatus}
                       placeholder={isThai ? "เลือกสถานภาพ" : "Select Status"}
                       options={[
-                        { value: "", label: isThai ? "- ไม่ระบุ -" : "- None -" },
+                        {
+                          value: "",
+                          label: isThai ? "- ไม่ระบุ -" : "- None -",
+                        },
                         { value: "โสด", label: isThai ? "โสด" : "Single" },
                         { value: "สมรส", label: isThai ? "สมรส" : "Married" },
-                        { value: "หย่าร้าง", label: isThai ? "หย่าร้าง" : "Divorced" },
+                        {
+                          value: "หย่าร้าง",
+                          label: isThai ? "หย่าร้าง" : "Divorced",
+                        },
                         { value: "หม้าย", label: isThai ? "หม้าย" : "Widowed" },
                       ]}
                       isOpen={activeDropdownId === "maritalStatus"}
                       onToggle={() =>
                         setActiveDropdownId((prev) =>
-                          prev === "maritalStatus" ? null : "maritalStatus"
+                          prev === "maritalStatus" ? null : "maritalStatus",
                         )
                       }
                       onSelect={(val) => {
@@ -479,33 +584,60 @@ export function SecondaryRegModal({
                     />
                   </Field>
 
-                  <Field label={isThai ? "สัญชาติ" : "Nationality"} labelClass={label}>
+                  <Field
+                    label={isThai ? "สัญชาติ" : "Nationality"}
+                    labelClass={label}
+                  >
                     <input
                       className={input}
                       value={form.nationality}
                       onChange={(e) => update("nationality", e.target.value)}
-                      placeholder={isThai ? "ระบุสัญชาติ (เช่น ไทย)" : "e.g. Thai"}
+                      placeholder={
+                        isThai ? "ระบุสัญชาติ (เช่น ไทย)" : "e.g. Thai"
+                      }
                     />
                   </Field>
 
-                  <Field label={isThai ? "ศาสนา" : "Religion"} labelClass={label}>
+                  <Field
+                    label={isThai ? "ศาสนา" : "Religion"}
+                    labelClass={label}
+                  >
                     <FormCustomSelect
                       id="religion"
                       value={religionChoice}
                       placeholder={isThai ? "เลือกศาสนา" : "Select Religion"}
                       options={[
-                        { value: "", label: isThai ? "- ไม่ระบุ -" : "- None -" },
+                        {
+                          value: "",
+                          label: isThai ? "- ไม่ระบุ -" : "- None -",
+                        },
                         { value: "พุทธ", label: isThai ? "พุทธ" : "Buddhism" },
                         { value: "อิสลาม", label: isThai ? "อิสลาม" : "Islam" },
-                        { value: "คริสต์", label: isThai ? "คริสต์" : "Christianity" },
-                        { value: "ฮินดู", label: isThai ? "ฮินดู" : "Hinduism" },
+                        {
+                          value: "คริสต์",
+                          label: isThai ? "คริสต์" : "Christianity",
+                        },
+                        {
+                          value: "ฮินดู",
+                          label: isThai ? "ฮินดู" : "Hinduism",
+                        },
                         { value: "ซิกข์", label: isThai ? "ซิกข์" : "Sikhism" },
-                        { value: "ไม่นับถือศาสนา", label: isThai ? "ไม่นับถือศาสนา" : "Non-religious / None" },
-                        { value: "อื่นๆ", label: isThai ? "อื่นๆ (ระบุเอง)" : "Other (Specify)" },
+                        {
+                          value: "ไม่นับถือศาสนา",
+                          label: isThai
+                            ? "ไม่นับถือศาสนา"
+                            : "Non-religious / None",
+                        },
+                        {
+                          value: "อื่นๆ",
+                          label: isThai ? "อื่นๆ (ระบุเอง)" : "Other (Specify)",
+                        },
                       ]}
                       isOpen={activeDropdownId === "religion"}
                       onToggle={() =>
-                        setActiveDropdownId((prev) => (prev === "religion" ? null : "religion"))
+                        setActiveDropdownId((prev) =>
+                          prev === "religion" ? null : "religion",
+                        )
                       }
                       onSelect={(val) => {
                         setReligionChoice(val);
@@ -529,7 +661,11 @@ export function SecondaryRegModal({
                           setCustomReligion(val);
                           update("religion", val);
                         }}
-                        placeholder={isThai ? "กรุณาระบุศาสนาของคุณ" : "Please specify religion"}
+                        placeholder={
+                          isThai
+                            ? "กรุณาระบุศาสนาของคุณ"
+                            : "Please specify religion"
+                        }
                         className={`${input} mt-1.5`}
                         autoFocus
                       />
@@ -544,7 +680,10 @@ export function SecondaryRegModal({
                 isLight={isLight}
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Field label={isThai ? "วุฒิการศึกษา" : "Education Level"} labelClass={label}>
+                  <Field
+                    label={isThai ? "วุฒิการศึกษา" : "Education Level"}
+                    labelClass={label}
+                  >
                     <FormCustomSelect
                       id="educationLevel"
                       value={form.educationLevel || "ปริญญาตรี"}
@@ -552,11 +691,15 @@ export function SecondaryRegModal({
                       options={[
                         {
                           value: "มัธยมศึกษาตอนปลาย / ปวช.",
-                          label: isThai ? "มัธยมศึกษาตอนปลาย / ปวช." : "High School / Vocational",
+                          label: isThai
+                            ? "มัธยมศึกษาตอนปลาย / ปวช."
+                            : "High School / Vocational",
                         },
                         {
                           value: "ปวส. / อนุปริญญา",
-                          label: isThai ? "ปวส. / อนุปริญญา" : "Diploma / Associate",
+                          label: isThai
+                            ? "ปวส. / อนุปริญญา"
+                            : "Diploma / Associate",
                         },
                         {
                           value: "ปริญญาตรี",
@@ -578,7 +721,7 @@ export function SecondaryRegModal({
                       isOpen={activeDropdownId === "educationLevel"}
                       onToggle={() =>
                         setActiveDropdownId((prev) =>
-                          prev === "educationLevel" ? null : "educationLevel"
+                          prev === "educationLevel" ? null : "educationLevel",
                         )
                       }
                       onSelect={(val) => {
@@ -618,11 +761,18 @@ export function SecondaryRegModal({
 
               {/* 4. Contact & Addresses (ข้อมูลการติดต่อและที่อยู่อาศัย) */}
               <Section
-                title={isThai ? "ข้อมูลการติดต่อและที่อยู่อาศัย" : "Contact & Addresses"}
+                title={
+                  isThai
+                    ? "ข้อมูลการติดต่อและที่อยู่อาศัย"
+                    : "Contact & Addresses"
+                }
                 isLight={isLight}
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Field label={isThai ? "อีเมลติดต่อ" : "Contact Email"} labelClass={label}>
+                  <Field
+                    label={isThai ? "อีเมลติดต่อ" : "Contact Email"}
+                    labelClass={label}
+                  >
                     <div className="relative flex items-center">
                       <input
                         type="email"
@@ -631,19 +781,26 @@ export function SecondaryRegModal({
                         value={form.contactEmail || member.email || ""}
                         className={`${readOnlyInput} pr-9 font-mono`}
                       />
-                      <div className={`absolute right-3 pointer-events-none ${isLight ? "text-slate-400" : "text-slate-500"}`}>
+                      <div
+                        className={`absolute right-3 pointer-events-none ${isLight ? "text-slate-400" : "text-slate-500"}`}
+                      >
                         <Lock size={13} />
                       </div>
                     </div>
                   </Field>
-                  <Field label={isThai ? "เบอร์โทรศัพท์" : "Phone Number"} labelClass={label}>
+                  <Field
+                    label={isThai ? "เบอร์โทรศัพท์" : "Phone Number"}
+                    labelClass={label}
+                  >
                     <input
                       type="tel"
                       className={input}
                       maxLength={15}
                       value={form.phone}
                       onChange={(e) => {
-                        const digits = e.target.value.replace(/\D/g, "").slice(0, 15);
+                        const digits = e.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 15);
                         update("phone", digits);
                       }}
                     />
@@ -653,7 +810,11 @@ export function SecondaryRegModal({
                 {/* Emergency Contact */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Field
-                    label={isThai ? "ความสัมพันธ์ผู้ติดต่อฉุกเฉิน" : "Emergency Relationship"}
+                    label={
+                      isThai
+                        ? "ความสัมพันธ์ผู้ติดต่อฉุกเฉิน"
+                        : "Emergency Relationship"
+                    }
                     labelClass={label}
                   >
                     <FormCustomSelect
@@ -661,20 +822,34 @@ export function SecondaryRegModal({
                       value={form.emergencyContactRelationship || "บิดา/มารดา"}
                       placeholder={isThai ? "ความสัมพันธ์" : "Relationship"}
                       options={[
-                        { value: "บิดา/มารดา", label: isThai ? "บิดา / มารดา" : "Parents" },
-                        { value: "คู่สมรส", label: isThai ? "คู่สมรส" : "Spouse" },
-                        { value: "พี่/น้อง", label: isThai ? "พี่ / น้อง" : "Sibling" },
+                        {
+                          value: "บิดา/มารดา",
+                          label: isThai ? "บิดา / มารดา" : "Parents",
+                        },
+                        {
+                          value: "คู่สมรส",
+                          label: isThai ? "คู่สมรส" : "Spouse",
+                        },
+                        {
+                          value: "พี่/น้อง",
+                          label: isThai ? "พี่ / น้อง" : "Sibling",
+                        },
                         { value: "บุตร", label: isThai ? "บุตร" : "Child" },
                         { value: "ญาติ", label: isThai ? "ญาติ" : "Relative" },
-                        { value: "เพื่อน", label: isThai ? "เพื่อนสนิท" : "Friend" },
+                        {
+                          value: "เพื่อน",
+                          label: isThai ? "เพื่อนสนิท" : "Friend",
+                        },
                         { value: "อื่นๆ", label: isThai ? "อื่นๆ" : "Other" },
                       ]}
-                      isOpen={activeDropdownId === "emergencyContactRelationship"}
+                      isOpen={
+                        activeDropdownId === "emergencyContactRelationship"
+                      }
                       onToggle={() =>
                         setActiveDropdownId((prev) =>
                           prev === "emergencyContactRelationship"
                             ? null
-                            : "emergencyContactRelationship"
+                            : "emergencyContactRelationship",
                         )
                       }
                       onSelect={(val) => {
@@ -694,7 +869,9 @@ export function SecondaryRegModal({
                       maxLength={15}
                       value={form.emergencyContactPhone}
                       onChange={(e) => {
-                        const digits = e.target.value.replace(/\D/g, "").slice(0, 15);
+                        const digits = e.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 15);
                         update("emergencyContactPhone", digits);
                       }}
                     />
@@ -703,23 +880,35 @@ export function SecondaryRegModal({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Field
-                    label={isThai ? "ผู้ติดต่อฉุกเฉิน ภาษาไทย" : "Emergency Contact (Thai)"}
+                    label={
+                      isThai
+                        ? "ผู้ติดต่อฉุกเฉิน ภาษาไทย"
+                        : "Emergency Contact (Thai)"
+                    }
                     labelClass={label}
                   >
                     <input
                       className={input}
                       value={form.emergencyContactName}
-                      onChange={(e) => update("emergencyContactName", e.target.value)}
+                      onChange={(e) =>
+                        update("emergencyContactName", e.target.value)
+                      }
                     />
                   </Field>
                   <Field
-                    label={isThai ? "ผู้ติดต่อฉุกเฉิน ภาษาอังกฤษ" : "Emergency Contact (English)"}
+                    label={
+                      isThai
+                        ? "ผู้ติดต่อฉุกเฉิน ภาษาอังกฤษ"
+                        : "Emergency Contact (English)"
+                    }
                     labelClass={label}
                   >
                     <input
                       className={input}
                       value={form.emergencyContactNameEn}
-                      onChange={(e) => update("emergencyContactNameEn", e.target.value)}
+                      onChange={(e) =>
+                        update("emergencyContactNameEn", e.target.value)
+                      }
                     />
                   </Field>
                 </div>
@@ -735,7 +924,9 @@ export function SecondaryRegModal({
                   />
 
                   <ThaiAddressSelector
-                    label={isThai ? "ที่อยู่ตามทะเบียนบ้าน" : "Registered Address"}
+                    label={
+                      isThai ? "ที่อยู่ตามทะเบียนบ้าน" : "Registered Address"
+                    }
                     value={form.registeredAddress}
                     onChange={(val) => update("registeredAddress", val)}
                     isLight={isLight}
@@ -754,7 +945,9 @@ export function SecondaryRegModal({
             {/* Footer */}
             <footer
               className={`p-4 sm:px-6 border-t flex justify-end gap-2.5 shrink-0 ${
-                isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
+                isLight
+                  ? "bg-white border-[#E4E4E7]"
+                  : "bg-[#383838] border-[#444444]"
               }`}
             >
               <button
@@ -816,11 +1009,16 @@ export function SecondaryRegModal({
 
               {/* 1. Account & Name */}
               <Section
-                title={isThai ? "ข้อมูลชื่อและบัญชีผู้ใช้" : "Name & Account Details"}
+                title={
+                  isThai ? "ข้อมูลชื่อและบัญชีผู้ใช้" : "Name & Account Details"
+                }
                 isLight={isLight}
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Field label={isThai ? "ชื่อบัญชี" : "Account Name"} labelClass={label}>
+                  <Field
+                    label={isThai ? "ชื่อบัญชี" : "Account Name"}
+                    labelClass={label}
+                  >
                     <input
                       type="text"
                       readOnly
@@ -829,19 +1027,28 @@ export function SecondaryRegModal({
                       className={readOnlyInput}
                     />
                   </Field>
-                  <Field label={isThai ? "คำนำหน้าชื่อ" : "Prefix"} labelClass={label}>
+                  <Field
+                    label={isThai ? "คำนำหน้าชื่อ" : "Prefix"}
+                    labelClass={label}
+                  >
                     <input
                       type="text"
                       readOnly
                       disabled
                       value={
                         form.prefix === "mr"
-                          ? isThai ? "นาย" : "Mr."
+                          ? isThai
+                            ? "นาย"
+                            : "Mr."
                           : form.prefix === "mrs"
-                          ? isThai ? "นาง" : "Mrs."
-                          : form.prefix === "miss"
-                          ? isThai ? "นางสาว" : "Miss"
-                          : form.prefix || "—"
+                            ? isThai
+                              ? "นาง"
+                              : "Mrs."
+                            : form.prefix === "miss"
+                              ? isThai
+                                ? "นางสาว"
+                                : "Miss"
+                              : form.prefix || "—"
                       }
                       className={readOnlyInput}
                     />
@@ -850,7 +1057,10 @@ export function SecondaryRegModal({
 
                 {/* Thai Name */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <Field label={isThai ? "ชื่อจริง (ภาษาไทย)" : "First Name (Thai)"} labelClass={label}>
+                  <Field
+                    label={isThai ? "ชื่อจริง (ภาษาไทย)" : "First Name (Thai)"}
+                    labelClass={label}
+                  >
                     <input
                       type="text"
                       readOnly
@@ -859,7 +1069,10 @@ export function SecondaryRegModal({
                       className={readOnlyInput}
                     />
                   </Field>
-                  <Field label={isThai ? "นามสกุล (ภาษาไทย)" : "Last Name (Thai)"} labelClass={label}>
+                  <Field
+                    label={isThai ? "นามสกุล (ภาษาไทย)" : "Last Name (Thai)"}
+                    labelClass={label}
+                  >
                     <input
                       type="text"
                       readOnly
@@ -868,7 +1081,10 @@ export function SecondaryRegModal({
                       className={readOnlyInput}
                     />
                   </Field>
-                  <Field label={isThai ? "ชื่อเล่น (ภาษาไทย)" : "Nickname (Thai)"} labelClass={label}>
+                  <Field
+                    label={isThai ? "ชื่อเล่น (ภาษาไทย)" : "Nickname (Thai)"}
+                    labelClass={label}
+                  >
                     <input
                       type="text"
                       readOnly
@@ -881,7 +1097,12 @@ export function SecondaryRegModal({
 
                 {/* English Name */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <Field label={isThai ? "ชื่อจริง (ภาษาอังกฤษ)" : "First Name (English)"} labelClass={label}>
+                  <Field
+                    label={
+                      isThai ? "ชื่อจริง (ภาษาอังกฤษ)" : "First Name (English)"
+                    }
+                    labelClass={label}
+                  >
                     <input
                       type="text"
                       readOnly
@@ -890,7 +1111,12 @@ export function SecondaryRegModal({
                       className={readOnlyInput}
                     />
                   </Field>
-                  <Field label={isThai ? "นามสกุล (ภาษาอังกฤษ)" : "Last Name (English)"} labelClass={label}>
+                  <Field
+                    label={
+                      isThai ? "นามสกุล (ภาษาอังกฤษ)" : "Last Name (English)"
+                    }
+                    labelClass={label}
+                  >
                     <input
                       type="text"
                       readOnly
@@ -899,7 +1125,12 @@ export function SecondaryRegModal({
                       className={readOnlyInput}
                     />
                   </Field>
-                  <Field label={isThai ? "ชื่อเล่น (ภาษาอังกฤษ)" : "Nickname (English)"} labelClass={label}>
+                  <Field
+                    label={
+                      isThai ? "ชื่อเล่น (ภาษาอังกฤษ)" : "Nickname (English)"
+                    }
+                    labelClass={label}
+                  >
                     <input
                       type="text"
                       readOnly
@@ -913,7 +1144,11 @@ export function SecondaryRegModal({
 
               {/* 2. Personal Identity */}
               <Section
-                title={isThai ? "ข้อมูลส่วนบุคคลและเอกสารประจำตัว" : "Personal Identity & Details"}
+                title={
+                  isThai
+                    ? "ข้อมูลส่วนบุคคลและเอกสารประจำตัว"
+                    : "Personal Identity & Details"
+                }
                 isLight={isLight}
               >
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
@@ -930,7 +1165,10 @@ export function SecondaryRegModal({
                       className={`${readOnlyInput} font-mono`}
                     />
                   </Field>
-                  <Field label={isThai ? "วันเกิด" : "Birth Date"} labelClass={label}>
+                  <Field
+                    label={isThai ? "วันเกิด" : "Birth Date"}
+                    labelClass={label}
+                  >
                     <input
                       type="text"
                       readOnly
@@ -951,7 +1189,10 @@ export function SecondaryRegModal({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                  <Field label={isThai ? "กรุ๊ปเลือด" : "Blood Type"} labelClass={label}>
+                  <Field
+                    label={isThai ? "กรุ๊ปเลือด" : "Blood Type"}
+                    labelClass={label}
+                  >
                     <input
                       type="text"
                       readOnly
@@ -960,7 +1201,10 @@ export function SecondaryRegModal({
                       className={readOnlyInput}
                     />
                   </Field>
-                  <Field label={isThai ? "สถานภาพสมรส" : "Marital Status"} labelClass={label}>
+                  <Field
+                    label={isThai ? "สถานภาพสมรส" : "Marital Status"}
+                    labelClass={label}
+                  >
                     <input
                       type="text"
                       readOnly
@@ -969,7 +1213,10 @@ export function SecondaryRegModal({
                       className={readOnlyInput}
                     />
                   </Field>
-                  <Field label={isThai ? "สัญชาติ" : "Nationality"} labelClass={label}>
+                  <Field
+                    label={isThai ? "สัญชาติ" : "Nationality"}
+                    labelClass={label}
+                  >
                     <input
                       type="text"
                       readOnly
@@ -978,7 +1225,10 @@ export function SecondaryRegModal({
                       className={readOnlyInput}
                     />
                   </Field>
-                  <Field label={isThai ? "ศาสนา" : "Religion"} labelClass={label}>
+                  <Field
+                    label={isThai ? "ศาสนา" : "Religion"}
+                    labelClass={label}
+                  >
                     <input
                       type="text"
                       readOnly
@@ -996,7 +1246,10 @@ export function SecondaryRegModal({
                 isLight={isLight}
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Field label={isThai ? "วุฒิการศึกษา" : "Education Level"} labelClass={label}>
+                  <Field
+                    label={isThai ? "วุฒิการศึกษา" : "Education Level"}
+                    labelClass={label}
+                  >
                     <input
                       type="text"
                       readOnly
@@ -1005,7 +1258,10 @@ export function SecondaryRegModal({
                       className={readOnlyInput}
                     />
                   </Field>
-                  <Field label={isThai ? "สาขาวิชา" : "Major Subject"} labelClass={label}>
+                  <Field
+                    label={isThai ? "สาขาวิชา" : "Major Subject"}
+                    labelClass={label}
+                  >
                     <input
                       type="text"
                       readOnly
@@ -1018,7 +1274,9 @@ export function SecondaryRegModal({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Field
-                    label={isThai ? "สถาบันการศึกษา (ภาษาไทย)" : "Institution (Thai)"}
+                    label={
+                      isThai ? "สถาบันการศึกษา (ภาษาไทย)" : "Institution (Thai)"
+                    }
                     labelClass={label}
                   >
                     <input
@@ -1030,7 +1288,11 @@ export function SecondaryRegModal({
                     />
                   </Field>
                   <Field
-                    label={isThai ? "สถาบันการศึกษา (English)" : "Institution (English)"}
+                    label={
+                      isThai
+                        ? "สถาบันการศึกษา (English)"
+                        : "Institution (English)"
+                    }
                     labelClass={label}
                   >
                     <input
@@ -1046,11 +1308,18 @@ export function SecondaryRegModal({
 
               {/* 4. Contact & Addresses */}
               <Section
-                title={isThai ? "ข้อมูลการติดต่อและที่อยู่อาศัย" : "Contact & Addresses"}
+                title={
+                  isThai
+                    ? "ข้อมูลการติดต่อและที่อยู่อาศัย"
+                    : "Contact & Addresses"
+                }
                 isLight={isLight}
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Field label={isThai ? "อีเมลติดต่อ" : "Contact Email"} labelClass={label}>
+                  <Field
+                    label={isThai ? "อีเมลติดต่อ" : "Contact Email"}
+                    labelClass={label}
+                  >
                     <input
                       type="email"
                       readOnly
@@ -1059,7 +1328,10 @@ export function SecondaryRegModal({
                       className={`${readOnlyInput} font-mono`}
                     />
                   </Field>
-                  <Field label={isThai ? "เบอร์โทรศัพท์" : "Phone Number"} labelClass={label}>
+                  <Field
+                    label={isThai ? "เบอร์โทรศัพท์" : "Phone Number"}
+                    labelClass={label}
+                  >
                     <input
                       type="tel"
                       readOnly
@@ -1072,7 +1344,11 @@ export function SecondaryRegModal({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Field
-                    label={isThai ? "ความสัมพันธ์ผู้ติดต่อฉุกเฉิน" : "Emergency Relationship"}
+                    label={
+                      isThai
+                        ? "ความสัมพันธ์ผู้ติดต่อฉุกเฉิน"
+                        : "Emergency Relationship"
+                    }
                     labelClass={label}
                   >
                     <input
@@ -1099,7 +1375,11 @@ export function SecondaryRegModal({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Field
-                    label={isThai ? "ผู้ติดต่อฉุกเฉิน ภาษาไทย" : "Emergency Contact (Thai)"}
+                    label={
+                      isThai
+                        ? "ผู้ติดต่อฉุกเฉิน ภาษาไทย"
+                        : "Emergency Contact (Thai)"
+                    }
                     labelClass={label}
                   >
                     <input
@@ -1111,7 +1391,11 @@ export function SecondaryRegModal({
                     />
                   </Field>
                   <Field
-                    label={isThai ? "ผู้ติดต่อฉุกเฉิน ภาษาอังกฤษ" : "Emergency Contact (English)"}
+                    label={
+                      isThai
+                        ? "ผู้ติดต่อฉุกเฉิน ภาษาอังกฤษ"
+                        : "Emergency Contact (English)"
+                    }
                     labelClass={label}
                   >
                     <input
@@ -1125,7 +1409,10 @@ export function SecondaryRegModal({
                 </div>
 
                 <div className="flex flex-col gap-4 pt-2">
-                  <Field label={isThai ? "ที่อยู่ปัจจุบัน" : "Current Address"} labelClass={label}>
+                  <Field
+                    label={isThai ? "ที่อยู่ปัจจุบัน" : "Current Address"}
+                    labelClass={label}
+                  >
                     <textarea
                       readOnly
                       disabled
@@ -1135,7 +1422,12 @@ export function SecondaryRegModal({
                     />
                   </Field>
 
-                  <Field label={isThai ? "ที่อยู่ตามทะเบียนบ้าน" : "Registered Address"} labelClass={label}>
+                  <Field
+                    label={
+                      isThai ? "ที่อยู่ตามทะเบียนบ้าน" : "Registered Address"
+                    }
+                    labelClass={label}
+                  >
                     <textarea
                       readOnly
                       disabled
@@ -1151,7 +1443,9 @@ export function SecondaryRegModal({
             {/* Footer */}
             <footer
               className={`p-4 sm:px-6 border-t flex justify-between gap-2.5 shrink-0 ${
-                isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
+                isLight
+                  ? "bg-white border-[#E4E4E7]"
+                  : "bg-[#383838] border-[#444444]"
               }`}
             >
               <button
@@ -1159,7 +1453,9 @@ export function SecondaryRegModal({
                 disabled={busy}
                 onClick={() => setStep("fill")}
                 className={`h-[38px] px-4 rounded-[8px] inline-flex items-center gap-2 text-xs font-semibold ${
-                  isLight ? "text-[#222222] hover:bg-[#F5F5F5]" : "text-white hover:bg-white/10"
+                  isLight
+                    ? "text-[#222222] hover:bg-[#F5F5F5]"
+                    : "text-white hover:bg-white/10"
                 }`}
               >
                 <ArrowLeft size={14} />
@@ -1188,8 +1484,12 @@ export function SecondaryRegModal({
               }`}
             >
               <div>
-                <h5 className={`mb-1 font-bold ${isLight ? "text-[#222222]" : "text-white"}`}>
-                  {isThai ? "การใช้งานระบบองค์กร" : "Use of the enterprise system"}
+                <h5
+                  className={`mb-1 font-bold ${isLight ? "text-[#222222]" : "text-white"}`}
+                >
+                  {isThai
+                    ? "การใช้งานระบบองค์กร"
+                    : "Use of the enterprise system"}
                 </h5>
                 <p>
                   {isThai
@@ -1198,8 +1498,12 @@ export function SecondaryRegModal({
                 </p>
               </div>
               <div>
-                <h5 className={`mb-1 font-bold ${isLight ? "text-[#222222]" : "text-white"}`}>
-                  {isThai ? "การคุ้มครองข้อมูลส่วนบุคคล" : "Personal data protection"}
+                <h5
+                  className={`mb-1 font-bold ${isLight ? "text-[#222222]" : "text-white"}`}
+                >
+                  {isThai
+                    ? "การคุ้มครองข้อมูลส่วนบุคคล"
+                    : "Personal data protection"}
                 </h5>
                 <p>
                   {isThai
@@ -1208,8 +1512,12 @@ export function SecondaryRegModal({
                 </p>
               </div>
               <div>
-                <h5 className={`mb-1 font-bold ${isLight ? "text-[#222222]" : "text-white"}`}>
-                  {isThai ? "ความรับผิดชอบของผู้ใช้งาน" : "Your responsibilities"}
+                <h5
+                  className={`mb-1 font-bold ${isLight ? "text-[#222222]" : "text-white"}`}
+                >
+                  {isThai
+                    ? "ความรับผิดชอบของผู้ใช้งาน"
+                    : "Your responsibilities"}
                 </h5>
                 <p>
                   {isThai
@@ -1220,7 +1528,9 @@ export function SecondaryRegModal({
             </div>
             <footer
               className={`p-4 sm:px-6 border-t flex justify-between gap-2.5 shrink-0 ${
-                isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
+                isLight
+                  ? "bg-white border-[#E4E4E7]"
+                  : "bg-[#383838] border-[#444444]"
               }`}
             >
               <button
@@ -1228,7 +1538,9 @@ export function SecondaryRegModal({
                 disabled={busy}
                 onClick={() => setStep("review")}
                 className={`h-[38px] px-4 rounded-[8px] inline-flex items-center gap-2 text-xs font-semibold ${
-                  isLight ? "text-[#222222] hover:bg-[#F5F5F5]" : "text-white hover:bg-white/10"
+                  isLight
+                    ? "text-[#222222] hover:bg-[#F5F5F5]"
+                    : "text-white hover:bg-white/10"
                 }`}
               >
                 <ArrowLeft size={14} />
@@ -1244,14 +1556,18 @@ export function SecondaryRegModal({
                     : "bg-white text-[#222222] hover:bg-[#F4F4F5]"
                 }`}
               >
-                {busy ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                {busy ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Check size={14} />
+                )}
                 {busy
                   ? isThai
                     ? "กำลังบันทึก..."
                     : "Saving..."
                   : isThai
-                  ? "ยืนยันและบันทึก"
-                  : "Confirm & Save"}
+                    ? "ยืนยันและบันทึก"
+                    : "Confirm & Save"}
               </button>
             </footer>
           </div>
@@ -1272,7 +1588,9 @@ function Section({
 }) {
   return (
     <section className="flex flex-col gap-3">
-      <h5 className={`text-xs font-bold uppercase tracking-wider ${isLight ? "text-[#222222]" : "text-white"}`}>
+      <h5
+        className={`text-xs font-bold uppercase tracking-wider ${isLight ? "text-[#222222]" : "text-white"}`}
+      >
         {title}
       </h5>
       {children}

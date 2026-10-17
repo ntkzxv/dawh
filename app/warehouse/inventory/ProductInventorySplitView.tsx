@@ -1,78 +1,193 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage } from "@/utils/language";
 import { warehouseApi, type CatalogItem } from "@/lib/api/warehouse";
-import { useRemote, Notice, message } from "@/components/warehouse/Ui";
-import CustomDropdown from "@/components/common/CustomDropdown";
-import { Pagination } from "@/components/common";
-import { SkeletonBox } from "@/components/loading_screen/SkeletonLoading";
+import { useOptionalWarehouseAccount } from "@/context/WarehouseAccountContext";
 import {
-  UploadCloud,
-  Download,
-  Plus,
-  X,
-  Search,
-  Package,
-  Edit,
-  MoreVertical,
-} from "lucide-react";
+  getCachedCatalogReference,
+  getWarehouseReferenceScope,
+} from "@/lib/api/warehouse-reference-cache";
+import { WAREHOUSE_TABLE_PAGE_SIZE } from "@/lib/warehouse/pagination-config";
+import WarehousePageTemplate from "@/app/warehouse/_components/WarehousePageTemplate";
+import { canEditCatalog } from "@/lib/contracts/warehouse-policy";
+import { useRemote, Notice, message, sanitizeWholeNumberInput } from "@/components/warehouse/Ui";
+import CustomDropdown from "@/components/common/CustomDropdown";
+import {
+  DATA_TABLE_BODY_ROW_HEIGHT,
+  DATA_TABLE_STYLES,
+  dataTableFrameClassName,
+  dataTableStripedRowClassName,
+  getDataTablePlaceholderRowCount,
+} from "@/components/common/DataTable";
+import { SkeletonBox, SkeletonDataTable } from "@/components/loading_screen/SkeletonLoading";
+import {
+  SidePanel,
+  SidePanelAlert,
+  SidePanelFieldError,
+  sidePanelFormStyles,
+  sidePanelInvalidFieldClassName,
+  Pagination,
+  Button,
+  SecondaryButton,
+  SearchInput,
+  FilterDropdown,
+  FilterButton,
+  type ProductDetailItem,
+} from "@/components/common";
+import { UploadCloud, Download, Plus, MoreVertical, Loader2 } from "lucide-react";
 
-export interface InventoryRowItem {
-  id: string;
-  sku: string;
-  name: string;
-  category: string;
-  brand: string;
-  onHand: number;
-  warehouse: string;
-  status: "in_stock" | "low_stock" | "out_of_stock";
-  unit: string;
-  price: number | null;
-  description?: string;
-  minStock?: number;
-  historyBars: Array<{ label: string; value: number; color: string; heightPct: number }>;
-}
+export type InventoryRowItem = ProductDetailItem;
 
-export default function ProductInventorySplitView() {
+export default function ProductInventorySplitView({
+  showAddProduct = true,
+}: {
+  showAddProduct?: boolean;
+}) {
   const { theme } = useTheme();
   const isLight = theme === "light";
+  const panelStyles = sidePanelFormStyles(isLight);
   const appLang = useAppLanguage();
   const isThai = appLang === "TH";
-
-  // Data Loading
-  const loadData = useCallback(async () => {
-    const [me, products, balances, categories, warehouses, units, brands] = await Promise.all([
-      warehouseApi.me(),
-      warehouseApi.catalog("products"),
-      warehouseApi.balances(),
-      warehouseApi.catalog("product-categories"),
-      warehouseApi.catalog("warehouses"),
-      warehouseApi.catalog("units"),
-      warehouseApi.catalog("brands"),
-    ]);
-    return { me, products, balances, categories, warehouses, units, brands };
-  }, []);
-
-  const { data, loading, error, refresh } = useRemote(loadData);
+  const account = useOptionalWarehouseAccount();
+  const warehouseCacheScope = getWarehouseReferenceScope(account?.me);
 
   // Filters State
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedWarehouse, setSelectedWarehouse] = useState("all");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filterDropdownRef = useRef<HTMLDivElement>(null);
+  const filterPanelRef = useRef<HTMLDivElement>(null);
+  const [filterPanelPosition, setFilterPanelPosition] = useState({ top: 0, left: 16 });
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
+  const pageSize = WAREHOUSE_TABLE_PAGE_SIZE;
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!(event.target instanceof Node)) return;
+      if (filterDropdownRef.current?.contains(event.target)) return;
+      if (filterPanelRef.current?.contains(event.target)) return;
+
+      // CustomDropdown renders its options in a portal under document.body.
+      // Keep the filter panel mounted while a user interacts with that portal.
+      if (
+        event.target instanceof Element &&
+        event.target.closest('[role="listbox"]')
+      ) {
+        return;
+      }
+
+      setFiltersOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setFiltersOpen(false);
+    };
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [filtersOpen]);
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const updateFilterPanelPosition = () => {
+      const trigger = filterDropdownRef.current;
+      if (!trigger) return;
+      const rect = trigger.getBoundingClientRect();
+      const panelWidth = Math.min(680, window.innerWidth - 32);
+      setFilterPanelPosition({
+        top: rect.bottom + 8,
+        left: Math.max(16, Math.min(rect.left, window.innerWidth - panelWidth - 16)),
+      });
+    };
+    updateFilterPanelPosition();
+    window.addEventListener("resize", updateFilterPanelPosition);
+    window.addEventListener("scroll", updateFilterPanelPosition, true);
+    return () => {
+      window.removeEventListener("resize", updateFilterPanelPosition);
+      window.removeEventListener("scroll", updateFilterPanelPosition, true);
+    };
+  }, [filtersOpen]);
+  useEffect(() => {
+    const timer = window.setTimeout(
+      () => setDebouncedSearch(searchQuery.trim()),
+      250,
+    );
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
+
+  const queryKey = useMemo(() => {
+    const params = new URLSearchParams({
+      page: String(currentPage),
+      limit: String(pageSize),
+    });
+    if (debouncedSearch) params.set("q", debouncedSearch);
+    if (selectedCategory !== "all") params.set("categoryId", selectedCategory);
+    if (selectedStatus !== "all") params.set("status", selectedStatus);
+    if (selectedWarehouse !== "all")
+      params.set("warehouseId", selectedWarehouse);
+    return params.toString();
+  }, [
+    currentPage,
+    debouncedSearch,
+    selectedCategory,
+    selectedStatus,
+    selectedWarehouse,
+  ]);
+  const loadData = useCallback(
+    async (signal: AbortSignal) => ({
+      ...(await warehouseApi.inventoryProducts(
+        new URLSearchParams(queryKey),
+        signal,
+      )),
+      queryKey,
+    }),
+    [queryKey],
+  );
+  const { data: loadedData, loading, error, refresh } = useRemote(loadData);
+  const data = loadedData?.queryKey === queryKey ? loadedData : null;
+  const loadFilters = useCallback(
+    (signal: AbortSignal) =>
+      Promise.all([
+        warehouseApi.catalog("product-categories", signal),
+        getCachedCatalogReference("warehouses", warehouseCacheScope, signal),
+      ]).then(([categories, warehouses]) => ({ categories, warehouses })),
+    [warehouseCacheScope],
+  );
+  const { data: filters } = useRemote(loadFilters, {
+    enabled: Boolean(warehouseCacheScope),
+  });
+  const loadFormRefs = useCallback(
+    (signal: AbortSignal) =>
+      Promise.all([
+        warehouseApi.catalog("units", signal),
+        warehouseApi.catalog("brands", signal),
+      ]).then(([units, brands]) => ({ units, brands })),
+    [],
+  );
+  const { data: formRefs, error: formRefsError } = useRemote(loadFormRefs, {
+    enabled: isModalOpen,
+  });
 
   // Selected Item for Drawer
-  const [selectedItem, setSelectedItem] = useState<InventoryRowItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<InventoryRowItem | null>(
+    null,
+  );
 
   // Modal State for Add / Edit Product
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<CatalogItem | null>(null);
+  const [editingProduct, setEditingProduct] = useState<CatalogItem | null>(
+    null,
+  );
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [formFieldErrors, setFormFieldErrors] = useState<string[]>([]);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
 
   // New/Edit Form Values
@@ -85,91 +200,50 @@ export default function ProductInventorySplitView() {
   const [formSalePrice, setFormSalePrice] = useState("");
   const [formReorderPoint, setFormReorderPoint] = useState("");
 
-  const canEdit = !!data && ["ADMIN", "CEO"].includes(data.me.role);
+  const canEdit = canEditCatalog(account?.me?.role, "products");
 
-  // Map products & balances into unified rows
   const items: InventoryRowItem[] = useMemo(() => {
-    if (!data?.products) return [];
-
-    return data.products.map((p) => {
-      // Find matching stock balances
-      const matching = data.balances.filter(
-        (b) => String(b.product_id) === String(p.id) || b.sku === p.sku
-      );
-
-      const onHand = matching.reduce((sum, b) => sum + (parseFloat(String(b.quantity)) || 0), 0);
-      const whName = matching[0]?.warehouse_name || "-";
-      const unitItem = data.units.find((unit) => String(unit.id) === String(p.unit_id));
-      const unitCode = matching[0]?.unit_code || unitItem?.code || unitItem?.name || "-";
-      const catObj = data.categories.find((c) => String(c.id) === String(p.category_id));
-      const brandObj = data.brands.find((brand) => String(brand.id) === String(p.brand_id));
-      const categoryName = catObj?.name || "-";
-      const brandName = brandObj?.name || "-";
-
-      // Status calculation
-      let status: "in_stock" | "low_stock" | "out_of_stock" = "in_stock";
-      const reorderValue = p.reorder_point == null ? undefined : Number(p.reorder_point);
-      const reorder = reorderValue != null && Number.isFinite(reorderValue) ? reorderValue : undefined;
-      if (onHand <= 0) {
-        status = "out_of_stock";
-      } else if (reorder != null && onHand < reorder) {
-        status = "low_stock";
-      }
-
-      // Simulated history bars
-      const historyBars = [
-        { label: "10", value: 10, color: "#2EC4B6", heightPct: 35 },
-        { label: "25", value: 25, color: "#2EC4B6", heightPct: 80 },
-        { label: "18", value: 18, color: "#2EC4B6", heightPct: 60 },
-        { label: "12", value: 12, color: "#2EC4B6", heightPct: 45 },
-        {
-          label: String(Math.round(onHand)),
-          value: Math.round(onHand),
-          color: status === "out_of_stock" ? "#E71D36" : status === "low_stock" ? "#FF9F1C" : "#2EC4B6",
-          heightPct: Math.min(100, Math.max(25, (onHand / 40) * 100)),
-        },
-      ];
-
+    if (!data) return [];
+    return data.items.map((p) => {
+      const onHand = Number(p.on_hand);
+      const reorder =
+        p.reorder_point == null ? undefined : Number(p.reorder_point);
       return {
         id: String(p.id),
         sku: p.sku || `SKU-${p.id}`,
         name: p.name,
-        category: categoryName,
-        brand: brandName,
+        category: p.category_name || "-",
+        brand: p.brand_name || "-",
         onHand,
-        warehouse: whName,
-        status,
-        unit: unitCode,
-        price: p.sale_price != null ? Number(p.sale_price) : p.cost != null ? Number(p.cost) : null,
-        description: "อุปกรณ์และอะไหล่สินค้ามาตรฐานสำหรับการปฏิบัติงานและการจัดเก็บในคลังสินค้า",
+        warehouse: p.warehouse_names || "-",
+        status: p.status,
+        unit: p.unit_code,
+        price:
+          p.sale_price != null
+            ? Number(p.sale_price)
+            : p.cost != null
+              ? Number(p.cost)
+              : null,
         ...(reorder == null ? {} : { minStock: reorder }),
-        historyBars,
       };
     });
   }, [data]);
 
-  // Filter items
-  const filteredItems = useMemo(() => {
-    return items.filter((item) => {
-      const q = searchQuery.trim().toLowerCase();
-      if (q && !item.sku.toLowerCase().includes(q) && !item.name.toLowerCase().includes(q) && !item.category.toLowerCase().includes(q)) {
-        return false;
-      }
-      if (selectedCategory !== "all" && item.category !== selectedCategory) {
-        return false;
-      }
-      if (selectedStatus !== "all" && item.status !== selectedStatus) {
-        return false;
-      }
-      if (selectedWarehouse !== "all" && item.warehouse !== selectedWarehouse) {
-        return false;
-      }
-      return true;
+  const filteredItems = items;
+  const totalItems = data?.page.total ?? 0;
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const displayedPage = currentPage;
+  const paginatedItems = items;
+  useEffect(() => {
+    if (!data || totalPages < 1 || currentPage <= totalPages) return;
+    let active = true;
+    queueMicrotask(() => {
+      if (active) setCurrentPage(totalPages);
     });
-  }, [items, searchQuery, selectedCategory, selectedStatus, selectedWarehouse]);
-  const totalPages = Math.ceil(filteredItems.length / pageSize);
-  const displayedPage = Math.min(currentPage, Math.max(1, totalPages));
-  const paginatedItems = filteredItems.slice((displayedPage - 1) * pageSize, displayedPage * pageSize);
+    return () => {
+      active = false;
+    };
+  }, [data, totalPages, currentPage]);
 
   // Set default selected item
   const activeDetailItem = selectedItem;
@@ -184,24 +258,26 @@ export default function ProductInventorySplitView() {
     setFormUnitId("");
     setFormCost("");
     setFormSalePrice("");
-    setFormReorderPoint("10");
+    setFormReorderPoint("");
     setFormError(null);
+    setFormFieldErrors([]);
     setFormSuccess(null);
     setIsModalOpen(true);
   };
 
   const openEditModal = (item: InventoryRowItem) => {
-    const raw = data?.products.find((p) => String(p.id) === item.id) || null;
+    const raw = data?.items.find((p) => String(p.id) === item.id) || null;
     setEditingProduct(raw);
     setFormSku(raw?.sku || item.sku);
     setFormName(raw?.name || item.name);
     setFormCategoryId(String(raw?.category_id || ""));
     setFormBrandId(String(raw?.brand_id || ""));
     setFormUnitId(String(raw?.unit_id || ""));
-    setFormCost(String(raw?.cost || ""));
+    setFormCost(String(raw?.cost ?? ""));
     setFormSalePrice(String(raw?.sale_price ?? raw?.cost ?? item.price ?? ""));
-    setFormReorderPoint(String(raw?.reorder_point || item.minStock || "10"));
+    setFormReorderPoint(String(raw?.reorder_point ?? item.minStock ?? ""));
     setFormError(null);
+    setFormFieldErrors([]);
     setFormSuccess(null);
     setSelectedItem(null);
     setIsModalOpen(true);
@@ -209,8 +285,18 @@ export default function ProductInventorySplitView() {
 
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formSku.trim() || !formName.trim()) {
-      setFormError("กรุณากรอกรหัส SKU และชื่อสินค้า");
+    const nextErrors = [
+      ...(!formSku.trim() ? ["sku"] : []),
+      ...(!formName.trim() ? ["name"] : []),
+      ...(!formCategoryId ? ["category"] : []),
+      ...(!formBrandId ? ["brand"] : []),
+      ...(!formUnitId ? ["unit"] : []),
+      ...(!formCost.trim() ? ["cost"] : []),
+      ...(!formSalePrice.trim() ? ["salePrice"] : []),
+      ...(!/^\d{1,15}$/.test(formReorderPoint) ? ["reorderPoint"] : []),
+    ];
+    setFormFieldErrors(nextErrors);
+    if (nextErrors.length) {
       return;
     }
 
@@ -229,11 +315,15 @@ export default function ProductInventorySplitView() {
       };
 
       if (editingProduct) {
-        await warehouseApi.updateCatalog("products", editingProduct.id, payload);
-        setFormSuccess("แก้ไขข้อมูลสินค้าเรียบร้อย");
+        await warehouseApi.updateCatalog(
+          "products",
+          editingProduct.id,
+          payload,
+        );
+        setFormSuccess(isThai ? "แก้ไขข้อมูลสินค้าเรียบร้อย" : "Product updated successfully.");
       } else {
         await warehouseApi.createCatalog("products", payload);
-        setFormSuccess("สร้างสินค้าใหม่เรียบร้อยแล้ว");
+        setFormSuccess(isThai ? "สร้างสินค้าใหม่เรียบร้อยแล้ว" : "Product created successfully.");
       }
 
       await refresh();
@@ -248,7 +338,9 @@ export default function ProductInventorySplitView() {
   };
 
   // Status badge helper
-  const renderStatusBadge = (status: "in_stock" | "low_stock" | "out_of_stock") => {
+  const renderStatusBadge = (
+    status: "in_stock" | "low_stock" | "out_of_stock",
+  ) => {
     if (status === "out_of_stock") {
       return (
         <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-[4px] text-[11px] font-semibold bg-[#E71D36]/10 text-[#E71D36]">
@@ -271,234 +363,293 @@ export default function ProductInventorySplitView() {
   };
 
   return (
-    <div
-      className={`w-full flex-1 flex flex-col lg:flex-row items-start justify-start p-0 min-h-0 self-stretch ${
-        isLight ? "bg-[#F8FAFC] text-[#222222]" : "bg-[#2C2C2C] text-[#F8FAFC]"
-      }`}
-      style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
+    <WarehousePageTemplate
+      titleEn="Product Master & SKU Catalog"
+      titleTh="ข้อมูลสินค้าหลัก"
+      routePath="/warehouse/inventory"
+      fullBleed
     >
-      {/* ========================================================= */}
-      {/* 📌 [LEFT PANE]: Auto layout padding: 32px gap: 24px      */}
-      {/* ========================================================= */}
-      <div className="flex-1 w-full min-w-0 flex flex-col items-start p-6 lg:p-8 gap-6 self-stretch overflow-y-auto">
+      <div
+        className={`w-full flex-1 min-h-full ${
+          isLight ? "bg-[#F8FAFC] text-[#222222]" : "bg-[#2C2C2C] text-[#F8FAFC]"
+        }`}
+        style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
+      >
+      <main className="mx-auto w-full max-w-[1600px] min-w-0 space-y-6 p-6 pb-10 lg:p-8">
         {error && <Notice tone="error">{error}</Notice>}
 
-        {/* filter-bar */}
-        <div className="w-full flex flex-wrap items-center justify-between gap-3">
-          {/* filters */}
-          <div className="flex flex-wrap items-center gap-3">
-            {/* f-category */}
-            <CustomDropdown
-              value={selectedCategory}
-                onChange={(value) => { setSelectedCategory(value); setCurrentPage(1); }}
-              options={[
-                { value: "all", label: isThai ? "หมวดหมู่: ทั้งหมด" : "All Categories" },
-                ...(data?.categories || []).map((c) => ({
-                  value: c.name,
-                  label: c.name,
-                })),
-              ]}
-              size="sm"
-              triggerClassName={`h-[33px] px-3 py-2 rounded-[6px] border text-[13px] font-normal transition-colors ${
-                isLight ? "bg-white border-[#E4E4E7] text-[#222222]" : "bg-[#383838] border-[#444444] text-[#F8FAFC]"
-              }`}
-            />
-
-            {/* f-status */}
-            <CustomDropdown
-              value={selectedStatus}
-              onChange={(value) => { setSelectedStatus(value); setCurrentPage(1); }}
-              options={[
-                { value: "all", label: isThai ? "สถานะ: ทั้งหมด" : "All Status" },
-                { value: "in_stock", label: isThai ? "สถานะ: ปกติ" : "In Stock" },
-                { value: "low_stock", label: isThai ? "สถานะ: ใกล้หมด" : "Low Stock" },
-                { value: "out_of_stock", label: isThai ? "สถานะ: วิกฤต" : "Out of Stock" },
-              ]}
-              size="sm"
-              triggerClassName={`h-[33px] px-3 py-2 rounded-[6px] border text-[13px] font-normal transition-colors ${
-                isLight ? "bg-white border-[#E4E4E7] text-[#222222]" : "bg-[#383838] border-[#444444] text-[#F8FAFC]"
-              }`}
-            />
-
-            {/* f-warehouse */}
-            <CustomDropdown
-              value={selectedWarehouse}
-              onChange={(value) => { setSelectedWarehouse(value); setCurrentPage(1); }}
-              options={[
-                { value: "all", label: isThai ? "คลัง: ทั้งหมด" : "All Warehouses" },
-                ...(data?.warehouses || []).map((w) => ({
-                  value: w.name,
-                  label: `คลัง: ${w.name}`,
-                })),
-              ]}
-              size="sm"
-              triggerClassName={`h-[33px] px-3 py-2 rounded-[6px] border text-[13px] font-normal transition-colors ${
-                isLight ? "bg-white border-[#E4E4E7] text-[#222222]" : "bg-[#383838] border-[#444444] text-[#F8FAFC]"
-              }`}
-            />
-          </div>
-
-          {/* actions */}
-          <div className="flex items-center gap-2.5">
-            {/* Search Input */}
-            <div
-              className={`flex items-center px-3 py-1.5 h-[33px] rounded-[6px] border text-[13px] w-[180px] sm:w-[220px] transition-colors ${
-                isLight ? "bg-white border-[#E4E4E7] text-[#222222]" : "bg-[#383838] border-[#444444] text-[#F8FAFC]"
-              }`}
-            >
-              <Search size={14} className="text-[#A1A1AA] shrink-0 mr-2" />
-              <input
-                type="text"
+        <div className="space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              {loading && !data ? <SkeletonBox className="h-9 w-full rounded-md sm:w-72" /> : <SearchInput
                 value={searchQuery}
-                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                onChange={(val) => {
+                  setSearchQuery(val);
+                  setCurrentPage(1);
+                }}
                 placeholder={isThai ? "ค้นหา SKU, ชื่อ..." : "Search SKU, Name..."}
-                className="w-full bg-transparent border-none outline-none text-[13px] placeholder:text-[#A1A1AA]"
-              />
+                aria-label={isThai ? "ค้นหาสินค้า" : "Search products"}
+                width="w-full sm:w-72"
+              />}
+              {loading && !data ? <SkeletonBox className="h-[33px] w-[104px] rounded-md" /> : <div className="relative shrink-0" ref={filterDropdownRef}>
+                <FilterButton
+                  controls="inventory-filter-panel"
+                  expanded={filtersOpen}
+                  label={isThai ? "ตัวกรอง" : "Filters"}
+                  clearLabel={isThai ? "ล้างตัวกรอง" : "Clear filters"}
+                  activeFilterCount={
+                    Number(selectedCategory !== "all") +
+                    Number(selectedStatus !== "all") +
+                    Number(selectedWarehouse !== "all")
+                  }
+                  onClear={() => {
+                    setSelectedCategory("all");
+                    setSelectedStatus("all");
+                    setSelectedWarehouse("all");
+                    setCurrentPage(1);
+                    setFiltersOpen(false);
+                  }}
+                  onClick={() => {
+                    if (filtersOpen) {
+                      setFiltersOpen(false);
+                      return;
+                    }
+                    const rect = filterDropdownRef.current?.getBoundingClientRect();
+                    if (rect) {
+                      const panelWidth = Math.min(680, window.innerWidth - 32);
+                      setFilterPanelPosition({
+                        top: rect.bottom + 8,
+                        left: Math.max(16, Math.min(rect.left, window.innerWidth - panelWidth - 16)),
+                      });
+                    }
+                    setFiltersOpen(true);
+                  }}
+                />
+                {filtersOpen && createPortal(
+                  <div
+                    ref={filterPanelRef}
+                    id="inventory-filter-panel"
+                    style={{ top: filterPanelPosition.top, left: filterPanelPosition.left }}
+                    className={`fixed z-[99998] w-[min(680px,calc(100vw-2rem))] space-y-4 rounded-2xl border p-4 shadow-2xl sm:p-5 ${
+                      isLight
+                        ? "border-[#E4E4E7] bg-white text-[#222222]"
+                        : "border-[#444444] bg-[#383838] text-white"
+                    }`}
+                  >
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <label className="space-y-1.5 text-sm font-medium">
+                    <span>{isThai ? "หมวดหมู่" : "Category"}</span>
+                    <FilterDropdown
+                      value={selectedCategory}
+                      onChange={(value) => {
+                        setSelectedCategory(value);
+                        setCurrentPage(1);
+                      }}
+                      className="w-full"
+                      options={[
+                        {
+                          value: "all",
+                          label: isThai ? "ทั้งหมด" : "All categories",
+                        },
+                        ...(filters?.categories || []).map((category) => ({
+                          value: String(category.id),
+                          label: category.name,
+                        })),
+                      ]}
+                    />
+                  </label>
+                  <label className="space-y-1.5 text-sm font-medium">
+                    <span>{isThai ? "สถานะสินค้า" : "Product status"}</span>
+                    <FilterDropdown
+                      value={selectedStatus}
+                      onChange={(value) => {
+                        setSelectedStatus(value);
+                        setCurrentPage(1);
+                      }}
+                      className="w-full"
+                      options={[
+                        { value: "all", label: isThai ? "ทั้งหมด" : "All statuses" },
+                        { value: "in_stock", label: isThai ? "ปกติ" : "In stock" },
+                        { value: "low_stock", label: isThai ? "ใกล้หมด" : "Low stock" },
+                        { value: "out_of_stock", label: isThai ? "วิกฤต" : "Out of stock" },
+                      ]}
+                    />
+                  </label>
+                  <label className="space-y-1.5 text-sm font-medium sm:col-span-2 lg:col-span-1">
+                    <span>{isThai ? "คลังสินค้า" : "Warehouse"}</span>
+                    <FilterDropdown
+                      value={selectedWarehouse}
+                      onChange={(value) => {
+                        setSelectedWarehouse(value);
+                        setCurrentPage(1);
+                      }}
+                      className="w-full"
+                      options={[
+                        { value: "all", label: isThai ? "ทั้งหมด" : "All warehouses" },
+                        ...(filters?.warehouses || []).map((warehouse) => ({
+                          value: String(warehouse.id),
+                          label: warehouse.name,
+                        })),
+                      ]}
+                    />
+                  </label>
+                </div>
+                <div className={`flex justify-end gap-2 border-t pt-3 ${isLight ? "border-[#E4E4E7]" : "border-white/10"}`}>
+                  <button
+                    type="button"
+                    className={`rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${isLight ? "border-slate-300 hover:bg-slate-100" : "border-white/15 hover:bg-white/5"}`}
+                    onClick={() => {
+                      setSelectedCategory("all");
+                      setSelectedStatus("all");
+                      setSelectedWarehouse("all");
+                      setCurrentPage(1);
+                    }}
+                  >
+                    {isThai ? "ล้างตัวกรอง" : "Clear filters"}
+                  </button>
+                </div>
+                  </div>
+                , document.body)}
+              </div>}
             </div>
-
-            {/* btn-export */}
-            <button
-              type="button"
-              className={`flex items-center justify-center px-4 py-2 gap-1.5 h-[33px] rounded-[6px] border text-[13px] font-normal transition-colors cursor-pointer ${
-                isLight ? "bg-white border-[#E4E4E7] text-[#222222] hover:bg-slate-100" : "bg-[#383838] border-[#444444] text-[#F8FAFC] hover:bg-[#444444]"
-              }`}
-            >
-              <UploadCloud size={14} />
-              <span>{isThai ? "ส่งออก" : "Export"}</span>
-            </button>
-
-            {/* btn-import */}
-            <button
-              type="button"
-              className={`flex items-center justify-center px-4 py-2 gap-1.5 h-[33px] rounded-[6px] border text-[13px] font-normal transition-colors cursor-pointer ${
-                isLight ? "bg-white border-[#E4E4E7] text-[#222222] hover:bg-slate-100" : "bg-[#383838] border-[#444444] text-[#F8FAFC] hover:bg-[#444444]"
-              }`}
-            >
-              <Download size={14} />
-              <span>{isThai ? "นำเข้า" : "Import"}</span>
-            </button>
-
-            {/* btn-add (Theme-adaptive Black/White Primary CTA) */}
-            {canEdit && (
-              <button
-                type="button"
-                onClick={openAddModal}
-                className={`flex items-center justify-center px-4 py-2 gap-1.5 h-[33px] rounded-[6px] text-[13px] font-semibold transition-colors cursor-pointer shadow-xs ${
-                  isLight
-                    ? "bg-[#222222] hover:bg-black text-white"
-                    : "bg-white hover:bg-[#F4F4F5] text-[#222222]"
-                }`}
-              >
-                <Plus size={14} className={isLight ? "text-white" : "text-[#222222]"} />
-                <span>{isThai ? "เพิ่มสินค้า" : "Add Product"}</span>
-              </button>
-            )}
+            {loading && !data ? (
+              <div className="flex flex-wrap items-center justify-end gap-2.5 sm:ml-auto">
+                <SkeletonBox className="h-9 w-24 rounded-xl" />
+                <SkeletonBox className="h-9 w-24 rounded-xl" />
+                {showAddProduct && canEdit && <SkeletonBox className="h-9 w-32 rounded-xl" />}
+              </div>
+            ) : <div className="flex flex-wrap items-center justify-end gap-2.5 sm:ml-auto">
+              <SecondaryButton icon={<UploadCloud size={14} />}>
+                {isThai ? "ส่งออก" : "Export"}
+              </SecondaryButton>
+              <SecondaryButton icon={<Download size={14} />}>
+                {isThai ? "นำเข้า" : "Import"}
+              </SecondaryButton>
+              {showAddProduct && canEdit && (
+                <Button
+                  variant="primary"
+                  onClick={openAddModal}
+                  icon={<Plus size={14} />}
+                >
+                  {isThai ? "เพิ่มสินค้า" : "Add Product"}
+                </Button>
+              )}
+            </div>}
           </div>
-        </div>
 
         {/* inventory-table-container */}
-        <div
-          className={`w-full rounded-[12px] border p-4 shadow-sm overflow-hidden flex flex-col transition-colors ${
-            isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
-          }`}
-        >
           {loading && !data ? (
-            <div role="status" aria-label={isThai ? "กำลังโหลดข้อมูลสินค้า" : "Loading inventory"} className="w-full overflow-x-auto">
-              <table className="w-full text-left text-[13px]" aria-hidden="true">
-                <thead>
-                  <tr className={`h-[36px] text-xs ${isLight ? "bg-[#F4F4F5]" : "bg-[#2C2C2C]"}`}>
-                    {["w-[190px]", "", "w-[130px]", "w-[120px]", "w-[120px]", "w-[90px]", "w-[120px]", "w-[100px]", "w-[48px]"].map((width, index) => (
-                      <th key={index} className={`px-3 py-2 ${width}`}><SkeletonBox className={`h-3 ${index === 1 ? "w-3/4" : "w-2/3"}`} /></th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className={`divide-y ${isLight ? "divide-[#E4E4E7]" : "divide-[#444444]"}`}>
-                  {Array.from({ length: 6 }).map((_, row) => (
-                    <tr key={row} className="h-[56px]">
-                      <td className="px-3 py-3"><SkeletonBox className="h-3.5 w-3/4" /></td>
-                      <td className="px-3 py-3"><SkeletonBox className="h-3.5 w-20" /></td>
-                      <td className="px-3 py-3"><SkeletonBox className="h-3.5 w-20" /></td>
-                      <td className="px-3 py-3"><SkeletonBox className="h-3.5 w-20" /></td>
-                      <td className="px-3 py-3"><SkeletonBox className="ml-auto h-3.5 w-12" /></td>
-                      <td className="px-3 py-3"><SkeletonBox className="h-3.5 w-14" /></td>
-                      <td className="px-3 py-3"><SkeletonBox className="ml-auto h-3.5 w-12" /></td>
-                      <td className="px-3 py-3"><SkeletonBox className="h-5 w-14 rounded-full" /></td>
-                      <td className="px-3 py-3"><SkeletonBox className="ml-auto size-8 rounded-[6px]" /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <SkeletonDataTable rows={6} columns={9} showToolbar={false} minWidth="1080px" ariaLabel={isThai ? "กำลังโหลดข้อมูลสินค้า" : "Loading inventory"} />
+          ) : !data && error ? (
+            <div className={`${dataTableFrameClassName(isLight)} w-full py-12 text-center text-sm`}>
+              <button
+                type="button"
+                className="underline"
+                onClick={() => void refresh()}
+              >
+                {isThai ? "ลองโหลดข้อมูลอีกครั้ง" : "Try loading again"}
+              </button>
             </div>
           ) : filteredItems.length === 0 ? (
-            <div className="py-12 text-center text-sm text-[#A1A1AA]">
+            <div className={`${dataTableFrameClassName(isLight)} w-full py-12 text-center text-sm ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
               {isThai ? "ไม่พบรายการสินค้าที่ค้นหา" : "No products found."}
             </div>
           ) : (
-            <div className="w-full overflow-x-auto">
-              <table className="w-full text-left text-[13px]">
+            <div className={`${dataTableFrameClassName(isLight)} w-full overflow-x-auto`}>
+              <table className={DATA_TABLE_STYLES.table}>
                 {/* row-header */}
                 <thead>
-                  <tr className={`h-[36px] rounded-[6px] text-xs font-semibold ${isLight ? "bg-[#F4F4F5] text-[#666666]" : "bg-[#2C2C2C] text-[#A1A1AA]"}`}>
-                    <th className="py-2 px-3 w-[190px] rounded-l-[6px]">{isThai ? "รหัส SKU" : "SKU"}</th>
-                    <th className="py-2 px-3 min-w-[220px]">{isThai ? "ชื่อสินค้า" : "Product Name"}</th>
-                    <th className="py-2 px-3 w-[130px]">{isThai ? "หมวดหมู่" : "Category"}</th>
-                    <th className="py-2 px-3 w-[120px]">{isThai ? "ยี่ห้อ" : "Brand"}</th>
-                    <th className="py-2 px-3 text-right w-[120px]">{isThai ? "คงเหลือ" : "On Hand"}</th>
-                    <th className="py-2 px-3 w-[90px]">{isThai ? "หน่วย" : "Unit"}</th>
-                    <th className="py-2 px-3 text-right w-[120px]">{isThai ? "จุดสั่งซื้อ" : "Reorder Point"}</th>
-                    <th className="py-2 px-3 w-[100px]">{isThai ? "สถานะ" : "Status"}</th>
-                    <th className="py-2 px-3 w-[48px] rounded-r-[6px]" aria-label={isThai ? "การทำงาน" : "Actions"} />
+                  <tr
+                    className={`${DATA_TABLE_STYLES.headerRow} ${isLight ? "bg-[#F4F4F5] text-[#666666]" : "bg-[#2C2C2C] text-[#A1A1AA]"}`}
+                  >
+                    <th className={`${DATA_TABLE_STYLES.headerCell} w-[190px] rounded-l-[6px]`}>
+                      {isThai ? "รหัส SKU" : "SKU"}
+                    </th>
+                    <th className={`${DATA_TABLE_STYLES.headerCell} min-w-[220px]`}>
+                      {isThai ? "ชื่อสินค้า" : "Product Name"}
+                    </th>
+                    <th className={`${DATA_TABLE_STYLES.headerCell} w-[130px]`}>
+                      {isThai ? "หมวดหมู่" : "Category"}
+                    </th>
+                    <th className={`${DATA_TABLE_STYLES.headerCell} w-[120px]`}>
+                      {isThai ? "ยี่ห้อ" : "Brand"}
+                    </th>
+                    <th className={`${DATA_TABLE_STYLES.headerCell} text-right w-[120px]`}>
+                      {isThai ? "คงเหลือ" : "On Hand"}
+                    </th>
+                    <th className={`${DATA_TABLE_STYLES.headerCell} w-[90px]`}>
+                      {isThai ? "หน่วย" : "Unit"}
+                    </th>
+                    <th className={`${DATA_TABLE_STYLES.headerCell} text-right w-[120px]`}>
+                      {isThai ? "จุดสั่งซื้อ" : "Reorder Point"}
+                    </th>
+                    <th className={`${DATA_TABLE_STYLES.headerCell} w-[100px]`}>
+                      {isThai ? "สถานะ" : "Status"}
+                    </th>
+                    <th
+                      className={`${DATA_TABLE_STYLES.headerCell} w-[48px] rounded-r-[6px]`}
+                      aria-label={isThai ? "การทำงาน" : "Actions"}
+                    />
                   </tr>
                 </thead>
 
                 {/* table rows */}
-                <tbody className={`divide-y ${isLight ? "divide-[#E4E4E7]" : "divide-[#444444]"}`}>
+                <tbody
+                  className={`divide-y whitespace-nowrap ${isLight ? "divide-[#E4E4E7]" : "divide-[#444444]"}`}
+                >
                   {paginatedItems.map((item) => {
                     const isSelected = activeDetailItem?.id === item.id;
                     return (
                       <tr
                         key={item.id}
-                        className={`h-[56px] transition-colors select-none ${
+                        style={{ height: DATA_TABLE_BODY_ROW_HEIGHT }}
+                        className={`${DATA_TABLE_STYLES.bodyRow} ${
                           isSelected
                             ? isLight
-                              ? "bg-slate-100"
-                              : "bg-[#2C2C2C]"
-                            : isLight
-                            ? "hover:bg-slate-50"
-                            : "hover:bg-white/[0.02]"
+                              ? "!bg-slate-100"
+                              : "!bg-[#2C2C2C]"
+                            : dataTableStripedRowClassName(isLight)
                         }`}
                       >
                         {/* SKU */}
-                        <td className={`py-3 px-3 font-mono text-[12px] font-medium ${isLight ? "text-slate-900" : "text-[#F8FAFC]"}`}>
-                          <span className="block truncate" title={item.sku}>{item.sku}</span>
+                        <td
+                          className={`${DATA_TABLE_STYLES.bodyCell} font-mono text-[12px] font-medium ${isLight ? "text-slate-900" : "text-[#F8FAFC]"}`}
+                        >
+                          <span className="block truncate" title={item.sku}>
+                            {item.sku}
+                          </span>
                         </td>
 
                         {/* Name */}
-                        <td className="py-3 px-3 font-medium">
-                          <span className={`line-clamp-1 ${isLight ? "text-slate-900" : "text-[#F8FAFC]"}`}>
+                        <td className={`${DATA_TABLE_STYLES.bodyCell} font-medium`}>
+                          <span
+                            className={`line-clamp-1 ${isLight ? "text-slate-900" : "text-[#F8FAFC]"}`}
+                          >
                             {item.name}
                           </span>
                         </td>
 
                         {/* Category */}
-                        <td className="py-3 px-3 text-[#A1A1AA] text-xs">
+                        <td className={`${DATA_TABLE_STYLES.bodyCell} ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"} text-xs`}>
                           {item.category}
                         </td>
 
                         {/* Brand */}
-                        <td className="py-3 px-3 text-[#A1A1AA] text-xs">{item.brand}</td>
+                        <td className={`${DATA_TABLE_STYLES.bodyCell} ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"} text-xs`}>
+                          {item.brand}
+                        </td>
 
                         {/* On Hand */}
-                        <td className="py-3 px-3 text-right font-mono font-bold text-[13px]">
+                        <td className={`${DATA_TABLE_STYLES.bodyCell} text-right font-mono font-bold text-[13px]`}>
                           <span
                             className={
                               item.status === "out_of_stock"
                                 ? "text-[#E71D36]"
                                 : item.status === "low_stock"
-                                ? "text-[#FF9F1C]"
-                                : isLight
-                                ? "text-[#2EC4B6]"
-                                : "text-[#2EC4B6]"
+                                  ? "text-[#FF9F1C]"
+                                  : isLight
+                                    ? "text-[#2EC4B6]"
+                                    : "text-[#2EC4B6]"
                             }
                           >
                             {item.onHand.toLocaleString()}
@@ -506,25 +657,35 @@ export default function ProductInventorySplitView() {
                         </td>
 
                         {/* Unit */}
-                        <td className="py-3 px-3 text-xs">{item.unit}</td>
+                        <td className={`${DATA_TABLE_STYLES.bodyCell} text-xs`}>{item.unit}</td>
 
                         {/* Reorder point */}
-                        <td className="py-3 px-3 text-right font-mono text-xs">
-                          {item.minStock == null ? "-" : item.minStock.toLocaleString()}
+                        <td className={`${DATA_TABLE_STYLES.bodyCell} text-right font-mono text-xs`}>
+                          {item.minStock == null
+                            ? "-"
+                            : item.minStock.toLocaleString()}
                         </td>
 
                         {/* Status */}
-                        <td className="py-3 px-3">
+                        <td className={DATA_TABLE_STYLES.bodyCell}>
                           {renderStatusBadge(item.status)}
                         </td>
 
                         {/* Actions */}
-                        <td className="py-3 px-3 text-right">
+                        <td className={`${DATA_TABLE_STYLES.bodyCell} text-right`}>
                           <button
                             type="button"
                             onClick={() => setSelectedItem(item)}
-                            aria-label={isThai ? `ดูรายละเอียด ${item.name}` : `View ${item.name} details`}
-                            title={isThai ? "ดูรายละเอียดสินค้า" : "View product details"}
+                            aria-label={
+                              isThai
+                                ? `ดูรายละเอียด ${item.name}`
+                                : `View ${item.name} details`
+                            }
+                            title={
+                              isThai
+                                ? "ดูรายละเอียดสินค้า"
+                                : "View product details"
+                            }
                             className={`inline-flex size-8 items-center justify-center rounded-[6px] transition-colors cursor-pointer ${
                               isLight
                                 ? "text-[#666666] hover:bg-[#E4E4E7] hover:text-[#222222]"
@@ -537,367 +698,258 @@ export default function ProductInventorySplitView() {
                       </tr>
                     );
                   })}
+                  {Array.from(
+                    { length: getDataTablePlaceholderRowCount(paginatedItems.length) },
+                    (_, index) => (
+                      <tr
+                        key={`placeholder-${index}`}
+                        aria-hidden="true"
+                        style={{ height: DATA_TABLE_BODY_ROW_HEIGHT }}
+                        className={`${DATA_TABLE_STYLES.bodyRow} ${dataTableStripedRowClassName(isLight)}`}
+                      >
+                        <td
+                          colSpan={9}
+                          style={{ height: DATA_TABLE_BODY_ROW_HEIGHT, padding: 0 }}
+                        />
+                      </tr>
+                    ),
+                  )}
                 </tbody>
               </table>
             </div>
           )}
-        </div>
-        {filteredItems.length > 0 && (
+        {loading && !data ? <SkeletonBox className="ml-auto h-9 w-64 rounded-xl" /> : filteredItems.length > 0 && (
           <Pagination
             currentPage={displayedPage}
             totalPages={totalPages}
-            totalItems={filteredItems.length}
+            totalItems={totalItems}
             pageSize={pageSize}
             onPageChange={setCurrentPage}
             isThai={isThai}
-            className="w-full px-1"
+            className="px-1"
           />
-        )}
-      </div>
-
-      {/* Product detail modal */}
-      {activeDetailItem && (
-        <div
-          className="fixed inset-0 z-[90] flex items-stretch justify-end bg-black/70 backdrop-blur-xs"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setSelectedItem(null);
-          }}
-        >
-        <aside
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="product-detail-title"
-          className={`h-full w-full max-w-[380px] shrink-0 rounded-l-[8px] border-y border-l border-r-0 p-6 flex flex-col gap-5 overflow-y-auto shadow-2xl transition-colors ${
-            isLight ? "bg-white border-[#E4E4E7]" : "bg-[#383838] border-[#444444]"
-          }`}
-        >
-          {/* drawer-header */}
-          <div className="w-full flex items-center justify-between">
-            <h3 id="product-detail-title" className={`font-bold text-[16px] leading-[21px] ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}>
-              {isThai ? "รายละเอียดสินค้า" : "Item Details"}
-            </h3>
-            <button
-              type="button"
-              onClick={() => setSelectedItem(null)}
-              className="text-[#A1A1AA] hover:text-white transition-colors cursor-pointer p-0.5"
-            >
-              <X size={16} />
-            </button>
-          </div>
-
-          {/* Product Image Showcase */}
-          <div className="w-full h-[180px] rounded-[8px] border border-[#444444]/40 bg-[#2C2C2C] flex flex-col items-center justify-center text-[#A1A1AA] overflow-hidden relative shadow-inner">
-            <Package size={48} className="opacity-40" />
-            <span className="text-[11.5px] mt-2 font-mono text-[#A1A1AA]/80">
-              {activeDetailItem.sku}
-            </span>
-          </div>
-
-          {/* item-info */}
-          <div className="w-full flex flex-col gap-2">
-            <span className="font-mono font-semibold text-[12px] text-[#0D99FF]">
-              {activeDetailItem.sku}
-            </span>
-            <h4 className={`font-bold text-[18px] leading-[23px] ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}>
-              {activeDetailItem.name}
-            </h4>
-            <p className="text-[13px] leading-[17px] text-[#A1A1AA]">
-              {activeDetailItem.description}
-            </p>
-          </div>
-
-          {/* Line divider */}
-          <div className={`w-full border-b ${isLight ? "border-[#E4E4E7]" : "border-[#444444]"}`} />
-
-          {/* specs */}
-          <div className="w-full flex flex-col gap-2.5 text-[13px]">
-            <div className="flex items-center justify-between">
-              <span className="text-[#A1A1AA]">{isThai ? "หมวดหมู่หลัก" : "Category"}</span>
-              <span className={`font-medium ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}>
-                {activeDetailItem.category}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-[#A1A1AA]">{isThai ? "ยี่ห้อ" : "Brand"}</span>
-              <span className={`font-medium ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}>
-                {activeDetailItem.brand}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-[#A1A1AA]">{isThai ? "คลังที่มีสินค้า" : "Warehouse"}</span>
-              <span className={`font-medium ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}>
-                {activeDetailItem.warehouse}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-[#A1A1AA]">{isThai ? "หน่วยนับ" : "Unit"}</span>
-              <span className={`font-medium ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}>
-                {activeDetailItem.unit}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-[#A1A1AA]">{isThai ? "ราคาต่อหน่วย" : "Unit Price"}</span>
-              <span className={`font-medium ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}>
-                {activeDetailItem.price == null ? "-" : `${activeDetailItem.price.toLocaleString()} ${isThai ? "บาท" : "THB"}`}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-[#A1A1AA]">{isThai ? "ระดับสต็อกขั้นต่ำ" : "Safety Stock"}</span>
-              <span className={`font-medium ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}>
-                {activeDetailItem.minStock == null ? "-" : `${activeDetailItem.minStock} ${activeDetailItem.unit}`}
-              </span>
-            </div>
-          </div>
-
-          {/* history-mini */}
-          <div className="w-full flex flex-col gap-3">
-            <span className={`font-semibold text-[13px] ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}>
-              {isThai ? "ประวัติการเปลี่ยนแปลงสต็อกล่าสุด" : "Recent Stock Activity"}
-            </span>
-
-            {/* chart-box */}
-            <div className={`w-full h-[60px] rounded-[6px] p-2.5 flex items-end justify-between ${
-              isLight ? "bg-[#F4F4F5]" : "bg-[#2C2C2C]"
-            }`}>
-              {activeDetailItem.historyBars.map((bar, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <div
-                    className="w-[12px] rounded-[2px] transition-all"
-                    style={{
-                      height: `${Math.max(6, (bar.heightPct / 100) * 32)}px`,
-                      backgroundColor: bar.color,
-                    }}
-                  />
-                  <span className="font-mono text-[10px] text-[#A1A1AA]">
-                    {bar.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* drawer-actions */}
-          {canEdit && (
-            <div className="w-full flex items-center gap-3 pt-2">
-              {/* btn-edit */}
-              <button
-                type="button"
-                onClick={() => openEditModal(activeDetailItem)}
-                className={`flex-1 h-[41px] px-4 py-3 rounded-[6px] border flex items-center justify-center gap-1.5 text-[13px] font-medium transition-colors cursor-pointer ${
-                  isLight
-                    ? "bg-[#F4F4F5] border-[#E4E4E7] text-[#222222] hover:bg-slate-200"
-                    : "bg-[#2C2C2C] border-[#444444] text-[#F8FAFC] hover:bg-[#333333]"
-                }`}
-              >
-                <Edit size={14} />
-                <span>{isThai ? "แก้ไขข้อมูล" : "Edit"}</span>
-              </button>
-
-              {/* btn-receive */}
-              <button
-                type="button"
-                onClick={() => openEditModal(activeDetailItem)}
-                className="flex-1 h-[41px] px-4 py-3 rounded-[6px] flex items-center justify-center gap-1.5 text-[13px] font-semibold text-white bg-[#2EC4B6] hover:bg-[#25A99D] transition-colors cursor-pointer"
-              >
-                <Plus size={14} />
-                <span>{isThai ? "ปรับปรุงยอด" : "Adjust"}</span>
-              </button>
-            </div>
           )}
-        </aside>
         </div>
-      )}
+      </main>
+
+      {/* Product detail drawer (Shared component) */}
+      <SidePanel
+        item={activeDetailItem}
+        onClose={() => setSelectedItem(null)}
+        canEdit={canEdit}
+        onEdit={(item) => openEditModal(item)}
+      />
 
       {/* ========================================================= */}
       {/* 📌 [MODAL / SIDE DRAWER]: Add / Edit Product Form         */}
       {/* ========================================================= */}
       {isModalOpen && canEdit && (
-        <div
-          className="fixed inset-0 z-[100] flex items-stretch justify-end bg-black/70 backdrop-blur-xs animate-in fade-in duration-200"
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) setIsModalOpen(false);
-          }}
+        <SidePanel
+          item={null}
+          onClose={() => setIsModalOpen(false)}
+          eyebrow={
+            editingProduct
+              ? isThai
+                ? "จัดการข้อมูล"
+                : "Manage SKU"
+              : isThai
+                ? "สร้างข้อมูลใหม่"
+                : "New SKU"
+          }
+          title={
+            editingProduct
+              ? isThai
+                ? "แก้ไขข้อมูลสินค้า"
+                : "Edit Product"
+              : isThai
+                ? "เพิ่มสินค้าใหม่"
+                : "Add New Product"
+          }
         >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="product-form-title"
-            className={`relative w-full max-w-[560px] h-full overflow-y-auto border-l p-5 sm:p-6 shadow-2xl transition-all animate-in slide-in-from-right duration-300 flex flex-col justify-between ${
-              isLight ? "bg-white border-[#E4E4E7]" : "bg-[#282828] border-[#444444]"
-            }`}
-          >
-            {/* Absolute Close button at top right */}
-            <button
-              type="button"
-              onClick={() => setIsModalOpen(false)}
-              className={`absolute top-4 right-4 p-1.5 rounded-[8px] transition-colors cursor-pointer z-10 ${
-                isLight ? "text-[#666666] hover:bg-[#F4F4F5] hover:text-[#222222]" : "text-[#A1A1AA] hover:bg-[#444444] hover:text-white"
-              }`}
-              aria-label="Close"
-            >
-              <X size={18} />
-            </button>
-
-            {/* Header Title (Not sharing inline space with close button) */}
-            <div className="w-full pb-3 border-b border-[#444444]/30 shrink-0 pr-8">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#A1A1AA]">
-                  {editingProduct ? (isThai ? "จัดการข้อมูล" : "Manage SKU") : (isThai ? "สร้างข้อมูลใหม่" : "New SKU")}
-                </span>
-                <h3 id="product-form-title" className={`font-bold text-[18px] leading-[24px] ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}>
-                  {editingProduct ? (isThai ? "แก้ไขข้อมูลสินค้า" : "Edit Product") : (isThai ? "เพิ่มสินค้าใหม่" : "Add New Product")}
-                </h3>
-              </div>
-            </div>
-
             {/* Form */}
-            <form onSubmit={handleSaveProduct} className="flex-1 flex flex-col justify-between pt-6 text-xs min-h-0">
-              <div className="space-y-6 overflow-y-auto pr-1">
+            <form
+              onSubmit={handleSaveProduct}
+              noValidate
+              className={panelStyles.form}
+            >
+              <div className={panelStyles.content}>
                 {formError && (
-                  <div className="p-3.5 rounded-[8px] bg-[#E71D36]/10 border border-[#E71D36]/30 text-[#E71D36] text-[13px] font-medium">
+                  <SidePanelAlert>
                     {formError}
-                  </div>
+                  </SidePanelAlert>
+                )}
+                {formRefsError && (
+                  <SidePanelAlert>{formRefsError}</SidePanelAlert>
                 )}
                 {formSuccess && (
-                  <div className="p-3.5 rounded-[8px] bg-[#2EC4B6]/10 border border-[#2EC4B6]/30 text-[#2EC4B6] text-[13px] font-medium">
+                  <SidePanelAlert tone="success">
                     {formSuccess}
-                  </div>
+                  </SidePanelAlert>
                 )}
 
                 {/* Section 1: ข้อมูลระบุตัวตนสินค้า */}
-                <div className="flex flex-col gap-3">
-                  <span className={`text-[12px] font-bold uppercase tracking-wider ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
-                    {isThai ? "1. ข้อมูลพื้นฐานสินค้า" : "1. Basic Information"}
-                  </span>
-
+                <div className={panelStyles.section}>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div className="flex flex-col gap-1.5">
-                      <label className={`text-[12px] font-bold ${isLight ? "text-[#444444]" : "text-[#E4E4E7]"}`}>
-                        {isThai ? "รหัสสินค้า (SKU)" : "SKU Code"} <span className="text-[#E71D36]">*</span>
+                      <label
+                        className={`text-[12px] font-bold ${isLight ? "text-[#444444]" : "text-[#E4E4E7]"}`}
+                      >
+                        {isThai ? "รหัสสินค้า (SKU)" : "SKU Code"}
                       </label>
                       <input
                         type="text"
-                        required
+                        aria-invalid={formFieldErrors.includes("sku")}
                         value={formSku}
-                        onChange={(e) => setFormSku(e.target.value)}
-                        placeholder="เช่น SKU-00120"
-                        className={`h-[38px] px-3.5 rounded-[8px] border text-[13px] font-mono outline-none transition-colors ${
-                          isLight
-                            ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222] focus:border-[#222222]"
-                            : "bg-[#222222] border-[#444444] text-[#F4F4F5] focus:border-[#E4E4E7]"
-                        }`}
+                        onChange={(e) => {
+                          setFormSku(e.target.value);
+                          setFormError(null);
+                          setFormFieldErrors((errors) => errors.filter((field) => field !== "sku"));
+                        }}
+                        placeholder={isThai ? "เช่น SKU-00120" : "e.g. SKU-00120"}
+                        className={`${panelStyles.input} font-mono ${formFieldErrors.includes("sku") ? sidePanelInvalidFieldClassName : ""}`}
                       />
+                      {formFieldErrors.includes("sku") && (
+                        <SidePanelFieldError>
+                          {isThai ? "กรุณากรอกรหัสสินค้า (SKU)" : "Enter a SKU code."}
+                        </SidePanelFieldError>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <label className={`text-[12px] font-bold ${isLight ? "text-[#444444]" : "text-[#E4E4E7]"}`}>
-                        {isThai ? "ชื่อสินค้า" : "Product Name"} <span className="text-[#E71D36]">*</span>
+                      <label
+                        className={`text-[12px] font-bold ${isLight ? "text-[#444444]" : "text-[#E4E4E7]"}`}
+                      >
+                        {isThai ? "ชื่อสินค้า" : "Product Name"}
                       </label>
                       <input
                         type="text"
-                        required
+                        aria-invalid={formFieldErrors.includes("name")}
                         value={formName}
-                        onChange={(e) => setFormName(e.target.value)}
-                        placeholder="เช่น เครื่องปั่นไฟดีเซล 5KW"
-                        className={`h-[38px] px-3.5 rounded-[8px] border text-[13px] outline-none transition-colors ${
-                          isLight
-                            ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222] focus:border-[#222222]"
-                            : "bg-[#222222] border-[#444444] text-[#F4F4F5] focus:border-[#E4E4E7]"
-                        }`}
+                        onChange={(e) => {
+                          setFormName(e.target.value);
+                          setFormError(null);
+                          setFormFieldErrors((errors) => errors.filter((field) => field !== "name"));
+                        }}
+                        placeholder={isThai ? "เช่น เครื่องปั่นไฟดีเซล 5KW" : "e.g. 5 kW diesel generator"}
+                        className={`${panelStyles.input} ${formFieldErrors.includes("name") ? sidePanelInvalidFieldClassName : ""}`}
                       />
+                      {formFieldErrors.includes("name") && (
+                        <SidePanelFieldError>
+                          {isThai ? "กรุณากรอกชื่อสินค้า" : "Enter a product name."}
+                        </SidePanelFieldError>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 {/* Section 2: การจัดหมวดหมู่และหน่วย */}
-                <div className="flex flex-col gap-3 pt-2 border-t border-[#444444]/20">
-                  <span className={`text-[12px] font-bold uppercase tracking-wider ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
-                    {isThai ? "2. การจัดหมวดหมู่และหน่วยนับ" : "2. Classification & Unit"}
-                  </span>
-
+                <div className={panelStyles.dividedSection}>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                     <div className="flex flex-col gap-1.5">
-                      <label className={`text-[12px] font-bold ${isLight ? "text-[#444444]" : "text-[#E4E4E7]"}`}>
+                      <label
+                        className={`text-[12px] font-bold ${isLight ? "text-[#444444]" : "text-[#E4E4E7]"}`}
+                      >
                         {isThai ? "หมวดหมู่สินค้า" : "Category"}
                       </label>
                       <CustomDropdown
                         value={formCategoryId}
-                        onChange={setFormCategoryId}
+                        onChange={(value) => {
+                          setFormCategoryId(value);
+                          setFormFieldErrors((errors) => errors.filter((field) => field !== "category"));
+                        }}
+                        placeholder={isThai ? "เลือก" : "Select"}
+                        placeholderClassName={isLight ? "!text-[#777777]" : "!text-[#A1A1AA]"}
+                        aria-invalid={formFieldErrors.includes("category")}
                         options={[
-                          { value: "", label: isThai ? "- เลือกหมวดหมู่ -" : "- Select -" },
-                          ...(data?.categories || []).map((c) => ({
+                          ...(filters?.categories || []).map((c) => ({
                             value: String(c.id),
                             label: c.name,
                           })),
                         ]}
                         searchable
                         className="w-full"
-                        triggerClassName={`h-[38px] px-3.5 rounded-[8px] border text-[13px] ${
-                          isLight ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222]" : "bg-[#222222] border-[#444444] text-[#F4F4F5]"
-                        }`}
+                        triggerClassName={`${panelStyles.dropdown} ${formFieldErrors.includes("category") ? sidePanelInvalidFieldClassName : ""}`}
                       />
+                      {formFieldErrors.includes("category") && (
+                        <SidePanelFieldError>
+                          {isThai ? "กรุณาเลือกหมวดหมู่สินค้า" : "Select a category."}
+                        </SidePanelFieldError>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <label className={`text-[12px] font-bold ${isLight ? "text-[#444444]" : "text-[#E4E4E7]"}`}>
+                      <label
+                        className={`text-[12px] font-bold ${isLight ? "text-[#444444]" : "text-[#E4E4E7]"}`}
+                      >
                         {isThai ? "ยี่ห้อ / แบรนด์" : "Brand"}
                       </label>
                       <CustomDropdown
                         value={formBrandId}
-                        onChange={setFormBrandId}
+                        onChange={(value) => {
+                          setFormBrandId(value);
+                          setFormFieldErrors((errors) => errors.filter((field) => field !== "brand"));
+                        }}
+                        placeholder={isThai ? "เลือก" : "Select"}
+                        placeholderClassName={isLight ? "!text-[#777777]" : "!text-[#A1A1AA]"}
+                        aria-invalid={formFieldErrors.includes("brand")}
                         options={[
-                          { value: "", label: isThai ? "- เลือกยี่ห้อ -" : "- Select -" },
-                          ...(data?.brands || []).map((b) => ({
+                          ...(formRefs?.brands || []).map((b) => ({
                             value: String(b.id),
                             label: b.name,
                           })),
                         ]}
                         searchable
                         className="w-full"
-                        triggerClassName={`h-[38px] px-3.5 rounded-[8px] border text-[13px] ${
-                          isLight ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222]" : "bg-[#222222] border-[#444444] text-[#F4F4F5]"
-                        }`}
+                        triggerClassName={`${panelStyles.dropdown} ${formFieldErrors.includes("brand") ? sidePanelInvalidFieldClassName : ""}`}
                       />
+                      {formFieldErrors.includes("brand") && (
+                        <SidePanelFieldError>
+                          {isThai ? "กรุณาเลือกยี่ห้อ / แบรนด์" : "Select a brand."}
+                        </SidePanelFieldError>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <label className={`text-[12px] font-bold ${isLight ? "text-[#444444]" : "text-[#E4E4E7]"}`}>
+                      <label
+                        className={`text-[12px] font-bold ${isLight ? "text-[#444444]" : "text-[#E4E4E7]"}`}
+                      >
                         {isThai ? "หน่วยนับ" : "Unit"}
                       </label>
                       <CustomDropdown
                         value={formUnitId}
-                        onChange={setFormUnitId}
+                        onChange={(value) => {
+                          setFormUnitId(value);
+                          setFormFieldErrors((errors) => errors.filter((field) => field !== "unit"));
+                        }}
+                        placeholder={isThai ? "เลือก" : "Select"}
+                        placeholderClassName={isLight ? "!text-[#777777]" : "!text-[#A1A1AA]"}
+                        aria-invalid={formFieldErrors.includes("unit")}
                         options={[
-                          { value: "", label: isThai ? "- เลือกหน่วย -" : "- Select -" },
-                          ...(data?.units || []).map((u) => ({
+                          ...(formRefs?.units || []).map((u) => ({
                             value: String(u.id),
                             label: u.name,
                           })),
                         ]}
                         searchable
                         className="w-full"
-                        triggerClassName={`h-[38px] px-3.5 rounded-[8px] border text-[13px] ${
-                          isLight ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222]" : "bg-[#222222] border-[#444444] text-[#F4F4F5]"
-                        }`}
+                        triggerClassName={`${panelStyles.dropdown} ${formFieldErrors.includes("unit") ? sidePanelInvalidFieldClassName : ""}`}
                       />
+                      {formFieldErrors.includes("unit") && (
+                        <SidePanelFieldError>
+                          {isThai ? "กรุณาเลือกหน่วยนับ" : "Select a unit."}
+                        </SidePanelFieldError>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 {/* Section 3: ราคาและการควบคุมสต็อก */}
-                <div className="flex flex-col gap-3 pt-2 border-t border-[#444444]/20">
-                  <span className={`text-[12px] font-bold uppercase tracking-wider ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
-                    {isThai ? "3. ราคาและจุดสั่งซื้อ" : "3. Pricing & Reorder Point"}
-                  </span>
-
+                <div className={panelStyles.dividedSection}>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                     <div className="flex flex-col gap-1.5">
-                      <label className={`text-[12px] font-bold ${isLight ? "text-[#444444]" : "text-[#E4E4E7]"}`}>
+                      <label
+                        className={`text-[12px] font-bold ${isLight ? "text-[#444444]" : "text-[#E4E4E7]"}`}
+                      >
                         {isThai ? "ต้นทุน (บาท)" : "Cost (THB)"}
                       </label>
                       <input
@@ -905,18 +957,25 @@ export default function ProductInventorySplitView() {
                         step="0.01"
                         min="0"
                         value={formCost}
-                        onChange={(e) => setFormCost(e.target.value)}
+                        aria-invalid={formFieldErrors.includes("cost")}
+                        onChange={(e) => {
+                          setFormCost(e.target.value);
+                          setFormFieldErrors((errors) => errors.filter((field) => field !== "cost"));
+                        }}
                         placeholder="0.00"
-                        className={`h-[38px] px-3.5 rounded-[8px] border text-[13px] font-mono outline-none transition-colors ${
-                          isLight
-                            ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222] focus:border-[#222222]"
-                            : "bg-[#222222] border-[#444444] text-[#F4F4F5] focus:border-[#E4E4E7]"
-                        }`}
+                        className={`${panelStyles.input} font-mono ${formFieldErrors.includes("cost") ? sidePanelInvalidFieldClassName : ""}`}
                       />
+                      {formFieldErrors.includes("cost") && (
+                        <SidePanelFieldError>
+                          {isThai ? "กรุณากรอกต้นทุน" : "Enter a cost."}
+                        </SidePanelFieldError>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <label className={`text-[12px] font-bold ${isLight ? "text-[#444444]" : "text-[#E4E4E7]"}`}>
+                      <label
+                        className={`text-[12px] font-bold ${isLight ? "text-[#444444]" : "text-[#E4E4E7]"}`}
+                      >
                         {isThai ? "ราคาขาย (บาท)" : "Sale Price (THB)"}
                       </label>
                       <input
@@ -924,69 +983,80 @@ export default function ProductInventorySplitView() {
                         step="0.01"
                         min="0"
                         value={formSalePrice}
-                        onChange={(e) => setFormSalePrice(e.target.value)}
+                        aria-invalid={formFieldErrors.includes("salePrice")}
+                        onChange={(e) => {
+                          setFormSalePrice(e.target.value);
+                          setFormFieldErrors((errors) => errors.filter((field) => field !== "salePrice"));
+                        }}
                         placeholder="0.00"
-                        className={`h-[38px] px-3.5 rounded-[8px] border text-[13px] font-mono outline-none transition-colors ${
-                          isLight
-                            ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222] focus:border-[#222222]"
-                            : "bg-[#222222] border-[#444444] text-[#F4F4F5] focus:border-[#E4E4E7]"
-                        }`}
+                        className={`${panelStyles.input} font-mono ${formFieldErrors.includes("salePrice") ? sidePanelInvalidFieldClassName : ""}`}
                       />
+                      {formFieldErrors.includes("salePrice") && (
+                        <SidePanelFieldError>
+                          {isThai ? "กรุณากรอกราคาขาย" : "Enter a sale price."}
+                        </SidePanelFieldError>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <label className={`text-[12px] font-bold ${isLight ? "text-[#444444]" : "text-[#E4E4E7]"}`}>
+                      <label
+                        className={`text-[12px] font-bold ${isLight ? "text-[#444444]" : "text-[#E4E4E7]"}`}
+                      >
                         {isThai ? "จุดสั่งซื้อ (ขั้นต่ำ)" : "Reorder Point"}
                       </label>
                       <input
-                        type="number"
-                        min="0"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         value={formReorderPoint}
-                        onChange={(e) => setFormReorderPoint(e.target.value)}
-                        placeholder="10"
-                        className={`h-[38px] px-3.5 rounded-[8px] border text-[13px] font-mono outline-none transition-colors ${
-                          isLight
-                            ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222] focus:border-[#222222]"
-                            : "bg-[#222222] border-[#444444] text-[#F4F4F5] focus:border-[#E4E4E7]"
-                        }`}
+                        aria-invalid={formFieldErrors.includes("reorderPoint")}
+                        onChange={(e) => {
+                          setFormReorderPoint(sanitizeWholeNumberInput(e.target.value, false, formReorderPoint));
+                          setFormFieldErrors((errors) => errors.filter((field) => field !== "reorderPoint"));
+                        }}
+                        placeholder="0"
+                        className={`${panelStyles.input} font-mono ${formFieldErrors.includes("reorderPoint") ? sidePanelInvalidFieldClassName : ""}`}
                       />
+                      {formFieldErrors.includes("reorderPoint") && (
+                        <SidePanelFieldError>
+                          {isThai ? "กรุณากรอกจุดสั่งซื้อ" : "Enter a reorder point."}
+                        </SidePanelFieldError>
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="pt-5 border-t border-[#444444]/30 flex justify-end items-center gap-3 shrink-0 mt-6">
+              <div className={panelStyles.footer}>
                 <button
                   type="button"
                   disabled={formSubmitting}
                   onClick={() => setIsModalOpen(false)}
-                  className={`h-[42px] px-6 rounded-[8px] border text-[14px] font-bold transition-colors cursor-pointer ${
-                    isLight
-                      ? "bg-white border-[#E4E4E7] text-[#222222] hover:bg-[#F4F4F5]"
-                      : "bg-[#383838] border-[#444444] text-[#F4F4F5] hover:bg-[#444444]"
-                  }`}
+                  className={panelStyles.cancel}
                 >
                   {isThai ? "ยกเลิก" : "Cancel"}
                 </button>
                 <button
                   type="submit"
-                  disabled={formSubmitting}
-                  className={`h-[42px] px-6 rounded-[8px] text-[14px] font-bold cursor-pointer transition-colors shadow-sm disabled:opacity-50 ${
-                    isLight
-                      ? "bg-[#222222] hover:bg-black text-white"
-                      : "bg-white hover:bg-[#F4F4F5] text-[#222222]"
-                  }`}
+                  disabled={formSubmitting || !formRefs}
+                  className={panelStyles.submit}
                 >
                   {formSubmitting
-                    ? isThai ? "กำลังบันทึก..." : "Saving..."
-                    : editingProduct ? (isThai ? "บันทึกการแก้ไข" : "Update") : (isThai ? "สร้างสินค้า" : "Create")}
+                    ? <><Loader2 size={15} className="mr-2 animate-spin" aria-hidden="true" /><span className="sr-only">{isThai ? "กำลังบันทึก" : "Saving"}</span></>
+                    : editingProduct
+                      ? isThai
+                        ? "บันทึกการแก้ไข"
+                        : "Update"
+                      : isThai
+                        ? "สร้างสินค้า"
+                        : "Create"}
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </SidePanel>
       )}
-    </div>
+      </div>
+    </WarehousePageTemplate>
   );
 }

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { dbPool } from "@/lib/core/db/pool";
+import { timedPoolQuery } from "@/lib/core/http/request-timing";
 import { id } from "@/lib/warehouse/validation";
 
 export async function duplicateWarnings(
@@ -13,11 +13,11 @@ export async function duplicateWarnings(
   if (externalDocNo) {
     const table = kind === "supplier" ? "supplier_receipts" : "carrier_receipts";
     const result = kind === "supplier"
-      ? await dbPool.query(`
+      ? await timedPoolQuery(`
           SELECT 1 FROM app.supplier_receipts
           WHERE supplier_id = $1 AND external_doc_no = $2 LIMIT 1
         `, [supplierId, externalDocNo])
-      : await dbPool.query(`
+      : await timedPoolQuery(`
           SELECT 1 FROM app.carrier_receipts
           WHERE external_doc_no = $1 LIMIT 1
         `, [externalDocNo]);
@@ -26,7 +26,7 @@ export async function duplicateWarnings(
 
   if (Array.isArray(mediaAssetIds) && mediaAssetIds.length) {
     const ids = mediaAssetIds.map((value) => id(value, "mediaAssetIds"));
-    const result = await dbPool.query(`
+    const result = await timedPoolQuery(`
       SELECT 1
       FROM app.media_assets incoming
       JOIN app.media_assets prior ON prior.sha256 = incoming.sha256 AND prior.id <> incoming.id

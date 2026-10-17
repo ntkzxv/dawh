@@ -1,0 +1,121 @@
+"use client";
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { usePathname } from "next/navigation";
+import { ApiRequestError } from "@/lib/api/client";
+import { warehouseApi, type Me } from "@/lib/api/warehouse";
+import {
+  clearWarehouseReferenceCache,
+  getWarehouseReferenceScope,
+} from "@/lib/api/warehouse-reference-cache";
+
+type AccountContextValue = {
+  me: Me | null;
+  loading: boolean;
+  error: string | null;
+  refresh: () => Promise<void>;
+  clear: () => void;
+};
+
+const AccountContext = createContext<AccountContextValue | null>(null);
+const protectedPrefixes = [
+  "/warehouse",
+  "/workspace",
+  "/account",
+  "/settings",
+  "/controlpanel",
+];
+
+function isProtectedPath(pathname: string) {
+  return protectedPrefixes.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
+export function WarehouseAccountProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const pathname = usePathname();
+  const protectedPath = isProtectedPath(pathname);
+  const [me, setMe] = useState<Me | null>(null);
+  const [loading, setLoading] = useState(protectedPath);
+  const [error, setError] = useState<string | null>(null);
+  const cacheScope = getWarehouseReferenceScope(me);
+  const previousCacheScope = useRef<string | null>(null);
+
+  useEffect(() => {
+    const previous = previousCacheScope.current;
+    if (previous && previous !== cacheScope) {
+      clearWarehouseReferenceCache(previous);
+    }
+    previousCacheScope.current = cacheScope;
+  }, [cacheScope]);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      setMe(await warehouseApi.me());
+    } catch (cause) {
+      setMe(null);
+      if (!(
+        cause instanceof ApiRequestError && [401, 403].includes(cause.status)
+      )) {
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : "ไม่สามารถโหลดข้อมูลบัญชีได้",
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const clear = useCallback(() => {
+    clearWarehouseReferenceCache();
+    setMe(null);
+    setError(null);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (!protectedPath) return;
+    let active = true;
+    queueMicrotask(() => {
+      if (active) void refresh();
+    });
+    return () => {
+      active = false;
+    };
+  }, [protectedPath, refresh]);
+
+  useEffect(() => {
+    const handleLogout = () => clear();
+    window.addEventListener("dawh:auth-logout", handleLogout);
+    return () => window.removeEventListener("dawh:auth-logout", handleLogout);
+  }, [clear]);
+
+  const value = useMemo(
+    () => ({ me, loading, error, refresh, clear }),
+    [me, loading, error, refresh, clear],
+  );
+  return (
+    <AccountContext.Provider value={value}>{children}</AccountContext.Provider>
+  );
+}
+
+export function useOptionalWarehouseAccount() {
+  return useContext(AccountContext);
+}

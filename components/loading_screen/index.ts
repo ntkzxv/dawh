@@ -23,7 +23,7 @@ export {
   SkeletonStatGrid,
   SkeletonDataTable,
   SkeletonChartCard,
-  SkeletonWarehousePage,
+  SkeletonDashboardPage,
   SkeletonDatacenterPage,
   SkeletonWrapper,
 } from "./SkeletonLoading";

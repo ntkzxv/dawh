@@ -39,6 +39,72 @@ export class ApiRequestError extends Error {
   }
 }
 
+export class ApiTimeoutError extends Error {
+  readonly timeoutMs: number;
+
+  constructor(timeoutMs: number) {
+    super(`The request timed out after ${timeoutMs / 1000} seconds. Please retry.`);
+    this.name = "ApiTimeoutError";
+    this.timeoutMs = timeoutMs;
+  }
+}
+
+let navigationApiTrackingId = 0;
+let navigationApiTrackingActive = false;
+let navigationApiRequestsInFlight = 0;
+const navigationApiTrackingListeners = new Set<() => void>();
+
+function notifyNavigationApiTrackingListeners() {
+  for (const listener of navigationApiTrackingListeners) listener();
+}
+
+export function beginNavigationApiTracking() {
+  navigationApiTrackingId += 1;
+  navigationApiTrackingActive = true;
+  navigationApiRequestsInFlight = 0;
+  notifyNavigationApiTrackingListeners();
+  return navigationApiTrackingId;
+}
+
+export function endNavigationApiTracking(trackingId: number) {
+  if (trackingId !== navigationApiTrackingId) return;
+  navigationApiTrackingActive = false;
+  navigationApiRequestsInFlight = 0;
+  notifyNavigationApiTrackingListeners();
+}
+
+export function getNavigationApiRequestsInFlight(trackingId: number) {
+  return trackingId === navigationApiTrackingId && navigationApiTrackingActive
+    ? navigationApiRequestsInFlight
+    : 0;
+}
+
+export function subscribeToNavigationApiTracking(listener: () => void) {
+  navigationApiTrackingListeners.add(listener);
+  return () => {
+    navigationApiTrackingListeners.delete(listener);
+  };
+}
+
+function trackNavigationApiRequestStart() {
+  if (!navigationApiTrackingActive) return null;
+  navigationApiRequestsInFlight += 1;
+  notifyNavigationApiTrackingListeners();
+  return navigationApiTrackingId;
+}
+
+function trackNavigationApiRequestEnd(trackingId: number | null) {
+  if (
+    trackingId === null ||
+    trackingId !== navigationApiTrackingId ||
+    !navigationApiTrackingActive
+  ) {
+    return;
+  }
+  navigationApiRequestsInFlight = Math.max(0, navigationApiRequestsInFlight - 1);
+  notifyNavigationApiTrackingListeners();
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -59,14 +125,45 @@ export async function apiRequest<T>(
   }
   headers.set("accept", "application/json");
 
-  const response = await fetch(path, {
-    ...init,
-    headers,
-    credentials: "include",
-    cache: init.cache ?? "no-store",
-  });
-  const payload = await parseResponse(response);
+  const method = (init.method ?? "GET").toUpperCase();
+  const timeoutMs = method === "GET" ? 20_000 : null;
+  const controller = timeoutMs == null ? null : new AbortController();
+  let timedOut = false;
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const onCallerAbort = () => controller?.abort(init.signal?.reason);
+  if (controller && init.signal?.aborted) onCallerAbort();
+  else if (controller && init.signal) {
+    init.signal.addEventListener("abort", onCallerAbort, { once: true });
+  }
+  if (controller) {
+    timeout = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, timeoutMs!);
+  }
 
+  let response: Response;
+  let payload: unknown;
+  const navigationTrackingId = trackNavigationApiRequestStart();
+  try {
+    response = await fetch(path, {
+      ...init,
+      headers,
+      signal: controller?.signal ?? init.signal,
+      credentials: "include",
+      cache: init.cache ?? "no-store",
+    });
+    payload = await parseResponse(response);
+  } catch (cause) {
+    if (timedOut) throw new ApiTimeoutError(timeoutMs!);
+    throw cause;
+  } finally {
+    if (timeout) clearTimeout(timeout);
+    if (controller && init.signal) {
+      init.signal.removeEventListener("abort", onCallerAbort);
+    }
+    trackNavigationApiRequestEnd(navigationTrackingId);
+  }
   if (!response.ok) {
     const body = isRecord(payload) && isRecord(payload.error) ? payload.error : {};
     throw new ApiRequestError(response.status, {

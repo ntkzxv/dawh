@@ -3,6 +3,35 @@
 import React, { ReactNode } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { Package } from "lucide-react";
+import { SkeletonBox } from "@/components/loading_screen/SkeletonLoading";
+
+export const DATA_TABLE_STYLES = {
+  table: "w-full border-separate border-spacing-0 border-0 bg-transparent text-left text-[13px]",
+  headerRow: "h-[36px] text-xs font-semibold select-none",
+  headerCell: "py-2 px-3",
+  body: "divide-y",
+  bodyRow: "transition-colors select-none",
+  bodyCell: "py-3 px-3",
+} as const;
+
+export const DATA_TABLE_MIN_BODY_ROWS = 10;
+export const DATA_TABLE_BODY_ROW_HEIGHT = 60;
+export const getDataTablePlaceholderRowCount = (rowCount: number) =>
+  rowCount > 0 ? Math.max(0, DATA_TABLE_MIN_BODY_ROWS - rowCount) : 0;
+
+export const DATA_TABLE_FRAME_STYLES = {
+  base: "overflow-hidden rounded-xl border",
+  light: "border-[#D4D4D8] bg-white",
+  dark: "border-[#555555] bg-[#383838]",
+} as const;
+
+export const dataTableFrameClassName = (isLight: boolean) =>
+  `${DATA_TABLE_FRAME_STYLES.base} ${isLight ? DATA_TABLE_FRAME_STYLES.light : DATA_TABLE_FRAME_STYLES.dark}`;
+
+export const dataTableStripedRowClassName = (isLight: boolean) =>
+  isLight
+    ? "odd:bg-white even:bg-[#F7F7F7] hover:!bg-[#EEEEEE]"
+    : "odd:bg-[#383838] even:bg-[#414141] hover:!bg-[#4A4A4A]";
 
 export interface DataTableColumn<T> {
   key: string;
@@ -46,26 +75,24 @@ export default function DataTable<T>({
 }: DataTableProps<T>) {
   const { theme } = useTheme();
   const isLight = theme === "light";
+  const placeholderRowCount = !isLoading
+    ? getDataTablePlaceholderRowCount(data.length)
+    : 0;
+  const paginatedRowStyle = { height: DATA_TABLE_BODY_ROW_HEIGHT };
 
   return (
-    <div
-      className={`w-full rounded-[12px] border overflow-hidden ${
-        isLight
-          ? "bg-white border-[#E4E4E7] shadow-xs"
-          : "bg-[#383838] border-[#444444]"
-      } ${className}`}
-    >
+    <div className={`w-full overflow-hidden ${className}`}>
       <div className="overflow-x-auto">
         <table
-          className={`w-full text-left text-[13px] border-collapse ${tableClassName}`}
+          className={`${DATA_TABLE_STYLES.table} ${tableClassName}`}
           style={{ minWidth }}
         >
           <thead>
             <tr
-              className={`h-[42px] border-b text-[12px] font-semibold text-white select-none ${
+              className={`${DATA_TABLE_STYLES.headerRow} ${
                 isLight
-                  ? "bg-slate-900 border-slate-800"
-                  : "bg-[#282828] border-[#444444]"
+                  ? "bg-[#F4F4F5] text-[#666666]"
+                  : "bg-[#2C2C2C] text-[#A1A1AA]"
               }`}
             >
               {columns.map((col) => {
@@ -79,22 +106,22 @@ export default function DataTable<T>({
                 return (
                   <th
                     key={col.key}
-                    className={`py-2.5 px-4 ${alignClass} ${col.headerClassName || ""}`}
-                  >
-                    {col.header}
-                  </th>
+                    className={`${DATA_TABLE_STYLES.headerCell} ${alignClass} first:rounded-l-[6px] last:rounded-r-[6px] ${col.headerClassName || ""}`}
+                 >
+                    {isLoading ? <SkeletonBox className="h-3 w-2/3" /> : col.header}
+                 </th>
                 );
               })}
             </tr>
           </thead>
           <tbody
-            className={`divide-y ${
-              isLight ? "divide-slate-200" : "divide-white/5"
-            }`}
+            className={`${DATA_TABLE_STYLES.body} ${
+              isLight ? "divide-[#E4E4E7]" : "divide-[#444444]"
+            } whitespace-nowrap`}
           >
             {isLoading ? (
               Array.from({ length: skeletonRowCount }).map((_, rIdx) => (
-                <tr key={`skeleton-${rIdx}`} className="animate-pulse">
+                <tr key={`skeleton-${rIdx}`} className="h-[56px]">
                   {columns.map((col, cIdx) => {
                     const alignClass =
                       col.align === "right"
@@ -104,24 +131,23 @@ export default function DataTable<T>({
                         : "justify-start";
 
                     return (
-                      <td key={`skeleton-cell-${rIdx}-${col.key || cIdx}`} className="py-4 px-4">
+                      <td key={`skeleton-cell-${rIdx}-${col.key || cIdx}`} className="px-3 py-3">
                         <div className={`flex items-center ${alignClass}`}>
-                          {cIdx === 0 ? (
-                            <div className="flex flex-col gap-2 w-full max-w-[200px]">
-                              <div className="h-3.5 w-24 bg-zinc-300 dark:bg-zinc-700 rounded" />
-                              <div className="h-4 w-44 bg-zinc-200 dark:bg-zinc-800 rounded" />
-                            </div>
-                          ) : (
-                            <div
-                              className={`h-3.5 bg-zinc-200 dark:bg-zinc-800 rounded ${
-                                col.align === "right"
-                                  ? "w-14"
-                                  : col.align === "center"
-                                  ? "w-4 h-4"
-                                  : "w-20"
-                              }`}
-                            />
-                          )}
+                          <SkeletonBox
+                            className={`${
+                              cIdx === 0
+                                ? "h-3.5 w-3/4 max-w-[200px]"
+                                : col.key.toLowerCase().includes("action") || col.key.toLowerCase().includes("edit")
+                                  ? "size-8 rounded-[6px]"
+                                  : col.key.toLowerCase().includes("status")
+                                    ? "h-5 w-14 rounded-full"
+                                    : col.align === "center"
+                                      ? "h-3.5 w-14"
+                                      : col.align === "right"
+                                        ? "h-3.5 w-12"
+                                        : "h-3.5 w-20"
+                            }`}
+                          />
                         </div>
                       </td>
                     );
@@ -156,16 +182,15 @@ export default function DataTable<T>({
                   <tr
                     key={key}
                     onClick={() => onRowClick && onRowClick(item, idx)}
-                    className={`transition-colors select-none ${
+                    style={paginatedRowStyle}
+                    className={`${DATA_TABLE_STYLES.bodyRow} ${
                       isClickable ? "cursor-pointer" : ""
                     } ${
                       isSelected
                         ? isLight
                           ? "bg-slate-100/90"
                           : "bg-white/[0.08]"
-                        : isLight
-                        ? "hover:bg-slate-50"
-                        : "hover:bg-white/[0.03]"
+                        : dataTableStripedRowClassName(isLight)
                     }`}
                   >
                     {columns.map((col) => {
@@ -179,7 +204,7 @@ export default function DataTable<T>({
                       return (
                         <td
                           key={`cell-${key}-${col.key}`}
-                          className={`py-3.5 px-4 ${alignClass} ${col.className || ""}`}
+                          className={`${DATA_TABLE_STYLES.bodyCell} ${alignClass} ${col.className || ""}`}
                         >
                           {col.render
                             ? col.render(item, idx)
@@ -193,6 +218,19 @@ export default function DataTable<T>({
                 );
               })
             )}
+            {Array.from({ length: placeholderRowCount }, (_, index) => (
+              <tr
+                key={`placeholder-${index}`}
+                aria-hidden="true"
+                style={paginatedRowStyle}
+                className={`${DATA_TABLE_STYLES.bodyRow} ${dataTableStripedRowClassName(isLight)}`}
+              >
+                <td
+                  colSpan={columns.length}
+                  style={{ height: DATA_TABLE_BODY_ROW_HEIGHT, padding: 0 }}
+                />
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

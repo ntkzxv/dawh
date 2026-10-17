@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect, useRef, useId } from "react";
 import { useTheme } from "@/context/ThemeContext";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   ChevronLeft,
   ChevronRight,
@@ -17,11 +17,13 @@ type OffsetPaginationProps = CommonPaginationProps & {
   mode?: "offset";
   currentPage: number;
   totalPages: number;
-  totalItems: number;
+  totalItems?: number;
+  pageItemCount?: number;
   pageSize?: number;
   onPageChange: (page: number) => void;
   showTotalItems?: boolean;
   id?: string;
+  isLoading?: boolean;
 };
 
 type CursorPaginationProps = CommonPaginationProps & {
@@ -114,13 +116,14 @@ function CursorPagination({
 function OffsetPagination({
   currentPage,
   totalPages,
-  totalItems,
-  pageSize = 10,
+  totalItems = 0,
+  pageItemCount,
   onPageChange,
   isThai = true,
   className = "",
   showTotalItems = true,
   id,
+  isLoading = false,
 }: OffsetPaginationProps) {
   const { theme } = useTheme();
   const isLight = theme === "light";
@@ -137,13 +140,6 @@ function OffsetPagination({
       prevPageRef.current = currentPage;
     }
   }, [currentPage]);
-
-  // Fixed 10 items per page by default
-  const effectivePageSize = pageSize || 10;
-
-  // Calculate range of items being shown
-  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * effectivePageSize + 1;
-  const endItem = Math.min(currentPage * effectivePageSize, totalItems);
 
   /**
    * Generates page buttons with dots:
@@ -195,54 +191,46 @@ function OffsetPagination({
     <div
       className={`flex flex-col sm:flex-row items-center justify-between gap-4 py-3 select-none text-xs ${className}`}
     >
-      {/* Left: Total Items Summary with subtle smooth slide */}
+      {/* Left: current page and total item summary */}
       <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
         {showTotalItems && (
-          <div className="text-xs opacity-70 flex items-center gap-1">
-            {isThai ? (
+          <div className="text-xs opacity-70 flex items-center gap-1.5">
+            {pageItemCount !== undefined ? (isThai ? (
               <>
-                <span>แสดง</span>
-                <span className="relative inline-flex overflow-hidden h-[18px] items-center">
-                  <AnimatePresence mode="popLayout" initial={false}>
-                    <motion.span
-                      key={`thai-range-${currentPage}`}
-                      initial={{ y: direction >= 0 ? 10 : -10, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      exit={{ y: direction >= 0 ? -10 : 10, opacity: 0 }}
-                      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                      className="font-semibold text-zinc-900 dark:text-white"
-                    >
-                      {startItem}-{endItem}
-                    </motion.span>
-                  </AnimatePresence>
-                </span>
-                <span>จากทั้งหมด</span>
-                <span className="font-semibold text-zinc-900 dark:text-white">
-                  {totalItems.toLocaleString()}
-                </span>
+                <span>หน้า</span>
+                <span className="font-semibold text-zinc-900 dark:text-white">{currentPage}</span>
+                <span className="mx-1" aria-hidden="true">·</span>
+                <span className="font-semibold text-zinc-900 dark:text-white">{pageItemCount.toLocaleString()}</span>
+                <span>รายการในหน้านี้</span>
+              </>
+            ) : (
+              <>
+                <span>Page</span>
+                <span className="font-semibold text-zinc-900 dark:text-white">{currentPage}</span>
+                <span className="mx-1" aria-hidden="true">·</span>
+                <span className="font-semibold text-zinc-900 dark:text-white">{pageItemCount.toLocaleString()}</span>
+                <span>items on this page</span>
+              </>
+            )) : isThai ? (
+              <>
+                <span>หน้า</span>
+                <span className="font-semibold text-zinc-900 dark:text-white">{currentPage}</span>
+                <span>จาก</span>
+                <span className="font-semibold text-zinc-900 dark:text-white">{totalPages}</span>
+                <span className="mx-1" aria-hidden="true">·</span>
+                <span>ทั้งหมด</span>
+                <span className="font-semibold text-zinc-900 dark:text-white">{totalItems.toLocaleString()}</span>
                 <span>รายการ</span>
               </>
             ) : (
               <>
-                <span>Showing</span>
-                <span className="relative inline-flex overflow-hidden h-[18px] items-center">
-                  <AnimatePresence mode="popLayout" initial={false}>
-                    <motion.span
-                      key={`en-range-${currentPage}`}
-                      initial={{ y: direction >= 0 ? 10 : -10, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      exit={{ y: direction >= 0 ? -10 : 10, opacity: 0 }}
-                      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                      className="font-semibold text-zinc-900 dark:text-white"
-                    >
-                      {startItem}-{endItem}
-                    </motion.span>
-                  </AnimatePresence>
-                </span>
+                <span>Page</span>
+                <span className="font-semibold text-zinc-900 dark:text-white">{currentPage}</span>
                 <span>of</span>
-                <span className="font-semibold text-zinc-900 dark:text-white">
-                  {totalItems.toLocaleString()}
-                </span>
+                <span className="font-semibold text-zinc-900 dark:text-white">{totalPages}</span>
+                <span className="mx-1" aria-hidden="true">·</span>
+                <span>Total</span>
+                <span className="font-semibold text-zinc-900 dark:text-white">{totalItems.toLocaleString()}</span>
                 <span>items</span>
               </>
             )}
@@ -257,7 +245,7 @@ function OffsetPagination({
           type="button"
           whileTap={{ scale: 0.88 }}
           onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage <= 1}
+          disabled={currentPage <= 1 || isLoading}
           title={isThai ? "ก่อนหน้า" : "Previous Page"}
           className={`p-2 rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-25 ${
             isLight
@@ -292,6 +280,7 @@ function OffsetPagination({
                 type="button"
                 whileTap={{ scale: 0.92 }}
                 onClick={() => onPageChange(page)}
+                disabled={isLoading}
                 transition={{
                   layout: { duration: 0.25, ease: [0.16, 1, 0.3, 1] },
                 }}
@@ -342,7 +331,7 @@ function OffsetPagination({
           type="button"
           whileTap={{ scale: 0.88 }}
           onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage >= totalPages}
+          disabled={currentPage >= totalPages || isLoading}
           title={isThai ? "ถัดไป" : "Next Page"}
           className={`p-2 rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-25 ${
             isLight

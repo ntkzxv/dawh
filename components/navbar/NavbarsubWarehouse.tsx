@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
+import Link from "next/link";
 import {
   LayoutDashboard,
   Activity,
@@ -18,7 +19,7 @@ import {
   Truck,
   Warehouse,
 } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage } from "@/utils/language";
 import { motion, AnimatePresence } from "framer-motion";
@@ -28,9 +29,10 @@ export interface NavbarsubWarehouseProps {
   lang?: "th" | "en";
   userRole?: string | null;
   onNavigate?: (path: string) => void;
+  menuItems?: MenuGroup[];
 }
 
-interface SubMenuItem {
+export interface SubMenuItem {
   label: string;
   path: string;
   badge?: string | number;
@@ -38,7 +40,7 @@ interface SubMenuItem {
   isRestricted?: boolean;
 }
 
-interface MenuGroup {
+export interface MenuGroup {
   id: string;
   title: string;
   icon: React.ElementType;
@@ -52,10 +54,10 @@ export default function NavbarsubWarehouse({
   lang: propLang,
   userRole: propUserRole,
   onNavigate,
+  menuItems: providedMenuItems,
 }: NavbarsubWarehouseProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const appLang = useAppLanguage();
@@ -121,7 +123,7 @@ export default function NavbarsubWarehouse({
     return Array.from(params.entries()).every(([key, value]) => searchParams.get(key) === value);
   };
 
-  const menuItems: MenuGroup[] = [
+  const warehouseMenuItems: MenuGroup[] = [
     {
       id: "dashboard",
       title: t.dashboard,
@@ -220,6 +222,7 @@ export default function NavbarsubWarehouse({
       ],
     },
   ];
+  const menuItems = providedMenuItems ?? warehouseMenuItems;
 
   // Track expanded groups for dropdown accordion
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
@@ -282,12 +285,14 @@ export default function NavbarsubWarehouse({
     };
   }, [activePopupGroup]);
 
-  const handleItemClick = (path: string) => {
+  const handleItemClick = (
+    path: string,
+    event: React.MouseEvent<HTMLAnchorElement>,
+  ) => {
     setActivePopupGroup(null);
     if (onNavigate) {
+      event.preventDefault();
       onNavigate(path);
-    } else {
-      router.push(path);
     }
   };
 
@@ -335,10 +340,11 @@ export default function NavbarsubWarehouse({
           // Case 1: Single item without children (Direct Route)
           if (!hasChildren && item.path) {
             return (
-              <button
+              <Link
                 key={item.id}
-                type="button"
-                onClick={() => handleItemClick(item.path!)}
+                href={item.path}
+                onClick={(event) => handleItemClick(item.path!, event)}
+                aria-current={isSelfActive ? "page" : undefined}
                 className={`group relative rounded-xl border transition-colors duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] flex items-center overflow-hidden cursor-pointer outline-none focus:outline-none select-none ${
                   isMinimized
                     ? "w-12 h-12 justify-center mx-auto px-0"
@@ -422,7 +428,7 @@ export default function NavbarsubWarehouse({
                     }`}
                   />
                 )}
-              </button>
+              </Link>
             );
           }
 
@@ -540,10 +546,11 @@ export default function NavbarsubWarehouse({
                         const ChildIcon = child.icon;
 
                         return (
-                          <button
+                          <Link
                             key={child.path}
-                            type="button"
-                            onClick={() => handleItemClick(child.path)}
+                            href={child.path}
+                            onClick={(event) => handleItemClick(child.path, event)}
+                            aria-current={isActive ? "page" : undefined}
                             className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left border transition-all duration-200 cursor-pointer outline-none focus:outline-none select-none ${
                               isActive
                                 ? isLight
@@ -596,7 +603,7 @@ export default function NavbarsubWarehouse({
                                 }`}
                               />
                             </div>
-                          </button>
+                          </Link>
                         );
                       })}
                     </div>
@@ -635,10 +642,11 @@ export default function NavbarsubWarehouse({
                 const ChildIcon = child.icon;
 
                 return (
-                  <button
+                  <Link
                     key={child.path}
-                    type="button"
-                    onClick={() => handleItemClick(child.path)}
+                    href={child.path}
+                    onClick={(event) => handleItemClick(child.path, event)}
+                    aria-current={isActive ? "page" : undefined}
                     className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left border transition-colors duration-250 ease-[cubic-bezier(0.4,0,0.2,1)] group/item cursor-pointer outline-none focus:outline-none select-none ${
                       isActive
                         ? isLight
@@ -689,7 +697,7 @@ export default function NavbarsubWarehouse({
                         }`}
                       />
                     </div>
-                  </button>
+                  </Link>
                 );
               })}
             </div>

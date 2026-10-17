@@ -1,5 +1,5 @@
-import ControlPanel from "@/components/warehouse/ControlPanel";
+import { redirect } from "next/navigation";
 
 export default function ControlPanelPage() {
-  return <ControlPanel />;
+  redirect("/controlpanel/users");
 }

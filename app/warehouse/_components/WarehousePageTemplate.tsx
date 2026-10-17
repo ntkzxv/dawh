@@ -4,6 +4,7 @@ import React from "react";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage } from "@/utils/language";
 import { motion, AnimatePresence } from "framer-motion";
+import { SkeletonBox } from "@/components/loading_screen/SkeletonLoading";
 import {
   Box,
   Package,
@@ -82,6 +83,9 @@ export interface WarehousePageTemplateProps {
   children?: React.ReactNode;
   fullBleed?: boolean;
   headerActions?: React.ReactNode;
+  loading?: boolean;
+  loadingLabel?: string;
+  loadingContent?: React.ReactNode;
 }
 
 // Keep track of whether user has already entered warehouse module in current session
@@ -94,6 +98,9 @@ export default function WarehousePageTemplate({
   children,
   fullBleed = false,
   headerActions,
+  loading = false,
+  loadingLabel,
+  loadingContent,
 }: WarehousePageTemplateProps) {
   const { theme } = useTheme();
   const isLight = theme === "light";
@@ -131,12 +138,12 @@ export default function WarehousePageTemplate({
           }`}
           style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
         >
-          {displayTitle}
+          {loading ? <SkeletonBox className="h-6 w-48 rounded-md" /> : displayTitle}
         </h1>
 
         {headerActions && (
           <div className="flex items-center gap-3">
-            {headerActions}
+            {loading ? <><SkeletonBox className="h-9 w-24 rounded-xl" /><SkeletonBox className="h-9 w-32 rounded-xl" /></> : headerActions}
           </div>
         )}
       </motion.header>
@@ -149,11 +156,17 @@ export default function WarehousePageTemplate({
               ? "w-full h-full flex flex-col p-0"
               : "p-6 sm:p-10 space-y-8 max-w-7xl w-full mx-auto"
           }
+          aria-busy={loading || undefined}
+          aria-label={loading ? (loadingLabel || (isThai ? "กำลังโหลดหน้า" : "Loading page")) : undefined}
         >
 
 
         {/* Metrics Bar with Dividers (Collapsible) */}
-        {metrics && metrics.length > 0 && (
+        {loading && metrics && metrics.length > 0 ? (
+          <div className={`w-full ${fullBleed ? "px-4 pt-4 sm:px-6 lg:px-8 sm:pt-6" : ""}`} aria-hidden="true">
+            <div className="flex justify-end"><SkeletonBox className="h-7 w-28 rounded-md" /></div>
+          </div>
+        ) : metrics && metrics.length > 0 && (
           <div className={`w-full space-y-2 ${fullBleed ? "px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6" : ""}`}>
             <div className="flex items-center justify-end">
               <button
@@ -240,7 +253,15 @@ export default function WarehousePageTemplate({
           </div>
         )}
 
-        {children}
+        {loading && loadingContent ? (
+          <div
+            className={fullBleed ? "min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8" : ""}
+            role="status"
+            aria-label={loadingLabel || (isThai ? "กำลังโหลดหน้า" : "Loading page")}
+          >
+            {loadingContent}
+          </div>
+        ) : children}
         </div>
       </div>
     </div>

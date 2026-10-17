@@ -4,9 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { NavbarMain, NavbarsubWarehouse } from "@/components/navbar";
 import { useTheme } from "@/context/ThemeContext";
-import { getCurrentSession } from "@/lib/auth-client";
-import { warehouseApi } from "@/lib/api/warehouse";
-import type { Role } from "@/lib/api/warehouse";
+import { useOptionalWarehouseAccount } from "@/context/WarehouseAccountContext";
 import { motion } from "framer-motion";
 
 export default function WarehouseLayout({
@@ -14,31 +12,22 @@ export default function WarehouseLayout({
 }: {
   children: React.ReactNode;
 }) {
+  return <WarehouseLayoutContent>{children}</WarehouseLayoutContent>;
+}
+
+function WarehouseLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { theme } = useTheme();
+  const account = useOptionalWarehouseAccount();
   const isLight = theme === "light";
   const [isMinimized, setIsMinimized] = useState(false);
   const [sidebarAnimated, setSidebarAnimated] = useState(false);
-  const [role, setRole] = useState<Role | null>(null);
 
   useEffect(() => {
-    async function verifyAccess() {
-      try {
-        const session = await getCurrentSession();
-        if (!session?.user) {
-          router.replace("/auth/login?from=/warehouse");
-          return;
-        }
-
-        const me = await warehouseApi.me();
-        setRole(me.role);
-        if (me.mustChangePassword) router.replace("/settings");
-      } catch (err) {
-        console.error("Layout guard verification error:", err);
-      }
-    }
-    void verifyAccess();
-  }, [router]);
+    if (account?.loading) return;
+    if (!account?.me && !account?.error)
+      router.replace("/auth/login?from=/warehouse");
+  }, [account?.loading, account?.me, account?.error, router]);
 
   useEffect(() => {
     let frame = 0;
@@ -89,7 +78,10 @@ export default function WarehouseLayout({
           hubPath="/workspace"
           settingsPath="/settings"
         >
-          <NavbarsubWarehouse isMinimized={isMinimized} userRole={role} />
+          <NavbarsubWarehouse
+            isMinimized={isMinimized}
+            userRole={account?.me?.role ?? null}
+          />
         </NavbarMain>
       </motion.div>
 

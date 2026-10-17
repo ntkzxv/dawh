@@ -1,11 +1,12 @@
 import "server-only";
 
-import { dbPool } from "@/lib/core/db/pool";
+import { timedPoolQuery } from "@/lib/core/http/request-timing";
 import { withTransaction } from "@/lib/core/db/transaction";
 import { ApiError, NotFoundError, ValidationError } from "@/lib/core/http/errors";
 import { audit, id, idempotencyKey, optionalText, quantity, requireBranch, requireRole, text, type Actor } from "@/lib/warehouse/core";
 import { attachEvidence } from "@/lib/warehouse/media";
 import { postInventoryLine } from "@/lib/warehouse/ledger";
+import { cursorPageResult, parseCursorPage } from "@/lib/warehouse/cursor-pagination";
 
 type CountLine = { poLineId: number; good: string; damaged: string; wrong: string; serialNumbers: string[]; note: string | null };
 function parsedLines(value: unknown): CountLine[] {
@@ -24,25 +25,30 @@ function parsedLines(value: unknown): CountLine[] {
   return lines;
 }
 
-export async function listGoodsReceipts(actor: Actor) {
+export async function listGoodsReceipts(actor: Actor, search: URLSearchParams) {
   requireRole(actor, ["ADMIN", "CEO", "MANAGER", "COUNTER_STAFF"]);
-  const result = await dbPool.query(`SELECT gr.*,cr.record_no AS carrier_receipt_no,po.record_no AS purchase_order_no,b.name AS branch_name,w.name AS warehouse_name
+  const { limit, cursor } = parseCursorPage(search);
+  const result = await timedPoolQuery<Record<string, unknown> & { id: number }>(`
+    SELECT gr.*,cr.record_no AS carrier_receipt_no,po.record_no AS purchase_order_no,b.name AS branch_name,w.name AS warehouse_name
     FROM app.goods_receipts gr JOIN app.carrier_receipts cr ON cr.id=gr.carrier_receipt_id
     JOIN app.purchase_orders po ON po.id=cr.purchase_order_id JOIN app.branches b ON b.id=gr.receiving_branch_id
     JOIN app.warehouses w ON w.id=gr.warehouse_id
-    WHERE ($1::boolean OR gr.receiving_branch_id=ANY($2::integer[])) ORDER BY gr.id DESC LIMIT 500`, [actor.role === "ADMIN" || actor.role === "CEO", actor.branchIds]);
-  return result.rows;
+    WHERE ($1::boolean OR gr.receiving_branch_id=ANY($2::integer[]))
+      AND ($3::bigint IS NULL OR gr.id < $3)
+    ORDER BY gr.id DESC LIMIT $4`,
+  [actor.role === "ADMIN" || actor.role === "CEO", actor.branchIds, cursor?.parentId ?? null, limit + 1]);
+  return cursorPageResult(result.rows, limit, (row) => ({ parentId: row.id }));
 }
 export async function getGoodsReceipt(actor: Actor, receiptId: number) {
   requireRole(actor, ["ADMIN", "CEO", "MANAGER", "COUNTER_STAFF"]);
-  const head = await dbPool.query(`SELECT gr.*,cr.purchase_order_id,cr.record_no AS carrier_receipt_no FROM app.goods_receipts gr JOIN app.carrier_receipts cr ON cr.id=gr.carrier_receipt_id WHERE gr.id=$1`, [receiptId]);
+  const head = await timedPoolQuery<{ receiving_branch_id: number }>(`SELECT gr.*,cr.purchase_order_id,cr.record_no AS carrier_receipt_no FROM app.goods_receipts gr JOIN app.carrier_receipts cr ON cr.id=gr.carrier_receipt_id WHERE gr.id=$1`, [receiptId]);
   if (!head.rowCount) throw new NotFoundError("Goods receipt");
   requireBranch(actor, head.rows[0].receiving_branch_id);
   const [lines, discrepancies, media, issues] = await Promise.all([
-    dbPool.query(`SELECT gl.*,p.sku,p.name AS product_name FROM app.goods_receipt_lines gl JOIN app.purchase_order_lines pl ON pl.id=gl.purchase_order_line_id JOIN app.products p ON p.id=pl.product_id WHERE gl.goods_receipt_id=$1 ORDER BY gl.id`, [receiptId]),
-    dbPool.query(`SELECT d.* FROM app.receipt_discrepancies d JOIN app.goods_receipt_lines gl ON gl.id=d.goods_receipt_line_id WHERE gl.goods_receipt_id=$1 ORDER BY d.id`, [receiptId]),
-    dbPool.query(`SELECT e.media_asset_id,e.page_number,m.sha256,m.mime_type FROM app.evidence_links e JOIN app.media_assets m ON m.id=e.media_asset_id WHERE e.goods_receipt_id=$1 ORDER BY e.page_number`, [receiptId]),
-    dbPool.query(`SELECT id,title,status FROM app.issue_reports WHERE goods_receipt_id=$1 ORDER BY id`, [receiptId]),
+    timedPoolQuery(`SELECT gl.*,p.sku,p.name AS product_name FROM app.goods_receipt_lines gl JOIN app.purchase_order_lines pl ON pl.id=gl.purchase_order_line_id JOIN app.products p ON p.id=pl.product_id WHERE gl.goods_receipt_id=$1 ORDER BY gl.id`, [receiptId]),
+    timedPoolQuery(`SELECT d.* FROM app.receipt_discrepancies d JOIN app.goods_receipt_lines gl ON gl.id=d.goods_receipt_line_id WHERE gl.goods_receipt_id=$1 ORDER BY d.id`, [receiptId]),
+    timedPoolQuery(`SELECT e.media_asset_id,e.page_number,m.sha256,m.mime_type FROM app.evidence_links e JOIN app.media_assets m ON m.id=e.media_asset_id WHERE e.goods_receipt_id=$1 ORDER BY e.page_number`, [receiptId]),
+    timedPoolQuery(`SELECT id,title,status FROM app.issue_reports WHERE goods_receipt_id=$1 ORDER BY id`, [receiptId]),
   ]);
   return { ...head.rows[0], lines: lines.rows, discrepancies: discrepancies.rows, media: media.rows, issues: issues.rows };
 }
@@ -51,14 +57,14 @@ export async function createGoodsReceipt(actor: Actor, body: Record<string, unkn
   const carrierId = id(body.carrierReceiptId, "carrierReceiptId");
   const warehouseId = id(body.warehouseId, "warehouseId");
   const lines = parsedLines(body.lines);
-  const reference = await dbPool.query<{ purchase_order_id: number; receiving_branch_id: number }>(`
+  const reference = await timedPoolQuery<{ purchase_order_id: number; receiving_branch_id: number }>(`
     SELECT cr.purchase_order_id,dc.receiving_branch_id FROM app.carrier_receipts cr JOIN app.delivery_confirmations dc ON dc.carrier_receipt_id=cr.id WHERE cr.id=$1`, [carrierId]);
   if (!reference.rowCount) throw new ApiError(409, "DELIVERY_NOT_CONFIRMED", "Confirm delivery from the carrier first.");
   const branchId = reference.rows[0].receiving_branch_id;
   requireBranch(actor, branchId);
-  const warehouse = await dbPool.query(`SELECT id FROM app.warehouses WHERE id=$1 AND branch_id=$2 AND active`, [warehouseId, branchId]);
+  const warehouse = await timedPoolQuery(`SELECT id FROM app.warehouses WHERE id=$1 AND branch_id=$2 AND active`, [warehouseId, branchId]);
   if (!warehouse.rowCount) throw new ValidationError({ warehouseId: "Choose an active warehouse in the receiving branch." });
-  const poLines = await dbPool.query<{ id: number; serial_tracked: boolean }>(`SELECT pl.id,p.serial_tracked FROM app.purchase_order_lines pl JOIN app.products p ON p.id=pl.product_id WHERE pl.purchase_order_id=$1`, [reference.rows[0].purchase_order_id]);
+  const poLines = await timedPoolQuery<{ id: number; serial_tracked: boolean }>(`SELECT pl.id,p.serial_tracked FROM app.purchase_order_lines pl JOIN app.products p ON p.id=pl.product_id WHERE pl.purchase_order_id=$1`, [reference.rows[0].purchase_order_id]);
   const poMap = new Map(poLines.rows.map((row) => [row.id, row.serial_tracked]));
   for (const line of lines) {
     if (!poMap.has(line.poLineId)) throw new ValidationError({ lines: "A counted product does not belong to this PO." });

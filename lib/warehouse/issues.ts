@@ -1,45 +1,60 @@
 import "server-only";
 
-import { dbPool } from "@/lib/core/db/pool";
+import { timedPoolQuery } from "@/lib/core/http/request-timing";
 import { withTransaction } from "@/lib/core/db/transaction";
 import { ApiError, NotFoundError, ValidationError } from "@/lib/core/http/errors";
 import { audit, id, optionalText, quantity, requireBranch, requireRole, text, type Actor } from "@/lib/warehouse/core";
 import { attachEvidence } from "@/lib/warehouse/media";
+import { cursorPageResult, parseCursorPage } from "@/lib/warehouse/cursor-pagination";
 
 type Status = "OPEN" | "FOLLOWING_UP" | "RESOLVED" | "CLOSED";
 const statuses: Status[] = ["OPEN", "FOLLOWING_UP", "RESOLVED", "CLOSED"];
 const next: Record<Status, Status[]> = { OPEN: ["FOLLOWING_UP", "RESOLVED", "CLOSED"], FOLLOWING_UP: ["RESOLVED", "CLOSED"], RESOLVED: ["CLOSED", "FOLLOWING_UP"], CLOSED: [] };
 async function issueBranch(issue: { goods_receipt_id: number | null; carrier_receipt_id: number | null }) {
   if (issue.goods_receipt_id) {
-    const result = await dbPool.query<{ receiving_branch_id: number }>(`SELECT receiving_branch_id FROM app.goods_receipts WHERE id=$1`, [issue.goods_receipt_id]);
+    const result = await timedPoolQuery<{ receiving_branch_id: number }>(`SELECT receiving_branch_id FROM app.goods_receipts WHERE id=$1`, [issue.goods_receipt_id]);
     return result.rows[0]?.receiving_branch_id ?? null;
   }
   if (issue.carrier_receipt_id) {
-    const result = await dbPool.query<{ receiving_branch_id: number }>(`SELECT receiving_branch_id FROM app.delivery_confirmations WHERE carrier_receipt_id=$1`, [issue.carrier_receipt_id]);
+    const result = await timedPoolQuery<{ receiving_branch_id: number }>(`SELECT receiving_branch_id FROM app.delivery_confirmations WHERE carrier_receipt_id=$1`, [issue.carrier_receipt_id]);
     return result.rows[0]?.receiving_branch_id ?? null;
   }
   return null;
 }
-export async function listIssues(actor: Actor) {
+export async function listIssues(actor: Actor, search: URLSearchParams) {
   requireRole(actor, ["ADMIN", "CEO", "MANAGER", "COUNTER_STAFF"]);
-  const result = await dbPool.query(`SELECT i.*, COALESCE(gr.receiving_branch_id,dc.receiving_branch_id) AS branch_id
+  const { limit, cursor } = parseCursorPage(search);
+  const result = await timedPoolQuery<Record<string, unknown> & { id: number }>(`
+    SELECT i.*, COALESCE(gr.receiving_branch_id,dc.receiving_branch_id) AS branch_id
     FROM app.issue_reports i LEFT JOIN app.goods_receipts gr ON gr.id=i.goods_receipt_id
     LEFT JOIN app.delivery_confirmations dc ON dc.carrier_receipt_id=i.carrier_receipt_id
     WHERE ($1::boolean OR COALESCE(gr.receiving_branch_id,dc.receiving_branch_id) IS NULL
       OR COALESCE(gr.receiving_branch_id,dc.receiving_branch_id)=ANY($2::integer[]))
-    ORDER BY i.id DESC LIMIT 500`, [actor.role === "ADMIN" || actor.role === "CEO", actor.branchIds]);
-  return result.rows;
+      AND ($3::bigint IS NULL OR i.id < $3)
+    ORDER BY i.id DESC LIMIT $4`,
+  [actor.role === "ADMIN" || actor.role === "CEO", actor.branchIds, cursor?.parentId ?? null, limit + 1]);
+  return cursorPageResult(result.rows, limit, (row) => ({ parentId: row.id }));
 }
 export async function getIssue(actor: Actor, issueId: number) {
   requireRole(actor, ["ADMIN", "CEO", "MANAGER", "COUNTER_STAFF"]);
-  const head = await dbPool.query(`SELECT * FROM app.issue_reports WHERE id=$1`, [issueId]);
+  const head = await timedPoolQuery<{
+    id: number;
+    title: string;
+    detail: string;
+    status: Status;
+    purchase_order_id: number | null;
+    carrier_receipt_id: number | null;
+    goods_receipt_id: number | null;
+    quantity: string | null;
+    created_at: Date;
+  }>(`SELECT * FROM app.issue_reports WHERE id=$1`, [issueId]);
   if (!head.rowCount) throw new NotFoundError("Issue report");
   const branchId = await issueBranch(head.rows[0]);
   if (branchId != null) requireBranch(actor, branchId);
   const [events, claims, media] = await Promise.all([
-    dbPool.query(`SELECT * FROM app.issue_events WHERE issue_report_id=$1 ORDER BY id`, [issueId]),
-    dbPool.query(`SELECT * FROM app.claim_tracking WHERE issue_report_id=$1 ORDER BY id`, [issueId]),
-    dbPool.query(`SELECT e.media_asset_id,e.page_number,m.sha256,m.mime_type FROM app.evidence_links e JOIN app.media_assets m ON m.id=e.media_asset_id WHERE e.issue_report_id=$1 ORDER BY e.page_number`, [issueId]),
+    timedPoolQuery(`SELECT * FROM app.issue_events WHERE issue_report_id=$1 ORDER BY id`, [issueId]),
+    timedPoolQuery(`SELECT * FROM app.claim_tracking WHERE issue_report_id=$1 ORDER BY id`, [issueId]),
+    timedPoolQuery(`SELECT e.media_asset_id,e.page_number,m.sha256,m.mime_type FROM app.evidence_links e JOIN app.media_assets m ON m.id=e.media_asset_id WHERE e.issue_report_id=$1 ORDER BY e.page_number`, [issueId]),
   ]);
   return { ...head.rows[0], events: events.rows, claims: claims.rows, media: media.rows };
 }
@@ -56,19 +71,19 @@ export async function createIssue(actor: Actor, body: Record<string, unknown>) {
     serialNo: optionalText(body.serialNo, "serialNo", 160),
   };
   if (data.goodsId) {
-    const related = await dbPool.query<{ carrier_receipt_id: number; purchase_order_id: number }>(`SELECT gr.carrier_receipt_id,cr.purchase_order_id FROM app.goods_receipts gr JOIN app.carrier_receipts cr ON cr.id=gr.carrier_receipt_id WHERE gr.id=$1`, [data.goodsId]);
+    const related = await timedPoolQuery<{ carrier_receipt_id: number; purchase_order_id: number }>(`SELECT gr.carrier_receipt_id,cr.purchase_order_id FROM app.goods_receipts gr JOIN app.carrier_receipts cr ON cr.id=gr.carrier_receipt_id WHERE gr.id=$1`, [data.goodsId]);
     if (!related.rowCount) throw new NotFoundError("Goods receipt");
     if ((data.carrierId && data.carrierId !== related.rows[0].carrier_receipt_id) || (data.poId && data.poId !== related.rows[0].purchase_order_id)) throw new ValidationError({ links: "The linked documents must belong to the same purchase order." });
     data.carrierId = related.rows[0].carrier_receipt_id;
     data.poId = related.rows[0].purchase_order_id;
   } else if (data.carrierId) {
-    const related = await dbPool.query<{ purchase_order_id: number }>(`SELECT purchase_order_id FROM app.carrier_receipts WHERE id=$1`, [data.carrierId]);
+    const related = await timedPoolQuery<{ purchase_order_id: number }>(`SELECT purchase_order_id FROM app.carrier_receipts WHERE id=$1`, [data.carrierId]);
     if (!related.rowCount) throw new NotFoundError("Carrier receipt");
     if (data.poId && data.poId !== related.rows[0].purchase_order_id) throw new ValidationError({ links: "The linked documents must belong to the same purchase order." });
     data.poId = related.rows[0].purchase_order_id;
   }
   if (data.productId && data.poId) {
-    const product = await dbPool.query(`SELECT 1 FROM app.purchase_order_lines WHERE purchase_order_id=$1 AND product_id=$2`, [data.poId, data.productId]);
+    const product = await timedPoolQuery(`SELECT 1 FROM app.purchase_order_lines WHERE purchase_order_id=$1 AND product_id=$2`, [data.poId, data.productId]);
     if (!product.rowCount) throw new ValidationError({ productId: "This product is not on the linked purchase order." });
   }
   const branchId = await issueBranch({ goods_receipt_id: data.goodsId, carrier_receipt_id: data.carrierId });

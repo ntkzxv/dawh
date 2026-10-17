@@ -91,64 +91,59 @@ export function SkeletonStatGrid({ count = 4 }: { count?: number }) {
 export function SkeletonDataTable({
   rows = 6,
   columns = 5,
+  showToolbar = true,
+  minWidth = "760px",
+  ariaLabel = "Loading table",
 }: {
   rows?: number;
   columns?: number;
+  showToolbar?: boolean;
+  minWidth?: string;
+  ariaLabel?: string;
 }) {
   const { theme } = useTheme();
   const isLight = theme === "light";
 
   return (
-    <div
-      className={`w-full rounded-2xl border p-5 space-y-4 ${
-        isLight
-          ? "bg-white border-[#E4E4E7] shadow-xs"
-          : "bg-[#282828] border-[#444444]"
-      }`}
-    >
-      {/* Table Header Filter Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-white/10">
-        <div className="flex items-center gap-3">
-          <SkeletonBox className="h-9 w-48 rounded-xl" />
-          <SkeletonBox className="h-9 w-28 rounded-xl" />
-        </div>
-        <div className="flex items-center gap-2">
-          <SkeletonBox className="h-9 w-24 rounded-xl" />
-          <SkeletonBox className="h-9 w-28 rounded-xl" />
-        </div>
-      </div>
-
-      {/* Table Head */}
-      <div className="grid grid-cols-5 gap-4 py-2 px-3">
-        {Array.from({ length: columns }).map((_, i) => (
-          <SkeletonBox key={i} className="h-4 rounded-md" />
-        ))}
-      </div>
-
-      {/* Table Rows */}
-      <div className="space-y-2.5">
-        {Array.from({ length: rows }).map((_, rowIndex) => (
-          <div
-            key={rowIndex}
-            className={`grid grid-cols-5 gap-4 items-center p-3 rounded-xl ${
-              isLight ? "bg-slate-50/70" : "bg-white/[0.03]"
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              <SkeletonBox className="h-8 w-8 rounded-lg shrink-0" />
-              <div className="space-y-1 w-full">
-                <SkeletonBox className="h-3.5 w-3/4 rounded-md" />
-                <SkeletonBox className="h-2.5 w-1/2 rounded-md" />
-              </div>
-            </div>
-            <SkeletonBox className="h-3.5 w-2/3 rounded-md" />
-            <SkeletonBox className="h-3.5 w-3/4 rounded-md" />
-            <SkeletonBox className="h-5 w-20 rounded-full" />
-            <div className="flex justify-end gap-2">
-              <SkeletonBox className="h-7 w-16 rounded-lg" />
-            </div>
+    <div role="status" aria-label={ariaLabel} className="w-full space-y-4">
+      {showToolbar && (
+        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-3">
+            <SkeletonBox className="h-9 w-48 rounded-md" />
+            <SkeletonBox className="h-[33px] w-[104px] rounded-md" />
           </div>
-        ))}
+          <div className="flex items-center gap-2">
+            <SkeletonBox className="h-9 w-24 rounded-xl" />
+            <SkeletonBox className="h-9 w-28 rounded-xl" />
+          </div>
+        </div>
+      )}
+
+      <div className={"w-full overflow-hidden rounded-xl border " + (isLight ? "border-[#D4D4D8] bg-white" : "border-[#555555] bg-[#383838]")}>
+        <div className="overflow-x-auto">
+          <table className="w-full border-separate border-spacing-0 border-0 bg-transparent text-left text-[13px]" style={{ minWidth }} aria-hidden="true">
+            <thead>
+              <tr className={"h-[36px] " + (isLight ? "bg-[#F4F4F5]" : "bg-[#2C2C2C]")}>
+                {Array.from({ length: columns }).map((_, index) => (
+                  <th key={index} className="px-3 py-2">
+                    <SkeletonBox className="h-3 w-2/3" />
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className={"divide-y " + (isLight ? "divide-[#E4E4E7]" : "divide-[#444444]")}>
+              {Array.from({ length: rows }).map((_, row) => (
+                <tr key={row} className="h-[56px]">
+                  {Array.from({ length: columns }).map((_, column) => (
+                    <td key={column} className="px-3 py-3">
+                      <SkeletonBox className={column === 0 ? "h-3.5 w-3/4" : column === columns - 1 ? "ml-auto size-8 rounded-[6px]" : column === columns - 2 ? "h-5 w-14 rounded-full" : "h-3.5 w-20"} />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -179,10 +174,10 @@ export function SkeletonChartCard() {
 }
 
 // =========================================================================
-// 3. FULL PAGE SKELETON TEMPLATES (WAREHOUSE & DATACENTER)
+// 3. FULL PAGE SKELETON TEMPLATES (DASHBOARD & DATACENTER)
 // =========================================================================
 
-export function SkeletonWarehousePage() {
+export function SkeletonDashboardPage() {
   return (
     <div className="w-full space-y-6 animate-in fade-in-50 duration-300">
       {/* Top Breadcrumb & Action Banner */}
@@ -250,19 +245,19 @@ export function SkeletonDatacenterPage() {
 export interface SkeletonWrapperProps {
   isLoading: boolean;
   children: React.ReactNode;
-  variant?: "warehouse" | "datacenter" | "table" | "stat";
+  variant?: "dashboard" | "datacenter" | "table" | "stat";
   fallback?: React.ReactNode;
 }
 
 export function SkeletonWrapper({
   isLoading,
   children,
-  variant = "warehouse",
+  variant = "dashboard",
   fallback,
 }: SkeletonWrapperProps) {
   if (isLoading) {
     if (fallback) return <>{fallback}</>;
-    if (variant === "warehouse") return <SkeletonWarehousePage />;
+    if (variant === "dashboard") return <SkeletonDashboardPage />;
     if (variant === "datacenter") return <SkeletonDatacenterPage />;
     if (variant === "table") return <SkeletonDataTable />;
     if (variant === "stat") return <SkeletonStatGrid />;

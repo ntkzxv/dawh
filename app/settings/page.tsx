@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import Settings from "@/components/warehouse/Settings";
+import SettingsView from "@/components/users/settings";
 
 export const metadata: Metadata = {
   title: "Settings",
-  description: "System settings and organization configuration",
+  description: "Account Profile, Security, Credentials, and System Preferences",
 };
 
 export default function SettingsPage() {
-  return <Settings />;
+  return <SettingsView />;
 }

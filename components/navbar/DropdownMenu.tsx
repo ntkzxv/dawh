@@ -51,7 +51,7 @@ export default function DropdownMenu({
   profile,
   fullName,
   initials,
-  departmentDisplay,
+  accountSubtitle,
   isAdmin,
   isProfileLoaded,
   mounted,
@@ -150,13 +150,9 @@ export default function DropdownMenu({
                   ) : (
                     <div className={`h-[14px] w-[90px] rounded-md animate-pulse my-0.5 ${isLight ? "bg-slate-200" : "bg-[#383838]"}`} />
                   )}
-                  {mounted && departmentDisplay ? (
+                  {mounted && (isProfileLoaded || fullName) ? (
                     <span className={`text-[11px] truncate ${isLight ? "text-[#666666]" : "text-[#E4E4E7]"}`} suppressHydrationWarning>
-                      {departmentDisplay}
-                    </span>
-                  ) : mounted && (isProfileLoaded || fullName) && profile.email ? (
-                    <span className="text-[11px] text-[#A1A1AA] truncate" suppressHydrationWarning>
-                      {profile.email}
+                      {accountSubtitle}
                     </span>
                   ) : !isProfileLoaded && !fullName ? (
                     <div className={`h-[11px] w-[60px] rounded-md animate-pulse mt-0.5 ${isLight ? "bg-slate-200" : "bg-[#383838]"}`} />

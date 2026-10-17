@@ -6,6 +6,7 @@ export type PageMeta = {
   nextCursor: string | null;
   hasMore: boolean;
   total?: number;
+  page?: number;
 };
 
 export function jsonOk<T>(request: Request, data: T, status = 200) {
@@ -13,7 +14,15 @@ export function jsonOk<T>(request: Request, data: T, status = 200) {
 
   return Response.json(
     { data, meta: { requestId } },
-    { status, headers: { "x-request-id": requestId } }
+    { status, headers: { "x-request-id": requestId } },
+  );
+}
+
+export function jsonOkPage<T>(request: Request, data: T, page: PageMeta) {
+  const requestId = getRequestId(request);
+  return Response.json(
+    { data, page, meta: { requestId } },
+    { headers: { "x-request-id": requestId } },
   );
 }
 
@@ -29,7 +38,7 @@ export function jsonError(request: Request, error: ApiError) {
         requestId,
       },
     },
-    { status: error.status, headers: { "x-request-id": requestId } }
+    { status: error.status, headers: { "x-request-id": requestId } },
   );
 }
 
@@ -55,6 +64,6 @@ export function jsonUnexpectedError(request: Request, error: unknown) {
         requestId,
       },
     },
-    { status: 500, headers: { "x-request-id": requestId } }
+    { status: 500, headers: { "x-request-id": requestId } },
   );
 }

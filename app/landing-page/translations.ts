@@ -352,10 +352,6 @@ export const LANDING_TRANSLATIONS: Record<"EN" | "TH", LandingTranslation> = {
           q: "Can DAWH be deployed on private cloud or on-premise infrastructure?",
           a: "Yes. In addition to our high-availability managed cloud, we support private VPC (AWS, GCP, Azure) and hybrid on-premise containerized Kubernetes deployments for enterprises with strict data residency requirements.",
         },
-        {
-          q: "Is there a sandbox environment for evaluation before organization rollout?",
-          a: "Absolutely. We offer a 14-day enterprise pilot sandbox preloaded with synthetic multi-branch inventory and mock HP contract ledgers, allowing your leadership and operations teams to test real-world workflows risk-free.",
-        },
       ],
     },
     cta: {
@@ -557,10 +553,6 @@ export const LANDING_TRANSLATIONS: Record<"EN" | "TH", LandingTranslation> = {
         {
           q: "DAWH สามารถติดตั้งบน Private Cloud หรือ เซิร์ฟเวอร์ On-Premise ได้หรือไม่?",
           a: "ได้ นอกจากระบบคลาวด์มาตรฐานที่มีความพร้อมใช้งานสูง เรายังรองรับการติดตั้งบน Private VPC (AWS, GCP, Azure) และแบบ On-Premise ด้วยคอนเทนเนอร์ Kubernetes สำหรับองค์กรที่มีนโยบายควบคุมข้อมูลภายใน",
-        },
-        {
-          q: "มีระบบทดลอง (Sandbox) ให้ทดสอบก่อนนำไปใช้งานจริงในองค์กรหรือไม่?",
-          a: "มี เรามีระบบ Enterprise Pilot Sandbox ให้ทดลองใช้งานฟรี 14 วัน พร้อมข้อมูลจำลองสินค้าคงคลังและสัญญาเช่าซื้อ เพื่อให้ฝ่ายปฏิบัติการและการเงินได้ทดสอบขั้นตอนการทำงานจริงก่อนการเริ่มระบบ",
         },
       ],
     },

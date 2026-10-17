@@ -3,7 +3,7 @@ import "server-only";
 import { createHash, randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import type { PoolClient } from "pg";
-import { dbPool } from "@/lib/core/db/pool";
+import { timedPoolQuery } from "@/lib/core/http/request-timing";
 import { withTransaction } from "@/lib/core/db/transaction";
 import { ApiError, NotFoundError, ValidationError } from "@/lib/core/http/errors";
 import { audit, id, type Actor } from "@/lib/warehouse/core";
@@ -50,7 +50,7 @@ export async function attachEvidence(client: PoolClient, actor: Actor, ownerColu
   }
 }
 export async function getEvidenceUrl(actor: Actor, assetId: number) {
-  const result = await dbPool.query<{ object_path: string; uploaded_by_id: number; supplier_receipt_id: number | null; carrier_receipt_id: number | null; delivery_confirmation_id: number | null; goods_receipt_id: number | null; issue_report_id: number | null; delivery_branch_id: number | null; goods_branch_id: number | null; issue_branch_id: number | null }>(`
+  const result = await timedPoolQuery<{ object_path: string; uploaded_by_id: number; supplier_receipt_id: number | null; carrier_receipt_id: number | null; delivery_confirmation_id: number | null; goods_receipt_id: number | null; issue_report_id: number | null; delivery_branch_id: number | null; goods_branch_id: number | null; issue_branch_id: number | null }>(`
     SELECT m.object_path,m.uploaded_by_id,e.supplier_receipt_id,e.carrier_receipt_id,e.delivery_confirmation_id,e.goods_receipt_id,e.issue_report_id,
       dc.receiving_branch_id AS delivery_branch_id,gr.receiving_branch_id AS goods_branch_id,
       COALESCE(igr.receiving_branch_id,idc.receiving_branch_id) AS issue_branch_id

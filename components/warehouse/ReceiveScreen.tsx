@@ -1,116 +1,661 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { Loader2, Plus } from "lucide-react";
 import WarehousePageTemplate from "@/app/warehouse/_components/WarehousePageTemplate";
-import { warehouseApi, type CarrierReceipt, type CatalogItem, type PurchaseOrder, type PurchaseOrderLine } from "@/lib/api/warehouse";
-import { button, Empty, EvidenceLinks, EvidencePicker, Field, input, message, Notice, panel, subtleButton, useRemote } from "./Ui";
+import {
+  warehouseApi,
+  type ApiListPage,
+  type CarrierReceipt,
+  type CatalogItem,
+  type GoodsReceipt,
+  type Me,
+  type PurchaseOrder,
+  type SupplierReceipt,
+} from "@/lib/api/warehouse";
+import type { ApiPage } from "@/lib/api/client";
+import DataTable, { dataTableFrameClassName } from "@/components/common/DataTable";
+import Pagination from "@/components/common/Pagination";
+import Button from "@/components/common/Button";
+import SidePanel from "@/components/common/SidePanel";
+import { useTheme } from "@/context/ThemeContext";
+import {
+  ReceivingContentSkeleton,
+  ReceivingTabsSkeleton,
+} from "@/components/loading_screen/ReceivingPageSkeleton";
+import {
+  Empty,
+  message,
+  Notice,
+  subtleButton,
+  useRemote,
+} from "./Ui";
+import { useOptionalWarehouseAccount } from "@/context/WarehouseAccountContext";
+import {
+  getCachedCatalogReference,
+  getWarehouseReferenceScope,
+} from "@/lib/api/warehouse-reference-cache";
+import { useAppLanguage } from "@/utils/language";
+import { PoDetails, PoForm } from "./receive/ReceivePo";
+import { SupplierDetails, SupplierForm } from "./receive/ReceiveSupplier";
+import { CarrierDetails, CarrierForm } from "./receive/ReceiveCarrier";
+import { CountForm } from "./receive/ReceiveCount";
 
 type Step = "po" | "supplier" | "carrier" | "count";
-const steps: Array<[Step, string]> = [["po", "รายการสั่งซื้อ"], ["supplier", "เอกสารผู้ขาย"], ["carrier", "เอกสารขนส่งและรับของ"], ["count", "นับและลงสต๊อก"]];
+type CursorResource = "purchaseOrders" | "supplierReceipts" | "carriers" | "goodsReceipts";
+type ReceiveData = {
+  step: Step;
+  me: Me;
+  purchaseOrders: PurchaseOrder[];
+  carriers: CarrierReceipt[];
+  branches: CatalogItem[];
+  suppliers: CatalogItem[];
+  warehouses: CatalogItem[];
+  ceos: Array<{ id: number; name: string }>;
+  supplierReceipts: SupplierReceipt[];
+  goodsReceipts: GoodsReceipt[];
+  pages: Partial<Record<CursorResource, ApiPage>>;
+  pageIndices: Partial<Record<CursorResource, number>>;
+  cursorHistory: Partial<Record<CursorResource, Array<string | null>>>;
+};
+type ReceiveReferences = {
+  step: Step;
+  scope: string | null;
+  suppliers?: CatalogItem[];
+  ceos?: Array<{ id: number; name: string }>;
+  branches?: CatalogItem[];
+  warehouses?: CatalogItem[];
+};
+const steps: Step[] = ["po", "supplier", "carrier", "count"];
+const stepLabel = (step: Step, isThai: boolean) => ({
+  po: isThai ? "รายการสั่งซื้อ" : "Purchase orders",
+  supplier: isThai ? "เอกสารผู้ขาย" : "Supplier documents",
+  carrier: isThai ? "เอกสารขนส่งและรับของ" : "Shipping and delivery",
+  count: isThai ? "นับและลงสต๊อก" : "Count and post stock",
+})[step];
 
 export default function ReceiveScreen() {
+  const reduceMotion = useReducedMotion();
+  const account = useOptionalWarehouseAccount();
+  const warehouseCacheScope = getWarehouseReferenceScope(account?.me);
+  const { theme } = useTheme();
+  const isLight = theme === "light";
+  const isThai = useAppLanguage() === "TH";
   const [step, setStep] = useState<Step>("po");
+  const [formOpen, setFormOpen] = useState(false);
   const [selectedPoId, setSelectedPoId] = useState<number | null>(null);
-  const [selectedCarrierId, setSelectedCarrierId] = useState<number | null>(null);
+  const [selectedCarrierId, setSelectedCarrierId] = useState<number | null>(
+    null,
+  );
   const [notice, setNotice] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const busyRef = useRef(false);
   const [busy, setBusy] = useState(false);
-  const load = useCallback(async () => {
-    const me = await warehouseApi.me();
-    const [purchaseOrders, carriers, branches, products] = await Promise.all([warehouseApi.purchaseOrders(), warehouseApi.carrierReceipts(), warehouseApi.catalog("branches"), warehouseApi.catalog("products")]);
-    if (me.role === "EMPLOYEE") return { me, purchaseOrders, carriers, branches, suppliers: [] as CatalogItem[], products, warehouses: [] as CatalogItem[], ceos: [] as Array<{ id: number; name: string }>, supplierReceipts: [] as Awaited<ReturnType<typeof warehouseApi.supplierReceipts>>, goodsReceipts: [] as Awaited<ReturnType<typeof warehouseApi.goodsReceipts>> };
-    const [suppliers, warehouses, ceos, supplierReceipts, goodsReceipts] = await Promise.all([warehouseApi.catalog("suppliers"), warehouseApi.catalog("warehouses"), warehouseApi.ceos(), warehouseApi.supplierReceipts(), warehouseApi.goodsReceipts()]);
-    return { me, purchaseOrders, carriers, branches, suppliers, products, warehouses, ceos, supplierReceipts, goodsReceipts };
-  }, []);
-  const { data, loading, error, refresh } = useRemote(load);
+  const [loadingMore, setLoadingMore] = useState<Set<CursorResource>>(new Set());
+  const pageControllersRef = useRef(new Map<CursorResource, AbortController>());
+  useEffect(() => () => {
+    for (const controller of pageControllersRef.current.values()) controller.abort();
+    pageControllersRef.current.clear();
+  }, [step]);
+  const load = useCallback(
+    async (signal: AbortSignal): Promise<ReceiveData> => {
+      const me = account?.me;
+      if (!me) throw new Error(isThai ? "ยังไม่ได้โหลดข้อมูลบัญชี" : "Account information has not loaded yet.");
+      const activeStep: Step = me.role === "EMPLOYEE" ? "carrier" : step;
+      const emptyData: ReceiveData = {
+        step: activeStep,
+        me,
+        purchaseOrders: [],
+        carriers: [],
+        branches: [] as CatalogItem[],
+        suppliers: [] as CatalogItem[],
+        warehouses: [] as CatalogItem[],
+        ceos: [],
+        supplierReceipts: [],
+        goodsReceipts: [],
+        pages: {},
+        pageIndices: {},
+        cursorHistory: {},
+      };
+
+      if (activeStep === "po") {
+        const ordersPage = await warehouseApi.purchaseOrdersPage(null, signal);
+        return { ...emptyData, purchaseOrders: ordersPage.items, pages: { purchaseOrders: ordersPage.page }, pageIndices: { purchaseOrders: 1 }, cursorHistory: { purchaseOrders: [null] } };
+      }
+
+      if (activeStep === "supplier") {
+        const [ordersPage, receiptsPage] = await Promise.all([
+          warehouseApi.purchaseOrdersPage(null, signal),
+          warehouseApi.supplierReceiptsPage(null, signal),
+        ]);
+        return { ...emptyData, purchaseOrders: ordersPage.items, supplierReceipts: receiptsPage.items, pages: { purchaseOrders: ordersPage.page, supplierReceipts: receiptsPage.page }, pageIndices: { purchaseOrders: 1, supplierReceipts: 1 }, cursorHistory: { purchaseOrders: [null], supplierReceipts: [null] } };
+      }
+
+      if (activeStep === "carrier") {
+        const [ordersPage, carriersPage] = await Promise.all([
+          warehouseApi.purchaseOrdersPage(null, signal),
+          warehouseApi.carrierReceiptsPage(null, signal),
+        ]);
+        return { ...emptyData, purchaseOrders: ordersPage.items, carriers: carriersPage.items, pages: { purchaseOrders: ordersPage.page, carriers: carriersPage.page }, pageIndices: { purchaseOrders: 1, carriers: 1 }, cursorHistory: { purchaseOrders: [null], carriers: [null] } };
+      }
+
+      const [carriersPage, receiptsPage] = await Promise.all([
+        warehouseApi.carrierReceiptsPage(null, signal),
+        warehouseApi.goodsReceiptsPage(null, signal),
+      ]);
+      return { ...emptyData, carriers: carriersPage.items, goodsReceipts: receiptsPage.items, pages: { carriers: carriersPage.page, goodsReceipts: receiptsPage.page }, pageIndices: { carriers: 1, goodsReceipts: 1 }, cursorHistory: { carriers: [null], goodsReceipts: [null] } };
+    },
+    [step, account?.me, isThai],
+  );
+  const { data, loading, error, refresh, setData } = useRemote(load, {
+    enabled: !!account?.me,
+  });
+  const loadReferences = useCallback(
+    async (signal: AbortSignal): Promise<ReceiveReferences> => {
+      const role = account?.me?.role;
+      if (!role) throw new Error(isThai ? "ยังไม่ได้โหลดข้อมูลบัญชี" : "Account information has not loaded yet.");
+      const activeStep: Step = role === "EMPLOYEE" ? "carrier" : step;
+      if (activeStep === "po") {
+        const [suppliers, ceos] = await Promise.all([
+          warehouseApi.catalog("suppliers", signal),
+          warehouseApi.ceos(signal),
+        ]);
+        return {
+          step: activeStep,
+          scope: warehouseCacheScope,
+          suppliers,
+          ceos,
+        };
+      }
+      if (activeStep === "carrier")
+        return {
+          step: activeStep,
+          scope: warehouseCacheScope,
+          branches: await getCachedCatalogReference(
+            "branches",
+            warehouseCacheScope,
+            signal,
+          ),
+        };
+      if (activeStep === "count")
+        return {
+          step: activeStep,
+          scope: warehouseCacheScope,
+          warehouses: await getCachedCatalogReference(
+            "warehouses",
+            warehouseCacheScope,
+            signal,
+          ),
+        };
+      return { step: activeStep, scope: warehouseCacheScope };
+    },
+    [step, account?.me?.role, isThai, warehouseCacheScope],
+  );
   const [po, setPo] = useState<PurchaseOrder | null>(null);
   const [carrier, setCarrier] = useState<CarrierReceipt | null>(null);
-  useEffect(() => { if (selectedPoId) void warehouseApi.purchaseOrder(selectedPoId).then(setPo).catch((cause) => setFailure(message(cause))); }, [selectedPoId]);
-  useEffect(() => { if (selectedCarrierId) void warehouseApi.carrierReceipt(selectedCarrierId).then(setCarrier).catch((cause) => setFailure(message(cause))); }, [selectedCarrierId]);
-  const reload = async () => { await refresh(); if (selectedPoId) setPo(await warehouseApi.purchaseOrder(selectedPoId)); if (selectedCarrierId) setCarrier(await warehouseApi.carrierReceipt(selectedCarrierId)); };
-  const run = async (action: () => Promise<unknown>, success: string) => { if (busyRef.current) return; busyRef.current = true; setBusy(true); setFailure(null); setNotice(null); try { const result = await action(); setNotice(success + (result && typeof result === "object" && "warnings" in result && Array.isArray(result.warnings) && result.warnings.length ? ` · ${result.warnings.join(", ")}` : "")); await reload(); } catch (cause) { setFailure(message(cause)); } finally { busyRef.current = false; setBusy(false); } };
-  const activeStep = data?.me.role === "EMPLOYEE" ? "carrier" : step;
-  return <WarehousePageTemplate titleEn="Receiving" titleTh="สั่งสินค้าและตรวจรับ" routePath="/warehouse/receive" iconName="inbound">
-    <div className="flex flex-wrap gap-2">{steps.filter(([key]) => data?.me.role !== "EMPLOYEE" || key === "carrier").map(([key, label]) => <button key={key} className={activeStep === key ? button : subtleButton} onClick={() => setStep(key)}>{label}</button>)}</div>
-    {error && <Notice tone="error">{error}</Notice>}{failure && <Notice tone="error">{failure}</Notice>}{notice && <Notice tone="success">{notice}</Notice>}{loading && <p>กำลังโหลดข้อมูล...</p>}
-    {busy && <Notice>กำลังบันทึกข้อมูล...</Notice>}
-    {data && <div className={busy ? "pointer-events-none opacity-60" : "contents"} aria-busy={busy}>
-      {activeStep === "po" && <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_390px]"><section className={panel}><h2 className="mb-4 text-lg font-bold">PO ที่บันทึกแล้ว</h2>{data.purchaseOrders.length ? <div className="space-y-2">{data.purchaseOrders.map((item) => <button key={item.id} className={`flex w-full flex-wrap justify-between gap-3 rounded-xl border p-3 text-left text-sm ${selectedPoId === item.id ? "border-indigo-500" : "border-slate-200 dark:border-white/10"}`} onClick={() => { setPo(null); setSelectedPoId(item.id); }}><span><strong>{item.record_no}</strong> · {item.supplier_name}</span><span>{item.closed_at ? "ปิดแล้ว" : `${item.carrier_receipt_count ?? 0} ใบขนส่ง`}</span></button>)}</div> : <Empty text="ยังไม่มี PO" />}{po && <PoDetails key={po.id} po={po} canClose={["ADMIN", "CEO", "MANAGER"].includes(data.me.role)} onEdit={(body) => run(() => warehouseApi.updatePurchaseOrder(po.id, body), "แก้ไข PO แล้ว")} onClose={() => run(() => warehouseApi.closePurchaseOrder(po.id), "ปิด PO แล้ว")} />}</section><PoForm products={data.products} suppliers={data.suppliers} ceos={data.ceos} onSave={(body) => run(() => warehouseApi.createPurchaseOrder(body), "บันทึก PO แล้ว")} /></div>}
-      {activeStep === "supplier" && <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_390px]"><section className={panel}><h2 className="mb-4 text-lg font-bold">เอกสารผู้ขาย</h2>{data.supplierReceipts.length ? data.supplierReceipts.map((item) => <SupplierRow key={item.id} item={item} />) : <Empty text="ยังไม่มีเอกสารผู้ขาย" />}</section><SupplierForm orders={data.purchaseOrders} selectedPoId={selectedPoId} onSave={(body) => run(() => warehouseApi.createSupplierReceipt(body), "บันทึกเอกสารผู้ขายแล้ว")} /></div>}
-      {activeStep === "carrier" && <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_390px]"><section className={panel}><h2 className="mb-4 text-lg font-bold">ใบขนส่งและสถานะรับจากขนส่ง</h2>{data.carriers.length ? <div className="space-y-2">{data.carriers.map((item) => <button key={item.id} className={`w-full rounded-xl border p-3 text-left text-sm ${selectedCarrierId === item.id ? "border-indigo-500" : "border-slate-200 dark:border-white/10"}`} onClick={() => { setCarrier(null); setSelectedCarrierId(item.id); }}><strong>{item.record_no}</strong> · {item.purchase_order_no} · {item.carrier_name ?? "ไม่ระบุขนส่ง"}<span className="ml-2 text-slate-500">{item.received_at ? "รับของแล้ว" : "รอรับของ"}</span></button>)}</div> : <Empty text="ยังไม่มีใบขนส่ง" />}{carrier && <CarrierDetails carrier={carrier} branches={data.branches} onConfirm={(body) => run(() => warehouseApi.confirmDelivery(carrier.id, body), "ยืนยันรับจากขนส่งแล้ว ยังไม่เพิ่มสต๊อก")} />}</section><CarrierForm orders={data.purchaseOrders} products={data.products} onSave={(body) => run(() => warehouseApi.createCarrierReceipt(body), "บันทึกใบขนส่งแล้ว")} /></div>}
-      {activeStep === "count" && <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_390px]"><section className={panel}><h2 className="mb-4 text-lg font-bold">ใบตรวจรับ</h2>{data.goodsReceipts.length ? <div className="space-y-2">{data.goodsReceipts.map((item) => <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 p-3 text-sm dark:border-white/10"><div><strong>{item.record_no}</strong> · {item.carrier_receipt_no}<p className="text-slate-500">{item.branch_name} · {item.warehouse_name} · {item.posted_at ? "ลงสต๊อกแล้ว" : "รอลงสต๊อก"}</p></div>{!item.posted_at && <button className={button} onClick={() => run(() => warehouseApi.postGoodsReceipt(item.id), "เพิ่มเฉพาะสินค้าดีเข้าสต๊อกแล้ว")}>ลงสต๊อก</button>}</div>)}</div> : <Empty text="ยังไม่มีใบตรวจรับ" />}</section><CountForm carriers={data.carriers.filter((item) => !data.goodsReceipts.some((receipt) => receipt.carrier_receipt_id === item.id))} warehouses={data.warehouses} onSave={(body) => run(() => warehouseApi.createGoodsReceipt(body), "บันทึกผลนับแล้ว รอลงสต๊อก")} /></div>}
-    </div>}
-  </WarehousePageTemplate>;
-}
-
-function PoDetails({ po, canClose, onEdit, onClose }: { po: PurchaseOrder; canClose: boolean; onEdit: (body: Record<string, unknown>) => void; onClose: () => void }) {
-  const [date, setDate] = useState(po.ordered_at?.slice(0,10) ?? ""); const [note, setNote] = useState(po.note ?? "");
-  const editable = !po.closed_at && !po.supplierReceipts?.length && !po.carrierReceipts?.length;
-  return <div className="mt-5 space-y-3 rounded-xl bg-slate-50 p-4 text-sm dark:bg-white/5"><h3 className="font-bold">{po.record_no} · {po.supplier_name}</h3><p>วันที่สั่ง {po.ordered_at?.slice(0,10)} · ผู้สั่งจริง: CEO #{po.ordered_by_ceo_id}</p>{po.lines?.map((line) => <div key={line.id} className="flex justify-between gap-2 border-t border-slate-200 pt-2 dark:border-white/10"><span>{line.sku} · {line.product_name}</span><span>สั่ง {line.quantity} / ดี {line.counted_good_quantity} / ค้าง {line.remaining_good_quantity}</span></div>)}<p className="text-xs text-slate-500">ผู้กรอกเอกสารกับ CEO ผู้สั่งซื้อเป็นคนละข้อมูล</p>{editable && <form className="space-y-2 border-t border-slate-200 pt-3 dark:border-white/10" onSubmit={(event) => { event.preventDefault(); onEdit({ orderedAt: date, note: note || null }); }}><Field label="แก้วันที่สั่ง"><input className={input} type="date" required value={date} onChange={(event) => setDate(event.target.value)} /></Field><Field label="แก้หมายเหตุ"><textarea className={input} value={note} onChange={(event) => setNote(event.target.value)} /></Field><button className={subtleButton}>บันทึกการแก้ไข</button></form>}{canClose && !po.closed_at && <button className="text-sm font-medium text-rose-600 underline" onClick={() => { if (window.confirm(`ปิด PO ${po.record_no}?`)) onClose(); }}>ปิด PO</button>}</div>;
-}
-
-function PoForm({ products, suppliers, ceos, onSave }: { products: CatalogItem[]; suppliers: CatalogItem[]; ceos: Array<{ id: number; name: string }>; onSave: (body: Record<string, unknown>) => void }) {
-  const [supplierId, setSupplierId] = useState(""); const [ceoId, setCeoId] = useState(""); const [date, setDate] = useState(new Date().toISOString().slice(0,10)); const [note, setNote] = useState("");
-  const [lines, setLines] = useState([{ productId: "", quantity: "", unitPrice: "" }]);
-  const submit = (event: FormEvent) => { event.preventDefault(); onSave({ supplierId: Number(supplierId), orderedByCeoId: Number(ceoId), orderedAt: date, note: note || null, lines: lines.map((line) => ({ productId: Number(line.productId), quantity: line.quantity, unitPrice: line.unitPrice })) }); };
-  return <form className={`${panel} space-y-3 self-start`} onSubmit={submit}><h2 className="text-lg font-bold">บันทึก PO ที่ CEO สั่ง</h2><Field label="ผู้ขาย"><select className={input} required value={supplierId} onChange={(event) => setSupplierId(event.target.value)}><option value="">เลือกผู้ขาย</option>{suppliers.filter((item) => item.active !== false).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field><Field label="CEO ผู้สั่งซื้อจริง"><select className={input} required value={ceoId} onChange={(event) => setCeoId(event.target.value)}><option value="">เลือก CEO</option>{ceos.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field><Field label="วันที่สั่ง"><input className={input} type="date" required value={date} onChange={(event) => setDate(event.target.value)} /></Field>{lines.map((line,index) => <div key={index} className="space-y-2 rounded-xl border border-slate-200 p-3 dark:border-white/10"><select className={input} required value={line.productId} onChange={(event) => setLines(lines.map((item,i) => i === index ? { ...item, productId: event.target.value } : item))}><option value="">เลือกสินค้า</option>{products.filter((item) => item.active !== false).map((item) => <option key={item.id} value={item.id}>{item.sku} · {item.name}</option>)}</select><div className="grid grid-cols-2 gap-2"><input className={input} type="number" min="0.001" step="0.001" placeholder="จำนวน" required value={line.quantity} onChange={(event) => setLines(lines.map((item,i) => i === index ? { ...item, quantity: event.target.value } : item))} /><input className={input} type="number" min="0" step="0.01" placeholder="ราคา/หน่วย" required value={line.unitPrice} onChange={(event) => setLines(lines.map((item,i) => i === index ? { ...item, unitPrice: event.target.value } : item))} /></div>{lines.length > 1 && <button type="button" className="text-sm text-rose-600" onClick={() => setLines(lines.filter((_,i) => i !== index))}>ลบบรรทัด</button>}</div>)}<button type="button" className={subtleButton} onClick={() => setLines([...lines, { productId: "", quantity: "", unitPrice: "" }])}>เพิ่มสินค้า</button><Field label="หมายเหตุ"><textarea className={input} value={note} onChange={(event) => setNote(event.target.value)} /></Field><button className={button} disabled={!suppliers.length || !ceos.length || !products.length}>บันทึก PO</button></form>;
-}
-
-function SupplierRow({ item }: { item: { id: number; record_no: string; purchase_order_no?: string; supplier_name?: string; external_doc_no: string | null } }) {
-  const [detail, setDetail] = useState<Awaited<ReturnType<typeof warehouseApi.supplierReceipt>> | null>(null);
-  return <div className="mb-2 rounded-xl border border-slate-200 p-3 text-sm dark:border-white/10"><button className="w-full text-left" onClick={() => void warehouseApi.supplierReceipt(item.id).then(setDetail)}><strong>{item.record_no}</strong> · {item.purchase_order_no} · {item.supplier_name} <span className="text-slate-500">{item.external_doc_no}</span></button>{detail && <div className="mt-3 space-y-2 border-t border-slate-200 pt-3 dark:border-white/10">{detail.lines?.map((line) => <p key={line.id}>{line.product_name} · {line.quantity} × {line.unit_price}</p>)}<EvidenceLinks media={detail.media} /></div>}</div>;
-}
-
-function SupplierForm({ orders, selectedPoId, onSave }: { orders: PurchaseOrder[]; selectedPoId: number | null; onSave: (body: Record<string, unknown>) => void }) {
-  const [poId, setPoId] = useState(String(selectedPoId ?? "")); const [po, setPo] = useState<PurchaseOrder | null>(null); const [externalDocNo, setExternalDocNo] = useState(""); const [date, setDate] = useState(""); const [total, setTotal] = useState(""); const [mediaIds, setMediaIds] = useState<number[]>([]); const [quantities, setQuantities] = useState<Record<number,string>>({}); const [prices, setPrices] = useState<Record<number,string>>({}); const [note, setNote] = useState("");
-  useEffect(() => { if (poId) void warehouseApi.purchaseOrder(Number(poId)).then(setPo); }, [poId]);
-  return <form className={`${panel} space-y-3 self-start`} onSubmit={(event) => { event.preventDefault(); if (!po) return; onSave({ purchaseOrderId: po.id, supplierId: po.supplier_id, externalDocNo: externalDocNo || null, documentDate: date || null, totalAmount: total || null, lines: po.lines?.map((line) => ({ purchaseOrderLineId: line.id, quantity: quantities[line.id] ?? line.quantity, unitPrice: prices[line.id] ?? line.unit_price })), mediaAssetIds: mediaIds, note: note || null }); }}><h2 className="text-lg font-bold">บันทึกเอกสารผู้ขาย</h2><Field label="PO"><select className={input} required value={poId} onChange={(event) => { setPo(null); setPoId(event.target.value); }}><option value="">เลือก PO</option>{orders.filter((item) => !item.closed_at).map((item) => <option key={item.id} value={item.id}>{item.record_no} · {item.supplier_name}</option>)}</select></Field><Field label="เลขเอกสารบนใบ"><input className={input} value={externalDocNo} onChange={(event) => setExternalDocNo(event.target.value)} /></Field><Field label="วันที่เอกสาร"><input className={input} type="date" value={date} onChange={(event) => setDate(event.target.value)} /></Field>{po?.lines?.map((line) => <div key={line.id} className="space-y-2"><Field label={`${line.sku} · ${line.product_name} (PO ${line.quantity})`}><input className={input} type="number" min="0" step="0.001" value={quantities[line.id] ?? line.quantity} onChange={(event) => setQuantities({ ...quantities, [line.id]: event.target.value })} /></Field><Field label="ราคาต่อหน่วยตามใบ"><input className={input} type="number" min="0" step="0.01" value={prices[line.id] ?? line.unit_price} onChange={(event) => setPrices({ ...prices, [line.id]: event.target.value })} /></Field></div>)}<Field label="ยอดรวมบนใบ"><input className={input} type="number" min="0" step="0.01" value={total} onChange={(event) => setTotal(event.target.value)} /></Field><Field label="หมายเหตุ"><textarea className={input} value={note} onChange={(event) => setNote(event.target.value)} /></Field><EvidencePicker required onChange={setMediaIds} /><button className={button} disabled={!po || !mediaIds.length}>บันทึกเอกสาร</button></form>;
-}
-
-function CarrierForm({ orders, products, onSave }: { orders: PurchaseOrder[]; products: CatalogItem[]; onSave: (body: Record<string, unknown>) => void }) {
-  const [code, setCode] = useState("");
-  const [external, setExternal] = useState("");
-  const [carrier, setCarrier] = useState("");
-  const [tracking, setTracking] = useState("");
-  const [packages, setPackages] = useState("");
-  const [freight, setFreight] = useState("");
-  const [date, setDate] = useState("");
-  const [note, setNote] = useState("");
-  const [mediaIds, setMediaIds] = useState<number[]>([]);
-  const [lines, setLines] = useState<Array<{ productId: string; quantity: string }>>([]);
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    onSave({ purchaseOrderCode: code.trim().toUpperCase(), externalDocNo: external || null, documentDate: date || null, carrierName: carrier || null, trackingNo: tracking || null, packageCount: packages ? Number(packages) : null, freightAmount: freight || null, note: note || null, lines: lines.map((line) => ({ productId: Number(line.productId), quantity: line.quantity || null })), mediaAssetIds: mediaIds });
+  const [selectedSupplierReceiptId, setSelectedSupplierReceiptId] = useState<number | null>(null);
+  const [supplierDetail, setSupplierDetail] = useState<SupplierReceipt | null>(null);
+  const [supplierDetailLoading, setSupplierDetailLoading] = useState(false);
+  const activeStep = (data?.me.role ?? account?.me?.role) === "EMPLOYEE" ? "carrier" : step;
+  const needsCarrierBranches =
+    activeStep === "carrier" && !!carrier && !carrier.confirmation;
+  const referencesNeededNow =
+    (formOpen && (activeStep === "po" || activeStep === "count")) ||
+    needsCarrierBranches;
+  const {
+    data: references,
+    error: referencesError,
+    loading: referencesLoading,
+    refresh: refreshReferences,
+  } = useRemote(loadReferences, {
+    enabled: !!account?.me && referencesNeededNow,
+  });
+  const activeReferences =
+    references?.step === activeStep && references.scope === warehouseCacheScope
+      ? references
+      : null;
+  const activeData = data?.step === activeStep
+    ? {
+        ...data,
+        suppliers: activeReferences?.suppliers ?? data.suppliers,
+        ceos: activeReferences?.ceos ?? data.ceos,
+        branches: activeReferences?.branches ?? data.branches,
+        warehouses: activeReferences?.warehouses ?? data.warehouses,
+      }
+    : null;
+  const formReferencesReady = activeStep === "po"
+    ? !referencesLoading &&
+      activeReferences?.suppliers !== undefined &&
+      activeReferences?.ceos !== undefined
+    : activeStep === "count"
+      ? !referencesLoading && activeReferences?.warehouses !== undefined
+      : true;
+  useEffect(() => {
+    if (!selectedPoId) return;
+    const controller = new AbortController();
+    void warehouseApi
+      .purchaseOrder(selectedPoId, controller.signal)
+      .then(setPo)
+      .catch((cause) => {
+        if (!controller.signal.aborted) setFailure(message(cause, isThai));
+      });
+    return () => controller.abort();
+  }, [isThai, selectedPoId]);
+  useEffect(() => {
+    if (!selectedCarrierId) return;
+    const controller = new AbortController();
+    void warehouseApi
+      .carrierReceipt(selectedCarrierId, controller.signal)
+      .then(setCarrier)
+      .catch((cause) => {
+        if (!controller.signal.aborted) setFailure(message(cause, isThai));
+      });
+    return () => controller.abort();
+  }, [isThai, selectedCarrierId]);
+  useEffect(() => {
+    if (!selectedSupplierReceiptId) return;
+    const controller = new AbortController();
+    setSupplierDetailLoading(true);
+    void warehouseApi
+      .supplierReceipt(selectedSupplierReceiptId)
+      .then((item) => {
+        if (!controller.signal.aborted) setSupplierDetail(item);
+      })
+      .catch((cause) => {
+        if (!controller.signal.aborted) setFailure(message(cause, isThai));
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setSupplierDetailLoading(false);
+      });
+    return () => controller.abort();
+  }, [isThai, selectedSupplierReceiptId]);
+  const reload = async () => {
+    await refresh();
+    if (activeStep === "po" && selectedPoId)
+      setPo(await warehouseApi.purchaseOrder(selectedPoId));
+    if (activeStep === "carrier" && selectedCarrierId)
+      setCarrier(await warehouseApi.carrierReceipt(selectedCarrierId));
   };
-  return <form className={`${panel} space-y-3 self-start`} onSubmit={submit}>
-    <h2 className="text-lg font-bold">บันทึกใบขนส่ง</h2>
-    <Field label="รหัส PO ที่สั่งของ"><input className={input} required list="po-codes" value={code} onChange={(event) => setCode(event.target.value)} /><datalist id="po-codes">{orders.map((item) => <option key={item.id} value={item.record_no} />)}</datalist></Field>
-    <Field label="เลขใบขนส่ง"><input className={input} value={external} onChange={(event) => setExternal(event.target.value)} /></Field>
-    <Field label="วันที่เอกสาร"><input className={input} type="date" value={date} onChange={(event) => setDate(event.target.value)} /></Field>
-    <Field label="ผู้ขนส่ง"><input className={input} value={carrier} onChange={(event) => setCarrier(event.target.value)} /></Field>
-    <Field label="Tracking"><input className={input} value={tracking} onChange={(event) => setTracking(event.target.value)} /></Field>
-    <Field label="จำนวนหีบห่อบนใบ"><input className={input} type="number" min="0" value={packages} onChange={(event) => setPackages(event.target.value)} /></Field>
-    <Field label="ค่าขนส่ง (ถ้ามี)"><input className={input} type="number" min="0" step="0.01" value={freight} onChange={(event) => setFreight(event.target.value)} /></Field>
-    {lines.map((line, index) => <div key={index} className="grid grid-cols-[1fr_100px_auto] gap-2"><select className={input} required value={line.productId} onChange={(event) => setLines(lines.map((item, i) => i === index ? { ...item, productId: event.target.value } : item))}><option value="">เลือกสินค้าที่ระบุบนใบ</option>{products.map((item) => <option key={item.id} value={item.id}>{item.sku} · {item.name}</option>)}</select><input className={input} type="number" min="0" step="0.001" placeholder="จำนวน" value={line.quantity} onChange={(event) => setLines(lines.map((item, i) => i === index ? { ...item, quantity: event.target.value } : item))} /><button type="button" className="text-rose-600" onClick={() => setLines(lines.filter((_, i) => i !== index))}>ลบ</button></div>)}
-    <button type="button" className={subtleButton} onClick={() => setLines([...lines, { productId: "", quantity: "" }])}>เพิ่มสินค้าที่มีบนใบ</button>
-    <p className="text-xs text-slate-500">หากใบขนส่งไม่มีรายการสินค้า เว้นส่วนนี้ว่างไว้</p>
-    <Field label="หมายเหตุ"><textarea className={input} value={note} onChange={(event) => setNote(event.target.value)} /></Field>
-    <EvidencePicker required onChange={setMediaIds} />
-    <button className={button} disabled={!mediaIds.length}>บันทึกใบขนส่ง</button>
-  </form>;
-}
 
-function CarrierDetails({ carrier, branches, onConfirm }: { carrier: CarrierReceipt; branches: CatalogItem[]; onConfirm: (body: Record<string, unknown>) => void }) {
-  const [branchId, setBranchId] = useState(""); const [packages, setPackages] = useState(""); const [condition, setCondition] = useState(""); const [mediaIds, setMediaIds] = useState<number[]>([]);
-  return <div className="mt-5 space-y-3 rounded-xl bg-slate-50 p-4 text-sm dark:bg-white/5"><h3 className="font-bold">{carrier.record_no} · {carrier.purchase_order_no}</h3><p>{carrier.carrier_name} · {carrier.tracking_no}</p><EvidenceLinks media={carrier.media} />{carrier.confirmation ? <Notice tone="success">รับเข้าที่สาขา #{carrier.confirmation.receiving_branch_id} แล้ว · {carrier.confirmation.actual_package_count} กล่อง</Notice> : <form className="space-y-3" onSubmit={(event) => { event.preventDefault(); onConfirm({ receivingBranchId: Number(branchId), actualPackageCount: Number(packages), packageCondition: condition, mediaAssetIds: mediaIds }); }}><h4 className="font-bold">ยืนยันรับจากขนส่ง</h4><Field label="สาขาที่รับจริง"><select className={input} required value={branchId} onChange={(event) => setBranchId(event.target.value)}><option value="">เลือกสาขา</option>{branches.filter((item) => item.active !== false).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field><Field label="จำนวนกล่องจริง"><input className={input} type="number" min="0" required value={packages} onChange={(event) => setPackages(event.target.value)} /></Field><Field label="สภาพกล่อง"><input className={input} required value={condition} onChange={(event) => setCondition(event.target.value)} /></Field><EvidencePicker required onChange={setMediaIds} /><button className={button} disabled={!mediaIds.length}>ยืนยันของมาถึง</button><p className="text-xs text-slate-500">ขั้นนี้ยังไม่เพิ่มยอดสินค้า</p></form>}</div>;
-}
+  const run = async (action: () => Promise<unknown>, success: string) => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    setFailure(null);
+    setNotice(null);
+    try {
+      const result = await action();
+      const warnings =
+        result &&
+        typeof result === "object" &&
+        "warnings" in result &&
+        Array.isArray(result.warnings)
+          ? result.warnings
+          : [];
+      await reload();
+      setNotice(success + (warnings.length ? ` · ${warnings.join(", ")}` : ""));
+      setFormOpen(false);
+    } catch (cause) {
+      setFailure(message(cause, isThai));
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
+  };
 
-function CountForm({ carriers, warehouses, onSave }: { carriers: CarrierReceipt[]; warehouses: CatalogItem[]; onSave: (body: Record<string, unknown>) => void }) {
-  const [carrierId, setCarrierId] = useState(""); const [carrier, setCarrier] = useState<CarrierReceipt | null>(null); const [po, setPo] = useState<PurchaseOrder | null>(null); const [warehouseId, setWarehouseId] = useState(""); const [count, setCount] = useState<Record<number,{ good: string; damaged: string; wrong: string; serials: string }>>({}); const [title, setTitle] = useState(""); const [detail, setDetail] = useState(""); const [mediaIds, setMediaIds] = useState<number[]>([]);
-  useEffect(() => { if (carrierId) void warehouseApi.carrierReceipt(Number(carrierId)).then(async (item) => { setCarrier(item); setPo(await warehouseApi.purchaseOrder(item.purchase_order_id)); }); }, [carrierId]);
-  const lines = po?.lines?.filter((line) => { const item = count[line.id]; return item && Number(item.good || 0) + Number(item.damaged || 0) + Number(item.wrong || 0) > 0; }) ?? [];
-  const damaged = lines.some((line) => Number(count[line.id].damaged || 0) + Number(count[line.id].wrong || 0) > 0);
-  const submit = (event: FormEvent) => { event.preventDefault(); if (!carrier || !lines.length) return; onSave({ carrierReceiptId: carrier.id, warehouseId: Number(warehouseId), lines: lines.map((line) => ({ purchaseOrderLineId: line.id, goodQuantity: count[line.id].good || "0", damagedQuantity: count[line.id].damaged || "0", wrongQuantity: count[line.id].wrong || "0", serialNumbers: count[line.id].serials.split(/[,\n]/).map((item) => item.trim()).filter(Boolean) })), issueTitle: damaged ? title : undefined, issueDetail: damaged ? detail : undefined, mediaAssetIds: mediaIds }); };
-  return <form className={`${panel} space-y-3 self-start`} onSubmit={submit}><h2 className="text-lg font-bold">เปิดกล่องและนับจริง</h2><Field label="ใบขนส่งที่ยืนยันรับแล้ว"><select className={input} required value={carrierId} onChange={(event) => { setCarrier(null); setPo(null); setCarrierId(event.target.value); }}><option value="">เลือกใบขนส่ง</option>{carriers.filter((item) => item.received_at).map((item) => <option key={item.id} value={item.id}>{item.record_no} · {item.purchase_order_no}</option>)}</select></Field>{carrier?.confirmation && <Field label="คลังปลายทางในสาขาที่รับ"><select className={input} required value={warehouseId} onChange={(event) => setWarehouseId(event.target.value)}><option value="">เลือกคลัง</option>{warehouses.filter((item) => item.active !== false && item.branch_id === carrier.confirmation?.receiving_branch_id).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>}{po?.lines?.map((line: PurchaseOrderLine) => <div key={line.id} className="space-y-2 rounded-xl border border-slate-200 p-3 dark:border-white/10"><strong>{line.sku} · {line.product_name}</strong><p className="text-xs text-slate-500">สั่ง {line.quantity} · ยังขาดของดี {line.remaining_good_quantity}</p><div className="grid grid-cols-3 gap-2">{([ ["good", "ดี"], ["damaged", "ชำรุด"], ["wrong", "ผิดรุ่น"] ] as const).map(([key,label]) => <Field key={key} label={label}><input className={input} type="number" min="0" step="0.001" value={count[line.id]?.[key] ?? ""} onChange={(event) => setCount({ ...count, [line.id]: { good: count[line.id]?.good ?? "", damaged: count[line.id]?.damaged ?? "", wrong: count[line.id]?.wrong ?? "", serials: count[line.id]?.serials ?? "", [key]: event.target.value } })} /></Field>)}</div><Field label="Serial ของดี (คั่นด้วยจุลภาค)"><textarea className={input} value={count[line.id]?.serials ?? ""} onChange={(event) => setCount({ ...count, [line.id]: { good: count[line.id]?.good ?? "", damaged: count[line.id]?.damaged ?? "", wrong: count[line.id]?.wrong ?? "", serials: event.target.value } })} /></Field></div>)}{damaged && <><Field label="หัวเรื่องปัญหา"><input className={input} required value={title} onChange={(event) => setTitle(event.target.value)} /></Field><Field label="รายละเอียดปัญหา"><textarea className={input} required value={detail} onChange={(event) => setDetail(event.target.value)} /></Field><EvidencePicker required onChange={setMediaIds} /></>}<button className={button} disabled={!carrier?.confirmation || !warehouseId || !lines.length || (damaged && !mediaIds.length)}>บันทึกผลนับ</button><p className="text-xs text-slate-500">จำนวนชำรุดและผิดรุ่นจะไม่เพิ่มสต๊อก</p></form>;
+  const loadMore = async (resource: CursorResource) => {
+    const cursor = activeData?.pages[resource]?.nextCursor;
+    if (!cursor || loadingMore.has(resource)) return;
+    const controller = new AbortController();
+    pageControllersRef.current.set(resource, controller);
+    setLoadingMore((current) => new Set(current).add(resource));
+    try {
+      let result: ApiListPage<{ id: number }>;
+      if (resource === "purchaseOrders") result = await warehouseApi.purchaseOrdersPage(cursor, controller.signal);
+      else if (resource === "supplierReceipts") result = await warehouseApi.supplierReceiptsPage(cursor, controller.signal);
+      else if (resource === "carriers") result = await warehouseApi.carrierReceiptsPage(cursor, controller.signal);
+      else result = await warehouseApi.goodsReceiptsPage(cursor, controller.signal);
+      setData((current) => {
+        if (!current || current.step !== activeStep) return current;
+        const combined = <T extends { id: number }>(items: T[], added: T[]) => {
+          const known = new Set(items.map((item) => item.id));
+          return [...items, ...added.filter((item) => !known.has(item.id))];
+        };
+        const pages = { ...current.pages, [resource]: result.page };
+        if (resource === "purchaseOrders") return { ...current, pages, purchaseOrders: combined(current.purchaseOrders, result.items as typeof current.purchaseOrders) };
+        if (resource === "supplierReceipts") return { ...current, pages, supplierReceipts: combined(current.supplierReceipts, result.items as typeof current.supplierReceipts) };
+        if (resource === "carriers") return { ...current, pages, carriers: combined(current.carriers, result.items as typeof current.carriers) };
+        return { ...current, pages, goodsReceipts: combined(current.goodsReceipts, result.items as typeof current.goodsReceipts) };
+      });
+    } catch (cause) {
+      if (!controller.signal.aborted) setFailure(message(cause, isThai));
+    } finally {
+      if (pageControllersRef.current.get(resource) === controller) pageControllersRef.current.delete(resource);
+      if (!controller.signal.aborted) {
+        setLoadingMore((current) => { const next = new Set(current); next.delete(resource); return next; });
+      }
+    }
+  };
+
+  const changePage = async (resource: CursorResource, targetPage: number) => {
+    const pageIndex = activeData?.pageIndices[resource] ?? 1;
+    const history = activeData?.cursorHistory[resource] ?? [null];
+    const isNextPage = targetPage === pageIndex + 1;
+    const cursor = isNextPage
+      ? activeData?.pages[resource]?.nextCursor
+      : history[targetPage - 1];
+    if (
+      targetPage < 1 ||
+      targetPage === pageIndex ||
+      cursor === undefined ||
+      (isNextPage && !cursor) ||
+      loadingMore.has(resource)
+    ) return;
+
+    const controller = new AbortController();
+    pageControllersRef.current.get(resource)?.abort();
+    pageControllersRef.current.set(resource, controller);
+    setLoadingMore((current) => new Set(current).add(resource));
+    try {
+      let result: ApiListPage<{ id: number }>;
+      if (resource === "purchaseOrders") result = await warehouseApi.purchaseOrdersPage(cursor, controller.signal);
+      else if (resource === "supplierReceipts") result = await warehouseApi.supplierReceiptsPage(cursor, controller.signal);
+      else if (resource === "carriers") result = await warehouseApi.carrierReceiptsPage(cursor, controller.signal);
+      else result = await warehouseApi.goodsReceiptsPage(cursor, controller.signal);
+      setData((current) => {
+        if (!current || current.step !== activeStep) return current;
+        const pages = { ...current.pages, [resource]: result.page };
+        const pageIndices = { ...current.pageIndices, [resource]: targetPage };
+        const cursorHistory = { ...current.cursorHistory };
+        const resourceHistory = [...(cursorHistory[resource] ?? [null])];
+        if (targetPage > pageIndex) resourceHistory[targetPage - 1] = cursor;
+        cursorHistory[resource] = resourceHistory;
+        if (resource === "purchaseOrders") return { ...current, pages, pageIndices, cursorHistory, purchaseOrders: result.items as typeof current.purchaseOrders };
+        if (resource === "supplierReceipts") return { ...current, pages, pageIndices, cursorHistory, supplierReceipts: result.items as typeof current.supplierReceipts };
+        if (resource === "carriers") return { ...current, pages, pageIndices, cursorHistory, carriers: result.items as typeof current.carriers };
+        return { ...current, pages, pageIndices, cursorHistory, goodsReceipts: result.items as typeof current.goodsReceipts };
+      });
+    } catch (cause) {
+      if (!controller.signal.aborted) setFailure(message(cause, isThai));
+    } finally {
+      if (pageControllersRef.current.get(resource) === controller) pageControllersRef.current.delete(resource);
+      if (!controller.signal.aborted) {
+        setLoadingMore((current) => { const next = new Set(current); next.delete(resource); return next; });
+      }
+    }
+  };
+
+  const countedCarrierIds = new Set(activeData?.carriers.filter((item) => item.has_goods_receipt).map((item) => item.id) ?? []);
+  return (
+    <WarehousePageTemplate
+      titleEn="Receiving"
+      titleTh="สั่งสินค้าและตรวจรับ"
+      routePath="/warehouse/receive"
+      iconName="inbound"
+    >
+      {loading && !data ? (
+        <ReceivingTabsSkeleton employeeOnly={account?.me?.role === "EMPLOYEE"} />
+      ) : <nav aria-label={isThai ? "ขั้นตอนการรับสินค้า" : "Goods receiving steps"} className={`flex h-[42px] w-full flex-row items-start gap-2 overflow-x-auto border-b select-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${isLight ? "border-[#E4E4E7]" : "border-[#444444]"}`}>
+        {steps
+          .filter((key) => (data?.me.role ?? account?.me?.role) !== "EMPLOYEE" || key === "carrier")
+          .map((key) => {
+            const isCurrent = activeStep === key;
+            return (
+              <button
+                  key={key}
+                  type="button"
+                  aria-current={isCurrent ? "step" : undefined}
+                  onClick={() => { setLoadingMore(new Set()); setFormOpen(false); setStep(key); }}
+                  className={`relative flex h-[42px] min-w-max flex-1 basis-0 items-center justify-center whitespace-nowrap px-4 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 ${isCurrent ? "font-semibold" : ""}`}
+                >
+                  {isCurrent && (
+                    <motion.span
+                      layoutId="receiving-active-tab"
+                      aria-hidden="true"
+                      className={`pointer-events-none absolute inset-x-0 bottom-0 z-0 h-0.5 ${isLight ? "bg-[#222222]" : "bg-white"}`}
+                      transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 40 }}
+                    />
+                  )}
+                  <span className={`relative z-10 truncate text-sm transition-colors ${isCurrent ? (isLight ? "text-[#222222]" : "text-[#FFFFFF]") : (isLight ? "text-[#666666]" : "text-[#E4E4E7]")} ${isLight ? "hover:text-[#222222]" : "hover:text-[#FFFFFF]"}`}>{stepLabel(key, isThai)}</span>
+              </button>
+            );
+          })}
+      </nav>}
+      {error && <Notice tone="error">{error}</Notice>}
+      {failure && <Notice tone="error">{failure}</Notice>}
+      {notice && <Notice tone="success">{notice}</Notice>}
+
+      {!activeData && loading && (
+        <div aria-label={isThai ? "กำลังโหลดข้อมูลรับสินค้า" : "Loading receiving data"}>
+          <ReceivingContentSkeleton step={activeStep} />
+        </div>
+      )}
+
+      {activeData && (
+        <div
+          className={busy ? "pointer-events-none opacity-60" : "contents"}
+          aria-busy={busy}
+        >
+          {activeStep === "po" && (
+            <div className="space-y-5">
+              <section className="p-5">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="text-lg font-bold">{isThai ? "PO ที่บันทึกแล้ว" : "Saved purchase orders"}</h2>
+                  <Button variant="primary" icon={<Plus size={14} />} onClick={() => setFormOpen(true)}>{isThai ? "สร้าง PO" : "Create PO"}</Button>
+                </div>
+                <DataTable
+                  columns={[
+                    { key: "record_no", header: isThai ? "เลขที่ PO" : "PO number", className: "font-mono font-semibold" },
+                    { key: "supplier_name", header: isThai ? "ผู้ขาย" : "Supplier", render: (item) => item.supplier_name || "—" },
+                    { key: "status", header: isThai ? "สถานะ" : "Status", render: (item) => item.closed_at ? (isThai ? "ปิดแล้ว" : "Closed") : `${item.carrier_receipt_count ?? 0} ${isThai ? "ใบขนส่ง" : "delivery notes"}` },
+                  ]}
+                  data={activeData.purchaseOrders}
+                  keyExtractor={(item) => item.id}
+                  minWidth="560px"
+                  selectedKey={selectedPoId}
+                  onRowClick={(item) => { setPo(null); setSelectedPoId(item.id); }}
+                  emptyTitle={isThai ? "ยังไม่มี PO" : "No purchase orders yet"}
+                  className={dataTableFrameClassName(isLight)}
+                />
+                {activeData.pages.purchaseOrders && <Pagination currentPage={activeData.pageIndices.purchaseOrders ?? 1} totalPages={(activeData.pageIndices.purchaseOrders ?? 1) + (activeData.pages.purchaseOrders.hasMore ? 1 : 0)} pageItemCount={activeData.purchaseOrders.length} onPageChange={(targetPage) => void changePage("purchaseOrders", targetPage)} isLoading={loadingMore.has("purchaseOrders")} isThai={isThai} className="mt-3" />}
+                {po && (
+                  <PoDetails
+                    key={po.id}
+                    po={po}
+                    canClose={["ADMIN", "CEO", "MANAGER"].includes(
+                      activeData.me.role,
+                    )}
+                    onEdit={(body) =>
+                      run(
+                        () => warehouseApi.updatePurchaseOrder(po.id, body),
+                        isThai ? "แก้ไข PO แล้ว" : "Purchase order updated.",
+                      )
+                    }
+                    onClose={() =>
+                      run(
+                        () => warehouseApi.closePurchaseOrder(po.id),
+                        isThai ? "ปิด PO แล้ว" : "Purchase order closed.",
+                      )
+                    }
+                  />
+                )}
+              </section>
+            </div>
+          )}
+
+          {activeStep === "supplier" && (
+            <div className="space-y-5">
+              <section className="p-5">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="text-lg font-bold">{isThai ? "เอกสารผู้ขาย" : "Supplier documents"}</h2>
+                  <Button variant="primary" icon={<Plus size={14} />} onClick={() => setFormOpen(true)}>{isThai ? "เพิ่มเอกสารผู้ขาย" : "Add supplier document"}</Button>
+                </div>
+                <DataTable
+                  columns={[
+                    { key: "record_no", header: isThai ? "เลขที่เอกสาร" : "Document no.", className: "font-mono font-semibold" },
+                    { key: "purchase_order_no", header: isThai ? "เลขที่ PO" : "PO number", className: "font-mono" },
+                    { key: "supplier_name", header: isThai ? "ผู้ขาย" : "Supplier", render: (item) => item.supplier_name || "—" },
+                    { key: "external_doc_no", header: isThai ? "เลขที่เอกสารผู้ขาย" : "Supplier document no.", render: (item) => item.external_doc_no || "—" },
+                    { key: "document_date", header: isThai ? "วันที่เอกสาร" : "Document date", render: (item) => item.document_date || "—" },
+                    { key: "total_amount", header: isThai ? "ยอดรวมบนใบ" : "Document total", align: "right", render: (item) => item.total_amount || "—" },
+                  ]}
+                  data={activeData.supplierReceipts}
+                  keyExtractor={(item) => item.id}
+                  minWidth="980px"
+                  selectedKey={selectedSupplierReceiptId}
+                  onRowClick={(item) => {
+                    setSupplierDetail(null);
+                    setSelectedSupplierReceiptId((current) => current === item.id ? null : item.id);
+                  }}
+                  emptyTitle={isThai ? "ยังไม่มีเอกสารผู้ขาย" : "No supplier documents yet."}
+                  className={dataTableFrameClassName(isLight)}
+                />
+                {selectedSupplierReceiptId && (supplierDetailLoading ? (
+                  <div className="mt-3 flex justify-center rounded-xl border border-slate-200 p-5 dark:border-white/10" role="status" aria-label={isThai ? "กำลังโหลดรายละเอียดเอกสารผู้ขาย" : "Loading supplier document details"}>
+                    <Loader2 size={20} className="animate-spin" />
+                  </div>
+                ) : supplierDetail ? <SupplierDetails detail={supplierDetail} /> : null)}
+                {activeData.pages.supplierReceipts && <Pagination currentPage={activeData.pageIndices.supplierReceipts ?? 1} totalPages={(activeData.pageIndices.supplierReceipts ?? 1) + (activeData.pages.supplierReceipts.hasMore ? 1 : 0)} pageItemCount={activeData.supplierReceipts.length} onPageChange={(targetPage) => { setSelectedSupplierReceiptId(null); setSupplierDetail(null); void changePage("supplierReceipts", targetPage); }} isLoading={loadingMore.has("supplierReceipts")} isThai={isThai} className="mt-3" />}
+              </section>
+            </div>
+          )}
+
+          {activeStep === "carrier" && (
+            <div className="space-y-5">
+              <section className="p-5">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="text-lg font-bold">{isThai ? "ใบขนส่งและสถานะรับจากขนส่ง" : "Delivery notes and arrival status"}</h2>
+                  <Button variant="primary" icon={<Plus size={14} />} onClick={() => setFormOpen(true)}>{isThai ? "เพิ่มใบขนส่ง" : "Add delivery note"}</Button>
+                </div>
+                {activeData.carriers.length ? (
+                  <DataTable
+                    columns={[
+                      { key: "record_no", header: isThai ? "เลขที่ใบขนส่ง" : "Delivery note no.", className: "font-mono font-semibold" },
+                      { key: "purchase_order_no", header: isThai ? "เลขที่ PO" : "PO number", className: "font-mono" },
+                      { key: "carrier_name", header: isThai ? "ผู้ขนส่ง" : "Carrier", render: (item) => item.carrier_name || "—" },
+                      { key: "status", header: isThai ? "สถานะ" : "Status", render: (item) => item.received_at ? (isThai ? "รับของแล้ว" : "Received") : (isThai ? "รอรับของ" : "Awaiting delivery") },
+                    ]}
+                    data={activeData.carriers}
+                    keyExtractor={(item) => item.id}
+                    minWidth="760px"
+                    selectedKey={selectedCarrierId}
+                    onRowClick={(item) => { setCarrier(null); setSelectedCarrierId(item.id); }}
+                    className={dataTableFrameClassName(isLight)}
+                  />
+                ) : (
+                  <Empty text={isThai ? "ยังไม่มีใบขนส่ง" : "No delivery notes yet."} />
+                )}
+                {activeData.pages.carriers && <Pagination currentPage={activeData.pageIndices.carriers ?? 1} totalPages={(activeData.pageIndices.carriers ?? 1) + (activeData.pages.carriers.hasMore ? 1 : 0)} pageItemCount={activeData.carriers.length} onPageChange={(targetPage) => void changePage("carriers", targetPage)} isLoading={loadingMore.has("carriers")} isThai={isThai} className="mt-3" />}
+                {carrier && (
+                  needsCarrierBranches &&
+                  (referencesLoading || activeReferences?.branches === undefined) ? (
+                    <div className="mt-5 space-y-3" aria-busy={referencesLoading}>
+                      {referencesError ? (
+                        <>
+                          <Notice tone="error">{referencesError}</Notice>
+                          <Button variant="secondary" onClick={() => void refreshReferences()}>
+                            {isThai ? "ลองโหลดสาขาอีกครั้ง" : "Retry loading branches"}
+                          </Button>
+                        </>
+                      ) : (
+                        <div
+                          className="flex justify-center rounded-xl border border-slate-200 p-6 dark:border-white/10"
+                          role="status"
+                          aria-label={isThai ? "กำลังโหลดสาขา" : "Loading branches"}
+                        >
+                          <Loader2 size={20} className="animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <CarrierDetails
+                      carrier={carrier}
+                      branches={activeReferences?.branches ?? []}
+                      onConfirm={(body) =>
+                        run(
+                          () => warehouseApi.confirmDelivery(carrier.id, body),
+                          isThai ? "ยืนยันรับจากขนส่งแล้ว ยังไม่เพิ่มสต๊อก" : "Delivery arrival confirmed. Stock has not been updated yet.",
+                        )
+                      }
+                    />
+                  )
+                )}
+              </section>
+            </div>
+          )}
+
+          {activeStep === "count" && (
+            <div className="space-y-5">
+              <section className="p-5">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="text-lg font-bold">{isThai ? "ใบตรวจรับ" : "Goods receipts"}</h2>
+                  <Button variant="primary" icon={<Plus size={14} />} onClick={() => setFormOpen(true)}>{isThai ? "เพิ่มใบตรวจรับ" : "Add goods receipt"}</Button>
+                </div>
+                {activeData.goodsReceipts.length ? (
+                  <DataTable
+                    columns={[
+                      { key: "record_no", header: isThai ? "เลขที่ใบตรวจรับ" : "Goods receipt no.", className: "font-mono font-semibold" },
+                      { key: "carrier_receipt_no", header: isThai ? "ใบขนส่ง" : "Delivery note", className: "font-mono" },
+                      { key: "warehouse", header: isThai ? "คลังปลายทาง" : "Destination warehouse", render: (item) => item.warehouse_name || "—" },
+                      { key: "status", header: isThai ? "สถานะ" : "Status", render: (item) => item.posted_at ? (isThai ? "ลงสต๊อกแล้ว" : "Posted") : (isThai ? "รอลงสต๊อก" : "Awaiting stock posting") },
+                      { key: "action", header: "", align: "right", render: (item) => item.posted_at ? null : (
+                        <Button variant="primary" onClick={() => run(() => warehouseApi.postGoodsReceipt(item.id), isThai ? "เพิ่มเฉพาะสินค้าดีเข้าสต๊อกแล้ว" : "Only good items were added to stock.")}>
+                          {isThai ? "ลงสต๊อก" : "Post stock"}
+                        </Button>
+                      ) },
+                    ]}
+                    data={activeData.goodsReceipts}
+                    keyExtractor={(item) => item.id}
+                    minWidth="820px"
+                    className={dataTableFrameClassName(isLight)}
+                  />
+                ) : (
+                  <Empty text={isThai ? "ยังไม่มีใบตรวจรับ" : "No goods receipts yet."} />
+                )}
+                {activeData.pages.goodsReceipts && <Pagination currentPage={activeData.pageIndices.goodsReceipts ?? 1} totalPages={(activeData.pageIndices.goodsReceipts ?? 1) + (activeData.pages.goodsReceipts.hasMore ? 1 : 0)} pageItemCount={activeData.goodsReceipts.length} onPageChange={(targetPage) => void changePage("goodsReceipts", targetPage)} isLoading={loadingMore.has("goodsReceipts")} isThai={isThai} className="mt-3" />}
+              </section>
+              {activeData.pages.carriers?.hasMore && <button className={`${subtleButton} mt-3`} disabled={loadingMore.has("carriers")} onClick={() => void loadMore("carriers")}>{loadingMore.has("carriers") ? <Loader2 size={16} className="animate-spin" aria-label={isThai ? "กำลังโหลด" : "Loading"} /> : (isThai ? "โหลดใบขนส่งที่รับแล้วเพิ่ม" : "Load more received delivery notes")}</button>}
+            </div>
+          )}
+        </div>
+      )}
+      {formOpen && activeData && (
+        <SidePanel
+          item={null}
+          onClose={() => setFormOpen(false)}
+          eyebrow={isThai ? "การรับสินค้า" : "GOODS RECEIVING"}
+          title={activeStep === "po" ? (isThai ? "สร้างใบสั่งซื้อ" : "Create purchase order") : activeStep === "supplier" ? (isThai ? "เพิ่มเอกสารผู้ขาย" : "Add supplier document") : activeStep === "carrier" ? (isThai ? "เพิ่มใบขนส่ง" : "Add delivery note") : (isThai ? "เพิ่มใบตรวจรับ" : "Add goods receipt")}
+        >
+          {!formReferencesReady ? (
+            <div className="space-y-3 py-6" aria-busy={referencesLoading}>
+              {referencesError ? (
+                <>
+                  <Notice tone="error">{referencesError}</Notice>
+                  <Button variant="secondary" onClick={() => void refreshReferences()}>
+                    {isThai ? "ลองโหลดข้อมูลอีกครั้ง" : "Retry loading references"}
+                  </Button>
+                </>
+              ) : (
+                <div
+                  className="flex justify-center rounded-xl border border-slate-200 p-6 dark:border-white/10"
+                  role="status"
+                  aria-label={isThai ? "กำลังโหลดข้อมูลอ้างอิง" : "Loading references"}
+                >
+                  <Loader2 size={20} className="animate-spin" />
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              {activeStep === "po" && <PoForm suppliers={activeData.suppliers} ceos={activeData.ceos} sidePanel onCancel={() => setFormOpen(false)} onSave={(body) => run(() => warehouseApi.createPurchaseOrder(body), isThai ? "บันทึก PO แล้ว" : "Purchase order saved.")} />}
+              {activeStep === "supplier" && <SupplierForm orders={activeData.purchaseOrders} selectedPoId={selectedPoId} sidePanel onCancel={() => setFormOpen(false)} onSave={(body) => run(() => warehouseApi.createSupplierReceipt(body), isThai ? "บันทึกเอกสารผู้ขายแล้ว" : "Supplier document saved.")} />}
+              {activeStep === "carrier" && <CarrierForm orders={activeData.purchaseOrders} sidePanel onCancel={() => setFormOpen(false)} onSave={(body) => run(() => warehouseApi.createCarrierReceipt(body), isThai ? "บันทึกใบขนส่งแล้ว" : "Delivery note saved.")} />}
+              {activeStep === "count" && <CountForm carriers={activeData.carriers.filter((item) => !countedCarrierIds.has(item.id))} warehouses={activeData.warehouses} sidePanel onCancel={() => setFormOpen(false)} onSave={(body) => run(() => warehouseApi.createGoodsReceipt(body), isThai ? "บันทึกผลนับแล้ว รอลงสต๊อก" : "Count saved. The receipt is waiting for stock posting.")} />}
+            </>
+          )}
+        </SidePanel>
+      )}
+    </WarehousePageTemplate>
+  );
 }

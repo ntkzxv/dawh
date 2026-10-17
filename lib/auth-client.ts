@@ -4,6 +4,7 @@ export const authClient = createAuthClient();
 
 const LOGOUT_CHANNEL_NAME = "dawh-auth";
 const LOGOUT_STORAGE_KEY = "dawh_auth_logout";
+let logoutChannel: BroadcastChannel | null = null;
 
 const USER_LOCAL_STORAGE_KEYS = [
   "dawh_user_profile",
@@ -25,12 +26,20 @@ const USER_SESSION_STORAGE_KEYS = [
 function clearUserClientState() {
   if (typeof window === "undefined") return;
 
-  for (const key of USER_LOCAL_STORAGE_KEYS) {
-    localStorage.removeItem(key);
+  try {
+    for (const key of USER_LOCAL_STORAGE_KEYS) {
+      localStorage.removeItem(key);
+    }
+  } catch {
+    // Continue sign-out even if browser storage is unavailable.
   }
 
-  for (const key of USER_SESSION_STORAGE_KEYS) {
-    sessionStorage.removeItem(key);
+  try {
+    for (const key of USER_SESSION_STORAGE_KEYS) {
+      sessionStorage.removeItem(key);
+    }
+  } catch {
+    // Continue sign-out even if browser storage is unavailable.
   }
 }
 
@@ -44,27 +53,32 @@ function replaceWithLogin() {
 function publishLogout() {
   if (typeof window === "undefined") return;
 
-  if ("BroadcastChannel" in window) {
-    const channel = new BroadcastChannel(LOGOUT_CHANNEL_NAME);
-    channel.postMessage({ type: "logout" });
-    channel.close();
-  }
+  // Reuse the receiving channel so this tab does not receive its own message.
+  logoutChannel?.postMessage({ type: "logout" });
 
   // Fallback for browsers without BroadcastChannel. The value contains no user data.
-  localStorage.setItem(LOGOUT_STORAGE_KEY, String(Date.now()));
+  try {
+    localStorage.setItem(LOGOUT_STORAGE_KEY, String(Date.now()));
+  } catch {
+    // BroadcastChannel still notifies other tabs when storage is unavailable.
+  }
 }
 
 function handleRemoteLogout() {
   clearUserClientState();
+  window.dispatchEvent(new Event("dawh:auth-logout"));
   replaceWithLogin();
 }
 
 if (typeof window !== "undefined") {
   if ("BroadcastChannel" in window) {
-    const channel = new BroadcastChannel(LOGOUT_CHANNEL_NAME);
-    channel.addEventListener("message", (event: MessageEvent<{ type?: string }>) => {
-      if (event.data?.type === "logout") handleRemoteLogout();
-    });
+    logoutChannel = new BroadcastChannel(LOGOUT_CHANNEL_NAME);
+    logoutChannel.addEventListener(
+      "message",
+      (event: MessageEvent<{ type?: string }>) => {
+        if (event.data?.type === "logout") handleRemoteLogout();
+      },
+    );
   }
 
   window.addEventListener("storage", (event) => {
@@ -87,15 +101,35 @@ export async function getCurrentSession() {
 }
 
 export async function logout() {
-  try {
-    const { error } = await authClient.signOut();
-    if (error) throw new Error(error.message);
+  if (typeof window === "undefined") return;
 
-    clearUserClientState();
-    publishLogout();
-    replaceWithLogin();
-  } catch (err) {
-    console.error("SignOut error:", err);
-    throw err;
+  clearUserClientState();
+
+  // Revoke the database session in the background so an unavailable database
+  // does not keep the current tab showing the signed-in account.
+  void authClient
+    .signOut({ fetchOptions: { keepalive: true } })
+    .then(({ error }) => {
+      if (error) console.warn("Better Auth sign-out warning:", error.message);
+    })
+    .catch((error) => console.warn("Better Auth sign-out request failed:", error));
+
+  // Clear the HTTP-only session cookies before navigating. This route is
+  // database-free; waiting for its response prevents the login page from
+  // seeing the old session cookie and redirecting to workspace.
+  try {
+    const response = await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "same-origin",
+      cache: "no-store",
+      keepalive: true,
+    });
+    if (!response.ok)
+      console.warn("Immediate logout cookie cleanup failed:", response.status);
+  } catch (error) {
+    console.warn("Immediate logout cookie cleanup failed:", error);
   }
+
+  publishLogout();
+  replaceWithLogin();
 }

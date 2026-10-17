@@ -2,9 +2,12 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Outfit, Prompt } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/context/ThemeContext";
-import { LoadingProvider, AuthLoadingProvider } from "@/components/loading_screen";
+import {
+  LoadingProvider,
+  AuthLoadingProvider,
+} from "@/components/loading_screen";
 import { NotificationProvider } from "@/context/NotificationContext";
-import { DAWH_LOGOS } from "@/config/brand";
+import { WarehouseAccountProvider } from "@/context/WarehouseAccountContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,8 +50,7 @@ export const metadata: Metadata = {
     default: "dawh | Workspace",
     template: "dawh | %s",
   },
-  description:
-    "dawh Enterprise Operations & Management Platform",
+  description: "dawh Enterprise Operations & Management Platform",
   icons: {
     icon: [
       {
@@ -96,7 +98,12 @@ export default function RootLayout({
         <link rel="icon" href={ICON_URL} sizes="any" type="image/png" />
         <link rel="shortcut icon" href={ICON_URL} />
         <link rel="apple-touch-icon" href={ICON_URL} />
-        <link rel="preload" href="/assets/dawh_longnospace_logo.png" as="image" type="image/png" />
+        <link
+          rel="preload"
+          href="/assets/dawh_longnospace_logo.png"
+          as="image"
+          type="image/png"
+        />
         <title>dawh</title>
       </head>
       <body className="min-h-full flex flex-col bg-[#181818] text-white antialiased transition-colors duration-300">
@@ -104,7 +111,7 @@ export default function RootLayout({
           <LoadingProvider>
             <NotificationProvider>
               <AuthLoadingProvider>
-                {children}
+                <WarehouseAccountProvider>{children}</WarehouseAccountProvider>
               </AuthLoadingProvider>
             </NotificationProvider>
           </LoadingProvider>

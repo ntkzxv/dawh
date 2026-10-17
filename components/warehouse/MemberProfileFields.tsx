@@ -17,37 +17,40 @@ export function profileForm(profile: MemberProfile): ProfileForm {
   };
 }
 
-export function MemberProfileFields({ value, onChange, employmentEditable }: {
+export function MemberProfileFields({ value, onChange, employmentEditable, isThai }: {
   value: ProfileForm;
   onChange: (value: ProfileForm) => void;
   employmentEditable: boolean;
+  isThai: boolean;
 }) {
   const change = (key: keyof ProfileForm, next: string) => onChange({ ...value, [key]: next });
   return <div className="grid gap-3 sm:grid-cols-2">
-    <Field label="รหัสพนักงาน">
+    <Field label={isThai ? "รหัสพนักงาน" : "Employee code"}>
       <input className={input} value={value.employeeCode} maxLength={50} disabled={!employmentEditable} onChange={(event) => change("employeeCode", event.target.value)} />
     </Field>
-    <Field label="วันที่เริ่มงาน">
+    <Field label={isThai ? "วันที่เริ่มงาน" : "Start date"}>
       <DatePicker
         value={value.startedOn}
         disabled={!employmentEditable}
         onChange={(date) => change("startedOn", date)}
-        placeholder="เลือกวันที่เริ่มงาน"
-        isThai={true}
+        placeholder={isThai ? "เลือกวันที่เริ่มงาน" : "Select start date"}
+        isThai={isThai}
         triggerClassName="h-[38px]"
       />
     </Field>
-    <Field label="เบอร์โทรศัพท์">
+    <Field label={isThai ? "เบอร์โทรศัพท์" : "Phone number"}>
       <input className={input} type="tel" value={value.phone} maxLength={30} autoComplete="tel" onChange={(event) => change("phone", event.target.value)} />
     </Field>
-    <Field label="ชื่อผู้ติดต่อฉุกเฉิน">
+    <div className="sm:col-span-2">
+      <Field label={isThai ? "ที่อยู่" : "Address"}>
+        <textarea className={`${input} min-h-20 w-full resize-none`} value={value.address} maxLength={1000} onChange={(event) => change("address", event.target.value)} />
+      </Field>
+    </div>
+    <Field label={isThai ? "ชื่อผู้ติดต่อฉุกเฉิน" : "Emergency contact name"}>
       <input className={input} value={value.emergencyContactName} maxLength={160} onChange={(event) => change("emergencyContactName", event.target.value)} />
     </Field>
-    <Field label="เบอร์ผู้ติดต่อฉุกเฉิน">
+    <Field label={isThai ? "เบอร์ผู้ติดต่อฉุกเฉิน" : "Emergency contact phone"}>
       <input className={input} type="tel" value={value.emergencyContactPhone} maxLength={30} onChange={(event) => change("emergencyContactPhone", event.target.value)} />
-    </Field>
-    <Field label="ที่อยู่">
-      <textarea className={`${input} min-h-20 resize-y`} value={value.address} maxLength={1000} onChange={(event) => change("address", event.target.value)} />
     </Field>
   </div>;
 }
