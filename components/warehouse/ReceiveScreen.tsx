@@ -20,8 +20,10 @@ import Pagination from "@/components/common/Pagination";
 import Button from "@/components/common/Button";
 import SidePanel from "@/components/common/SidePanel";
 import { useTheme } from "@/context/ThemeContext";
-import { SkeletonBox } from "@/components/loading_screen/SkeletonLoading";
-import { ReceivingContentSkeleton } from "@/components/loading_screen/WarehouseRouteSkeletons";
+import {
+  ReceivingContentSkeleton,
+  ReceivingTabsSkeleton,
+} from "@/components/loading_screen/ReceivingPageSkeleton";
 import {
   Empty,
   message,
@@ -195,7 +197,7 @@ export default function ReceiveScreen() {
   const [selectedSupplierReceiptId, setSelectedSupplierReceiptId] = useState<number | null>(null);
   const [supplierDetail, setSupplierDetail] = useState<SupplierReceipt | null>(null);
   const [supplierDetailLoading, setSupplierDetailLoading] = useState(false);
-  const activeStep = data?.me.role === "EMPLOYEE" ? "carrier" : step;
+  const activeStep = (data?.me.role ?? account?.me?.role) === "EMPLOYEE" ? "carrier" : step;
   const needsCarrierBranches =
     activeStep === "carrier" && !!carrier && !carrier.confirmation;
   const referencesNeededNow =
@@ -393,16 +395,10 @@ export default function ReceiveScreen() {
       iconName="inbound"
     >
       {loading && !data ? (
-        <div aria-hidden="true" className={`flex h-[42px] w-full flex-row items-start gap-2 overflow-x-auto border-b select-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${isLight ? "border-[#E4E4E7]/70" : "border-[#444444]"}`}>
-          {steps.map((key) => (
-            <div key={key} className="flex h-[42px] min-w-max flex-1 basis-0 items-center justify-center px-4">
-              <SkeletonBox className="h-3.5 w-20 rounded" />
-            </div>
-          ))}
-        </div>
+        <ReceivingTabsSkeleton employeeOnly={account?.me?.role === "EMPLOYEE"} />
       ) : <nav aria-label={isThai ? "ขั้นตอนการรับสินค้า" : "Goods receiving steps"} className={`flex h-[42px] w-full flex-row items-start gap-2 overflow-x-auto border-b select-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${isLight ? "border-[#E4E4E7]" : "border-[#444444]"}`}>
         {steps
-          .filter((key) => data?.me.role !== "EMPLOYEE" || key === "carrier")
+          .filter((key) => (data?.me.role ?? account?.me?.role) !== "EMPLOYEE" || key === "carrier")
           .map((key) => {
             const isCurrent = activeStep === key;
             return (
@@ -432,7 +428,7 @@ export default function ReceiveScreen() {
 
       {!activeData && loading && (
         <div aria-label={isThai ? "กำลังโหลดข้อมูลรับสินค้า" : "Loading receiving data"}>
-          <ReceivingContentSkeleton />
+          <ReceivingContentSkeleton step={activeStep} />
         </div>
       )}
 

@@ -1,5 +1,5 @@
 import WarehousePageLoading from "@/components/warehouse/WarehousePageLoading";
-import { ReceivingRouteSkeleton } from "@/components/loading_screen/WarehouseRouteSkeletons";
+import { ReceivingPageSkeleton } from "@/components/loading_screen/ReceivingPageSkeleton";
 
 export default function ReceivingLoading() {
   return (
@@ -10,7 +10,7 @@ export default function ReceivingLoading() {
       iconName="inbound"
       fullBleed={false}
     >
-      <ReceivingRouteSkeleton />
+      <ReceivingPageSkeleton />
     </WarehousePageLoading>
   );
 }

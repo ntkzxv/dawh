@@ -139,61 +139,6 @@ export function DashboardRouteSkeleton() {
   );
 }
 
-export function ReceivingRouteSkeleton() {
-  return (
-    <div className="space-y-5" aria-hidden="true">
-      <div className="flex flex-wrap gap-1 rounded-xl border border-slate-200/70 p-1 dark:border-white/[0.08]">
-        {[0, 1, 2, 3].map((item) => (
-          <div key={item} className="flex h-11 min-w-36 flex-1 items-center justify-center gap-2 rounded-lg">
-            <SkeletonBox className="size-6 rounded-full" />
-            <SkeletonBox className="h-3.5 w-20 rounded" />
-          </div>
-        ))}
-      </div>
-      <ReceivingContentSkeleton />
-    </div>
-  );
-}
-
-export function ReceivingContentSkeleton() {
-  return (
-    <div className="space-y-5" aria-hidden="true">
-      <section className="space-y-4 rounded-xl border border-slate-200/70 p-4 sm:p-5 dark:border-white/[0.08]">
-        <div className="flex items-center justify-between gap-4">
-          <SkeletonBox className="h-5 w-36 rounded" />
-          <SkeletonBox className="h-8 w-24 rounded-lg" />
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {[0, 1, 2].map((item) => (
-            <div key={item} className="space-y-2">
-              <SkeletonBox className="h-3 w-20 rounded" />
-              <SkeletonBox className="h-9 w-full rounded-lg" />
-            </div>
-          ))}
-        </div>
-      </section>
-      <section className="overflow-hidden rounded-xl border border-slate-200/70 dark:border-white/[0.08]">
-        <div className="flex items-center justify-between gap-4 border-b border-slate-200/70 px-4 py-3 dark:border-white/[0.08]">
-          <SkeletonBox className="h-4 w-40 rounded" />
-          <SkeletonBox className="h-8 w-24 rounded-lg" />
-        </div>
-        <div className="px-4">
-          {[0, 1, 2, 3].map((item) => (
-            <div key={item} className="flex items-center gap-4 border-b border-slate-200/50 py-4 last:border-0 dark:border-white/[0.05]">
-              <SkeletonBox className="size-8 shrink-0 rounded-lg" />
-              <div className="min-w-0 flex-1 space-y-2">
-                <SkeletonBox className="h-3.5 w-1/3 rounded" />
-                <SkeletonBox className="h-3 w-1/2 rounded" />
-              </div>
-              <SkeletonBox className="h-7 w-20 shrink-0 rounded-md" />
-            </div>
-          ))}
-        </div>
-      </section>
-    </div>
-  );
-}
-
 export function TransferRouteSkeleton() {
   return (
     <main className="mx-auto w-full max-w-[1600px] space-y-5 p-4 pb-10 sm:p-8" aria-hidden="true">
