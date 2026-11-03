@@ -19,6 +19,9 @@ import DataTable, { dataTableFrameClassName } from "@/components/common/DataTabl
 import Pagination from "@/components/common/Pagination";
 import Button from "@/components/common/Button";
 import SidePanel from "@/components/common/SidePanel";
+import SearchInput from "@/components/common/SearchInput";
+import FilterButton from "@/components/common/FilterButton";
+import FilterDropdown from "@/components/common/FilterDropdown";
 import { useTheme } from "@/context/ThemeContext";
 import {
   ReceivingContentSkeleton,
@@ -46,6 +49,8 @@ type Step = "po" | "supplier" | "carrier" | "count";
 type CursorResource = "purchaseOrders" | "supplierReceipts" | "carriers" | "goodsReceipts";
 type ReceiveData = {
   step: Step;
+  query: string;
+  filterValue: string;
   me: Me;
   purchaseOrders: PurchaseOrder[];
   carriers: CarrierReceipt[];
@@ -83,6 +88,10 @@ export default function ReceiveScreen() {
   const isLight = theme === "light";
   const isThai = useAppLanguage() === "TH";
   const [step, setStep] = useState<Step>("po");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filterValue, setFilterValue] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [selectedPoId, setSelectedPoId] = useState<number | null>(null);
   const [selectedCarrierId, setSelectedCarrierId] = useState<number | null>(
@@ -94,10 +103,14 @@ export default function ReceiveScreen() {
   const [busy, setBusy] = useState(false);
   const [loadingMore, setLoadingMore] = useState<Set<CursorResource>>(new Set());
   const pageControllersRef = useRef(new Map<CursorResource, AbortController>());
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), 250);
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
   useEffect(() => () => {
     for (const controller of pageControllersRef.current.values()) controller.abort();
     pageControllersRef.current.clear();
-  }, [step]);
+  }, [step, debouncedSearch, filterValue]);
   const load = useCallback(
     async (signal: AbortSignal): Promise<ReceiveData> => {
       const me = account?.me;
@@ -105,6 +118,8 @@ export default function ReceiveScreen() {
       const activeStep: Step = me.role === "EMPLOYEE" ? "carrier" : step;
       const emptyData: ReceiveData = {
         step: activeStep,
+        query: debouncedSearch,
+        filterValue,
         me,
         purchaseOrders: [],
         carriers: [],
@@ -120,14 +135,20 @@ export default function ReceiveScreen() {
       };
 
       if (activeStep === "po") {
-        const ordersPage = await warehouseApi.purchaseOrdersPage(null, signal);
+        const ordersPage = await warehouseApi.purchaseOrdersPage(
+          null,
+          signal,
+          debouncedSearch,
+          filterValue === "open" ? false : filterValue === "closed" ? true : undefined,
+        );
         return { ...emptyData, purchaseOrders: ordersPage.items, pages: { purchaseOrders: ordersPage.page }, pageIndices: { purchaseOrders: 1 }, cursorHistory: { purchaseOrders: [null] } };
       }
 
       if (activeStep === "supplier") {
+        const supplierId = filterValue ? Number(filterValue) : undefined;
         const [ordersPage, receiptsPage] = await Promise.all([
           warehouseApi.purchaseOrdersPage(null, signal),
-          warehouseApi.supplierReceiptsPage(null, signal),
+          warehouseApi.supplierReceiptsPage(null, signal, debouncedSearch, supplierId),
         ]);
         return { ...emptyData, purchaseOrders: ordersPage.items, supplierReceipts: receiptsPage.items, pages: { purchaseOrders: ordersPage.page, supplierReceipts: receiptsPage.page }, pageIndices: { purchaseOrders: 1, supplierReceipts: 1 }, cursorHistory: { purchaseOrders: [null], supplierReceipts: [null] } };
       }
@@ -135,18 +156,28 @@ export default function ReceiveScreen() {
       if (activeStep === "carrier") {
         const [ordersPage, carriersPage] = await Promise.all([
           warehouseApi.purchaseOrdersPage(null, signal),
-          warehouseApi.carrierReceiptsPage(null, signal),
+          warehouseApi.carrierReceiptsPage(
+            null,
+            signal,
+            debouncedSearch,
+            filterValue === "awaiting" ? false : filterValue === "received" ? true : undefined,
+          ),
         ]);
         return { ...emptyData, purchaseOrders: ordersPage.items, carriers: carriersPage.items, pages: { purchaseOrders: ordersPage.page, carriers: carriersPage.page }, pageIndices: { purchaseOrders: 1, carriers: 1 }, cursorHistory: { purchaseOrders: [null], carriers: [null] } };
       }
 
       const [carriersPage, receiptsPage] = await Promise.all([
         warehouseApi.carrierReceiptsPage(null, signal),
-        warehouseApi.goodsReceiptsPage(null, signal),
+        warehouseApi.goodsReceiptsPage(
+          null,
+          signal,
+          debouncedSearch,
+          filterValue === "pending" ? false : filterValue === "posted" ? true : undefined,
+        ),
       ]);
       return { ...emptyData, carriers: carriersPage.items, goodsReceipts: receiptsPage.items, pages: { carriers: carriersPage.page, goodsReceipts: receiptsPage.page }, pageIndices: { carriers: 1, goodsReceipts: 1 }, cursorHistory: { carriers: [null], goodsReceipts: [null] } };
     },
-    [step, account?.me, isThai],
+    [step, account?.me, isThai, debouncedSearch, filterValue],
   );
   const { data, loading, error, refresh, setData } = useRemote(load, {
     enabled: !!account?.me,
@@ -168,6 +199,12 @@ export default function ReceiveScreen() {
           ceos,
         };
       }
+      if (activeStep === "supplier")
+        return {
+          step: activeStep,
+          scope: warehouseCacheScope,
+          suppliers: await warehouseApi.catalog("suppliers", signal),
+        };
       if (activeStep === "carrier")
         return {
           step: activeStep,
@@ -202,6 +239,7 @@ export default function ReceiveScreen() {
     activeStep === "carrier" && !!carrier && !carrier.confirmation;
   const referencesNeededNow =
     (formOpen && (activeStep === "po" || activeStep === "count")) ||
+    (filtersOpen && activeStep === "supplier") ||
     needsCarrierBranches;
   const {
     data: references,
@@ -215,7 +253,9 @@ export default function ReceiveScreen() {
     references?.step === activeStep && references.scope === warehouseCacheScope
       ? references
       : null;
-  const activeData = data?.step === activeStep
+  const activeData = data?.step === activeStep &&
+    data.query === debouncedSearch &&
+    data.filterValue === filterValue
     ? {
         ...data,
         suppliers: activeReferences?.suppliers ?? data.suppliers,
@@ -278,6 +318,40 @@ export default function ReceiveScreen() {
       setCarrier(await warehouseApi.carrierReceipt(selectedCarrierId));
   };
 
+  const fetchResourcePage = (
+    resource: CursorResource,
+    cursor: string | null,
+    signal: AbortSignal,
+  ): Promise<ApiListPage<{ id: number }>> => {
+    if (resource === "purchaseOrders")
+      return warehouseApi.purchaseOrdersPage(
+        cursor,
+        signal,
+        activeStep === "po" ? debouncedSearch : undefined,
+        activeStep === "po" ? filterValue === "open" ? false : filterValue === "closed" ? true : undefined : undefined,
+      );
+    if (resource === "supplierReceipts")
+      return warehouseApi.supplierReceiptsPage(
+        cursor,
+        signal,
+        activeStep === "supplier" ? debouncedSearch : undefined,
+        activeStep === "supplier" && filterValue ? Number(filterValue) : undefined,
+      );
+    if (resource === "carriers")
+      return warehouseApi.carrierReceiptsPage(
+        cursor,
+        signal,
+        activeStep === "carrier" ? debouncedSearch : undefined,
+        activeStep === "carrier" ? filterValue === "awaiting" ? false : filterValue === "received" ? true : undefined : undefined,
+      );
+    return warehouseApi.goodsReceiptsPage(
+      cursor,
+      signal,
+      activeStep === "count" ? debouncedSearch : undefined,
+      activeStep === "count" ? filterValue === "pending" ? false : filterValue === "posted" ? true : undefined : undefined,
+    );
+  };
+
   const run = async (action: () => Promise<unknown>, success: string) => {
     if (busyRef.current) return;
     busyRef.current = true;
@@ -312,12 +386,9 @@ export default function ReceiveScreen() {
     setLoadingMore((current) => new Set(current).add(resource));
     try {
       let result: ApiListPage<{ id: number }>;
-      if (resource === "purchaseOrders") result = await warehouseApi.purchaseOrdersPage(cursor, controller.signal);
-      else if (resource === "supplierReceipts") result = await warehouseApi.supplierReceiptsPage(cursor, controller.signal);
-      else if (resource === "carriers") result = await warehouseApi.carrierReceiptsPage(cursor, controller.signal);
-      else result = await warehouseApi.goodsReceiptsPage(cursor, controller.signal);
+      result = await fetchResourcePage(resource, cursor, controller.signal);
       setData((current) => {
-        if (!current || current.step !== activeStep) return current;
+        if (!current || current.step !== activeStep || current.query !== debouncedSearch || current.filterValue !== filterValue) return current;
         const combined = <T extends { id: number }>(items: T[], added: T[]) => {
           const known = new Set(items.map((item) => item.id));
           return [...items, ...added.filter((item) => !known.has(item.id))];
@@ -359,12 +430,9 @@ export default function ReceiveScreen() {
     setLoadingMore((current) => new Set(current).add(resource));
     try {
       let result: ApiListPage<{ id: number }>;
-      if (resource === "purchaseOrders") result = await warehouseApi.purchaseOrdersPage(cursor, controller.signal);
-      else if (resource === "supplierReceipts") result = await warehouseApi.supplierReceiptsPage(cursor, controller.signal);
-      else if (resource === "carriers") result = await warehouseApi.carrierReceiptsPage(cursor, controller.signal);
-      else result = await warehouseApi.goodsReceiptsPage(cursor, controller.signal);
+      result = await fetchResourcePage(resource, cursor, controller.signal);
       setData((current) => {
-        if (!current || current.step !== activeStep) return current;
+        if (!current || current.step !== activeStep || current.query !== debouncedSearch || current.filterValue !== filterValue) return current;
         const pages = { ...current.pages, [resource]: result.page };
         const pageIndices = { ...current.pageIndices, [resource]: targetPage };
         const cursorHistory = { ...current.cursorHistory };
@@ -387,6 +455,87 @@ export default function ReceiveScreen() {
   };
 
   const countedCarrierIds = new Set(activeData?.carriers.filter((item) => item.has_goods_receipt).map((item) => item.id) ?? []);
+  const tabBar = (
+    <nav aria-label={isThai ? "ขั้นตอนการรับสินค้า" : "Goods receiving steps"} className={`flex h-[42px] w-full flex-row items-stretch overflow-x-auto rounded-lg border px-1 select-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${isLight ? "border-[#D4D4D8] bg-white" : "border-[#666666] bg-[#383838]"}`}>
+      {steps
+        .filter((key) => (data?.me.role ?? account?.me?.role) !== "EMPLOYEE" || key === "carrier")
+        .map((key) => {
+          const isCurrent = activeStep === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              aria-current={isCurrent ? "step" : undefined}
+              onClick={() => {
+                setLoadingMore(new Set());
+                setFormOpen(false);
+                setFiltersOpen(false);
+                setSearchQuery("");
+                setDebouncedSearch("");
+                setFilterValue("");
+                setStep(key);
+              }}
+              className={`relative flex h-full min-w-max flex-1 basis-0 items-center justify-center whitespace-nowrap px-3 text-center text-[12px] transition-colors after:absolute after:inset-x-5 after:bottom-0 after:h-[2px] after:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 ${
+                isCurrent
+                  ? isLight
+                    ? "font-semibold text-black"
+                    : "font-semibold text-white"
+                  : isLight
+                    ? "text-black/65 hover:text-black hover:after:bg-black/50"
+                    : "text-[#E4E4E7] hover:text-white hover:after:bg-[#71717A]"
+              }`}
+            >
+              <span className="truncate">{stepLabel(key, isThai)}</span>
+              {isCurrent && (
+                <motion.div
+                  layoutId="receiveActiveTabUnderline"
+                  className={`absolute bottom-0 left-5 right-5 h-[2px] ${isLight ? "bg-black" : "bg-[#D4D4D8]"}`}
+                  transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 450, damping: 35 }}
+                />
+              )}
+            </button>
+          );
+        })}
+    </nav>
+  );
+  const createLabel = ({
+    po: isThai ? "สร้าง PO" : "Create PO",
+    supplier: isThai ? "เพิ่มเอกสารผู้ขาย" : "Add supplier document",
+    carrier: isThai ? "เพิ่มใบขนส่ง" : "Add delivery note",
+    count: isThai ? "เพิ่มใบตรวจรับ" : "Add goods receipt",
+  } satisfies Record<Step, string>)[activeStep];
+  const filterOptions = activeStep === "po"
+    ? [
+        { value: "", label: isThai ? "ทุกสถานะ" : "All statuses" },
+        { value: "open", label: isThai ? "ยังเปิดอยู่" : "Open" },
+        { value: "closed", label: isThai ? "ปิดแล้ว" : "Closed" },
+      ]
+    : activeStep === "supplier"
+      ? [
+          { value: "", label: isThai ? "ผู้ขายทั้งหมด" : "All suppliers" },
+          ...(activeData?.suppliers ?? []).map((supplier) => ({
+            value: String(supplier.id),
+            label: supplier.name,
+          })),
+        ]
+      : activeStep === "carrier"
+        ? [
+            { value: "", label: isThai ? "ทุกสถานะ" : "All statuses" },
+            { value: "awaiting", label: isThai ? "รอรับของ" : "Awaiting delivery" },
+            { value: "received", label: isThai ? "รับของแล้ว" : "Received" },
+          ]
+        : [
+            { value: "", label: isThai ? "ทุกสถานะ" : "All statuses" },
+            { value: "pending", label: isThai ? "รอลงสต๊อก" : "Awaiting stock posting" },
+            { value: "posted", label: isThai ? "ลงสต๊อกแล้ว" : "Posted" },
+          ];
+  const searchPlaceholder = activeStep === "po"
+    ? (isThai ? "ค้นหาเลข PO หรือผู้ขาย..." : "Search PO number or supplier...")
+    : activeStep === "supplier"
+      ? (isThai ? "ค้นหาเลขเอกสาร, PO หรือผู้ขาย..." : "Search document, PO, or supplier...")
+      : activeStep === "carrier"
+        ? (isThai ? "ค้นหาเลขใบขนส่ง, PO หรือผู้ขนส่ง..." : "Search delivery note, PO, or carrier...")
+        : (isThai ? "ค้นหาเลขใบตรวจรับ, ใบขนส่ง หรือคลัง..." : "Search receipt, delivery note, or warehouse...");
   return (
     <WarehousePageTemplate
       titleEn="Receiving"
@@ -394,34 +543,64 @@ export default function ReceiveScreen() {
       routePath="/warehouse/receive"
       iconName="inbound"
     >
+      <div className="flex flex-col gap-5">
       {loading && !data ? (
         <ReceivingTabsSkeleton employeeOnly={account?.me?.role === "EMPLOYEE"} />
-      ) : <nav aria-label={isThai ? "ขั้นตอนการรับสินค้า" : "Goods receiving steps"} className={`flex h-[42px] w-full flex-row items-start gap-2 overflow-x-auto border-b select-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${isLight ? "border-[#E4E4E7]" : "border-[#444444]"}`}>
-        {steps
-          .filter((key) => (data?.me.role ?? account?.me?.role) !== "EMPLOYEE" || key === "carrier")
-          .map((key) => {
-            const isCurrent = activeStep === key;
-            return (
-              <button
-                  key={key}
-                  type="button"
-                  aria-current={isCurrent ? "step" : undefined}
-                  onClick={() => { setLoadingMore(new Set()); setFormOpen(false); setStep(key); }}
-                  className={`relative flex h-[42px] min-w-max flex-1 basis-0 items-center justify-center whitespace-nowrap px-4 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 ${isCurrent ? "font-semibold" : ""}`}
-                >
-                  {isCurrent && (
-                    <motion.span
-                      layoutId="receiving-active-tab"
-                      aria-hidden="true"
-                      className={`pointer-events-none absolute inset-x-0 bottom-0 z-0 h-0.5 ${isLight ? "bg-[#222222]" : "bg-white"}`}
-                      transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 40 }}
-                    />
-                  )}
-                  <span className={`relative z-10 truncate text-sm transition-colors ${isCurrent ? (isLight ? "text-[#222222]" : "text-[#FFFFFF]") : (isLight ? "text-[#666666]" : "text-[#E4E4E7]")} ${isLight ? "hover:text-[#222222]" : "hover:text-[#FFFFFF]"}`}>{stepLabel(key, isThai)}</span>
-              </button>
-            );
-          })}
-      </nav>}
+      ) : tabBar}
+      {account?.me && (
+        <div className="relative z-20 flex flex-wrap items-center gap-2">
+          <SearchInput
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder={searchPlaceholder}
+            width="w-full sm:flex-1"
+            className="h-[38px] min-w-0 sm:w-auto"
+            clearLabel={isThai ? "ล้างคำค้นหา" : "Clear search"}
+          />
+          <div className="relative">
+            <FilterButton
+              controls="receive-filter-panel"
+              expanded={filtersOpen}
+              label={isThai ? "ตัวกรอง" : "Filters"}
+              clearLabel={isThai ? "ล้างตัวกรอง" : "Clear filters"}
+              activeFilterCount={Number(Boolean(filterValue))}
+              onClear={() => setFilterValue("")}
+              onClick={() => setFiltersOpen((open) => !open)}
+              iconOnly
+            />
+            {filtersOpen && (
+              <div
+                id="receive-filter-panel"
+                role="region"
+                aria-label={isThai ? "ตัวกรองรายการรับสินค้า" : "Receiving list filters"}
+                className={`absolute right-0 top-full mt-2 w-[min(320px,calc(100vw-2rem))] rounded-xl border p-4 shadow-xl ${isLight ? "border-[#E4E4E7] bg-white text-[#222222]" : "border-[#444444] bg-[#383838] text-white"}`}
+              >
+                <label className="block space-y-2 text-xs font-semibold">
+                  <span>{activeStep === "supplier" ? (isThai ? "ผู้ขาย" : "Supplier") : (isThai ? "สถานะ" : "Status")}</span>
+                  <FilterDropdown
+                    value={filterValue}
+                    onChange={(value) => { setFilterValue(value); setFiltersOpen(false); }}
+                    options={filterOptions}
+                    placeholder={isThai ? "เลือกตัวกรอง" : "Select a filter"}
+                    className="w-full"
+                    searchable={activeStep === "supplier"}
+                    searchPlaceholder={isThai ? "ค้นหาผู้ขาย" : "Search suppliers"}
+                  />
+                </label>
+              </div>
+            )}
+          </div>
+          <Button
+            variant="primary"
+            icon={<Plus size={14} />}
+            disabled={!activeData}
+            onClick={() => { setFailure(null); setFormOpen(true); }}
+            className="ml-auto h-[38px] shrink-0 px-[34px]"
+          >
+            {createLabel}
+          </Button>
+        </div>
+      )}
       {error && <Notice tone="error">{error}</Notice>}
       {failure && <Notice tone="error">{failure}</Notice>}
       {notice && <Notice tone="success">{notice}</Notice>}
@@ -438,12 +617,8 @@ export default function ReceiveScreen() {
           aria-busy={busy}
         >
           {activeStep === "po" && (
-            <div className="space-y-5">
-              <section className="p-5">
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="text-lg font-bold">{isThai ? "PO ที่บันทึกแล้ว" : "Saved purchase orders"}</h2>
-                  <Button variant="primary" icon={<Plus size={14} />} onClick={() => setFormOpen(true)}>{isThai ? "สร้าง PO" : "Create PO"}</Button>
-                </div>
+            <div className="space-y-1">
+              <section className="p-0">
                 <DataTable
                   columns={[
                     { key: "record_no", header: isThai ? "เลขที่ PO" : "PO number", className: "font-mono font-semibold" },
@@ -485,12 +660,8 @@ export default function ReceiveScreen() {
           )}
 
           {activeStep === "supplier" && (
-            <div className="space-y-5">
-              <section className="p-5">
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="text-lg font-bold">{isThai ? "เอกสารผู้ขาย" : "Supplier documents"}</h2>
-                  <Button variant="primary" icon={<Plus size={14} />} onClick={() => setFormOpen(true)}>{isThai ? "เพิ่มเอกสารผู้ขาย" : "Add supplier document"}</Button>
-                </div>
+            <div className="space-y-1">
+              <section className="p-0">
                 <DataTable
                   columns={[
                     { key: "record_no", header: isThai ? "เลขที่เอกสาร" : "Document no.", className: "font-mono font-semibold" },
@@ -522,12 +693,8 @@ export default function ReceiveScreen() {
           )}
 
           {activeStep === "carrier" && (
-            <div className="space-y-5">
-              <section className="p-5">
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="text-lg font-bold">{isThai ? "ใบขนส่งและสถานะรับจากขนส่ง" : "Delivery notes and arrival status"}</h2>
-                  <Button variant="primary" icon={<Plus size={14} />} onClick={() => setFormOpen(true)}>{isThai ? "เพิ่มใบขนส่ง" : "Add delivery note"}</Button>
-                </div>
+            <div className="space-y-1">
+              <section className="p-0">
                 {activeData.carriers.length ? (
                   <DataTable
                     columns={[
@@ -586,12 +753,8 @@ export default function ReceiveScreen() {
           )}
 
           {activeStep === "count" && (
-            <div className="space-y-5">
-              <section className="p-5">
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="text-lg font-bold">{isThai ? "ใบตรวจรับ" : "Goods receipts"}</h2>
-                  <Button variant="primary" icon={<Plus size={14} />} onClick={() => setFormOpen(true)}>{isThai ? "เพิ่มใบตรวจรับ" : "Add goods receipt"}</Button>
-                </div>
+            <div className="space-y-1">
+              <section className="p-0">
                 {activeData.goodsReceipts.length ? (
                   <DataTable
                     columns={[
@@ -620,6 +783,7 @@ export default function ReceiveScreen() {
           )}
         </div>
       )}
+      </div>
       {formOpen && activeData && (
         <SidePanel
           item={null}

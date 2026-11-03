@@ -57,7 +57,7 @@ export async function listPurchaseOrders(actor: Actor, search: URLSearchParams) 
     FROM app.purchase_orders po JOIN app.suppliers s ON s.id=po.supplier_id
     JOIN app.app_users ceo ON ceo.id=po.ordered_by_ceo_id JOIN public."user" ceo_user ON ceo_user.id=ceo.auth_user_id
     JOIN app.app_users recording_user ON recording_user.id=po.recorded_by_id JOIN public."user" recorder ON recorder.id=recording_user.auth_user_id
-    WHERE ($1::text = '' OR po.record_no ILIKE '%' || $1 || '%')
+    WHERE ($1::text = '' OR po.record_no ILIKE '%' || $1 || '%' OR s.name ILIKE '%' || $1 || '%')
       AND ($2::bigint IS NULL OR po.id < $2)
       ${closedFilter}
     ORDER BY po.id DESC LIMIT $${params.length}`,

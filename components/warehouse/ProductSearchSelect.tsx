@@ -14,6 +14,7 @@ export function ProductSearchSelect({
   useCommonDropdown = false,
   invalid = false,
   dropdownTriggerClassName,
+  initialLabel,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -22,11 +23,12 @@ export function ProductSearchSelect({
   useCommonDropdown?: boolean;
   invalid?: boolean;
   dropdownTriggerClassName?: string;
+  initialLabel?: string;
 }) {
   const [typed, setTyped] = useState("");
   const [activated, setActivated] = useState(false);
   const [query, setQuery] = useState("");
-  const [selectedLabel, setSelectedLabel] = useState("");
+  const [selectedLabel, setSelectedLabel] = useState(initialLabel ?? "");
   const activateSearch = useCallback(() => setActivated(true), []);
   const updateSearch = useCallback((nextQuery: string) => setTyped(nextQuery), []);
   useEffect(() => {

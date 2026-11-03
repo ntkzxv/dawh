@@ -12,9 +12,11 @@ import { optionalBoolean } from "@/lib/warehouse/read-options";
 export async function listCarrierReceipts(actor: Actor, search: URLSearchParams) {
   requireRole(actor, ["ADMIN", "CEO", "MANAGER", "COUNTER_STAFF", "EMPLOYEE"]);
   const { limit, cursor } = parseCursorPage(search);
+  const query = search.get("q")?.trim() ?? "";
+  if (query.length > 100) throw new ValidationError({ q: "Use at most 100 characters." });
   const received = optionalBoolean(search, "received");
   const hasGoodsReceipt = optionalBoolean(search, "hasGoodsReceipt");
-  const params: unknown[] = [actor.role === "ADMIN" || actor.role === "CEO", actor.branchIds, cursor?.parentId ?? null];
+  const params: unknown[] = [actor.role === "ADMIN" || actor.role === "CEO", actor.branchIds, cursor?.parentId ?? null, query];
   const filters: string[] = [];
   if (received !== null) filters.push(`AND (dc.received_at IS NOT NULL) = $${params.push(received)}::boolean`);
   if (hasGoodsReceipt !== null) filters.push(`AND EXISTS(SELECT 1 FROM app.goods_receipts gr WHERE gr.carrier_receipt_id=cr.id) = $${params.push(hasGoodsReceipt)}::boolean`);
@@ -26,6 +28,7 @@ export async function listCarrierReceipts(actor: Actor, search: URLSearchParams)
     LEFT JOIN app.delivery_confirmations dc ON dc.carrier_receipt_id=cr.id
     WHERE ($1::boolean OR dc.receiving_branch_id IS NULL OR dc.receiving_branch_id=ANY($2::integer[]))
       AND ($3::bigint IS NULL OR cr.id < $3)
+      AND ($4::text='' OR cr.record_no ILIKE '%'||$4||'%' OR po.record_no ILIKE '%'||$4||'%' OR COALESCE(cr.external_doc_no,'') ILIKE '%'||$4||'%' OR COALESCE(cr.carrier_name,'') ILIKE '%'||$4||'%' OR COALESCE(cr.tracking_no,'') ILIKE '%'||$4||'%')
       ${filters.join("\n      ")}
     ORDER BY cr.id DESC LIMIT $${params.length}`, params);
   return cursorPageResult(result.rows, limit, (row) => ({ parentId: row.id }));

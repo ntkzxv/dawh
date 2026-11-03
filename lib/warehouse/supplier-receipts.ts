@@ -11,12 +11,19 @@ import { cursorPageResult, parseCursorPage } from "@/lib/warehouse/cursor-pagina
 export async function listSupplierReceipts(actor: Actor, search: URLSearchParams) {
   requireRole(actor, ["ADMIN", "CEO", "MANAGER", "COUNTER_STAFF"]);
   const { limit, cursor } = parseCursorPage(search);
+  const query = search.get("q")?.trim() ?? "";
+  if (query.length > 100) throw new ValidationError({ q: "Use at most 100 characters." });
+  const supplierId = search.get("supplierId") ? Number(search.get("supplierId")) : null;
+  if (supplierId !== null && (!Number.isSafeInteger(supplierId) || supplierId < 1))
+    throw new ValidationError({ supplierId: "Use a positive integer." });
   const result = await timedPoolQuery<Record<string, unknown> & { id: number }>(`
     SELECT sr.*,po.record_no AS purchase_order_no,s.name AS supplier_name
     FROM app.supplier_receipts sr JOIN app.purchase_orders po ON po.id=sr.purchase_order_id
     JOIN app.suppliers s ON s.id=sr.supplier_id
-    WHERE ($1::bigint IS NULL OR sr.id < $1)
-    ORDER BY sr.id DESC LIMIT $2`, [cursor?.parentId ?? null, limit + 1]);
+    WHERE ($1::text='' OR sr.record_no ILIKE '%'||$1||'%' OR po.record_no ILIKE '%'||$1||'%' OR s.name ILIKE '%'||$1||'%' OR COALESCE(sr.external_doc_no,'') ILIKE '%'||$1||'%')
+      AND ($2::integer IS NULL OR sr.supplier_id=$2)
+      AND ($3::bigint IS NULL OR sr.id < $3)
+    ORDER BY sr.id DESC LIMIT $4`, [query, supplierId, cursor?.parentId ?? null, limit + 1]);
   return cursorPageResult(result.rows, limit, (row) => ({ parentId: row.id }));
 }
 export async function getSupplierReceipt(actor: Actor, receiptId: number) {

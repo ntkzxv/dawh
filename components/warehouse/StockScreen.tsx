@@ -7,7 +7,7 @@ import {
   useState,
   type FormEvent,
 } from "react";
-import { Download, Loader2, Plus } from "lucide-react";
+import { Download, Loader2, Plus, X } from "lucide-react";
 import WarehousePageTemplate from "@/app/warehouse/_components/WarehousePageTemplate";
 import { Pagination } from "@/components/common";
 import DataTable, {
@@ -93,6 +93,10 @@ export default function StockScreen({
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [formOpen, setFormOpen] = useState(false);
+  const [reverseTarget, setReverseTarget] = useState<number | null>(null);
+  const [reverseReason, setReverseReason] = useState("");
+  const [reverseBusy, setReverseBusy] = useState(false);
+  const [reverseFailure, setReverseFailure] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filtersRef = useRef<HTMLDivElement>(null);
   const [failure, setFailure] = useState<string | null>(null);
@@ -184,6 +188,15 @@ export default function StockScreen({
   }, [filtersOpen]);
 
   useEffect(() => {
+    if (reverseTarget === null || reverseBusy) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setReverseTarget(null);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [reverseTarget, reverseBusy]);
+
+  useEffect(() => {
     if (!activeData || totalPages < 1 || page <= totalPages) return;
     let active = true;
     queueMicrotask(() => {
@@ -213,19 +226,35 @@ export default function StockScreen({
     }
   };
 
-  const reverse = async (documentId: number) => {
-    const reason = window.prompt(
-      `เหตุผลที่ต้องกลับรายการเอกสาร #${documentId}`,
-    );
-    if (!reason?.trim()) return;
+  const openReverseDialog = (documentId: number) => {
+    setReverseTarget(documentId);
+    setReverseReason("");
+    setReverseFailure(null);
+  };
+
+  const closeReverseDialog = () => {
+    if (reverseBusy) return;
+    setReverseTarget(null);
+    setReverseReason("");
+    setReverseFailure(null);
+  };
+
+  const reverse = async () => {
+    if (reverseTarget === null || !reverseReason.trim() || reverseBusy) return;
+    setReverseBusy(true);
+    setReverseFailure(null);
     setFailure(null);
     setSuccess(null);
     try {
-      await warehouseApi.reverseStockDocument(documentId, reason.trim());
-      setSuccess("กลับรายการแล้ว");
+      await warehouseApi.reverseStockDocument(reverseTarget, reverseReason.trim());
+      setSuccess(isThai ? "กลับรายการแล้ว" : "Movement reversed.");
+      setReverseTarget(null);
+      setReverseReason("");
       await refresh();
     } catch (cause) {
-      setFailure(message(cause, isThai));
+      setReverseFailure(message(cause, isThai));
+    } finally {
+      setReverseBusy(false);
     }
   };
 
@@ -425,7 +454,7 @@ export default function StockScreen({
               <MovementList
                 rows={activeData.items as StockMovement[]}
                 canReverse={mayManageStock}
-                onReverse={reverse}
+                onReverse={openReverseDialog}
                 isThai={isThai}
               />
             )}
@@ -455,6 +484,66 @@ export default function StockScreen({
           >
             <StockForm warehouses={warehouses ?? []} onSave={save} onCancel={() => setFormOpen(false)} busy={busy} isThai={isThai} failure={failure} />
           </SidePanel>
+        )}
+
+        {reverseTarget !== null && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) closeReverseDialog();
+            }}
+          >
+            <section
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="reverse-stock-title"
+              aria-describedby="reverse-stock-description"
+              className={`w-full max-w-md space-y-5 rounded-2xl border p-5 shadow-2xl ${isLight ? "border-[#E4E4E7] bg-white text-[#222222]" : "border-[#555555] bg-[#383838] text-white"}`}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 id="reverse-stock-title" className="font-bold">
+                    {isThai ? `ยืนยันกลับรายการ #${reverseTarget}` : `Reverse movement #${reverseTarget}?`}
+                  </h2>
+                  <p id="reverse-stock-description" className={`mt-2 text-sm ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
+                    {isThai ? "ระบบจะบันทึกรายการกลับสต๊อก โปรดระบุเหตุผลก่อนยืนยัน" : "A reversal will be recorded in the stock ledger. Enter a reason to continue."}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-label={isThai ? "ปิด" : "Close"}
+                  disabled={reverseBusy}
+                  onClick={closeReverseDialog}
+                  className={`rounded-lg p-1.5 transition-colors disabled:opacity-50 ${isLight ? "text-[#666666] hover:bg-black/5" : "text-[#A1A1AA] hover:bg-white/10"}`}
+                >
+                  <X size={18} aria-hidden="true" />
+                </button>
+              </div>
+              <label className="block space-y-2 text-sm font-medium">
+                <span>{isThai ? "เหตุผลที่กลับรายการ" : "Reason for reversal"}</span>
+                <textarea
+                  autoFocus
+                  rows={3}
+                  maxLength={2000}
+                  value={reverseReason}
+                  onChange={(event) => setReverseReason(event.target.value)}
+                  disabled={reverseBusy}
+                  placeholder={isThai ? "ระบุเหตุผล..." : "Enter a reason..."}
+                  className={`w-full resize-y rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#71717A] disabled:opacity-60 ${isLight ? "border-[#D4D4D8] bg-white text-[#222222] placeholder:text-[#A1A1AA]" : "border-[#555555] bg-[#2C2C2C] text-white placeholder:text-[#A1A1AA]"}`}
+                />
+              </label>
+              {reverseFailure && <p role="alert" className="text-sm text-rose-600 dark:text-rose-400">{reverseFailure}</p>}
+              <div className="flex justify-end gap-2">
+                <Button variant="secondary" disabled={reverseBusy} onClick={closeReverseDialog}>
+                  {isThai ? "ยกเลิก" : "Cancel"}
+                </Button>
+                <Button variant="danger" disabled={!reverseReason.trim()} loading={reverseBusy} onClick={() => void reverse()}>
+                  {isThai ? "ยืนยันกลับรายการ" : "Reverse movement"}
+                </Button>
+              </div>
+            </section>
+          </div>
         )}
       </main>
     </WarehousePageTemplate>
@@ -492,7 +581,7 @@ function MovementList({
 }: {
   rows: StockMovement[];
   canReverse: boolean;
-  onReverse: (id: number) => Promise<void>;
+  onReverse: (id: number) => void;
   isThai: boolean;
 }) {
   const { theme } = useTheme();
@@ -537,7 +626,7 @@ function MovementList({
       render: (row: StockMovement) => row.kind === "REVERSAL" ? null : (
         <button
           type="button"
-          onClick={() => void onReverse(row.document_id)}
+          onClick={() => onReverse(row.document_id)}
           className="rounded-[6px] px-2 py-1 text-xs font-semibold text-[#E71D36] transition-colors hover:bg-[#E71D36]/10"
         >
           {isThai ? "กลับรายการ" : "Reverse"}
@@ -558,13 +647,18 @@ function MovementList({
   );
 }
 
-function StockForm({
+export function StockForm({
   warehouses,
   onSave,
   onCancel,
   busy,
   isThai,
   failure,
+  initialKind = "TRANSFER",
+  initialProductId = "",
+  initialProductLabel,
+  initialWarehouseId = "",
+  lockKind = false,
 }: {
   warehouses: CatalogItem[];
   onSave: (body: Record<string, unknown>) => void;
@@ -572,15 +666,18 @@ function StockForm({
   busy: boolean;
   isThai: boolean;
   failure: string | null;
+  initialKind?: "TRANSFER" | "ISSUE" | "ADJUSTMENT";
+  initialProductId?: string;
+  initialProductLabel?: string;
+  initialWarehouseId?: string;
+  lockKind?: boolean;
 }) {
   const { theme } = useTheme();
   const styles = sidePanelFormStyles(theme === "light");
-  const [kind, setKind] = useState<"TRANSFER" | "ISSUE" | "ADJUSTMENT">(
-    "TRANSFER",
-  );
-  const [warehouseId, setWarehouseId] = useState("");
+  const [kind, setKind] = useState<"TRANSFER" | "ISSUE" | "ADJUSTMENT">(initialKind);
+  const [warehouseId, setWarehouseId] = useState(initialWarehouseId);
   const [destination, setDestination] = useState("");
-  const [productId, setProductId] = useState("");
+  const [productId, setProductId] = useState(initialProductId);
   const [quantity, setQuantity] = useState("");
   const [reason, setReason] = useState("");
   const [serials, setSerials] = useState("");
@@ -636,7 +733,7 @@ function StockForm({
       {fieldErrors.length > 0 && (
         <SidePanelAlert>{isThai ? "กรุณากรอกข้อมูลที่จำเป็นให้ครบและถูกต้อง" : "Complete the required fields correctly."}</SidePanelAlert>
       )}
-      <Field label={isThai ? "ประเภท" : "Type"}>
+      {!lockKind && <Field label={isThai ? "ประเภท" : "Type"}>
         <CustomDropdown<typeof kind>
           value={kind}
           onChange={(value) => { setKind(value); clearFieldError("destination"); }}
@@ -648,7 +745,7 @@ function StockForm({
           className="w-full"
           triggerClassName={styles.dropdown}
         />
-      </Field>
+      </Field>}
       <Field label={isThai ? "คลังต้นทาง" : "Source warehouse"}>
         <CustomDropdown
           value={warehouseId}
@@ -683,6 +780,7 @@ function StockForm({
         <ProductSearchSelect
           value={productId}
           onChange={(value) => { setProductId(value); clearFieldError("product"); }}
+          initialLabel={initialProductLabel}
           label={isThai ? "สินค้า" : "Product"}
           isThai={isThai}
           useCommonDropdown

@@ -13,6 +13,8 @@ import {
 import { WAREHOUSE_TABLE_PAGE_SIZE } from "@/lib/warehouse/pagination-config";
 import WarehousePageTemplate from "@/app/warehouse/_components/WarehousePageTemplate";
 import { canEditCatalog } from "@/lib/contracts/warehouse-policy";
+import { canManageStock } from "@/lib/contracts/warehouse-policy";
+import { StockForm } from "@/components/warehouse/StockScreen";
 import { useRemote, Notice, message, sanitizeWholeNumberInput } from "@/components/warehouse/Ui";
 import CustomDropdown from "@/components/common/CustomDropdown";
 import {
@@ -43,8 +45,14 @@ export type InventoryRowItem = ProductDetailItem;
 
 export default function ProductInventorySplitView({
   showAddProduct = true,
+  titleEn = "Product Master & SKU Catalog",
+  titleTh = "ข้อมูลสินค้าหลัก",
+  routePath = "/warehouse/inventory",
 }: {
   showAddProduct?: boolean;
+  titleEn?: string;
+  titleTh?: string;
+  routePath?: string;
 }) {
   const { theme } = useTheme();
   const isLight = theme === "light";
@@ -180,6 +188,9 @@ export default function ProductInventorySplitView({
   const [selectedItem, setSelectedItem] = useState<InventoryRowItem | null>(
     null,
   );
+  const [adjustmentItem, setAdjustmentItem] = useState<InventoryRowItem | null>(null);
+  const [adjustmentFailure, setAdjustmentFailure] = useState<string | null>(null);
+  const [adjustmentBusy, setAdjustmentBusy] = useState(false);
 
   // Modal State for Add / Edit Product
   const [editingProduct, setEditingProduct] = useState<CatalogItem | null>(
@@ -201,6 +212,7 @@ export default function ProductInventorySplitView({
   const [formReorderPoint, setFormReorderPoint] = useState("");
 
   const canEdit = canEditCatalog(account?.me?.role, "products");
+  const canAdjust = canManageStock(account?.me?.role);
 
   const items: InventoryRowItem[] = useMemo(() => {
     if (!data) return [];
@@ -212,22 +224,50 @@ export default function ProductInventorySplitView({
         id: String(p.id),
         sku: p.sku || `SKU-${p.id}`,
         name: p.name,
+        group: p.group_name || "-",
         category: p.category_name || "-",
         brand: p.brand_name || "-",
+        model: p.model_name || "-",
         onHand,
         warehouse: p.warehouse_names || "-",
         status: p.status,
         unit: p.unit_code,
+        unitName: p.unit_name,
         price:
           p.sale_price != null
             ? Number(p.sale_price)
             : p.cost != null
               ? Number(p.cost)
               : null,
+        cost: p.cost == null ? null : Number(p.cost),
+        salePrice: p.sale_price == null ? null : Number(p.sale_price),
+        active: p.active,
+        serialTracked: p.serial_tracked,
+        branchStock: p.branch_stock.map((branch) => ({
+          branchId: branch.branch_id,
+          branchName: branch.branch_name,
+          quantity: Number(branch.quantity),
+        })),
         ...(reorder == null ? {} : { minStock: reorder }),
       };
     });
   }, [data]);
+
+  const saveStockAdjustment = async (body: Record<string, unknown>) => {
+    if (adjustmentBusy) return;
+    setAdjustmentBusy(true);
+    setAdjustmentFailure(null);
+    try {
+      await warehouseApi.createStockDocument(body);
+      setAdjustmentItem(null);
+      setSelectedItem(null);
+      await refresh();
+    } catch (cause) {
+      setAdjustmentFailure(message(cause, isThai));
+    } finally {
+      setAdjustmentBusy(false);
+    }
+  };
 
   const filteredItems = items;
   const totalItems = data?.page.total ?? 0;
@@ -364,9 +404,9 @@ export default function ProductInventorySplitView({
 
   return (
     <WarehousePageTemplate
-      titleEn="Product Master & SKU Catalog"
-      titleTh="ข้อมูลสินค้าหลัก"
-      routePath="/warehouse/inventory"
+      titleEn={titleEn}
+      titleTh={titleTh}
+      routePath={routePath}
       fullBleed
     >
       <div
@@ -738,7 +778,36 @@ export default function ProductInventorySplitView({
         onClose={() => setSelectedItem(null)}
         canEdit={canEdit}
         onEdit={(item) => openEditModal(item)}
+        canAdjust={canAdjust}
+        onAdjust={(item) => {
+          setAdjustmentFailure(null);
+          setSelectedItem(null);
+          setAdjustmentItem(item);
+        }}
       />
+
+      {adjustmentItem && canAdjust && (
+        <SidePanel
+          item={null}
+          onClose={() => { if (!adjustmentBusy) setAdjustmentItem(null); }}
+          eyebrow={isThai ? "ปรับยอดสต็อก" : "Stock adjustment"}
+          title={adjustmentItem.name}
+        >
+          <StockForm
+            warehouses={filters?.warehouses ?? []}
+            onSave={saveStockAdjustment}
+            onCancel={() => setAdjustmentItem(null)}
+            busy={adjustmentBusy}
+            isThai={isThai}
+            failure={adjustmentFailure}
+            initialKind="ADJUSTMENT"
+            initialProductId={adjustmentItem.id}
+            initialProductLabel={`${adjustmentItem.sku} · ${adjustmentItem.name}`}
+            initialWarehouseId={selectedWarehouse === "all" ? "" : selectedWarehouse}
+            lockKind
+          />
+        </SidePanel>
+      )}
 
       {/* ========================================================= */}
       {/* 📌 [MODAL / SIDE DRAWER]: Add / Edit Product Form         */}

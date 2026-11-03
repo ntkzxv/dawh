@@ -1,6 +1,7 @@
 /**
  * Canonical Auth & Session Contracts
- * Conforms to DESIGN.md and docs/api/p0-frontend-handoff.md
+ * See docs/DAWH.md for the current application guide. Historical design and handoff:
+ * docs/history/DESIGN.md and docs/history/api/p0-frontend-handoff.md
  */
 
 import type { EmployeeProfileDto } from "./profile";

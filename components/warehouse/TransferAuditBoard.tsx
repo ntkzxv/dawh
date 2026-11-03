@@ -1,13 +1,13 @@
 "use client";
 
-import { useCallback, type ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import {
   Activity,
   ArrowLeftRight,
+  CalendarDays,
   Check,
   Clock3,
   RotateCcw,
-  ShieldCheck,
 } from "lucide-react";
 import WarehousePageTemplate from "@/app/warehouse/_components/WarehousePageTemplate";
 import DataTable, {
@@ -18,12 +18,13 @@ import { SkeletonBox } from "@/components/loading_screen/SkeletonLoading";
 import { TransferAuditRouteSkeleton } from "@/components/loading_screen/WarehouseRouteSkeletons";
 import { useOptionalWarehouseAccount } from "@/context/WarehouseAccountContext";
 import { useTheme } from "@/context/ThemeContext";
-import { warehouseApi, type AuditEvent, type StockTransfer } from "@/lib/api/warehouse";
-import { getAuditActionLabel } from "@/components/warehouse/auditLog";
+import { warehouseApi, type StockTransfer } from "@/lib/api/warehouse";
 import { useAppLanguage } from "@/utils/language";
 import { useRemote } from "@/hooks/useRemoteResource";
 import { Empty, Notice } from "./Ui";
 import { WAREHOUSE_TABLE_PAGE_SIZE } from "@/lib/warehouse/pagination-config";
+import DatePicker from "@/components/common/DatePicker";
+import Button from "@/components/common/Button";
 
 const dateLabel = (value: string, isThai: boolean) =>
   new Intl.DateTimeFormat(isThai ? "th-TH" : "en-GB", {
@@ -31,33 +32,36 @@ const dateLabel = (value: string, isThai: boolean) =>
     timeStyle: "short",
   }).format(new Date(value));
 
+const dateOnlyLabel = (value: string, isThai: boolean) =>
+  new Intl.DateTimeFormat(isThai ? "th-TH" : "en-GB", {
+    dateStyle: "medium",
+  }).format(new Date(`${value}T00:00:00`));
+
 export default function TransferAuditBoard() {
   const isThai = useAppLanguage() === "TH";
   const { theme } = useTheme();
   const isLight = theme === "light";
   const account = useOptionalWarehouseAccount();
-  const canViewAudit = account?.me?.role === "ADMIN" || account?.me?.role === "CEO";
   const accountLoading = account?.loading ?? false;
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [draftFromDate, setDraftFromDate] = useState("");
+  const [draftToDate, setDraftToDate] = useState("");
+  const [dateFilterOpen, setDateFilterOpen] = useState(false);
 
   const loadTransfers = useCallback((signal: AbortSignal) => {
-    return warehouseApi.stockTransfersPage(new URLSearchParams({ page: "1", limit: String(WAREHOUSE_TABLE_PAGE_SIZE) }), signal);
-  }, []);
+    const params = new URLSearchParams({ page: "1", limit: String(WAREHOUSE_TABLE_PAGE_SIZE) });
+    if (fromDate) params.set("from", fromDate);
+    if (toDate) params.set("to", toDate);
+    return warehouseApi.stockTransfersPage(params, signal);
+  }, [fromDate, toDate]);
   const {
     data: transferData,
     loading: transfersLoading,
     error: transferError,
   } = useRemote(loadTransfers);
 
-  const loadAudit = useCallback(async (signal: AbortSignal) => {
-    const response = await warehouseApi.auditPage({ category: "stock-movement", page: 1 }, signal);
-    return response.data.items.slice(0, WAREHOUSE_TABLE_PAGE_SIZE);
-  }, []);
-  const {
-    data: auditEvents,
-    loading: auditLoading,
-    error: auditError,
-  } = useRemote(loadAudit, { enabled: Boolean(canViewAudit) });
-  const pageLoading = accountLoading || transfersLoading || (canViewAudit && auditLoading);
+  const pageLoading = accountLoading || transfersLoading;
 
   const transfers = transferData?.items ?? [];
   const summary = transferData?.summary;
@@ -153,14 +157,92 @@ export default function TransferAuditBoard() {
           />
         </section>
 
-        <section className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(340px,0.85fr)]">
-          <div className="min-w-0 space-y-3">
+        <section className="min-w-0 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <SectionHeading
               title={isThai ? "สถานะการโอนล่าสุด" : "Recent transfer status"}
               detail={isThai ? "แสดงรายการล่าสุด 8 รายการ" : "Showing the latest 8 transfers"}
               isLight={isLight}
               icon={<Activity size={16} />}
             />
+            <div className="relative">
+              <button
+                type="button"
+                aria-expanded={dateFilterOpen}
+                aria-controls="transfer-date-filter"
+                onClick={() => {
+                  setDraftFromDate(fromDate);
+                  setDraftToDate(toDate);
+                  setDateFilterOpen((open) => !open);
+                }}
+                className={`inline-flex h-10 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 ${isLight ? "border-[#D4D4D8] bg-white text-[#222222] hover:bg-[#F4F4F5]" : "border-[#555555] bg-[#383838] text-white hover:bg-[#444444]"}`}
+              >
+                <CalendarDays size={16} aria-hidden="true" />
+                {fromDate || toDate
+                  ? `${fromDate ? dateOnlyLabel(fromDate, isThai) : (isThai ? "เริ่มต้น" : "Start")} – ${toDate ? dateOnlyLabel(toDate, isThai) : (isThai ? "สิ้นสุด" : "End")}`
+                  : (isThai ? "กรองวันที่" : "Filter dates")}
+              </button>
+              {dateFilterOpen && (
+                <div
+                  id="transfer-date-filter"
+                  role="region"
+                  aria-label={isThai ? "ตัวกรองวันที่รายการโอน" : "Transfer date filter"}
+                  className={`absolute right-0 top-full z-30 mt-2 w-[min(360px,calc(100vw-2rem))] space-y-4 rounded-xl border p-4 shadow-xl ${isLight ? "border-[#E4E4E7] bg-white text-[#222222]" : "border-[#444444] bg-[#383838] text-white"}`}
+                >
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="space-y-1.5 text-xs font-semibold">
+                      <span>{isThai ? "วันที่เริ่มต้น" : "Start date"}</span>
+                      <DatePicker
+                        value={draftFromDate}
+                        onChange={setDraftFromDate}
+                        isThai={isThai}
+                        maxDate={draftToDate || undefined}
+                        placeholder={isThai ? "เลือกวันที่เริ่มต้น" : "Select start date"}
+                        triggerClassName="!h-10 !rounded-lg !px-3 !py-2 !text-sm"
+                        calendarClassName="transfer-date-filter-calendar"
+                      />
+                    </label>
+                    <label className="space-y-1.5 text-xs font-semibold">
+                      <span>{isThai ? "วันที่สิ้นสุด" : "End date"}</span>
+                      <DatePicker
+                        value={draftToDate}
+                        onChange={setDraftToDate}
+                        isThai={isThai}
+                        minDate={draftFromDate || undefined}
+                        placeholder={isThai ? "เลือกวันที่สิ้นสุด" : "Select end date"}
+                        triggerClassName="!h-10 !rounded-lg !px-3 !py-2 !text-sm"
+                        calendarClassName="transfer-date-filter-calendar"
+                      />
+                    </label>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setFromDate("");
+                        setToDate("");
+                        setDraftFromDate("");
+                        setDraftToDate("");
+                        setDateFilterOpen(false);
+                      }}
+                    >
+                      {isThai ? "ล้างวันที่" : "Clear dates"}
+                    </Button>
+                    <Button
+                      variant="primary"
+                      onClick={() => {
+                        setFromDate(draftFromDate);
+                        setToDate(draftToDate);
+                        setDateFilterOpen(false);
+                      }}
+                    >
+                      {isThai ? "ใช้ตัวกรอง" : "Apply"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
             {transfersLoading ? (
               <div className={`space-y-3 rounded-xl border p-4 ${isLight ? "border-[#E4E4E7] bg-white" : "border-[#444444] bg-[#383838]"}`}>
                 {[0, 1, 2, 3].map((item) => <SkeletonBox key={item} className="h-11 rounded-lg" />)}
@@ -174,38 +256,6 @@ export default function TransferAuditBoard() {
                 <Empty text={isThai ? "ยังไม่มีรายการโอนในขอบเขตที่ดูได้" : "No transfers are available in your access scope."} />
               </div>
             )}
-          </div>
-
-          <div className="min-w-0 space-y-3">
-            <SectionHeading
-              title={isThai ? "กิจกรรมตรวจสอบล่าสุด" : "Recent audit activity"}
-              detail={isThai ? "การลงรายการและกลับรายการสต็อก" : "Stock postings and reversals"}
-              isLight={isLight}
-              icon={<ShieldCheck size={16} />}
-            />
-            {!canViewAudit ? (
-              <div className={`rounded-xl border p-5 ${isLight ? "border-[#E4E4E7] bg-white" : "border-[#444444] bg-[#383838]"}`}>
-                <p className="text-sm font-semibold">{isThai ? "จำกัดสิทธิ์การดูบันทึก" : "Audit access is restricted"}</p>
-                <p className={`mt-1 text-sm ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
-                  {isThai ? "บันทึกตรวจสอบแสดงเฉพาะผู้ดูแลระบบและผู้บริหาร" : "Audit events are available to administrators and CEOs."}
-                </p>
-              </div>
-            ) : auditError ? (
-              <Notice tone="error">{auditError}</Notice>
-            ) : auditLoading ? (
-              <div className={`space-y-3 rounded-xl border p-4 ${isLight ? "border-[#E4E4E7] bg-white" : "border-[#444444] bg-[#383838]"}`}>
-                {[0, 1, 2, 3].map((item) => <SkeletonBox key={item} className="h-16 rounded-lg" />)}
-              </div>
-            ) : auditEvents?.length ? (
-              <ol className={`divide-y rounded-xl border ${isLight ? "divide-[#E4E4E7] border-[#E4E4E7] bg-white" : "divide-[#444444] border-[#444444] bg-[#383838]"}`}>
-                {auditEvents.map((event) => <AuditEventCard key={event.id} event={event} isThai={isThai} isLight={isLight} />)}
-              </ol>
-            ) : (
-              <div className={`rounded-xl border p-5 ${isLight ? "border-[#E4E4E7] bg-white" : "border-[#444444] bg-[#383838]"}`}>
-                <Empty text={isThai ? "ยังไม่มีเหตุการณ์ตรวจสอบ" : "No audit events yet."} />
-              </div>
-            )}
-          </div>
         </section>
       </main>
       )}
@@ -275,36 +325,5 @@ function SectionHeading({
         <p className={`text-xs ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>{detail}</p>
       </div>
     </div>
-  );
-}
-
-function AuditEventCard({ event, isThai, isLight }: { event: AuditEvent; isThai: boolean; isLight: boolean }) {
-  return (
-    <li className="p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold">{getAuditActionLabel(event.action, isThai)}</p>
-          <p className={`mt-1 truncate text-xs ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
-            {isThai ? "เอกสารสต็อก" : "Inventory document"}{event.entity_id == null ? "" : ` #${event.entity_id}`}
-          </p>
-        </div>
-        <time className={`shrink-0 text-right text-[11px] ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`} dateTime={event.created_at}>
-          {dateLabel(event.created_at, isThai)}
-        </time>
-      </div>
-      <p className={`mt-2 text-xs ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
-        {event.actor_name || event.actor_email || (isThai ? "ระบบ" : "System")}
-      </p>
-      {(event.before_data || event.after_data) && (
-        <details className="mt-2 text-xs">
-          <summary className="w-fit cursor-pointer font-medium text-[#6366F1]">
-            {isThai ? "ดูข้อมูลที่บันทึก" : "View recorded data"}
-          </summary>
-          <pre className={`mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-all rounded-lg p-2 ${isLight ? "bg-[#F4F4F5]" : "bg-black/20"}`}>
-            {JSON.stringify({ before: event.before_data, after: event.after_data }, null, 2)}
-          </pre>
-        </details>
-      )}
-    </li>
   );
 }

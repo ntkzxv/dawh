@@ -321,11 +321,16 @@ export type InventoryProduct = CatalogItem & {
   brand_name: string | null;
   unit_id: number;
   unit_code: string;
+  unit_name: string;
+  group_name: string | null;
+  model_name: string | null;
+  serial_tracked: boolean;
   cost: string | null;
   sale_price: string | null;
   reorder_point: string | null;
   on_hand: string;
   warehouse_names: string | null;
+  branch_stock: Array<{ branch_id: number; branch_name: string; quantity: string }>;
   status: "in_stock" | "low_stock" | "out_of_stock";
 };
 export type ApiListPage<T> = { items: T[]; page: ApiPage };
@@ -473,9 +478,11 @@ export const warehouseApi = {
     cursor?: string | null,
     signal?: AbortSignal,
     query?: string,
+    closed?: boolean,
   ) => {
     const params = cursorParams(cursor);
     if (query?.trim()) params.set("q", query.trim());
+    if (closed !== undefined) params.set("closed", String(closed));
     return cursorPage<PurchaseOrder>("/api/purchase-orders", params, signal);
   },
   purchaseOrder: (id: number, signal?: AbortSignal) =>
@@ -486,24 +493,34 @@ export const warehouseApi = {
     data(apiPatch<PurchaseOrder>(`/api/purchase-orders/${id}`, body)),
   closePurchaseOrder: (id: number) =>
     data(apiPost<PurchaseOrder>(`/api/purchase-orders/${id}/close`, {})),
-  supplierReceiptsPage: (cursor?: string | null, signal?: AbortSignal) =>
-    cursorPage<SupplierReceipt>(
-      "/api/supplier-receipts",
-      cursorParams(cursor),
-      signal,
-    ),
+  supplierReceiptsPage: (
+    cursor?: string | null,
+    signal?: AbortSignal,
+    query?: string,
+    supplierId?: number,
+  ) => {
+    const params = cursorParams(cursor);
+    if (query?.trim()) params.set("q", query.trim());
+    if (supplierId) params.set("supplierId", String(supplierId));
+    return cursorPage<SupplierReceipt>("/api/supplier-receipts", params, signal);
+  },
   supplierReceipt: (id: number) =>
     data(apiGet<SupplierReceipt>(`/api/supplier-receipts/${id}`)),
   createSupplierReceipt: (body: Record<string, unknown>) =>
     data(apiPost<SupplierReceipt>("/api/supplier-receipts", body)),
   updateSupplierReceipt: (id: number, body: Record<string, unknown>) =>
     data(apiPatch<SupplierReceipt>(`/api/supplier-receipts/${id}`, body)),
-  carrierReceiptsPage: (cursor?: string | null, signal?: AbortSignal) =>
-    cursorPage<CarrierReceipt>(
-      "/api/carrier-receipts",
-      cursorParams(cursor),
-      signal,
-    ),
+  carrierReceiptsPage: (
+    cursor?: string | null,
+    signal?: AbortSignal,
+    query?: string,
+    received?: boolean,
+  ) => {
+    const params = cursorParams(cursor);
+    if (query?.trim()) params.set("q", query.trim());
+    if (received !== undefined) params.set("received", String(received));
+    return cursorPage<CarrierReceipt>("/api/carrier-receipts", params, signal);
+  },
   carrierReceipt: (id: number, signal?: AbortSignal) =>
     data(apiGet<CarrierReceipt>(`/api/carrier-receipts/${id}`, { signal })),
   createCarrierReceipt: (body: Record<string, unknown>) =>
@@ -512,12 +529,17 @@ export const warehouseApi = {
     data(apiPatch<CarrierReceipt>(`/api/carrier-receipts/${id}`, body)),
   confirmDelivery: (id: number, body: Record<string, unknown>) =>
     data(apiPost<unknown>(`/api/carrier-receipts/${id}/confirm`, body)),
-  goodsReceiptsPage: (cursor?: string | null, signal?: AbortSignal) =>
-    cursorPage<GoodsReceipt>(
-      "/api/goods-receipts",
-      cursorParams(cursor),
-      signal,
-    ),
+  goodsReceiptsPage: (
+    cursor?: string | null,
+    signal?: AbortSignal,
+    query?: string,
+    posted?: boolean,
+  ) => {
+    const params = cursorParams(cursor);
+    if (query?.trim()) params.set("q", query.trim());
+    if (posted !== undefined) params.set("posted", String(posted));
+    return cursorPage<GoodsReceipt>("/api/goods-receipts", params, signal);
+  },
   goodsReceipt: (id: number) =>
     data(apiGet<GoodsReceipt>(`/api/goods-receipts/${id}`)),
   createGoodsReceipt: (body: Record<string, unknown>) =>

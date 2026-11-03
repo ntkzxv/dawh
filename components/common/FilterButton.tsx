@@ -11,6 +11,7 @@ export interface FilterButtonProps {
   activeFilterCount?: number;
   onClear?: () => void;
   onClick: () => void;
+  iconOnly?: boolean;
 }
 
 export default function FilterButton({
@@ -21,13 +22,14 @@ export default function FilterButton({
   activeFilterCount = 0,
   onClear,
   onClick,
+  iconOnly = false,
 }: FilterButtonProps) {
   const { theme } = useTheme();
   const isLight = theme === "light";
 
   return (
     <div
-      className={`inline-flex h-[33px] items-center gap-1.5 rounded-[6px] border text-[13px] font-semibold transition-colors ${
+      className={`inline-flex items-center gap-1.5 rounded-[6px] border text-[13px] font-semibold transition-colors ${iconOnly ? "size-[38px] justify-center" : "h-[33px]"} ${
         isLight
           ? "border-[#E4E4E7] bg-white text-[#222222] hover:bg-slate-50"
           : "border-[#444444] bg-[#383838] text-white hover:bg-white/5"
@@ -37,11 +39,13 @@ export default function FilterButton({
         type="button"
         aria-expanded={expanded}
         aria-controls={controls}
+        aria-label={iconOnly ? label : undefined}
+        title={iconOnly ? label : undefined}
         onClick={onClick}
-        className={`inline-flex h-full items-center gap-1.5 pl-4 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400 ${activeFilterCount > 0 ? "pr-0" : "pr-4"}`}
+        className={`inline-flex h-full items-center gap-1.5 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400 ${iconOnly ? "px-0" : "pl-4"} ${activeFilterCount > 0 && !iconOnly ? "pr-0" : iconOnly ? "" : "pr-4"}`}
       >
         <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-        {label}
+        {!iconOnly && label}
       </button>
       {activeFilterCount > 0 && (
         onClear ? (

@@ -11,17 +11,22 @@ export type InventoryProductRow = {
   sku: string;
   name: string;
   active: boolean;
+  group_name: string | null;
   category_id: number | null;
   category_name: string | null;
   brand_id: number | null;
   brand_name: string | null;
+  model_name: string | null;
   unit_id: number;
   unit_code: string;
+  unit_name: string;
+  serial_tracked: boolean;
   cost: string | null;
   sale_price: string | null;
   reorder_point: string | null;
   on_hand: string;
   warehouse_names: string | null;
+  branch_stock: Array<{ branch_id: number; branch_name: string; quantity: string }>;
   status: "in_stock" | "low_stock" | "out_of_stock";
 };
 
@@ -62,18 +67,35 @@ export async function listInventoryProducts(
       WHERE ($1::boolean OR w.branch_id=ANY($2::integer[]))
         AND ($3::integer IS NULL OR w.id=$3)
       GROUP BY sb.product_id
+    ), branch_stock AS (
+      SELECT sb.product_id,b.id AS branch_id,b.name AS branch_name,
+        SUM(sb.quantity)::text AS quantity
+      FROM app.stock_balances sb
+      JOIN app.warehouses w ON w.id=sb.warehouse_id
+      JOIN app.branches b ON b.id=w.branch_id
+      WHERE ($1::boolean OR w.branch_id=ANY($2::integer[]))
+        AND ($3::integer IS NULL OR w.id=$3)
+      GROUP BY sb.product_id,b.id,b.name
     ), inventory AS (
-      SELECT p.id,p.sku,p.name,p.active,p.category_id,c.name AS category_name,
-        p.brand_id,br.name AS brand_name,p.unit_id,u.code AS unit_code,
+      SELECT p.id,p.sku,p.name,p.active,pg.name AS group_name,
+        p.category_id,c.name AS category_name,
+        p.brand_id,br.name AS brand_name,pm.name AS model_name,
+        p.unit_id,u.code AS unit_code,u.name AS unit_name,p.serial_tracked,
         p.cost::text AS cost,p.sale_price::text AS sale_price,p.reorder_point::text AS reorder_point,
         COALESCE(s.on_hand,0)::text AS on_hand,s.warehouse_names,
+        COALESCE((SELECT jsonb_agg(jsonb_build_object(
+          'branch_id',bs.branch_id,'branch_name',bs.branch_name,'quantity',bs.quantity
+        ) ORDER BY bs.branch_name) FROM branch_stock bs
+          WHERE bs.product_id=p.id AND bs.quantity::numeric>0),'[]'::jsonb) AS branch_stock,
         CASE WHEN COALESCE(s.on_hand,0)<=0 THEN 'out_of_stock'
           WHEN p.reorder_point IS NOT NULL AND s.on_hand<p.reorder_point THEN 'low_stock'
           ELSE 'in_stock' END AS status
       FROM app.products p
       JOIN app.units u ON u.id=p.unit_id
+      LEFT JOIN app.product_groups pg ON pg.id=p.group_id
       LEFT JOIN app.product_categories c ON c.id=p.category_id
       LEFT JOIN app.brands br ON br.id=p.brand_id
+      LEFT JOIN app.product_models pm ON pm.id=p.model_id
       LEFT JOIN scoped_stock s ON s.product_id=p.id
       WHERE ($3::integer IS NULL OR s.product_id IS NOT NULL)
         AND ($4::integer IS NULL OR p.category_id=$4)

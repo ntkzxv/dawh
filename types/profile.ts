@@ -1,6 +1,7 @@
 /**
  * Canonical Employee Profile & Onboarding Contracts
- * Conforms strictly to docs/api/p0-frontend-handoff.md
+ * Current application guidance: docs/DAWH.md. Historical handoff:
+ * docs/history/api/p0-frontend-handoff.md
  */
 
 export interface AddressInput {

@@ -200,54 +200,35 @@ export function TransferAuditRouteSkeleton() {
           </div>
         ))}
       </div>
-      <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(340px,0.85fr)]">
-        {[0, 1].map((section) => (
-          <section key={section} className="space-y-3">
-            <div className="flex items-center gap-3">
-              <SkeletonBox className="size-9 shrink-0 rounded-lg" />
-              <div className="space-y-2">
-                <SkeletonBox className="h-4 w-44 rounded" />
-                <SkeletonBox className="h-3 w-36 rounded" />
-              </div>
+      <section className="min-w-0 space-y-3">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <SkeletonBox className="size-9 shrink-0 rounded-lg" />
+            <div className="space-y-2">
+              <SkeletonBox className="h-4 w-44 rounded" />
+              <SkeletonBox className="h-3 w-36 rounded" />
             </div>
-            {section === 0 ? (
-              <div className="overflow-hidden rounded-xl border border-slate-200/70 dark:border-white/[0.08]">
-                <div className="flex h-10 items-center gap-4 border-b border-slate-200/70 px-4 dark:border-white/[0.08]">
-                  {[0, 1, 2, 3, 4].map((item) => <SkeletonBox key={item} className="h-3 w-24 flex-1 rounded" />)}
-                </div>
-                <div className="divide-y divide-slate-200/60 dark:divide-white/[0.06]">
-                  {[0, 1, 2, 3, 4].map((item) => (
-                    <div key={item} className="flex min-h-14 items-center gap-4 px-4 py-3">
-                      {[0, 1, 2, 3, 4].map((cell) => (
-                        <div key={cell} className="flex min-w-0 flex-1 items-center gap-2">
-                          {cell === 2 && <SkeletonBox className="size-2 shrink-0 rounded-full" />}
-                          <SkeletonBox className={`h-3.5 rounded ${cell === 0 ? "w-28" : cell === 1 ? "w-36" : cell === 2 ? "w-16" : cell === 3 ? "w-24" : "w-28"}`} />
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <ol className="divide-y divide-slate-200/60 rounded-xl border border-slate-200/70 dark:divide-white/[0.06] dark:border-white/[0.08]">
-                {[0, 1, 2, 3, 4].map((item) => (
-                  <li key={item} className="space-y-2.5 p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0 flex-1 space-y-2">
-                        <SkeletonBox className="h-3.5 w-2/5 rounded" />
-                        <SkeletonBox className="h-3 w-1/3 rounded" />
-                      </div>
-                      <SkeletonBox className="h-3 w-28 shrink-0 rounded" />
-                    </div>
-                    <SkeletonBox className="h-3 w-1/2 rounded" />
-                    {item % 2 === 0 && <SkeletonBox className="h-3 w-24 rounded" />}
-                  </li>
+          </div>
+          <SkeletonBox className="h-10 w-32 shrink-0 rounded-lg" />
+        </div>
+        <div className="overflow-hidden rounded-xl border border-slate-200/70 dark:border-white/[0.08]">
+          <div className="flex h-10 items-center gap-4 border-b border-slate-200/70 px-4 dark:border-white/[0.08]">
+            {[0, 1, 2, 3, 4].map((item) => <SkeletonBox key={item} className="h-3 w-24 flex-1 rounded" />)}
+          </div>
+          <div className="divide-y divide-slate-200/60 dark:divide-white/[0.06]">
+            {[0, 1, 2, 3, 4].map((item) => (
+              <div key={item} className="flex min-h-14 items-center gap-4 px-4 py-3">
+                {[0, 1, 2, 3, 4].map((cell) => (
+                  <div key={cell} className="flex min-w-0 flex-1 items-center gap-2">
+                    {cell === 2 && <SkeletonBox className="size-2 shrink-0 rounded-full" />}
+                    <SkeletonBox className={`h-3.5 rounded ${cell === 0 ? "w-28" : cell === 1 ? "w-36" : cell === 2 ? "w-16" : cell === 3 ? "w-24" : "w-28"}`} />
+                  </div>
                 ))}
-              </ol>
-            )}
-          </section>
-        ))}
-      </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     </main>
   );
 }

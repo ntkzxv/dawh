@@ -18,12 +18,12 @@ const stepWidths: Record<ReceivingStep, string> = {
 
 const tableLayouts: Record<
   ReceivingStep,
-  { columns: number; minWidth: string; titleWidth: string; buttonWidth: string }
+  { columns: number; minWidth: string }
 > = {
-  po: { columns: 3, minWidth: "560px", titleWidth: "w-36", buttonWidth: "w-24" },
-  supplier: { columns: 6, minWidth: "980px", titleWidth: "w-32", buttonWidth: "w-40" },
-  carrier: { columns: 4, minWidth: "760px", titleWidth: "w-48", buttonWidth: "w-32" },
-  count: { columns: 5, minWidth: "820px", titleWidth: "w-24", buttonWidth: "w-32" },
+  po: { columns: 3, minWidth: "560px" },
+  supplier: { columns: 6, minWidth: "980px" },
+  carrier: { columns: 4, minWidth: "760px" },
+  count: { columns: 5, minWidth: "820px" },
 };
 
 export function ReceivingTabsSkeleton({ employeeOnly = false }: { employeeOnly?: boolean }) {
@@ -36,14 +36,17 @@ export function ReceivingTabsSkeleton({ employeeOnly = false }: { employeeOnly?:
   return (
     <div
       aria-hidden="true"
-      className={`flex h-[42px] w-full flex-row items-start gap-2 overflow-x-auto border-b select-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${isLight ? "border-[#E4E4E7]/70" : "border-[#444444]"}`}
+      className={`flex h-[42px] w-full flex-row items-stretch overflow-x-auto rounded-lg border px-1 select-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${isLight ? "border-[#D4D4D8] bg-white" : "border-[#666666] bg-[#383838]"}`}
     >
       {tabSteps.map((step) => (
         <div
           key={step}
-          className="flex h-[42px] min-w-max flex-1 basis-0 items-center justify-center px-4"
+          className="relative flex h-full min-w-max flex-1 basis-0 items-center justify-center px-4"
         >
           <SkeletonBox className={`h-3.5 ${stepWidths[step]} rounded`} />
+          {step === (employeeOnly ? "carrier" : "po") && (
+            <div className={`absolute bottom-0 left-5 right-5 h-[2px] ${isLight ? "bg-black" : "bg-[#D4D4D8]"}`} />
+          )}
         </div>
       ))}
     </div>
@@ -60,11 +63,7 @@ export function ReceivingContentSkeleton({ step = "po" }: { step?: ReceivingStep
   );
 
   return (
-    <section className="p-5" aria-hidden="true">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <SkeletonBox className={`h-5 ${layout.titleWidth} rounded`} />
-        <SkeletonBox className={`h-9 ${layout.buttonWidth} rounded-xl`} />
-      </div>
+    <section className="p-0" aria-hidden="true">
       <DataTable
         columns={columns}
         data={[]}
@@ -96,8 +95,13 @@ export function ReceivingPageSkeleton({
   employeeOnly?: boolean;
 }) {
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <ReceivingTabsSkeleton employeeOnly={employeeOnly} />
+      <div className="flex flex-wrap items-center gap-2" aria-hidden="true">
+        <SkeletonBox className="h-[38px] w-full min-w-0 rounded-md sm:flex-1" />
+        <SkeletonBox className="size-[38px] shrink-0 rounded-md" />
+        <SkeletonBox className="h-[38px] w-[180px] shrink-0 rounded-md" />
+      </div>
       <ReceivingContentSkeleton step={employeeOnly ? "carrier" : step} />
     </div>
   );

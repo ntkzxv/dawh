@@ -7,6 +7,7 @@ import { audit, id, idempotencyKey, optionalText, quantity, requireBranch, requi
 import { attachEvidence } from "@/lib/warehouse/media";
 import { postInventoryLine } from "@/lib/warehouse/ledger";
 import { cursorPageResult, parseCursorPage } from "@/lib/warehouse/cursor-pagination";
+import { optionalBoolean } from "@/lib/warehouse/read-options";
 
 type CountLine = { poLineId: number; good: string; damaged: string; wrong: string; serialNumbers: string[]; note: string | null };
 function parsedLines(value: unknown): CountLine[] {
@@ -28,6 +29,9 @@ function parsedLines(value: unknown): CountLine[] {
 export async function listGoodsReceipts(actor: Actor, search: URLSearchParams) {
   requireRole(actor, ["ADMIN", "CEO", "MANAGER", "COUNTER_STAFF"]);
   const { limit, cursor } = parseCursorPage(search);
+  const query = search.get("q")?.trim() ?? "";
+  if (query.length > 100) throw new ValidationError({ q: "Use at most 100 characters." });
+  const posted = optionalBoolean(search, "posted");
   const result = await timedPoolQuery<Record<string, unknown> & { id: number }>(`
     SELECT gr.*,cr.record_no AS carrier_receipt_no,po.record_no AS purchase_order_no,b.name AS branch_name,w.name AS warehouse_name
     FROM app.goods_receipts gr JOIN app.carrier_receipts cr ON cr.id=gr.carrier_receipt_id
@@ -35,8 +39,10 @@ export async function listGoodsReceipts(actor: Actor, search: URLSearchParams) {
     JOIN app.warehouses w ON w.id=gr.warehouse_id
     WHERE ($1::boolean OR gr.receiving_branch_id=ANY($2::integer[]))
       AND ($3::bigint IS NULL OR gr.id < $3)
-    ORDER BY gr.id DESC LIMIT $4`,
-  [actor.role === "ADMIN" || actor.role === "CEO", actor.branchIds, cursor?.parentId ?? null, limit + 1]);
+      AND ($4::text='' OR gr.record_no ILIKE '%'||$4||'%' OR cr.record_no ILIKE '%'||$4||'%' OR po.record_no ILIKE '%'||$4||'%' OR w.name ILIKE '%'||$4||'%')
+      AND ($5::boolean IS NULL OR (gr.posted_at IS NOT NULL)=$5)
+      ORDER BY gr.id DESC LIMIT $6`,
+  [actor.role === "ADMIN" || actor.role === "CEO", actor.branchIds, cursor?.parentId ?? null, query, posted, limit + 1]);
   return cursorPageResult(result.rows, limit, (row) => ({ parentId: row.id }));
 }
 export async function getGoodsReceipt(actor: Actor, receiptId: number) {
