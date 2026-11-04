@@ -55,31 +55,31 @@ function getPasswordStrength(pass: string, currentLang: Language, isLight: boole
     return {
       score: 1,
       label: dict.strengthWeak,
-      color: isLight ? "bg-[#E74C3C]" : "bg-[#E71D36]",
-      textClass: isLight ? "text-[#E74C3C] font-bold" : "text-[#E71D36] font-semibold",
+      color: isLight ? "bg-[var(--status-danger)]" : "bg-[var(--status-danger)]",
+      textClass: isLight ? "text-[var(--status-danger-text)] font-bold" : "text-[var(--status-danger-text)] font-semibold",
     };
   }
   if (score === 2) {
     return {
       score: 2,
       label: dict.strengthFair,
-      color: "bg-[#FF9F1C]",
-      textClass: isLight ? "text-[#FF9F1C] font-bold" : "text-[#FF9F1C] font-semibold",
+      color: "bg-[var(--status-warning)]",
+      textClass: isLight ? "text-[var(--status-warning-text)] font-bold" : "text-[var(--status-warning-text)] font-semibold",
     };
   }
   if (score === 3) {
     return {
       score: 3,
       label: dict.strengthGood,
-      color: "bg-[#2EC4B6]",
-      textClass: isLight ? "text-[#2EC4B6] font-bold" : "text-[#2EC4B6] font-semibold",
+      color: "bg-[var(--status-success)]",
+      textClass: isLight ? "text-[var(--status-success-text)] font-bold" : "text-[var(--status-success-text)] font-semibold",
     };
   }
   return {
     score: 4,
     label: dict.strengthStrong,
-    color: "bg-[#2EC4B6]",
-    textClass: isLight ? "text-[#2EC4B6] font-bold" : "text-[#2EC4B6] font-semibold",
+    color: "bg-[var(--status-success)]",
+    textClass: isLight ? "text-[var(--status-success-text)] font-bold" : "text-[var(--status-success-text)] font-semibold",
   };
 }
 
@@ -321,7 +321,7 @@ export function UserAuthView({
     }
     return isLight
       ? "bg-[#F8FAFC] border-slate-300 focus-within:border-[#222222] focus-within:bg-white"
-      : "bg-[#202020] border-[#3A3A3A] focus-within:border-white/50";
+      : "bg-[#222222] border-[#E4E4E7] focus-within:border-white/50";
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -719,7 +719,7 @@ export function UserAuthView({
       <div className="absolute inset-0 flex flex-col pointer-events-none z-0">
         <div
           className={`w-full h-[52%] relative overflow-hidden transition-colors duration-300 ${
-            isLight ? "bg-[#EEF2F6]" : "bg-[#1A1A1A]"
+            isLight ? "bg-[#F1F5F9]" : "bg-[#222222]"
           }`}
         >
           <div className="absolute inset-0 pointer-events-none select-none">
@@ -727,7 +727,7 @@ export function UserAuthView({
               <div
                 className="w-full h-full transition-colors duration-300"
                 style={{
-                  backgroundColor: isLight ? "#FFFFFF" : "#282828",
+                  backgroundColor: isLight ? "#FFFFFF" : "var(--cards)",
                   WebkitMaskImage: `url(${getDawhLogo(theme, "longNoSpace")})`,
                   maskImage: `url(${getDawhLogo(theme, "longNoSpace")})`,
                   WebkitMaskSize: "contain",
@@ -741,7 +741,7 @@ export function UserAuthView({
               />
               <div
                 className={`absolute top-[61.2%] h-[150vh] left-[76.2%] w-[7%] transition-colors duration-300 ${
-                  isLight ? "bg-[#FFFFFF]" : "bg-[#282828]"
+                  isLight ? "bg-[#FFFFFF]" : "bg-[var(--cards)]"
                 }`}
               />
             </div>
@@ -750,13 +750,13 @@ export function UserAuthView({
 
         <div
           className={`w-full flex-1 relative overflow-hidden transition-colors duration-300 ${
-            isLight ? "bg-[#FFFFFF]" : "bg-[#282828]"
+            isLight ? "bg-[#FFFFFF]" : "bg-[var(--cards)]"
           }`}
         >
           <div
             className="absolute bottom-0 right-0 h-full w-full pointer-events-none select-none transition-colors duration-300"
             style={{
-              backgroundColor: isLight ? "#EEF2F6" : "#1A1A1A",
+              backgroundColor: isLight ? "#F1F5F9" : "#222222",
               WebkitMaskImage: `url(${getDawhLogo(theme, "longNoSpace")})`,
               maskImage: `url(${getDawhLogo(theme, "longNoSpace")})`,
               WebkitMaskSize: "contain",
@@ -806,7 +806,7 @@ export function UserAuthView({
           } ${
             isLight
               ? "bg-white border-slate-200 shadow-slate-300/30"
-              : "bg-[#2E2E2E] border-[#3E3E3E] shadow-black/40"
+              : "bg-[var(--canvas)] border-[#444444] shadow-black/40"
           }`}
         >
           {/* Card Header */}
@@ -827,7 +827,7 @@ export function UserAuthView({
             {mode === "signup" && (
               <p
                 className={`text-[12.5px] font-normal leading-[16px] ${
-                  isLight ? "text-[#383838]" : "text-[#999999]"
+                  isLight ? "text-[#383838]" : "text-[var(--text-muted)]"
                 }`}
                 style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
               >
@@ -841,7 +841,7 @@ export function UserAuthView({
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="mb-4 overflow-hidden rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3.5 text-xs text-emerald-400 shadow-lg shadow-emerald-500/5 text-center"
+              className="mb-4 overflow-hidden rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3.5 text-xs text-[var(--status-success-badge-text)] shadow-lg shadow-emerald-500/5 text-center"
             >
               <span className="font-medium text-[13px]">{t.successAlert}</span>
             </motion.div>
@@ -852,7 +852,7 @@ export function UserAuthView({
             <motion.div
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-2.5 text-xs text-red-400"
+              className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-2.5 text-xs text-[var(--status-danger-badge-text)]"
             >
               {errorMessage}
             </motion.div>
@@ -884,7 +884,7 @@ export function UserAuthView({
                           <label
                             htmlFor="signin-email"
                             className={`text-[12.5px] font-medium leading-[16px] ${
-                              isLight ? "text-[#2C2C2C]" : "text-[#A1A1AA]"
+                              isLight ? "text-[#222222]" : "text-[var(--text-muted)]"
                             }`}
                             style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                           >
@@ -908,8 +908,8 @@ export function UserAuthView({
                               placeholder={t.usernameOrEmailPlaceholder}
                               className={`w-full bg-transparent text-[13.5px] leading-[18px] outline-none ${
                                 isLight
-                                  ? "text-[#222222] placeholder-[#888888]"
-                                  : "text-white placeholder-[#666666]"
+                                  ? "text-[#222222] placeholder-[var(--text-muted)]"
+                                  : "text-white placeholder-[var(--text-muted)]"
                               }`}
                               style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                             />
@@ -920,7 +920,7 @@ export function UserAuthView({
                           <label
                             htmlFor="signin-password"
                             className={`text-[12.5px] font-medium leading-[16px] ${
-                              isLight ? "text-[#2C2C2C]" : "text-[#A1A1AA]"
+                              isLight ? "text-[#222222]" : "text-[var(--text-muted)]"
                             }`}
                             style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                           >
@@ -944,8 +944,8 @@ export function UserAuthView({
                               placeholder={t.passwordPlaceholder}
                               className={`w-full bg-transparent text-[13.5px] leading-[18px] outline-none ${
                                 isLight
-                                  ? "text-[#222222] placeholder-[#888888]"
-                                  : "text-white placeholder-[#666666]"
+                                  ? "text-[#222222] placeholder-[var(--text-muted)]"
+                                  : "text-white placeholder-[var(--text-muted)]"
                               }`}
                               style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                             />
@@ -955,7 +955,7 @@ export function UserAuthView({
                               className={`flex items-center justify-center transition-colors ${
                                 isLight
                                   ? "text-[#383838] hover:text-[#222222]"
-                                  : "text-[#777777] hover:text-white"
+                                  : "text-[var(--text-muted)] hover:text-white"
                               }`}
                             >
                               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -970,10 +970,10 @@ export function UserAuthView({
                                 animate={{ opacity: 1, y: 0, height: "auto" }}
                                 exit={{ opacity: 0, y: -4, height: 0 }}
                                 transition={{ duration: 0.18, ease: "easeOut" }}
-                                className="flex items-start gap-1.5 pt-0.5 overflow-hidden text-[12px] font-medium leading-[16px] text-rose-500 dark:text-rose-400"
+                                className="flex items-start gap-1.5 pt-0.5 overflow-hidden text-[12px] font-medium leading-[16px] text-[var(--status-danger-text)] dark:text-[var(--status-danger-text)]"
                                 style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                               >
-                                <AlertCircle size={14} className="shrink-0 mt-[1px] text-rose-500 dark:text-rose-400" />
+                                <AlertCircle size={14} className="shrink-0 mt-[1px] text-[var(--status-danger-text)] dark:text-[var(--status-danger-text)]" />
                                 <span>{errorMessage}</span>
                               </motion.div>
                             )}
@@ -985,7 +985,7 @@ export function UserAuthView({
                               className={`text-[12px] font-normal underline transition-colors ${
                                 isLight
                                   ? "text-[#383838] hover:text-[#222222]"
-                                  : "text-[#999999] hover:text-white"
+                                  : "text-[var(--text-muted)] hover:text-white"
                               }`}
                               style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                             >
@@ -1003,7 +1003,7 @@ export function UserAuthView({
                             className={`flex h-[46px] w-full items-center justify-center gap-2 rounded-[14px] text-[14.5px] font-semibold leading-[20px] border transition-all duration-200 disabled:opacity-50 shadow-sm cursor-pointer ${
                               isLight
                                 ? "bg-[#222222] border-[#222222] text-white hover:bg-white hover:text-[#222222] hover:border-slate-300"
-                                : "bg-[#282828] border-[#444444] text-white hover:bg-white hover:text-slate-950 hover:border-white"
+                                : "bg-[var(--cards)] border-[#444444] text-white hover:bg-white hover:text-slate-950 hover:border-white"
                             }`}
                             style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                           >
@@ -1018,13 +1018,13 @@ export function UserAuthView({
                           </motion.button>
                         </div>
 
-                        <p className={`pt-2 text-center text-[13px] ${isLight ? "text-[#383838]" : "text-[#A1A1AA]"}`}>
+                        <p className={`pt-2 text-center text-[13px] ${isLight ? "text-[#383838]" : "text-[var(--text-muted)]"}`}>
                           {lang === "TH" ? "บัญชีใหม่ให้ผู้ดูแลระบบเพิ่มสมาชิกในองค์กร" : "Ask your administrator to add your account."}
                         </p>
 
                         {/* 🔘 BOTTOM CORNER QUICK SWITCH: RECENT USERS BUTTON */}
                         <div className="pt-3 mt-1 border-t border-dashed border-slate-200 dark:border-[#383838] flex items-center justify-between">
-                          <span className={`text-[12px] ${isLight ? "text-slate-500" : "text-[#888888]"}`}>
+                          <span className={`text-[12px] ${isLight ? "text-slate-500" : "text-[var(--text-muted)]"}`}>
                             {lang === "TH" ? "ผู้ใช้เครื่องนี้?" : "Recent accounts"}
                           </span>
                           <button
@@ -1036,7 +1036,7 @@ export function UserAuthView({
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[12px] font-semibold transition-all cursor-pointer group shadow-sm ${
                               isLight
                                 ? "bg-slate-50 hover:bg-white border-slate-300 text-slate-800 hover:border-slate-400"
-                                : "bg-[#242424] hover:bg-[#303030] border-[#444444] text-white hover:border-white/50"
+                                : "bg-[var(--input-bg)] hover:bg-[var(--cards)] border-[#444444] text-white hover:border-white/50"
                             }`}
                           >
                             <Users size={14} className={isLight ? "text-slate-800" : "text-white"} />
@@ -1063,7 +1063,7 @@ export function UserAuthView({
                           <h3 className={`text-[16.5px] font-bold ${isLight ? "text-slate-900" : "text-white"}`}>
                             {lang === "TH" ? "เข้าใช้งานล่าสุด" : "Recent Accounts"}
                           </h3>
-                          <p className={`text-[12px] ${isLight ? "text-slate-500" : "text-[#999999]"}`}>
+                          <p className={`text-[12px] ${isLight ? "text-slate-500" : "text-[var(--text-muted)]"}`}>
                             {lang === "TH" ? "แสดง 5 บัญชีล่าสุดที่ใช้งานในเครื่องนี้" : "Showing 5 most recent accounts"}
                           </p>
                         </div>
@@ -1074,8 +1074,8 @@ export function UserAuthView({
                               onClick={clearAllRecentAccounts}
                               className={`text-[11px] font-semibold px-2 py-0.5 rounded-lg border transition-colors cursor-pointer ${
                                 isLight
-                                  ? "border-slate-200 text-slate-500 hover:text-red-600 hover:bg-red-50"
-                                  : "border-[#444444] text-zinc-400 hover:text-red-400 hover:bg-red-500/10"
+                                  ? "border-slate-200 text-slate-500 hover:text-[var(--status-danger-text)] hover:bg-red-50"
+                                  : "border-[#444444] text-zinc-400 hover:text-[var(--status-danger-text)] hover:bg-red-500/10"
                               }`}
                               title={lang === "TH" ? "ล้างประวัติทั้งหมดในเครื่องนี้" : "Clear all recent accounts"}
                             >
@@ -1086,7 +1086,7 @@ export function UserAuthView({
                             className={`px-2.5 py-0.5 rounded-lg text-[11px] font-bold border ${
                               isLight
                                 ? "bg-slate-100 border-slate-200 text-slate-800"
-                                : "bg-[#333333] border-[#484848] text-white"
+                                : "bg-[var(--cards)] border-[#444444] text-white"
                             }`}
                           >
                             {recentAccounts.length} บัญชี
@@ -1136,7 +1136,7 @@ export function UserAuthView({
                           </p>
                           <p
                             className={`text-[12px] leading-[17px] max-w-[260px] mb-4 ${
-                              isLight ? "text-slate-500" : "text-[#999999]"
+                              isLight ? "text-slate-500" : "text-[var(--text-muted)]"
                             }`}
                             style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                           >
@@ -1191,20 +1191,16 @@ export function UserAuthView({
                                   className={`p-3 sm:p-3.5 rounded-xl border flex items-center justify-between transition-all cursor-pointer group relative ${
                                     isLight
                                       ? "bg-slate-50 hover:bg-white hover:border-slate-400 hover:shadow-md border-slate-200 shadow-sm"
-                                      : "bg-[#222222] hover:bg-[#282828] hover:border-white/50 hover:shadow-md border-[#383838]"
+                                      : "bg-[#222222] hover:bg-[var(--cards)] hover:border-white/50 hover:shadow-md border-[#383838]"
                                   }`}
                                 >
                                   <div className="flex items-center gap-3 min-w-0 pr-2">
-                                    {/* Avatar Initials */}
-                                    <div
-                                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold text-[14px] shadow-sm ${
-                                        isLight
-                                          ? "bg-slate-900 text-white"
-                                          : "bg-white text-slate-950 font-extrabold"
-                                      }`}
-                                    >
-                                      {(acc.first_name || acc.username).charAt(0)}
-                                    </div>
+                                    <RecentAccountAvatar
+                                      avatarUrl={acc.avatar_url}
+                                      name={fullName}
+                                      initial={(acc.first_name || acc.username).charAt(0)}
+                                      isLight={isLight}
+                                    />
 
                                     <div className="text-left min-w-0">
                                       {/* 1. Full Name (ชื่อ - นามสกุล) */}
@@ -1213,7 +1209,7 @@ export function UserAuthView({
                                       </div>
 
                                       {/* 2. @username & Department (แผนก) */}
-                                      <div className="flex items-center gap-1.5 text-[11.5px] text-slate-500 dark:text-[#999999] mt-0.5 truncate">
+                                      <div className="flex items-center gap-1.5 text-[11.5px] text-slate-500 dark:text-[var(--text-muted)] mt-0.5 truncate">
                                         <span className={`font-semibold ${isLight ? "text-slate-700" : "text-slate-300"}`}>
                                           @{acc.username}
                                         </span>
@@ -1224,7 +1220,7 @@ export function UserAuthView({
                                       </div>
 
                                       {/* 3. Real Last Login Time (เวลาเข้าใช้งานล่าสุดจริง) */}
-                                      <div className="flex items-center gap-1 text-[11px] text-slate-400 dark:text-[#888888] mt-0.5">
+                                      <div className="flex items-center gap-1 text-[11px] text-slate-400 dark:text-[var(--text-muted)] mt-0.5">
                                         <Clock size={11.5} className="text-slate-400 shrink-0" />
                                         <span>
                                           {lang === "TH" ? "เข้าใช้งานล่าสุด:" : "Active:"}{" "}
@@ -1243,8 +1239,8 @@ export function UserAuthView({
                                     onClick={(e) => removeRecentAccount(e, acc.username)}
                                     className={`p-2 rounded-lg transition-all shrink-0 cursor-pointer ${
                                       isLight
-                                        ? "text-slate-400 hover:text-red-500 hover:bg-red-50"
-                                        : "text-[#888888] hover:text-red-400 hover:bg-red-500/10"
+                                        ? "text-slate-400 hover:text-[var(--status-danger-text)] hover:bg-red-50"
+                                        : "text-[var(--text-muted)] hover:text-[var(--status-danger-text)] hover:bg-red-500/10"
                                     }`}
                                   >
                                     <X size={16} />
@@ -1266,7 +1262,7 @@ export function UserAuthView({
                           className={`w-full flex items-center justify-center gap-2 h-10.5 rounded-xl border text-[12.5px] font-semibold transition-all cursor-pointer ${
                             isLight
                               ? "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700"
-                              : "bg-[#222222] hover:bg-[#2B2B2B] border-[#444444] text-white"
+                              : "bg-[#222222] hover:bg-[var(--canvas)] border-[#444444] text-white"
                           }`}
                         >
                           <ArrowLeft size={14} />
@@ -1306,7 +1302,7 @@ export function UserAuthView({
                                 ? `${selectedRecentUser.first_name} ${selectedRecentUser.last_name}`
                                 : selectedRecentUser.username}
                             </div>
-                            <div className={`text-[11px] font-medium truncate ${isLight ? "text-slate-500" : "text-[#A1A1AA]"}`}>
+                            <div className={`text-[11px] font-medium truncate ${isLight ? "text-slate-500" : "text-[var(--text-muted)]"}`}>
                               @{selectedRecentUser.username}{selectedRecentUser.department ? ` • ${selectedRecentUser.department}` : ""}
                             </div>
                           </div>
@@ -1322,7 +1318,7 @@ export function UserAuthView({
                             setErrorMessage(null);
                           }}
                           className={`text-[11.5px] font-semibold underline px-2 py-1 shrink-0 transition-colors cursor-pointer ${
-                            isLight ? "text-slate-500 hover:text-slate-800" : "text-[#999999] hover:text-white"
+                            isLight ? "text-slate-500 hover:text-slate-800" : "text-[var(--text-muted)] hover:text-white"
                           }`}
                         >
                           {lang === "TH" ? "เปลี่ยนผู้ใช้" : "Change"}
@@ -1334,7 +1330,7 @@ export function UserAuthView({
                         <h3 className={`text-[17px] font-bold ${isLight ? "text-[#222222]" : "text-white"}`}>
                           {lang === "TH" ? "กรอกรหัส PIN เพื่อเข้าสู่ระบบ" : "Enter Security PIN"}
                         </h3>
-                        <p className={`text-[11.5px] mt-0.5 ${isLight ? "text-slate-500" : "text-[#999999]"}`}>
+                        <p className={`text-[11.5px] mt-0.5 ${isLight ? "text-slate-500" : "text-[var(--text-muted)]"}`}>
                           {lang === "TH"
                             ? "พิมพ์ผ่านแป้นพิมพ์ หรือ กดตัวเลขด้านล่าง"
                             : "Type with keyboard or tap numbers below"}
@@ -1354,7 +1350,7 @@ export function UserAuthView({
                                 exit={{ opacity: 0, x: 20 }}
                                 transition={{ duration: 0.2, ease: "easeOut" }}
                                 className={`w-full h-full rounded-full border px-4 flex items-center justify-center transition-all ${
-                                  isLight ? "bg-white border-zinc-300" : "bg-[#1E1E1E] border-zinc-700"
+                                  isLight ? "bg-white border-zinc-300" : "bg-[var(--input-bg)] border-zinc-700"
                                 }`}
                               >
                                 <div className="flex items-center justify-center gap-3 select-none">
@@ -1514,7 +1510,7 @@ export function UserAuthView({
                             setErrorMessage(null);
                           }}
                           className={`underline transition-colors cursor-pointer ${
-                            isLight ? "text-slate-600 hover:text-slate-950" : "text-[#999999] hover:text-white"
+                            isLight ? "text-slate-600 hover:text-slate-950" : "text-[var(--text-muted)] hover:text-white"
                           }`}
                         >
                           {lang === "TH" ? "เข้าสู่ระบบด้วยรหัสผ่านหลักแทน" : "Sign in with password instead"}
@@ -1548,10 +1544,10 @@ export function UserAuthView({
                           htmlFor="signup-firstName"
                           className={`text-[12px] font-medium leading-[16px] ${
                             errors.firstName
-                              ? "text-red-400 font-semibold"
+                              ? "text-[var(--status-danger-text)] font-semibold"
                               : isLight
-                              ? "text-[#2C2C2C]"
-                              : "text-[#A1A1AA]"
+                              ? "text-[#222222]"
+                              : "text-[var(--text-muted)]"
                           }`}
                           style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                         >
@@ -1566,10 +1562,10 @@ export function UserAuthView({
                             size={14}
                             className={
                               errors.firstName
-                                ? "text-red-400"
+                                ? "text-[var(--status-danger-text)]"
                                 : isLight
                                 ? "text-[#383838]"
-                                : "text-[#666666]"
+                                : "text-[var(--text-muted)]"
                             }
                           />
                           <input
@@ -1583,8 +1579,8 @@ export function UserAuthView({
                             placeholder={t.fullNamePlaceholder}
                             className={`w-full bg-transparent text-[13px] leading-[17px] outline-none ${
                               isLight
-                                ? "text-[#222222] placeholder-[#888888]"
-                                : "text-white placeholder-[#666666]"
+                                ? "text-[#222222] placeholder-[var(--text-muted)]"
+                                : "text-white placeholder-[var(--text-muted)]"
                             }`}
                             style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                           />
@@ -1596,10 +1592,10 @@ export function UserAuthView({
                           htmlFor="signup-lastName"
                           className={`text-[12px] font-medium leading-[16px] ${
                             errors.lastName
-                              ? "text-red-400 font-semibold"
+                              ? "text-[var(--status-danger-text)] font-semibold"
                               : isLight
-                              ? "text-[#2C2C2C]"
-                              : "text-[#A1A1AA]"
+                              ? "text-[#222222]"
+                              : "text-[var(--text-muted)]"
                           }`}
                           style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                         >
@@ -1614,10 +1610,10 @@ export function UserAuthView({
                             size={14}
                             className={
                               errors.lastName
-                                ? "text-red-400"
+                                ? "text-[var(--status-danger-text)]"
                                 : isLight
                                 ? "text-[#383838]"
-                                : "text-[#666666]"
+                                : "text-[var(--text-muted)]"
                             }
                           />
                           <input
@@ -1631,8 +1627,8 @@ export function UserAuthView({
                             placeholder={t.lastNamePlaceholder}
                             className={`w-full bg-transparent text-[13px] leading-[17px] outline-none ${
                               isLight
-                                ? "text-[#222222] placeholder-[#888888]"
-                                : "text-white placeholder-[#666666]"
+                                ? "text-[#222222] placeholder-[var(--text-muted)]"
+                                : "text-white placeholder-[var(--text-muted)]"
                             }`}
                             style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                           />
@@ -1645,10 +1641,10 @@ export function UserAuthView({
                           htmlFor="signup-username"
                           className={`text-[12px] font-medium leading-[16px] ${
                             errors.username
-                              ? "text-red-400 font-semibold"
+                              ? "text-[var(--status-danger-text)] font-semibold"
                               : isLight
-                              ? "text-[#2C2C2C]"
-                              : "text-[#A1A1AA]"
+                              ? "text-[#222222]"
+                              : "text-[var(--text-muted)]"
                           }`}
                           style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                         >
@@ -1663,10 +1659,10 @@ export function UserAuthView({
                             size={14}
                             className={
                               errors.username
-                                ? "text-red-400"
+                                ? "text-[var(--status-danger-text)]"
                                 : isLight
                                 ? "text-[#383838]"
-                                : "text-[#666666]"
+                                : "text-[var(--text-muted)]"
                             }
                           />
                           <input
@@ -1680,8 +1676,8 @@ export function UserAuthView({
                             placeholder={t.usernamePlaceholder}
                             className={`w-full bg-transparent text-[13px] leading-[17px] outline-none ${
                               isLight
-                                ? "text-[#222222] placeholder-[#888888]"
-                                : "text-white placeholder-[#666666]"
+                                ? "text-[#222222] placeholder-[var(--text-muted)]"
+                                : "text-white placeholder-[var(--text-muted)]"
                             }`}
                             style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                           />
@@ -1695,10 +1691,10 @@ export function UserAuthView({
                             htmlFor="signup-birthDate"
                             className={`text-[12px] font-medium leading-[16px] ${
                               errors.birthDate
-                                ? "text-red-400 font-semibold"
+                                ? "text-[var(--status-danger-text)] font-semibold"
                                 : isLight
-                                ? "text-[#2C2C2C]"
-                                : "text-[#A1A1AA]"
+                                ? "text-[#222222]"
+                                : "text-[var(--text-muted)]"
                             }`}
                             style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                           >
@@ -1707,10 +1703,10 @@ export function UserAuthView({
                           <span
                             className={`text-[10px] font-semibold tracking-tight ${
                               errors.birthDate
-                                ? "text-red-400"
+                                ? "text-[var(--status-danger-text)]"
                                 : isLight
                                 ? "text-slate-500"
-                                : "text-[#888888]"
+                                : "text-[var(--text-muted)]"
                             }`}
                           >
                             {lang === "TH" ? "(ขั้นต่ำ 18 ปีบริบูรณ์)" : "(18+ Required)"}
@@ -1734,10 +1730,10 @@ export function UserAuthView({
                           htmlFor="signup-email"
                           className={`text-[12px] font-medium leading-[16px] ${
                             errors.email
-                              ? "text-red-400 font-semibold"
+                              ? "text-[var(--status-danger-text)] font-semibold"
                               : isLight
-                              ? "text-[#2C2C2C]"
-                              : "text-[#A1A1AA]"
+                              ? "text-[#222222]"
+                              : "text-[var(--text-muted)]"
                           }`}
                           style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                         >
@@ -1752,10 +1748,10 @@ export function UserAuthView({
                             size={14}
                             className={
                               errors.email
-                                ? "text-red-400"
+                                ? "text-[var(--status-danger-text)]"
                                 : isLight
                                 ? "text-[#383838]"
-                                : "text-[#666666]"
+                                : "text-[var(--text-muted)]"
                             }
                           />
                           <input
@@ -1769,8 +1765,8 @@ export function UserAuthView({
                             placeholder={t.corporateEmailPlaceholder}
                             className={`w-full bg-transparent text-[13px] leading-[17px] outline-none ${
                               isLight
-                                ? "text-[#222222] placeholder-[#888888]"
-                                : "text-white placeholder-[#666666]"
+                                ? "text-[#222222] placeholder-[var(--text-muted)]"
+                                : "text-white placeholder-[var(--text-muted)]"
                             }`}
                             style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                           />
@@ -1782,10 +1778,10 @@ export function UserAuthView({
                           htmlFor="signup-phone"
                           className={`text-[12px] font-medium leading-[16px] ${
                             errors.phone
-                              ? "text-red-400 font-semibold"
+                              ? "text-[var(--status-danger-text)] font-semibold"
                               : isLight
-                              ? "text-[#2C2C2C]"
-                              : "text-[#A1A1AA]"
+                              ? "text-[#222222]"
+                              : "text-[var(--text-muted)]"
                           }`}
                           style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                         >
@@ -1800,10 +1796,10 @@ export function UserAuthView({
                             size={14}
                             className={
                               errors.phone
-                                ? "text-red-400"
+                                ? "text-[var(--status-danger-text)]"
                                 : isLight
                                 ? "text-[#383838]"
-                                : "text-[#666666]"
+                                : "text-[var(--text-muted)]"
                             }
                           />
                           <input
@@ -1817,8 +1813,8 @@ export function UserAuthView({
                             placeholder={t.phonePlaceholder}
                             className={`w-full bg-transparent text-[13px] leading-[17px] outline-none ${
                               isLight
-                                ? "text-[#222222] placeholder-[#888888]"
-                                : "text-white placeholder-[#666666]"
+                                ? "text-[#222222] placeholder-[var(--text-muted)]"
+                                : "text-white placeholder-[var(--text-muted)]"
                             }`}
                             style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                           />
@@ -1831,10 +1827,10 @@ export function UserAuthView({
                             htmlFor="signup-password"
                             className={`text-[12px] font-medium leading-[16px] ${
                               errors.password
-                                ? "text-red-400 font-semibold"
+                                ? "text-[var(--status-danger-text)] font-semibold"
                                 : isLight
-                                ? "text-[#2C2C2C]"
-                                : "text-[#A1A1AA]"
+                                ? "text-[#222222]"
+                                : "text-[var(--text-muted)]"
                             }`}
                             style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                           >
@@ -1864,8 +1860,8 @@ export function UserAuthView({
                             placeholder={t.passwordPlaceholder}
                             className={`w-full bg-transparent text-[13px] leading-[17px] outline-none ${
                               isLight
-                                ? "text-[#222222] placeholder-[#888888]"
-                                : "text-white placeholder-[#666666]"
+                                ? "text-[#222222] placeholder-[var(--text-muted)]"
+                                : "text-white placeholder-[var(--text-muted)]"
                             }`}
                             style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                           />
@@ -1873,7 +1869,7 @@ export function UserAuthView({
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
                             className={`flex items-center justify-center transition-colors ${
-                              isLight ? "text-[#383838] hover:text-[#222222]" : "text-[#777777] hover:text-white"
+                              isLight ? "text-[#383838] hover:text-[#222222]" : "text-[var(--text-muted)] hover:text-white"
                             }`}
                           >
                             {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -1889,7 +1885,7 @@ export function UserAuthView({
                                   ? passwordStrength.color
                                   : isLight
                                   ? "bg-slate-200"
-                                  : "bg-[#333333]"
+                                  : "bg-[var(--cards)]"
                               }`}
                             />
                           ))}
@@ -1898,10 +1894,10 @@ export function UserAuthView({
                         <p
                           className={`text-[10px] leading-[13px] pt-1 select-none ${
                             errors.password
-                              ? "text-red-400 font-medium"
+                              ? "text-[var(--status-danger-text)] font-medium"
                               : isLight
                               ? "text-[#383838]"
-                              : "text-[#999999]"
+                              : "text-[var(--text-muted)]"
                           }`}
                           style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                         >
@@ -1915,10 +1911,10 @@ export function UserAuthView({
                             htmlFor="signup-confirmPassword"
                             className={`text-[12px] font-medium leading-[16px] ${
                               errors.confirmPassword
-                                ? "text-red-400 font-semibold"
+                                ? "text-[var(--status-danger-text)] font-semibold"
                                 : isLight
-                                ? "text-[#2C2C2C]"
-                                : "text-[#A1A1AA]"
+                                ? "text-[#222222]"
+                                : "text-[var(--text-muted)]"
                             }`}
                             style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                           >
@@ -1928,10 +1924,10 @@ export function UserAuthView({
                             <span
                               className={`text-[10px] font-bold tracking-wider uppercase transition-all duration-300 ${
                                 password === confirmPassword
-                                  ? "text-[#2EC4B6] font-bold"
+                                  ? "text-[var(--status-success-text)] font-bold"
                                   : isLight
-                                  ? "text-[#E74C3C] font-bold"
-                                  : "text-[#E71D36] font-semibold"
+                                  ? "text-[var(--status-danger-text)] font-bold"
+                                  : "text-[var(--status-danger-text)] font-semibold"
                               }`}
                             >
                               {password === confirmPassword ? t.match : t.mismatch}
@@ -1954,8 +1950,8 @@ export function UserAuthView({
                             placeholder={t.confirmPasswordPlaceholder}
                             className={`w-full bg-transparent text-[13px] leading-[17px] outline-none ${
                               isLight
-                                ? "text-[#222222] placeholder-[#888888]"
-                                : "text-white placeholder-[#666666]"
+                                ? "text-[#222222] placeholder-[var(--text-muted)]"
+                                : "text-white placeholder-[var(--text-muted)]"
                             }`}
                             style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                           />
@@ -1963,7 +1959,7 @@ export function UserAuthView({
                             type="button"
                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                             className={`flex items-center justify-center transition-colors ${
-                              isLight ? "text-[#383838] hover:text-[#222222]" : "text-[#777777] hover:text-white"
+                              isLight ? "text-[#383838] hover:text-[#222222]" : "text-[var(--text-muted)] hover:text-white"
                             }`}
                           >
                             {showConfirmPassword ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -1981,7 +1977,7 @@ export function UserAuthView({
                         className={`flex h-[46px] w-full items-center justify-center gap-2 rounded-[14px] text-[14.5px] font-semibold leading-[20px] border transition-all duration-200 active:scale-98 disabled:opacity-50 shadow-sm cursor-pointer ${
                           isLight
                             ? "bg-[#222222] border-[#222222] text-white hover:bg-white hover:text-[#222222] hover:border-slate-300"
-                            : "bg-[#282828] border-[#444444] text-white hover:bg-white hover:text-slate-950 hover:border-white"
+                            : "bg-[var(--cards)] border-[#444444] text-white hover:bg-white hover:text-slate-950 hover:border-white"
                         }`}
                         style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                       >
@@ -1991,7 +1987,7 @@ export function UserAuthView({
                     </div>
 
                     <div className="flex items-center justify-center pt-2 text-[13px]">
-                      <span className={isLight ? "text-[#383838]" : "text-[#A1A1AA]"}>
+                      <span className={isLight ? "text-[#383838]" : "text-[var(--text-muted)]"}>
                         {t.alreadyRegistered}{" "}
                       </span>
                       <button
@@ -2020,7 +2016,7 @@ export function UserAuthView({
             className={`relative w-full max-w-[620px] rounded-[24px] border p-6 sm:p-8 shadow-lg transition-all duration-300 ${
               isLight
                 ? "bg-white border-slate-200 text-[#222222] shadow-slate-400/25"
-                : "bg-[#2A2A2A] border-[#444444] text-white shadow-black/50"
+                : "bg-[#383838] border-[#444444] text-white shadow-black/50"
             }`}
           >
             <div className="flex items-center justify-between pb-4 border-b border-inherit">
@@ -2040,7 +2036,7 @@ export function UserAuthView({
                     {t.modalTitle}
                   </h3>
                   <p
-                    className={`text-[12px] ${isLight ? "text-[#383838]" : "text-[#A1A1AA]"}`}
+                    className={`text-[12px] ${isLight ? "text-[#383838]" : "text-[var(--text-muted)]"}`}
                     style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
                   >
                     {t.modalSubtitle}
@@ -2055,7 +2051,7 @@ export function UserAuthView({
                 className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                   isLight
                     ? "border-slate-200 text-[#383838] hover:bg-slate-100"
-                    : "border-[#444444] text-[#A1A1AA] hover:bg-white/10 hover:text-white"
+                    : "border-[#444444] text-[var(--text-muted)] hover:bg-white/10 hover:text-white"
                 }`}
               >
                 <X size={16} />
@@ -2065,8 +2061,8 @@ export function UserAuthView({
             <div
               className={`my-4 min-h-[280px] max-h-[380px] sm:max-h-[420px] overflow-y-auto rounded-xl border p-5 space-y-4 text-[13px] leading-[20px] ${
                 isLight
-                  ? "bg-slate-50 border-slate-200 text-[#2C2C2C]"
-                  : "bg-[#1E1E1E] border-[#3E3E3E] text-[#D4D4D8]"
+                  ? "bg-slate-50 border-slate-200 text-[#222222]"
+                  : "bg-[var(--input-bg)] border-[#444444] text-[var(--text-secondary)]"
               }`}
               style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
             >
@@ -2107,7 +2103,7 @@ export function UserAuthView({
                         : "bg-white border-white text-slate-950"
                       : isLight
                       ? "border-slate-300 bg-white group-hover:border-slate-400"
-                      : "border-[#555555] bg-transparent group-hover:border-white/60"
+                      : "border-[#444444] bg-transparent group-hover:border-white/60"
                   }`}
                 >
                   {agreedInModal && <Check size={12} strokeWidth={3} />}
@@ -2134,7 +2130,7 @@ export function UserAuthView({
                 className={`px-4 py-2 rounded-xl text-[13px] font-medium border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                   isLight
                     ? "border-slate-200 text-[#383838] hover:bg-slate-100"
-                    : "border-[#444444] text-[#A1A1AA] hover:bg-white/10 hover:text-white"
+                    : "border-[#444444] text-[var(--text-muted)] hover:bg-white/10 hover:text-white"
                 }`}
               >
                 {t.cancelBtn}
@@ -2151,7 +2147,7 @@ export function UserAuthView({
                       : "bg-white border-white text-slate-950 hover:bg-white/90 cursor-pointer shadow-md active:scale-95"
                     : isLight
                     ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-50"
-                    : "bg-[#202020] border-[#3E3E3E] text-[#666666] cursor-not-allowed opacity-50"
+                    : "bg-[#222222] border-[#444444] text-[var(--text-muted)] cursor-not-allowed opacity-50"
                 }`}
               >
                 {isRegistering ? (
@@ -2178,13 +2174,13 @@ export function UserAuthView({
             className={`relative flex flex-col items-center justify-center w-full max-w-[390px] rounded-[24px] border p-7 sm:p-8 shadow-lg transition-all duration-300 text-center animate-in zoom-in-95 duration-200 overflow-hidden ${
               isLight
                 ? "bg-white border-slate-200 text-[#222222] shadow-slate-400/25"
-                : "bg-[#242424] border-[#3E3E3E] text-white shadow-black/50"
+                : "bg-[var(--input-bg)] border-[#444444] text-white shadow-black/50"
             }`}
           >
             <h3
               className={`text-[20px] font-extrabold tracking-tight mb-2 transition-colors duration-300 ${
                 isModalSuccess
-                  ? "text-[#2EC4B6] font-extrabold"
+                  ? "text-[var(--status-success-text)] font-extrabold"
                   : isLight
                   ? "text-[#222222]"
                   : "text-white"
@@ -2202,7 +2198,7 @@ export function UserAuthView({
 
             <p
               className={`text-[13px] leading-[19px] max-w-[300px] mb-6 ${
-                isLight ? "text-[#555555]" : "text-[#A1A1AA]"
+                isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"
               }`}
               style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
             >
@@ -2243,7 +2239,7 @@ export function UserAuthView({
             ) : (
               <div className="w-full h-3 bg-slate-200/80 dark:bg-white/10 rounded-full overflow-hidden p-0.5 relative my-3">
                 <div
-                  className="h-full w-full rounded-full bg-[#2EC4B6] shadow-[0_0_12px_rgba(46,196,182,0.5)]"
+                  className="h-full w-full rounded-full bg-[var(--status-success)] shadow-[0_0_12px_color-mix(in_srgb,var(--status-success)_50%,transparent)]"
                 />
               </div>
             )}
@@ -2289,11 +2285,11 @@ export function UserAuthView({
             className={`relative flex flex-col items-center w-full max-w-[400px] rounded-[24px] border p-7 sm:p-8 shadow-lg transition-all duration-300 text-center animate-in zoom-in-95 duration-200 ${
               isLight
                 ? "bg-white border-slate-200 text-[#222222] shadow-slate-400/25"
-                : "bg-[#242424] border-[#404040] text-white shadow-black/50"
+                : "bg-[var(--input-bg)] border-[#444444] text-white shadow-black/50"
             }`}
           >
             <h3
-              className="text-[19px] font-extrabold tracking-tight mb-2 text-red-500"
+              className="text-[19px] font-extrabold tracking-tight mb-2 text-[var(--status-danger-text)]"
               style={{ fontFamily: "var(--font-outfit), sans-serif" }}
             >
               {errorModal.title}
@@ -2301,7 +2297,7 @@ export function UserAuthView({
 
             <p
               className={`text-[13px] leading-[19px] mb-6 px-1 ${
-                isLight ? "text-[#383838]" : "text-[#D4D4D8]"
+                isLight ? "text-[#383838]" : "text-[var(--text-secondary)]"
               }`}
               style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
             >
@@ -2336,12 +2332,12 @@ export function UserAuthView({
           <ShieldCheck
             size={15}
             className={`shrink-0 ${
-              isLight ? "text-[#2C2C2C]" : "text-[#E4E4E7]"
+              isLight ? "text-[#222222]" : "text-[#E4E4E7]"
             }`}
           />
           <p
             className={`text-[12px] font-normal leading-[16px] ${
-              isLight ? "text-[#383838]" : "text-[#888888]"
+              isLight ? "text-[#383838]" : "text-[var(--text-muted)]"
             }`}
             style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
           >
@@ -2353,7 +2349,7 @@ export function UserAuthView({
           className={`flex items-center gap-1 p-1 rounded-full border transition-all duration-300 shadow-sm select-none ${
             isLight
               ? "bg-white/90 border-slate-200 shadow-slate-200/50 backdrop-blur-sm"
-              : "bg-[#282828]/90 border-[#404040] shadow-black/40 backdrop-blur-sm"
+              : "bg-[var(--cards)]/90 border-[#444444] shadow-black/40 backdrop-blur-sm"
           }`}
         >
           <button
@@ -2405,6 +2401,43 @@ export function UserAuthView({
           </button>
         </div>
       </motion.footer>
+    </div>
+  );
+}
+
+function RecentAccountAvatar({
+  avatarUrl,
+  name,
+  initial,
+  isLight,
+}: {
+  avatarUrl?: string;
+  name: string;
+  initial: string;
+  isLight: boolean;
+}) {
+  const [imageFailed, setImageFailed] = useState(false);
+  useEffect(() => setImageFailed(false), [avatarUrl]);
+
+  return (
+    <div
+      className={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl font-bold text-[14px] shadow-sm ${
+        isLight
+          ? "bg-slate-900 text-white"
+          : "bg-white text-slate-950 font-extrabold"
+      }`}
+    >
+      {avatarUrl && !imageFailed ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={avatarUrl}
+          alt={`${name} profile`}
+          className="h-full w-full object-cover"
+          onError={() => setImageFailed(true)}
+        />
+      ) : (
+        initial
+      )}
     </div>
   );
 }

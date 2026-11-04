@@ -263,10 +263,10 @@ export default function AuditCategoryPage({ categoryId }: { categoryId: string }
             className={`relative flex items-center px-3 py-1.5 min-w-0 flex-1 rounded-[6px] border text-[13px] transition-colors ${
               isLight
                 ? "bg-white border-[#E4E4E7] text-[#222222]"
-                : "bg-[#383838] border-[#444444] text-[#F8FAFC]"
+                : "bg-[#383838] border-[#444444] text-[#F4F4F5]"
             }`}
           >
-            <Search size={14} className="text-[#A1A1AA] shrink-0 mr-2" aria-hidden="true" />
+            <Search size={14} className="text-[var(--text-muted)] shrink-0 mr-2" aria-hidden="true" />
             <input
               type="text"
               name="q"
@@ -274,7 +274,7 @@ export default function AuditCategoryPage({ categoryId }: { categoryId: string }
               onChange={(e) => setSearchInput(e.target.value)}
               aria-label={isThai ? "ค้นหาชื่อ อีเมล หรือรหัสรายการ" : "Search name, email, or record ID"}
               placeholder={isThai ? "ค้นหาชื่อ อีเมล หรือรหัสรายการ" : "Search name, email, or record ID"}
-              className="w-full bg-transparent border-none outline-none text-[13px] placeholder:text-[#A1A1AA] pr-6"
+              className="w-full bg-transparent border-none outline-none text-[13px] placeholder:text-[var(--text-muted)] pr-6"
             />
             {searchInput && (
               <button
@@ -408,7 +408,7 @@ export default function AuditCategoryPage({ categoryId }: { categoryId: string }
           </div>
       </div>
 
-      {error && <div role="alert" className="rounded-xl border border-[#E74C3C]/30 bg-[#E74C3C]/10 px-4 py-3 text-sm text-[#E74C3C]">{error}</div>}
+      {error && <div role="alert" className="rounded-xl border border-[var(--status-danger)]/30 bg-[var(--status-danger)]/10 px-4 py-3 text-sm text-[var(--status-danger-badge-text)]">{error}</div>}
       <div className={dataTableFrameClassName(isLight)}>
         <DataTable
           columns={columns}
@@ -456,7 +456,7 @@ function AuditDetails({
         type="button"
         aria-label={isThai ? "ดูรายละเอียดก่อนและหลัง" : "View before and after"}
         onClick={() => dialogRef.current?.showModal()}
-        className="mx-auto inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1] dark:hover:bg-white/10"
+        className="mx-auto inline-flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--status-info)] dark:hover:bg-white/10"
       >
         <Ellipsis className={`h-4 w-4 ${isLight ? "text-black" : "text-white"}`} aria-hidden="true" />
       </button>

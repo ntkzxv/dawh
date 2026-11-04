@@ -36,6 +36,10 @@ export interface DropdownMenuProps extends UseAccountMenuReturn {
   onNavigate?: (target: string) => void;
   /** Override /settings path (used by SidebarMain's settingsPath prop) */
   settingsPath?: string;
+  /** Use the light-theme danger color for logout in sidebar menus. */
+  redLogoutInLight?: boolean;
+  /** Close the menu after changing a preference. */
+  closeOnPreferenceChange?: boolean;
 }
 
 // ─────────────────────────────────────────────────────────
@@ -47,6 +51,8 @@ export default function DropdownMenu({
   variant = "popup",
   onNavigate,
   settingsPath,
+  redLogoutInLight = false,
+  closeOnPreferenceChange = false,
   // ── from useAccountMenu ──
   profile,
   fullName,
@@ -71,24 +77,22 @@ export default function DropdownMenu({
 
   const iconSize = variant === "inline" ? 16 : 15;
   const itemPad = variant === "inline" ? "px-3 py-2.5" : "px-3.5 py-2.5";
-  const itemFont = variant === "inline" ? "text-[13.5px] font-semibold" : "text-[12px] font-semibold";
-  const utilPad = variant === "inline" ? "px-3 py-2.5" : "px-3.5 py-2";
+  const utilPad = itemPad;
   const utilFont = variant === "inline" ? "text-[13.5px] font-medium" : "text-[12px] font-medium";
+  const itemFont = utilFont;
 
   // Shared class builders
   const activeItemCls = isLight
-    ? "bg-[#F4F4F5] text-[#18181B] cursor-default"
+    ? "bg-[#F1F5F9] text-[#222222] cursor-default"
     : "bg-white/10 text-[#FFFFFF] cursor-default";
 
   const navItemCls = isLight
-    ? "text-slate-800 hover:bg-[#F4F4F5] hover:text-slate-950 cursor-pointer"
+    ? "text-slate-800 hover:bg-[#F1F5F9] hover:text-slate-950 cursor-pointer"
     : "text-[#F4F4F5] hover:bg-white/10 hover:text-[#FFFFFF] cursor-pointer";
 
   const utilItemCls = isLight
-    ? "text-[#2C2C2C] hover:bg-[#F4F4F5] hover:text-[#222222] cursor-pointer"
+    ? "text-[#222222] hover:bg-[#F1F5F9] hover:text-[#222222] cursor-pointer"
     : "text-[#F4F4F5] hover:bg-white/10 hover:text-[#FFFFFF] cursor-pointer";
-
-  const dividerCls = `border-t ${isLight ? "border-slate-200" : "border-[#383838]"}`;
 
   // Navigate helper — closes dropdown then calls guarded navigate
   const goTo = (target: string, path: string) => {
@@ -127,13 +131,13 @@ export default function DropdownMenu({
 
   return (
     <>
-      <div className="space-y-1">
+      <div className="flex flex-col gap-1">
         {/* ── Profile header card (popup only) ── */}
         {variant === "popup" && (
           <>
             <div
               onClick={() => goTo("account", "/account")}
-              className="group px-3 py-3 rounded-xl mb-2 flex items-center justify-between gap-3 cursor-pointer select-none"
+              className="group px-3 py-3 rounded-xl flex items-center justify-between gap-3 cursor-pointer select-none"
               role="button"
               tabIndex={0}
             >
@@ -151,7 +155,7 @@ export default function DropdownMenu({
                     <div className={`h-[14px] w-[90px] rounded-md animate-pulse my-0.5 ${isLight ? "bg-slate-200" : "bg-[#383838]"}`} />
                   )}
                   {mounted && (isProfileLoaded || fullName) ? (
-                    <span className={`text-[11px] truncate ${isLight ? "text-[#666666]" : "text-[#E4E4E7]"}`} suppressHydrationWarning>
+                    <span className={`text-[11px] truncate ${isLight ? "text-[var(--text-muted)]" : "text-[#E4E4E7]"}`} suppressHydrationWarning>
                       {accountSubtitle}
                     </span>
                   ) : !isProfileLoaded && !fullName ? (
@@ -163,7 +167,12 @@ export default function DropdownMenu({
                 <MoreVertical size={16} />
               </div>
             </div>
-            <div className={`mx-1 mb-1.5 ${dividerCls}`} />
+            <div
+              aria-hidden="true"
+              className={`-mx-2 mb-[5px] border-t ${
+                isLight ? "border-slate-200" : "border-[#737373]"
+              }`}
+            />
           </>
         )}
 
@@ -208,13 +217,13 @@ export default function DropdownMenu({
           </button>
         )}
 
-        {/* ── Divider ── */}
-        <div className={`my-1 ${dividerCls}`} />
-
         {/* ── Theme ── */}
         <button
           type="button"
-          onClick={toggleTheme}
+          onClick={() => {
+            toggleTheme();
+            if (closeOnPreferenceChange) onClose();
+          }}
           className={`w-full flex items-center gap-3 ${utilPad} rounded-xl ${utilFont} transition-all text-left ${utilItemCls}`}
         >
           {isLight ? (
@@ -232,8 +241,11 @@ export default function DropdownMenu({
         {/* ── Language ── */}
         <button
           type="button"
-          onClick={toggleLanguage}
-          className={`w-full flex items-center gap-3 ${utilPad} rounded-xl ${utilFont} transition-all text-left ${isLight ? "text-slate-800 hover:bg-[#F4F4F5] hover:text-slate-950 cursor-pointer" : "text-[#F4F4F5] hover:bg-white/10 hover:text-[#FFFFFF] cursor-pointer"}`}
+          onClick={() => {
+            toggleLanguage();
+            if (closeOnPreferenceChange) onClose();
+          }}
+          className={`w-full flex items-center gap-3 ${utilPad} rounded-xl ${utilFont} transition-all text-left ${isLight ? "text-slate-800 hover:bg-[#F1F5F9] hover:text-slate-950 cursor-pointer" : "text-[#F4F4F5] hover:bg-white/10 hover:text-[#FFFFFF] cursor-pointer"}`}
         >
           <Languages
             size={iconSize}
@@ -246,7 +258,7 @@ export default function DropdownMenu({
         <button
           type="button"
           onClick={onSettings}
-          className={`w-full flex items-center gap-3 ${utilPad} rounded-xl ${utilFont} transition-all text-left ${isLight ? "text-slate-800 hover:bg-[#F4F4F5] hover:text-slate-950 cursor-pointer" : "text-[#F4F4F5] hover:text-[#FFFFFF] hover:bg-white/10 cursor-pointer"}`}
+          className={`w-full flex items-center gap-3 ${utilPad} rounded-xl ${utilFont} transition-all text-left ${isLight ? "text-slate-800 hover:bg-[#F1F5F9] hover:text-slate-950 cursor-pointer" : "text-[#F4F4F5] hover:text-[#FFFFFF] hover:bg-white/10 cursor-pointer"}`}
         >
           <Settings
             size={iconSize}
@@ -262,7 +274,7 @@ export default function DropdownMenu({
             onClose();
             await handleLogout();
           }}
-          className={`w-full flex items-center gap-3 ${utilPad} rounded-xl ${utilFont} text-red-400 hover:text-red-500 hover:bg-rose-500/10 transition-all text-left cursor-pointer`}
+          className={`w-full flex items-center gap-3 ${utilPad} rounded-xl ${utilFont} transition-all text-left cursor-pointer ${isLight && redLogoutInLight ? "text-[#E11D48] hover:text-[#BE123C] hover:bg-rose-500/10" : "text-red-400 hover:text-red-500 hover:bg-rose-500/10"}`}
         >
           <LogOut size={iconSize} className="shrink-0" />
           <span className="truncate">{isThai ? "ออกจากระบบ" : "Sign Out"}</span>

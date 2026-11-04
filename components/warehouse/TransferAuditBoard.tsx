@@ -78,7 +78,7 @@ export default function TransferAuditBoard() {
       render: (item) => (
         <div className="flex min-w-52 items-center gap-2">
           <span className="truncate">{item.source_warehouse_name}</span>
-          <ArrowLeftRight className="shrink-0 text-[#6366F1]" size={14} aria-hidden="true" />
+          <ArrowLeftRight className="shrink-0 text-[var(--status-info)]" size={14} aria-hidden="true" />
           <span className="truncate">{item.destination_warehouse_name}</span>
         </div>
       ),
@@ -112,7 +112,7 @@ export default function TransferAuditBoard() {
     >
       {pageLoading ? <TransferAuditRouteSkeleton /> : (
       <main className="mx-auto w-full max-w-[1600px] space-y-6 p-4 pb-10 sm:p-8">
-        <p className={`max-w-2xl text-sm ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
+        <p className={`max-w-2xl text-sm ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}>
           {isThai
             ? "ติดตามสถานะรายการโอนและตรวจสอบประวัติการลงรายการสต็อกจากข้อมูลล่าสุด"
             : "Track transfer status and review recent stock posting activity."}
@@ -175,7 +175,7 @@ export default function TransferAuditBoard() {
                   setDraftToDate(toDate);
                   setDateFilterOpen((open) => !open);
                 }}
-                className={`inline-flex h-10 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 ${isLight ? "border-[#D4D4D8] bg-white text-[#222222] hover:bg-[#F4F4F5]" : "border-[#555555] bg-[#383838] text-white hover:bg-[#444444]"}`}
+                className={`inline-flex h-10 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 ${isLight ? "border-[#737D88] bg-white text-[#222222] hover:bg-[#F1F5F9]" : "border-[#444444] bg-[#383838] text-white hover:bg-[#444444]"}`}
               >
                 <CalendarDays size={16} aria-hidden="true" />
                 {fromDate || toDate
@@ -266,7 +266,7 @@ export default function TransferAuditBoard() {
 function TransferStatus({ status, isThai }: { status: StockTransfer["status"]; isThai: boolean }) {
   const completed = status === "COMPLETED";
   return (
-    <span className={`inline-flex whitespace-nowrap rounded-md border px-2 py-1 text-[11px] font-semibold ${completed ? "border-[#2EC4B6]/30 bg-[#2EC4B6]/10 text-[#2EC4B6]" : "border-[#FF9F1C]/30 bg-[#FF9F1C]/10 text-[#FF9F1C]"}`}>
+    <span className={`inline-flex whitespace-nowrap rounded-md border px-2 py-1 text-[11px] font-semibold ${completed ? "border-[var(--status-success)]/30 bg-[var(--status-success)]/10 text-[var(--status-success-badge-text)]" : "border-[var(--status-warning)]/30 bg-[var(--status-warning)]/10 text-[var(--status-warning-badge-text)]"}`}>
       {completed ? (isThai ? "เสร็จสิ้น" : "Completed") : (isThai ? "กลับรายการ" : "Reversed")}
     </span>
   );
@@ -289,18 +289,18 @@ function MetricCard({
   loading: boolean;
   tone?: "success" | "warning";
 }) {
-  const color = tone === "success" ? "text-[#2EC4B6]" : tone === "warning" ? "text-[#FF9F1C]" : isLight ? "text-[#383838]" : "text-[#E4E4E7]";
+  const color = tone === "success" ? "text-[var(--status-success-text)]" : tone === "warning" ? "text-[var(--status-warning-text)]" : isLight ? "text-[#383838]" : "text-[#E4E4E7]";
   return (
     <div className={`flex min-h-[132px] flex-col justify-between gap-4 rounded-xl border p-4 sm:p-5 ${isLight ? "border-[#E4E4E7] bg-white" : "border-[#444444] bg-[#383838]"}`}>
       <div className="flex items-center justify-between gap-3">
-        <span className={`text-sm ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>{label}</span>
-        <span className={`flex size-8 items-center justify-center rounded-lg ${isLight ? "bg-[#F4F4F5]" : "bg-white/5"} ${color}`}>{icon}</span>
+        <span className={`text-sm ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}>{label}</span>
+        <span className={`flex size-8 items-center justify-center rounded-lg ${isLight ? "bg-[#F1F5F9]" : "bg-white/5"} ${color}`}>{icon}</span>
       </div>
       <div>
         <div className={`font-mono text-3xl font-bold tabular-nums ${color}`}>
           {loading ? <SkeletonBox className="h-8 w-16 rounded" /> : Number(value ?? 0).toLocaleString(isLight ? "en-US" : "en-US")}
         </div>
-        <p className={`mt-1 text-xs ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>{detail}</p>
+        <p className={`mt-1 text-xs ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}>{detail}</p>
       </div>
     </div>
   );
@@ -319,10 +319,10 @@ function SectionHeading({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <span className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${isLight ? "bg-[#F4F4F5] text-[#383838]" : "bg-white/5 text-[#E4E4E7]"}`}>{icon}</span>
+      <span className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${isLight ? "bg-[#F1F5F9] text-[#383838]" : "bg-white/5 text-[#E4E4E7]"}`}>{icon}</span>
       <div className="min-w-0">
         <h2 className="font-semibold">{title}</h2>
-        <p className={`text-xs ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>{detail}</p>
+        <p className={`text-xs ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}>{detail}</p>
       </div>
     </div>
   );

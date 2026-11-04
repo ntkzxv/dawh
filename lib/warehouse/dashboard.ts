@@ -1,5 +1,6 @@
 import "server-only";
 
+import { ValidationError } from "@/lib/core/http/errors";
 import { timedPoolQuery } from "@/lib/core/http/request-timing";
 import { requireRole, type Actor } from "@/lib/warehouse/core";
 import { isGlobalRole } from "@/lib/contracts/warehouse-policy";
@@ -9,6 +10,8 @@ export type WarehouseDashboard = {
   summary: {
     activeProducts: number | null;
     stockedProducts: number | null;
+    totalInventoryValue: string | null;
+    unpricedStockProducts: number | null;
     receivedToday: number | null;
     issuedToday: number | null;
     lowStockProducts: number | null;
@@ -45,10 +48,31 @@ export type WarehouseDashboard = {
   }>;
 };
 
-export async function getWarehouseDashboard(actor: Actor): Promise<WarehouseDashboard> {
+function parseDashboardDateRange(search: URLSearchParams) {
+  const from = search.get("from")?.trim() || null;
+  const to = search.get("to")?.trim() || null;
+  const isValidDate = (value: string) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const parsed = new Date(`${value}T00:00:00.000Z`);
+    return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+  };
+
+  if (Boolean(from) !== Boolean(to)) {
+    throw new ValidationError({ dateRange: "Provide both from and to dates." });
+  }
+  if (from && !isValidDate(from)) throw new ValidationError({ from: "Use a valid YYYY-MM-DD date." });
+  if (to && !isValidDate(to)) throw new ValidationError({ to: "Use a valid YYYY-MM-DD date." });
+  if (from && to && from > to) {
+    throw new ValidationError({ dateRange: "The start date must not be after the end date." });
+  }
+  return { from, to };
+}
+
+export async function getWarehouseDashboard(actor: Actor, search = new URLSearchParams()): Promise<WarehouseDashboard> {
   requireRole(actor, ["ADMIN", "CEO", "MANAGER", "COUNTER_STAFF", "EMPLOYEE"]);
   const global = isGlobalRole(actor.role);
   const scope = [global, actor.branchIds];
+  const { from, to } = parseDashboardDateRange(search);
 
   const [summary, daily, monthly, categories, branches, lowStockItems, recentMovements] = await Promise.all([
     timedPoolQuery<WarehouseDashboard["summary"]>(`
@@ -63,6 +87,15 @@ export async function getWarehouseDashboard(actor: Actor): Promise<WarehouseDash
         (SELECT COUNT(*)::integer FROM app.products WHERE active) AS "activeProducts",
         CASE WHEN $3::boolean THEN NULL ELSE
           (SELECT COUNT(*)::integer FROM scoped_stock WHERE on_hand>0) END AS "stockedProducts",
+        CASE WHEN $3::boolean THEN NULL ELSE COALESCE((
+          SELECT SUM(ss.on_hand * p.cost)
+          FROM scoped_stock ss JOIN app.products p ON p.id=ss.product_id
+        ),0)::text END AS "totalInventoryValue",
+        CASE WHEN $3::boolean THEN NULL ELSE (
+          SELECT COUNT(*)::integer
+          FROM scoped_stock ss JOIN app.products p ON p.id=ss.product_id
+          WHERE ss.on_hand>0 AND p.cost IS NULL
+        ) END AS "unpricedStockProducts",
         CASE WHEN $3::boolean THEN NULL ELSE (
           SELECT COUNT(*)::integer FROM app.products p
           LEFT JOIN scoped_stock ss ON ss.product_id=p.id
@@ -101,15 +134,18 @@ export async function getWarehouseDashboard(actor: Actor): Promise<WarehouseDash
       JOIN app.inventory_documents doc ON doc.id=dl.document_id
       JOIN app.warehouses w ON w.id=sm.warehouse_id
       WHERE ($1::boolean OR w.branch_id=ANY($2::integer[]))
-        AND sm.occurred_at >= ((now() AT TIME ZONE 'Asia/Bangkok')::date::timestamp AT TIME ZONE 'Asia/Bangkok')
-        AND sm.occurred_at < (((now() AT TIME ZONE 'Asia/Bangkok')::date + 1)::timestamp AT TIME ZONE 'Asia/Bangkok')`, scope),
+        AND sm.occurred_at >= (COALESCE($3::date,(now() AT TIME ZONE 'Asia/Bangkok')::date)::timestamp AT TIME ZONE 'Asia/Bangkok')
+        AND sm.occurred_at < ((COALESCE($4::date,(now() AT TIME ZONE 'Asia/Bangkok')::date) + 1)::timestamp AT TIME ZONE 'Asia/Bangkok')`, [...scope, from, to]),
     timedPoolQuery<WarehouseDashboard["monthlyMovements"][number]>(`
-      WITH month_range AS (
+      WITH bounds AS (
+        SELECT COALESCE($3::date,(date_trunc('month',now() AT TIME ZONE 'Asia/Bangkok') - INTERVAL '11 months')::date) AS start_date,
+          COALESCE($4::date,(now() AT TIME ZONE 'Asia/Bangkok')::date) AS end_date
+      ), month_range AS (
         SELECT generate_series(
-          date_trunc('month',now() AT TIME ZONE 'Asia/Bangkok') - INTERVAL '11 months',
-          date_trunc('month',now() AT TIME ZONE 'Asia/Bangkok'),
+          date_trunc('month',bounds.start_date),
+          date_trunc('month',bounds.end_date),
           INTERVAL '1 month'
-        )::date AS month
+        )::date AS month FROM bounds
       ), movement_totals AS (
         SELECT date_trunc('month',sm.occurred_at AT TIME ZONE 'Asia/Bangkok')::date AS month,
           COUNT(DISTINCT doc.id) FILTER (WHERE doc.kind='GOODS_RECEIPT')::integer AS inbound,
@@ -118,14 +154,16 @@ export async function getWarehouseDashboard(actor: Actor): Promise<WarehouseDash
         JOIN app.inventory_document_lines dl ON dl.id=sm.document_line_id
         JOIN app.inventory_documents doc ON doc.id=dl.document_id
         JOIN app.warehouses w ON w.id=sm.warehouse_id
+        CROSS JOIN bounds
         WHERE ($1::boolean OR w.branch_id=ANY($2::integer[]))
-          AND sm.occurred_at >= ((date_trunc('month',now() AT TIME ZONE 'Asia/Bangkok') - INTERVAL '11 months') AT TIME ZONE 'Asia/Bangkok')
+          AND sm.occurred_at >= (bounds.start_date::timestamp AT TIME ZONE 'Asia/Bangkok')
+          AND sm.occurred_at < ((bounds.end_date + 1)::timestamp AT TIME ZONE 'Asia/Bangkok')
         GROUP BY 1
       )
       SELECT to_char(m.month,'YYYY-MM') AS month,
         COALESCE(t.inbound,0)::integer AS inbound, COALESCE(t.outbound,0)::integer AS outbound
       FROM month_range m LEFT JOIN movement_totals t ON t.month=m.month
-      ORDER BY m.month`, scope),
+      ORDER BY m.month`, [...scope, from, to]),
     timedPoolQuery<WarehouseDashboard["categoryMix"][number]>(`
       SELECT COALESCE(c.name,'ไม่ระบุหมวดหมู่') AS category, COUNT(*)::integer AS products
       FROM app.products p LEFT JOIN app.product_categories c ON c.id=p.category_id
@@ -169,8 +207,10 @@ export async function getWarehouseDashboard(actor: Actor): Promise<WarehouseDash
       JOIN app.products p ON p.id=sm.product_id
       LEFT JOIN app.app_users posted_user ON posted_user.id=doc.posted_by_id
       LEFT JOIN public."user" operator_user ON operator_user.id=posted_user.auth_user_id
-      WHERE $1::boolean OR w.branch_id=ANY($2::integer[])
-      ORDER BY sm.occurred_at DESC,sm.id DESC LIMIT ${WAREHOUSE_TABLE_PAGE_SIZE}`, scope),
+      WHERE ($1::boolean OR w.branch_id=ANY($2::integer[]))
+        AND ($3::date IS NULL OR sm.occurred_at >= ($3::date::timestamp AT TIME ZONE 'Asia/Bangkok'))
+        AND ($4::date IS NULL OR sm.occurred_at < (($4::date + 1)::timestamp AT TIME ZONE 'Asia/Bangkok'))
+      ORDER BY sm.occurred_at DESC,sm.id DESC LIMIT ${WAREHOUSE_TABLE_PAGE_SIZE}`, [...scope, from, to]),
   ]);
 
   const dailyTotals = daily.rows[0];

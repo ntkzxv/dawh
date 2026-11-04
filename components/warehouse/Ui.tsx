@@ -14,11 +14,11 @@ import {
 export const panel =
   "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-[#383838]";
 export const input =
-  "w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-white/20 dark:bg-[#292929] dark:text-white";
+  "w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 dark:border-white/20 dark:bg-[var(--cards)] dark:text-white";
 export const button =
-  "inline-flex items-center justify-center rounded-xl bg-[#222222] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#383838] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-[#222222] dark:hover:bg-[#F4F4F5]";
+  "inline-flex items-center justify-center rounded-xl bg-[#222222] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#383838] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-[#222222] dark:hover:bg-[#F1F5F9]";
 export const subtleButton =
-  "inline-flex items-center justify-center rounded-xl bg-[#F4F4F5] px-4 py-2 text-sm font-medium text-[#222222] transition hover:bg-[#E4E4E7] disabled:opacity-50 dark:bg-white/10 dark:text-white dark:hover:bg-white/15";
+  "inline-flex items-center justify-center rounded-xl bg-[#F1F5F9] px-4 py-2 text-sm font-medium text-[#222222] transition hover:bg-[#E4E4E7] disabled:opacity-50 dark:bg-white/10 dark:text-white dark:hover:bg-white/15";
 export { useRemote } from "@/hooks/useRemoteResource";
 
 export function message(error: unknown, isThai = true): string {
@@ -190,7 +190,7 @@ export function EvidenceLinks({
       {media.map((item) => (
         <a
           key={item.media_asset_id}
-          className="text-sm font-medium text-indigo-600 underline dark:text-indigo-300"
+          className="text-sm font-medium text-[var(--status-info)] underline dark:text-[var(--status-info)]"
           href={warehouseApi.evidenceUrl(item.media_asset_id)}
           target="_blank"
           rel="noreferrer"

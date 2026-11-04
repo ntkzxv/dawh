@@ -101,7 +101,7 @@ export default function BranchManagement() {
       align: "center",
       className: "w-32",
       render: (branch) => (
-        <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${branch.active === false ? "border-[#E4E4E7] bg-[#F4F4F5] text-slate-600 dark:border-[#555555] dark:bg-white/10 dark:text-[#E4E4E7]" : "border-[#2EC4B6]/30 bg-[#2EC4B6]/10 text-[#168D82] dark:text-[#2EC4B6]"}`}>
+        <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${branch.active === false ? "border-[#E4E4E7] bg-[#F1F5F9] text-slate-600 dark:border-[#444444] dark:bg-white/10 dark:text-[#E4E4E7]" : "border-[var(--status-success)]/30 bg-[var(--status-success)]/10 text-[var(--status-success-badge-text)] dark:text-[var(--status-success-badge-text)]"}`}>
           {branch.active === false ? (isThai ? "ปิดใช้งาน" : "Inactive") : (isThai ? "ใช้งาน" : "Active")}
         </span>
       ),

@@ -304,7 +304,7 @@ export default function Calendar({
       className={`select-none p-3.5 rounded-2xl border text-xs flex flex-col gap-3 transition-colors ${
         isLight
           ? "bg-white border-zinc-200 text-zinc-900 shadow-xl shadow-zinc-900/5"
-          : "bg-[#282828] border-[#444444] text-white shadow-2xl shadow-black/60"
+          : "bg-[var(--cards)] border-[#444444] text-white shadow-2xl shadow-black/60"
       } ${className}`}
     >
       {/* Header Navigation */}
@@ -316,10 +316,10 @@ export default function Calendar({
             onClick={() => setViewMode((m) => (m === "months" ? "days" : "months"))}
             className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
               viewMode === "months"
-                ? "bg-[#6366F1] text-white"
+                ? "bg-[var(--status-info)] text-[var(--accent-foreground)]"
                 : isLight
-                ? "hover:bg-zinc-100 text-zinc-800"
-                : "hover:bg-[#383838] text-zinc-200"
+                ? "hover:bg-zinc-100 text-[var(--text-primary)]"
+                : "hover:bg-[#383838] text-[var(--text-secondary)]"
             }`}
           >
             {monthNames[viewMonth]}
@@ -329,10 +329,10 @@ export default function Calendar({
             onClick={() => setViewMode((m) => (m === "years" ? "days" : "years"))}
             className={`px-2.5 py-1 rounded-lg font-mono transition-all cursor-pointer ${
               viewMode === "years"
-                ? "bg-[#6366F1] text-white"
+                ? "bg-[var(--status-info)] text-[var(--accent-foreground)]"
                 : isLight
-                ? "hover:bg-zinc-100 text-zinc-800"
-                : "hover:bg-[#383838] text-zinc-200"
+                ? "hover:bg-zinc-100 text-[var(--text-primary)]"
+                : "hover:bg-[#383838] text-[var(--text-secondary)]"
             }`}
           >
             {isThai ? viewYear + 543 : viewYear}
@@ -418,12 +418,12 @@ export default function Calendar({
       {viewMode === "days" && (
         <div className="flex flex-col gap-1">
           {/* Weekday Names Header */}
-          <div className="grid grid-cols-7 gap-1 text-center font-bold text-[10.5px] opacity-60 pb-1">
+          <div className="grid grid-cols-7 gap-1 text-center font-bold text-[10.5px] text-[var(--text-secondary)] pb-1">
             {dayNames.map((d, i) => (
               <div
                 key={d}
                 className={`py-1 ${
-                  i === 0 ? "text-red-500 font-bold" : i === 6 ? "text-indigo-400 font-bold" : ""
+                  i === 0 ? "text-[var(--status-danger)] font-bold" : i === 6 ? "text-[var(--status-info)] font-bold" : ""
                 }`}
               >
                 {d}
@@ -466,8 +466,8 @@ export default function Calendar({
                   } ${
                     isInRange && !isSelected
                       ? isLight
-                        ? "bg-[#6366F1]/10 text-zinc-900"
-                        : "bg-[#6366F1]/20 text-white"
+                        ? "bg-[var(--status-info)]/10 text-zinc-900"
+                        : "bg-[var(--status-info)]/20 text-white"
                       : ""
                   } ${
                     isRangeStart
@@ -480,16 +480,16 @@ export default function Calendar({
                   <div
                     className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-all relative ${
                       isSelected
-                        ? "bg-[#6366F1] text-white font-bold shadow-md shadow-[#6366F1]/30 scale-105"
+                        ? "bg-[var(--status-info)] text-[var(--accent-foreground)] font-bold shadow-md shadow-[var(--status-info)]/30 scale-105"
                         : isToday
                         ? isLight
-                          ? "border border-[#6366F1] font-bold text-[#6366F1] hover:bg-zinc-100"
-                          : "border border-[#6366F1] font-bold text-[#6366F1] hover:bg-white/10"
+                          ? "border border-[var(--status-info)] font-bold text-[var(--status-info)] hover:bg-zinc-100"
+                          : "border border-[var(--status-info)] font-bold text-[var(--status-info)] hover:bg-white/10"
                         : !isCurrentMonth
                         ? "opacity-30 hover:opacity-70"
                         : isLight
-                        ? "hover:bg-zinc-100 text-zinc-800"
-                        : "hover:bg-white/10 text-zinc-200"
+                        ? "hover:bg-zinc-100 text-[var(--text-primary)]"
+                        : "hover:bg-white/10 text-[var(--text-secondary)]"
                     }`}
                   >
                     <span>{dayNumber}</span>
@@ -516,10 +516,10 @@ export default function Calendar({
                 }}
                 className={`py-3 rounded-xl font-medium text-xs transition-all cursor-pointer ${
                   isSelected
-                    ? "bg-[#6366F1] text-white font-bold shadow-sm"
+                    ? "bg-[var(--status-info)] text-[var(--accent-foreground)] font-bold shadow-sm"
                     : isLight
-                    ? "hover:bg-zinc-100 text-zinc-800"
-                    : "hover:bg-[#383838] text-zinc-200"
+                    ? "hover:bg-zinc-100 text-[var(--text-primary)]"
+                    : "hover:bg-[#383838] text-[var(--text-secondary)]"
                 }`}
               >
                 {monthNames[idx]}
@@ -532,7 +532,7 @@ export default function Calendar({
       {/* VIEW 3: Quick Year Selector */}
       {viewMode === "years" && (
         <div className="flex flex-col gap-2 py-1">
-          <div className="text-center font-bold text-[11px] opacity-60">
+          <div className="text-center font-bold text-[11px] text-[var(--text-secondary)]">
             {isThai
               ? `${decadeStart + 543} - ${decadeStart + 11 + 543}`
               : `${decadeStart} - ${decadeStart + 11}`}
@@ -551,10 +551,10 @@ export default function Calendar({
                   }}
                   className={`py-2.5 rounded-xl font-mono text-xs transition-all cursor-pointer ${
                     isSelected
-                      ? "bg-[#6366F1] text-white font-bold shadow-sm"
+                      ? "bg-[var(--status-info)] text-[var(--accent-foreground)] font-bold shadow-sm"
                       : isLight
-                      ? "hover:bg-zinc-100 text-zinc-800"
-                      : "hover:bg-[#383838] text-zinc-200"
+                      ? "hover:bg-zinc-100 text-[var(--text-primary)]"
+                      : "hover:bg-[#383838] text-[var(--text-secondary)]"
                   }`}
                 >
                   {isThai ? y + 543 : y}
@@ -572,7 +572,7 @@ export default function Calendar({
             <button
               type="button"
               onClick={handleSelectToday}
-              className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[#6366F1] hover:bg-[#6366F1]/10 font-bold transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[var(--status-info)] hover:bg-[var(--status-info)]/10 font-bold transition-colors cursor-pointer"
             >
               <CalendarIcon size={13} />
               <span>{isThai ? "วันนี้" : "Today"}</span>
@@ -585,8 +585,8 @@ export default function Calendar({
               onClick={handleClear}
               className={`flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors cursor-pointer ${
                 isLight
-                  ? "hover:bg-zinc-100 text-zinc-500 hover:text-zinc-900"
-                  : "hover:bg-[#383838] text-zinc-400 hover:text-white"
+                  ? "hover:bg-zinc-100 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  : "hover:bg-[#383838] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
               }`}
             >
               <RotateCcw size={12} />

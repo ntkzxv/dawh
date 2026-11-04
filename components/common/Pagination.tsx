@@ -66,23 +66,24 @@ function CursorPagination({
   const buttonClass = isLight
     ? "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100"
     : "text-zinc-400 hover:text-white hover:bg-white/10";
+  const summaryValueClass = isLight ? "text-[#222222]" : "text-[#FFFFFF]";
 
   return (
     <div
       className={`flex flex-col sm:flex-row items-center justify-between gap-4 py-3 select-none text-xs ${className}`}
     >
-      <div className="text-xs opacity-70">
+      <div className={`text-xs ${isLight ? "text-[#383838]" : "text-[#E4E4E7]"}`}>
         {isThai ? (
           <>
-            หน้า <span className="font-semibold text-zinc-900 dark:text-white">{pageIndex}</span>
+            หน้า <span className={`font-semibold ${summaryValueClass}`}>{pageIndex}</span>
             {" · "}
-            <span className="font-semibold text-zinc-900 dark:text-white">{itemCount}</span> รายการ
+            <span className={`font-semibold ${summaryValueClass}`}>{itemCount}</span> รายการ
           </>
         ) : (
           <>
-            Page <span className="font-semibold text-zinc-900 dark:text-white">{pageIndex}</span>
+            Page <span className={`font-semibold ${summaryValueClass}`}>{pageIndex}</span>
             {" · "}
-            <span className="font-semibold text-zinc-900 dark:text-white">{itemCount}</span> items
+            <span className={`font-semibold ${summaryValueClass}`}>{itemCount}</span> items
           </>
         )}
       </div>
@@ -129,6 +130,7 @@ function OffsetPagination({
   const isLight = theme === "light";
   const reactId = useId();
   const paginationId = id || reactId;
+  const summaryValueClass = isLight ? "text-[#222222]" : "text-[#FFFFFF]";
 
   // Track page change direction (-1 for prev/back, 1 for next/forward)
   const prevPageRef = useRef(currentPage);
@@ -194,43 +196,43 @@ function OffsetPagination({
       {/* Left: current page and total item summary */}
       <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
         {showTotalItems && (
-          <div className="text-xs opacity-70 flex items-center gap-1.5">
+          <div className={`text-xs flex items-center gap-1.5 ${isLight ? "text-[#383838]" : "text-[#E4E4E7]"}`}>
             {pageItemCount !== undefined ? (isThai ? (
               <>
                 <span>หน้า</span>
-                <span className="font-semibold text-zinc-900 dark:text-white">{currentPage}</span>
+                <span className={`font-semibold ${summaryValueClass}`}>{currentPage}</span>
                 <span className="mx-1" aria-hidden="true">·</span>
-                <span className="font-semibold text-zinc-900 dark:text-white">{pageItemCount.toLocaleString()}</span>
+                <span className={`font-semibold ${summaryValueClass}`}>{pageItemCount.toLocaleString()}</span>
                 <span>รายการในหน้านี้</span>
               </>
             ) : (
               <>
                 <span>Page</span>
-                <span className="font-semibold text-zinc-900 dark:text-white">{currentPage}</span>
+                <span className={`font-semibold ${summaryValueClass}`}>{currentPage}</span>
                 <span className="mx-1" aria-hidden="true">·</span>
-                <span className="font-semibold text-zinc-900 dark:text-white">{pageItemCount.toLocaleString()}</span>
+                <span className={`font-semibold ${summaryValueClass}`}>{pageItemCount.toLocaleString()}</span>
                 <span>items on this page</span>
               </>
             )) : isThai ? (
               <>
                 <span>หน้า</span>
-                <span className="font-semibold text-zinc-900 dark:text-white">{currentPage}</span>
+                <span className={`font-semibold ${summaryValueClass}`}>{currentPage}</span>
                 <span>จาก</span>
-                <span className="font-semibold text-zinc-900 dark:text-white">{totalPages}</span>
+                <span className={`font-semibold ${summaryValueClass}`}>{totalPages}</span>
                 <span className="mx-1" aria-hidden="true">·</span>
                 <span>ทั้งหมด</span>
-                <span className="font-semibold text-zinc-900 dark:text-white">{totalItems.toLocaleString()}</span>
+                <span className={`font-semibold ${summaryValueClass}`}>{totalItems.toLocaleString()}</span>
                 <span>รายการ</span>
               </>
             ) : (
               <>
                 <span>Page</span>
-                <span className="font-semibold text-zinc-900 dark:text-white">{currentPage}</span>
+                <span className={`font-semibold ${summaryValueClass}`}>{currentPage}</span>
                 <span>of</span>
-                <span className="font-semibold text-zinc-900 dark:text-white">{totalPages}</span>
+                <span className={`font-semibold ${summaryValueClass}`}>{totalPages}</span>
                 <span className="mx-1" aria-hidden="true">·</span>
                 <span>Total</span>
-                <span className="font-semibold text-zinc-900 dark:text-white">{totalItems.toLocaleString()}</span>
+                <span className={`font-semibold ${summaryValueClass}`}>{totalItems.toLocaleString()}</span>
                 <span>items</span>
               </>
             )}

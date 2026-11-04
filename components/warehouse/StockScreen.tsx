@@ -346,7 +346,7 @@ export default function StockScreen({
                   role="tab"
                   aria-selected={tab === view}
                   onClick={() => changeTab(view)}
-                  className={`relative z-10 rounded-[5px] px-3 text-[13px] font-semibold whitespace-nowrap transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6366F1] ${
+                  className={`relative z-10 rounded-[5px] px-3 text-[13px] font-semibold whitespace-nowrap transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--status-info)] ${
                     tab === view
                       ? isLight ? "text-white" : "text-[#222222]"
                       : isLight ? "text-[#383838] hover:text-[#222222]" : "text-[#E4E4E7] hover:text-white"
@@ -499,14 +499,14 @@ export default function StockScreen({
               aria-modal="true"
               aria-labelledby="reverse-stock-title"
               aria-describedby="reverse-stock-description"
-              className={`w-full max-w-md space-y-5 rounded-2xl border p-5 shadow-2xl ${isLight ? "border-[#E4E4E7] bg-white text-[#222222]" : "border-[#555555] bg-[#383838] text-white"}`}
+              className={`w-full max-w-md space-y-5 rounded-2xl border p-5 shadow-2xl ${isLight ? "border-[#E4E4E7] bg-white text-[#222222]" : "border-[#444444] bg-[#383838] text-white"}`}
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h2 id="reverse-stock-title" className="font-bold">
                     {isThai ? `ยืนยันกลับรายการ #${reverseTarget}` : `Reverse movement #${reverseTarget}?`}
                   </h2>
-                  <p id="reverse-stock-description" className={`mt-2 text-sm ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
+                  <p id="reverse-stock-description" className={`mt-2 text-sm ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}>
                     {isThai ? "ระบบจะบันทึกรายการกลับสต๊อก โปรดระบุเหตุผลก่อนยืนยัน" : "A reversal will be recorded in the stock ledger. Enter a reason to continue."}
                   </p>
                 </div>
@@ -515,7 +515,7 @@ export default function StockScreen({
                   aria-label={isThai ? "ปิด" : "Close"}
                   disabled={reverseBusy}
                   onClick={closeReverseDialog}
-                  className={`rounded-lg p-1.5 transition-colors disabled:opacity-50 ${isLight ? "text-[#666666] hover:bg-black/5" : "text-[#A1A1AA] hover:bg-white/10"}`}
+                  className={`rounded-lg p-1.5 transition-colors disabled:opacity-50 ${isLight ? "text-[var(--text-muted)] hover:bg-black/5" : "text-[var(--text-muted)] hover:bg-white/10"}`}
                 >
                   <X size={18} aria-hidden="true" />
                 </button>
@@ -530,10 +530,10 @@ export default function StockScreen({
                   onChange={(event) => setReverseReason(event.target.value)}
                   disabled={reverseBusy}
                   placeholder={isThai ? "ระบุเหตุผล..." : "Enter a reason..."}
-                  className={`w-full resize-y rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#71717A] disabled:opacity-60 ${isLight ? "border-[#D4D4D8] bg-white text-[#222222] placeholder:text-[#A1A1AA]" : "border-[#555555] bg-[#2C2C2C] text-white placeholder:text-[#A1A1AA]"}`}
+                  className={`w-full resize-y rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#737D88] disabled:opacity-60 ${isLight ? "border-[#737D88] bg-white text-[#222222] placeholder:text-[var(--text-muted)]" : "border-[#E4E4E7] bg-[#222222] text-[#F4F4F5] placeholder:text-[var(--text-muted)]"}`}
                 />
               </label>
-              {reverseFailure && <p role="alert" className="text-sm text-rose-600 dark:text-rose-400">{reverseFailure}</p>}
+              {reverseFailure && <p role="alert" className="text-sm text-[var(--status-danger-text)] dark:text-[var(--status-danger-text)]">{reverseFailure}</p>}
               <div className="flex justify-end gap-2">
                 <Button variant="secondary" disabled={reverseBusy} onClick={closeReverseDialog}>
                   {isThai ? "ยกเลิก" : "Cancel"}
@@ -593,14 +593,14 @@ function MovementList({
       header: isThai ? "ประเภท" : "Type",
       render: (row) => {
         const tone = row.kind === "GOODS_RECEIPT"
-          ? "bg-[#2EC4B6]/10 text-[#2EC4B6]"
+          ? "bg-[var(--status-success)]/10 text-[var(--status-success-badge-text)]"
           : row.kind === "ISSUE"
-            ? "bg-[#E71D36]/10 text-[#E71D36]"
+            ? "bg-[var(--status-danger)]/10 text-[var(--status-danger-badge-text)]"
             : row.kind === "TRANSFER"
-              ? "bg-[#6366F1]/10 text-[#6366F1]"
+              ? "bg-[var(--status-info)]/10 text-[var(--status-info)]"
               : row.kind === "ADJUSTMENT"
-                ? "bg-[#FF9F1C]/10 text-[#FF9F1C]"
-                : isLight ? "bg-[#E4E4E7] text-[#52525B]" : "bg-[#A1A1AA]/15 text-[#A1A1AA]";
+                ? "bg-[var(--status-warning)]/10 text-[var(--status-warning-badge-text)]"
+                : isLight ? "bg-[#E4E4E7] text-[var(--text-muted)]" : "bg-[var(--text-muted)]/15 text-[var(--text-muted)]";
         return <span className={`inline-flex whitespace-nowrap rounded-[4px] px-2 py-1 text-[11px] font-semibold ${tone}`}>{movementLabel(row.kind, isThai)}</span>;
       },
     },
@@ -613,12 +613,12 @@ function MovementList({
       className: "font-mono font-bold",
       render: (row) => {
         const amount = Number(row.quantity_delta);
-        return <span className={amount >= 0 ? "text-[#2EC4B6]" : "text-[#E71D36]"}>{amount > 0 ? "+" : ""}{amount.toLocaleString()}</span>;
+        return <span className={amount >= 0 ? "text-[var(--status-success-text)]" : "text-[var(--status-danger-text)]"}>{amount > 0 ? "+" : ""}{amount.toLocaleString()}</span>;
       },
     },
     { key: "warehouse", header: isThai ? "คลัง" : "Warehouse", render: (row) => row.warehouse_name },
     { key: "operator", header: isThai ? "ผู้ดำเนินการ" : "Operator", render: (row) => row.operator_name || "—" },
-    { key: "note", header: isThai ? "หมายเหตุ" : "Note", className: `max-w-[240px] truncate ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`, render: (row) => row.reason || row.record_no },
+    { key: "note", header: isThai ? "หมายเหตุ" : "Note", className: `max-w-[240px] truncate ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`, render: (row) => row.reason || row.record_no },
     ...(canReverse ? [{
       key: "action",
       header: isThai ? "จัดการ" : "Action",
@@ -627,7 +627,7 @@ function MovementList({
         <button
           type="button"
           onClick={() => onReverse(row.document_id)}
-          className="rounded-[6px] px-2 py-1 text-xs font-semibold text-[#E71D36] transition-colors hover:bg-[#E71D36]/10"
+          className="rounded-[6px] px-2 py-1 text-xs font-semibold text-[var(--status-danger-text)] transition-colors hover:bg-[var(--status-danger)]/10"
         >
           {isThai ? "กลับรายการ" : "Reverse"}
         </button>

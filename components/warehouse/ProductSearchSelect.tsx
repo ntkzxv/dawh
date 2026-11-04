@@ -117,7 +117,7 @@ export function ProductSearchSelect({
             </select>
           </>
         )}
-        {error && <span className="text-xs text-rose-600">{error}</span>}
+        {error && <span className="text-xs text-[var(--status-danger-text)]">{error}</span>}
       </div>
     </Field>
   );

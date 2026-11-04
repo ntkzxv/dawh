@@ -31,7 +31,7 @@ export function SupplierForm({ orders, selectedPoId, onSave, sidePanel = false, 
   const isThai = useAppLanguage() === "TH";
   const { theme } = useTheme();
   const styles = sidePanelFormStyles(theme === "light");
-  const sidePanelFooter = `${styles.footer} sticky bottom-0 ${theme === "light" ? "bg-white" : "bg-[#282828]"}`;
+  const sidePanelFooter = `${styles.footer} sticky bottom-0 ${theme === "light" ? "bg-white" : "bg-[var(--cards)]"}`;
   const [poId, setPoId] = useState(String(selectedPoId ?? "")); const [po, setPo] = useState<PurchaseOrder | null>(null); const [externalDocNo, setExternalDocNo] = useState(""); const [date, setDate] = useState(""); const [total, setTotal] = useState(""); const [mediaIds, setMediaIds] = useState<number[]>([]); const [quantities, setQuantities] = useState<Record<number,string>>({}); const [prices, setPrices] = useState<Record<number,string>>({}); const [note, setNote] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);

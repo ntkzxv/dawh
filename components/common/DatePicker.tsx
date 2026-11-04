@@ -229,10 +229,10 @@ export default function DatePicker({
             : isLight
             ? isOpen
               ? "border-[#222222] ring-2 ring-[#222222]/10 bg-white text-[#222222]"
-              : "bg-[#F5F5F5] hover:bg-[#EBEBEB] border-[#E5E5E5] text-[#222222]"
+              : "bg-[var(--input-bg)] hover:bg-[var(--input-bg)] border-[#737D88] text-[#222222]"
             : isOpen
-            ? "border-white ring-2 ring-white/10 bg-[#333333] text-white"
-            : "bg-[#282828] hover:bg-[#303030] border-[#444444] text-white"
+            ? "border-white ring-2 ring-white/10 bg-[var(--cards)] text-white"
+            : "bg-[var(--cards)] hover:bg-[var(--cards)] border-[#444444] text-white"
         } ${triggerClassName}`}
       >
         <div className="flex items-center gap-2 truncate min-w-0 flex-1">

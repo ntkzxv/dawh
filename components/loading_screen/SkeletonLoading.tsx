@@ -63,7 +63,7 @@ export function SkeletonStatCard() {
       className={`rounded-2xl p-5 border flex flex-col justify-between gap-4 ${
         isLight
           ? "bg-white border-[#E4E4E7] shadow-xs"
-          : "bg-[#282828] border-[#444444]"
+          : "bg-[var(--cards)] border-[#444444]"
       }`}
     >
       <div className="flex items-center justify-between">
@@ -119,11 +119,11 @@ export function SkeletonDataTable({
         </div>
       )}
 
-      <div className={"w-full overflow-hidden rounded-xl border " + (isLight ? "border-[#D4D4D8] bg-white" : "border-[#555555] bg-[#383838]")}>
+      <div className={"w-full overflow-hidden rounded-xl border " + (isLight ? "border-[#E4E4E7] bg-white" : "border-[#444444] bg-[#383838]")}>
         <div className="overflow-x-auto">
           <table className="w-full border-separate border-spacing-0 border-0 bg-transparent text-left text-[13px]" style={{ minWidth }} aria-hidden="true">
             <thead>
-              <tr className={"h-[36px] " + (isLight ? "bg-[#F4F4F5]" : "bg-[#2C2C2C]")}>
+              <tr className={"h-[36px] " + (isLight ? "bg-[#F1F5F9]" : "bg-[#2C2C2C]")}>
                 {Array.from({ length: columns }).map((_, index) => (
                   <th key={index} className="px-3 py-2">
                     <SkeletonBox className="h-3 w-2/3" />
@@ -158,7 +158,7 @@ export function SkeletonChartCard() {
       className={`rounded-2xl border p-6 space-y-4 ${
         isLight
           ? "bg-white border-[#E4E4E7] shadow-xs"
-          : "bg-[#282828] border-[#444444]"
+          : "bg-[var(--cards)] border-[#444444]"
       }`}
     >
       <div className="flex items-center justify-between">

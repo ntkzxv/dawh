@@ -94,6 +94,7 @@ let hasEnteredWarehouseModule = false;
 export default function WarehousePageTemplate({
   titleEn,
   titleTh,
+  routePath,
   metrics,
   children,
   fullBleed = false,
@@ -107,6 +108,7 @@ export default function WarehousePageTemplate({
   const appLang = useAppLanguage();
   const isThai = appLang === "TH";
   const displayTitle = isThai ? (titleTh || titleEn) : (titleEn || titleTh);
+  const isWarehouseRoute = routePath.startsWith("/warehouse");
 
   // ตั้งค่าเริ่มต้นให้ซ่อนภาพรวมไว้เป็น Default
   const [isMetricsVisible, setIsMetricsVisible] = React.useState(false);
@@ -132,14 +134,21 @@ export default function WarehousePageTemplate({
           isLight ? "bg-white border-[#E4E4E7]" : "bg-[#222222] border-[#444444]"
         }`}
       >
-        <h1
-          className={`text-[18px] sm:text-[19px] font-bold tracking-tight ${
-            isLight ? "text-[#222222]" : "text-[#FFFFFF]"
-          }`}
-          style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
-        >
-          {loading ? <SkeletonBox className="h-6 w-48 rounded-md" /> : displayTitle}
-        </h1>
+        <div className="flex min-w-0 flex-col items-start gap-[1px]">
+          {isWarehouseRoute && (
+            <p className={`text-[11px] leading-4 ${isLight ? "text-[#737D88]" : "text-[#E4E4E7]"}`}>
+              {isThai ? "โมดูลคลังสินค้า" : "Warehouse module"}
+            </p>
+          )}
+          <h1
+            className={`truncate max-w-full text-[18px] sm:text-[19px] font-bold leading-[24px] tracking-tight ${
+              isLight ? "text-[#222222]" : "text-[#FFFFFF]"
+            }`}
+            style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
+          >
+            {loading ? <SkeletonBox className="h-6 w-48 rounded-md" /> : displayTitle}
+          </h1>
+        </div>
 
         {headerActions && (
           <div className="flex items-center gap-3">
@@ -238,7 +247,7 @@ export default function WarehousePageTemplate({
                               {metric.value}
                             </h3>
                             <p className={`text-[11.5px] mt-2 truncate ${
-                              isLight ? "text-slate-500" : "text-[#999999]"
+                              isLight ? "text-slate-500" : "text-[var(--text-muted)]"
                             }`}>
                               {metric.sub}
                             </p>

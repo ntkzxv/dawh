@@ -56,7 +56,7 @@ export function CountForm({
   const isThai = useAppLanguage() === "TH";
   const { theme } = useTheme();
   const styles = sidePanelFormStyles(theme === "light");
-  const sidePanelFooter = `${styles.footer} sticky bottom-0 ${theme === "light" ? "bg-white" : "bg-[#282828]"}`;
+  const sidePanelFooter = `${styles.footer} sticky bottom-0 ${theme === "light" ? "bg-white" : "bg-[var(--cards)]"}`;
   const [carrierId, setCarrierId] = useState("");
   const [carrier, setCarrier] = useState<CarrierReceipt | null>(null);
   const [po, setPo] = useState<PurchaseOrder | null>(null);

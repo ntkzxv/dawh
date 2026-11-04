@@ -297,7 +297,7 @@ function OffsetPagination({
                 }}
                 className={`relative min-w-[32px] h-[32px] px-2 rounded-lg text-xs font-medium cursor-pointer flex items-center justify-center transition-colors ${
                   isActive
-                    ? "text-white font-bold"
+                    ? "text-[var(--accent-foreground)] font-bold"
                     : isLight
                     ? "text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100"
                     : "text-zinc-400 hover:text-white hover:bg-white/10"
@@ -307,7 +307,7 @@ function OffsetPagination({
                 {isActive && (
                   <motion.div
                     layoutId={`pagination-active-pill-${paginationId}`}
-                    className="absolute inset-0 bg-[#6366F1] rounded-lg shadow-sm"
+                    className="absolute inset-0 bg-[var(--status-info)] rounded-lg shadow-sm"
                     transition={{
                       type: "spring",
                       stiffness: 380,

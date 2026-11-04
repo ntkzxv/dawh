@@ -142,13 +142,13 @@ export function FormCustomSelect({
         className={`w-full p-2.5 min-h-[38px] rounded-lg border text-xs flex items-center justify-between transition-all outline-none cursor-pointer ${
           isOpen
             ? isLight
-              ? "border-[#222222] ring-2 ring-[#222222]/10 bg-white"
-              : "border-white ring-2 ring-white/10 bg-[#333333]"
+              ? "border-[#222222] ring-2 ring-[#222222]/10 bg-[var(--canvas)]"
+              : "border-white ring-2 ring-white/10 bg-[var(--canvas)]"
             : isInvalid
             ? "border-red-500 bg-red-50/10"
             : isLight
-            ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222] hover:bg-[#EBEBEB]"
-            : "bg-[#282828] border-[#444444] text-[#FFFFFF] hover:bg-[#303030]"
+            ? "bg-[var(--canvas)] border-[#737D88] text-[#222222] hover:bg-[var(--canvas)]"
+            : "bg-[var(--canvas)] border-[#E4E4E7] text-[#F4F4F5] hover:bg-[var(--canvas)]"
         }`}
       >
         <div className="flex items-center gap-2 truncate">
@@ -188,8 +188,8 @@ export function FormCustomSelect({
             isOpen
               ? "rotate-180 text-[#222222] dark:text-white"
               : isLight
-              ? "text-[#666666]"
-              : "text-[#A1A1AA]"
+              ? "text-[var(--text-muted)]"
+              : "text-[var(--text-muted)]"
           }`}
         />
       </button>
@@ -205,7 +205,7 @@ export function FormCustomSelect({
             className={`max-h-[220px] overflow-y-auto dropdown-scrollbar pr-1.5 rounded-xl border shadow-2xl backdrop-blur-md flex flex-col p-1.5 gap-1 animate-in fade-in zoom-in-95 duration-150 ${
               isLight
                 ? "bg-white/95 border-[#E4E4E7] shadow-xl text-[#222222]"
-                : "bg-[#2B2B2B]/95 border-[#444444] shadow-2xl text-[#FFFFFF]"
+                : "bg-[var(--canvas)]/95 border-[#444444] shadow-2xl text-[#FFFFFF]"
             }`}
           >
             {options.map((opt, idx) => {

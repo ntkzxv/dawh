@@ -14,6 +14,7 @@ export default function SystemMaintenancePage() {
   const { navigateWithLoading } = useLoading();
   const searchParams = useSearchParams();
   const moduleParam = searchParams.get("module");
+  const maintenanceReason = searchParams.get("reason");
   const appLang = useAppLanguage();
   const isThai = appLang === "TH";
   const { theme } = useTheme();
@@ -53,6 +54,7 @@ export default function SystemMaintenancePage() {
 
   // Countdown interval + Auto-restore module status to Active when timer hits 0
   useEffect(() => {
+    if (maintenanceReason) return;
     const interval = setInterval(() => {
       setSecondsRemaining((prev) => {
         if (prev <= 1) {
@@ -106,7 +108,7 @@ export default function SystemMaintenancePage() {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [moduleParam, isThai, notify, navigateWithLoading]);
+  }, [moduleParam, maintenanceReason, isThai, notify, navigateWithLoading]);
 
   const handleWorkspaceLink = (event: React.MouseEvent<HTMLAnchorElement>) => {
     if (
@@ -140,6 +142,8 @@ export default function SystemMaintenancePage() {
         return isThai ? "จัดการพนักงาน" : "Employee Management";
       case "reports":
         return isThai ? "รายงานและตรวจสอบ" : "Reports & Auditing";
+      case "sales":
+        return isThai ? "การขาย" : "Sales";
       default:
         return moduleParam.toUpperCase();
     }
@@ -163,7 +167,7 @@ export default function SystemMaintenancePage() {
         <div className="absolute inset-0 flex flex-col pointer-events-none z-0 select-none">
           <div
             className={`w-full h-[52%] relative overflow-hidden transition-colors duration-300 ${
-              isLight ? "bg-[#EEF2F6]" : "bg-[#1A1A1A]"
+              isLight ? "bg-[#F1F5F9]" : "bg-[#222222]"
             }`}
           >
             <div className="absolute inset-0 pointer-events-none select-none">
@@ -171,7 +175,7 @@ export default function SystemMaintenancePage() {
                 <div
                   className="w-full h-full transition-colors duration-300"
                   style={{
-                    backgroundColor: isLight ? "#FFFFFF" : "#282828",
+                    backgroundColor: isLight ? "#FFFFFF" : "var(--cards)",
                     WebkitMaskImage: `url("${DAWH_LONGNOSPACE_DATA_URI}")`,
                     maskImage: `url("${DAWH_LONGNOSPACE_DATA_URI}")`,
                     WebkitMaskSize: "contain",
@@ -185,7 +189,7 @@ export default function SystemMaintenancePage() {
                 />
                 <div
                   className={`absolute top-[61.2%] h-[150vh] left-[76.2%] w-[7%] transition-colors duration-300 ${
-                    isLight ? "bg-[#FFFFFF]" : "bg-[#282828]"
+                    isLight ? "bg-[#FFFFFF]" : "bg-[var(--cards)]"
                   }`}
                 />
               </div>
@@ -193,13 +197,13 @@ export default function SystemMaintenancePage() {
           </div>
           <div
             className={`w-full flex-1 relative overflow-hidden transition-colors duration-300 ${
-              isLight ? "bg-[#FFFFFF]" : "bg-[#282828]"
+              isLight ? "bg-[#FFFFFF]" : "bg-[var(--cards)]"
             }`}
           >
             <div
               className="absolute bottom-0 right-0 h-full w-full pointer-events-none select-none transition-colors duration-300"
               style={{
-                backgroundColor: isLight ? "#EEF2F6" : "#1A1A1A",
+                backgroundColor: isLight ? "#F1F5F9" : "#222222",
                 WebkitMaskImage: `url("${DAWH_LONGNOSPACE_DATA_URI}")`,
                 maskImage: `url("${DAWH_LONGNOSPACE_DATA_URI}")`,
                 WebkitMaskSize: "contain",
@@ -243,7 +247,7 @@ export default function SystemMaintenancePage() {
             className={`box-border w-full max-w-[580px] flex flex-col items-center p-8 sm:p-12 gap-6 sm:gap-8 rounded-[20px] backdrop-blur-md transition-colors duration-300 ${
               isLight
                 ? "bg-white/95 border border-[#E4E4E7] shadow-[0px_12px_32px_rgba(0,0,0,0.06)]"
-                : "bg-[#282828]/95 border border-[#444444] shadow-[0px_12px_32px_rgba(0,0,0,0.25)]"
+                : "bg-[var(--cards)]/95 border border-[#444444] shadow-[0px_12px_32px_rgba(0,0,0,0.25)]"
             }`}
           >
             {/* countdown-wrapper with staggered transition */}
@@ -253,20 +257,21 @@ export default function SystemMaintenancePage() {
               transition={{ duration: 0.4, delay: 0.1, ease: [0.4, 0, 0.2, 1] }}
               className="flex flex-col items-center gap-3 w-full text-center"
             >
-              {/* timer */}
-              <div
+              {!maintenanceReason && <div
                 className="font-bold text-[48px] sm:text-[64px] leading-[110%] text-white tracking-tight select-none"
                 style={{ fontFamily: "var(--font-outfit), sans-serif" }}
               >
                 {formatTimer(secondsRemaining)}
-              </div>
+              </div>}
 
               {/* heading */}
               <h1
                 className="font-bold text-[24px] sm:text-[32px] leading-[120%] text-center text-white"
                 style={{ fontFamily: "var(--font-outfit), sans-serif" }}
               >
-                {secondsRemaining === 0
+                {maintenanceReason
+                  ? isThai ? `${getModuleName()} ปิดปรับปรุง` : `${getModuleName()} Under Maintenance`
+                  : secondsRemaining === 0
                   ? isThai
                     ? `${getModuleName()} เปิดให้บริการแล้ว`
                     : `${getModuleName()} Ready for Operations`
@@ -280,7 +285,9 @@ export default function SystemMaintenancePage() {
                 className="font-normal text-[14px] sm:text-[15px] leading-[150%] text-center text-[#E4E4E7] max-w-[484px]"
                 style={{ fontFamily: "var(--font-geist-sans)" }}
               >
-                {secondsRemaining === 0
+                {maintenanceReason
+                  ? maintenanceReason
+                  : secondsRemaining === 0
                   ? isThai
                     ? "การปรับปรุงระบบเสร็จสมบูรณ์เรียบร้อยแล้ว ระบบพร้อมใช้งานตามปกติ"
                     : "Scheduled maintenance completed successfully. All systems are fully operational."
@@ -291,14 +298,14 @@ export default function SystemMaintenancePage() {
             </motion.div>
 
             {/* progress-container */}
-            <motion.div
+            {!maintenanceReason && <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.18, ease: [0.4, 0, 0.2, 1] }}
               className="w-full max-w-[484px] flex flex-col items-start gap-2"
             >
               {/* progress-bar-track */}
-              <div className="w-full h-[6px] bg-[#2A2A2A] rounded-full overflow-hidden">
+              <div className="w-full h-[6px] bg-[#383838] rounded-full overflow-hidden">
                 {/* progress-bar-fill */}
                 <motion.div
                   initial={{ width: 0 }}
@@ -317,7 +324,7 @@ export default function SystemMaintenancePage() {
                   {isThai ? `คาดการณ์เสร็จสิ้น ${schedule.endTime || "06:00 น."}` : `EST. ${schedule.endTime || "06:00 AM"}`}
                 </span>
               </div>
-            </motion.div>
+            </motion.div>}
 
             {/* actions */}
             <motion.div
@@ -335,7 +342,7 @@ export default function SystemMaintenancePage() {
                 <Link
                   href="/workspace"
                   onClick={handleWorkspaceLink}
-                  className="w-full h-[42px] flex flex-row justify-center items-center px-6 py-3 rounded-[8px] border border-[#555555] bg-[#2A2A2A] hover:bg-white hover:text-zinc-950 transition-all text-[#F4F4F5] font-bold text-[14px] leading-[18px] select-none text-center block"
+                  className="w-full h-[42px] flex flex-row justify-center items-center px-6 py-3 rounded-[8px] border border-[#444444] bg-[#383838] hover:bg-white hover:text-zinc-950 transition-all text-[#F4F4F5] font-bold text-[14px] leading-[18px] select-none text-center block"
                   style={{ fontFamily: "var(--font-geist-sans)" }}
                 >
                   {isThai ? "กลับสู่หน้าพื้นที่ทำงาน" : "Return to Workspace"}
@@ -350,7 +357,7 @@ export default function SystemMaintenancePage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4, delay: 0.35, ease: [0.4, 0, 0.2, 1] }}
-          className="w-full flex flex-row justify-center items-center px-6 py-6 border-t border-[#3D3D3D]"
+          className="w-full flex flex-row justify-center items-center px-6 py-6 border-t border-[#444444]"
           style={{ height: "80px" }}
         >
           <span

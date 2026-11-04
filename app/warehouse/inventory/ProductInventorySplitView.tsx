@@ -21,7 +21,8 @@ import {
   DATA_TABLE_BODY_ROW_HEIGHT,
   DATA_TABLE_STYLES,
   dataTableFrameClassName,
-  dataTableStripedRowClassName,
+  dataTableRowBorderClassName,
+  dataTableRowClassName,
   getDataTablePlaceholderRowCount,
 } from "@/components/common/DataTable";
 import { SkeletonBox, SkeletonDataTable } from "@/components/loading_screen/SkeletonLoading";
@@ -56,6 +57,7 @@ export default function ProductInventorySplitView({
 }) {
   const { theme } = useTheme();
   const isLight = theme === "light";
+  const bodyCellClassName = `${DATA_TABLE_STYLES.bodyCell} border-b ${dataTableRowBorderClassName(isLight)}`;
   const panelStyles = sidePanelFormStyles(isLight);
   const appLang = useAppLanguage();
   const isThai = appLang === "TH";
@@ -383,20 +385,20 @@ export default function ProductInventorySplitView({
   ) => {
     if (status === "out_of_stock") {
       return (
-        <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-[4px] text-[11px] font-semibold bg-[#E71D36]/10 text-[#E71D36]">
+        <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-[4px] text-[11px] font-semibold bg-[var(--status-danger)]/10 text-[var(--status-danger-badge-text)]">
           {isThai ? "วิกฤต" : "Out"}
         </span>
       );
     }
     if (status === "low_stock") {
       return (
-        <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-[4px] text-[11px] font-semibold bg-[#FF9F1C]/10 text-[#FF9F1C]">
+        <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-[4px] text-[11px] font-semibold bg-[var(--status-warning)]/10 text-[var(--status-warning-badge-text)]">
           {isThai ? "ใกล้หมด" : "Low"}
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-[4px] text-[11px] font-semibold bg-[#2EC4B6]/10 text-[#2EC4B6]">
+      <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-[4px] text-[11px] font-semibold bg-[var(--status-success)]/10 text-[var(--status-success-badge-text)]">
         {isThai ? "ปกติ" : "In Stock"}
       </span>
     );
@@ -411,7 +413,7 @@ export default function ProductInventorySplitView({
     >
       <div
         className={`w-full flex-1 min-h-full ${
-          isLight ? "bg-[#F8FAFC] text-[#222222]" : "bg-[#2C2C2C] text-[#F8FAFC]"
+          isLight ? "bg-[#F8FAFC] text-[#222222]" : "bg-[#2C2C2C] text-[#F4F4F5]"
         }`}
         style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
       >
@@ -534,10 +536,10 @@ export default function ProductInventorySplitView({
                     />
                   </label>
                 </div>
-                <div className={`flex justify-end gap-2 border-t pt-3 ${isLight ? "border-[#E4E4E7]" : "border-white/10"}`}>
+                <div className={`flex justify-end gap-2 border-t pt-3 ${isLight ? "border-[#E4E4E7]" : "border-[#444444]"}`}>
                   <button
                     type="button"
-                    className={`rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${isLight ? "border-slate-300 hover:bg-slate-100" : "border-white/15 hover:bg-white/5"}`}
+                    className={`rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${isLight ? "border-slate-300 hover:bg-slate-100" : "border-[#4F4F4F] hover:bg-[#404040]"}`}
                     onClick={() => {
                       setSelectedCategory("all");
                       setSelectedStatus("all");
@@ -591,7 +593,7 @@ export default function ProductInventorySplitView({
               </button>
             </div>
           ) : filteredItems.length === 0 ? (
-            <div className={`${dataTableFrameClassName(isLight)} w-full py-12 text-center text-sm ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
+            <div className={`${dataTableFrameClassName(isLight)} w-full py-12 text-center text-sm ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}>
               {isThai ? "ไม่พบรายการสินค้าที่ค้นหา" : "No products found."}
             </div>
           ) : (
@@ -600,9 +602,9 @@ export default function ProductInventorySplitView({
                 {/* row-header */}
                 <thead>
                   <tr
-                    className={`${DATA_TABLE_STYLES.headerRow} ${isLight ? "bg-[#F4F4F5] text-[#666666]" : "bg-[#2C2C2C] text-[#A1A1AA]"}`}
+                    className={`${DATA_TABLE_STYLES.headerRow} ${isLight ? "bg-[#F1F5F9] text-[var(--text-muted)]" : "bg-[#2C2C2C] text-[var(--text-muted)]"}`}
                   >
-                    <th className={`${DATA_TABLE_STYLES.headerCell} w-[190px] rounded-l-[6px]`}>
+                    <th className={`${DATA_TABLE_STYLES.headerCell} w-[190px] rounded-tl-[6px]`}>
                       {isThai ? "รหัส SKU" : "SKU"}
                     </th>
                     <th className={`${DATA_TABLE_STYLES.headerCell} min-w-[220px]`}>
@@ -617,26 +619,24 @@ export default function ProductInventorySplitView({
                     <th className={`${DATA_TABLE_STYLES.headerCell} text-right w-[120px]`}>
                       {isThai ? "คงเหลือ" : "On Hand"}
                     </th>
-                    <th className={`${DATA_TABLE_STYLES.headerCell} w-[90px]`}>
+                    <th className={`${DATA_TABLE_STYLES.headerCell} w-[90px] text-center`}>
                       {isThai ? "หน่วย" : "Unit"}
                     </th>
                     <th className={`${DATA_TABLE_STYLES.headerCell} text-right w-[120px]`}>
                       {isThai ? "จุดสั่งซื้อ" : "Reorder Point"}
                     </th>
-                    <th className={`${DATA_TABLE_STYLES.headerCell} w-[100px]`}>
+                    <th className={`${DATA_TABLE_STYLES.headerCell} w-[100px] text-center`}>
                       {isThai ? "สถานะ" : "Status"}
                     </th>
                     <th
-                      className={`${DATA_TABLE_STYLES.headerCell} w-[48px] rounded-r-[6px]`}
+                      className={`${DATA_TABLE_STYLES.headerCell} w-[48px] rounded-tr-[6px] text-right`}
                       aria-label={isThai ? "การทำงาน" : "Actions"}
                     />
                   </tr>
                 </thead>
 
                 {/* table rows */}
-                <tbody
-                  className={`divide-y whitespace-nowrap ${isLight ? "divide-[#E4E4E7]" : "divide-[#444444]"}`}
-                >
+                <tbody className="whitespace-nowrap">
                   {paginatedItems.map((item) => {
                     const isSelected = activeDetailItem?.id === item.id;
                     return (
@@ -648,12 +648,12 @@ export default function ProductInventorySplitView({
                             ? isLight
                               ? "!bg-slate-100"
                               : "!bg-[#2C2C2C]"
-                            : dataTableStripedRowClassName(isLight)
+                            : dataTableRowClassName(isLight)
                         }`}
                       >
                         {/* SKU */}
                         <td
-                          className={`${DATA_TABLE_STYLES.bodyCell} font-mono text-[12px] font-medium ${isLight ? "text-slate-900" : "text-[#F8FAFC]"}`}
+                          className={`${bodyCellClassName} font-mono text-[12px] font-medium ${isLight ? "text-slate-900" : "text-[#F4F4F5]"}`}
                         >
                           <span className="block truncate" title={item.sku}>
                             {item.sku}
@@ -661,35 +661,37 @@ export default function ProductInventorySplitView({
                         </td>
 
                         {/* Name */}
-                        <td className={`${DATA_TABLE_STYLES.bodyCell} font-medium`}>
+                        <td className={`${bodyCellClassName} font-medium`}>
                           <span
-                            className={`line-clamp-1 ${isLight ? "text-slate-900" : "text-[#F8FAFC]"}`}
+                            className={`line-clamp-1 ${isLight ? "text-slate-900" : "text-[#F4F4F5]"}`}
                           >
                             {item.name}
                           </span>
                         </td>
 
                         {/* Category */}
-                        <td className={`${DATA_TABLE_STYLES.bodyCell} ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"} text-xs`}>
+                        <td className={`${bodyCellClassName} ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"} text-xs`}>
                           {item.category}
                         </td>
 
                         {/* Brand */}
-                        <td className={`${DATA_TABLE_STYLES.bodyCell} ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"} text-xs`}>
+                        <td className={`${bodyCellClassName} ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"} text-xs`}>
                           {item.brand}
                         </td>
 
                         {/* On Hand */}
-                        <td className={`${DATA_TABLE_STYLES.bodyCell} text-right font-mono font-bold text-[13px]`}>
+                        <td className={`${bodyCellClassName} text-right font-mono font-bold text-[13px]`}>
                           <span
                             className={
-                              item.status === "out_of_stock"
-                                ? "text-[#E71D36]"
+                              isLight
+                                ? item.status === "out_of_stock"
+                                  ? "text-[var(--status-danger-text)]"
+                                  : item.status === "low_stock"
+                                    ? "text-[var(--status-warning-text)]"
+                                    : "text-[var(--status-success-text)]"
                                 : item.status === "low_stock"
-                                  ? "text-[#FF9F1C]"
-                                  : isLight
-                                    ? "text-[#2EC4B6]"
-                                    : "text-[#2EC4B6]"
+                                  ? "text-[var(--status-warning-text)]"
+                                  : "text-[#F4F4F5]"
                             }
                           >
                             {item.onHand.toLocaleString()}
@@ -697,22 +699,22 @@ export default function ProductInventorySplitView({
                         </td>
 
                         {/* Unit */}
-                        <td className={`${DATA_TABLE_STYLES.bodyCell} text-xs`}>{item.unit}</td>
+                        <td className={`${bodyCellClassName} text-center text-xs`}>{item.unit}</td>
 
                         {/* Reorder point */}
-                        <td className={`${DATA_TABLE_STYLES.bodyCell} text-right font-mono text-xs`}>
+                        <td className={`${bodyCellClassName} text-right font-mono text-xs`}>
                           {item.minStock == null
                             ? "-"
                             : item.minStock.toLocaleString()}
                         </td>
 
                         {/* Status */}
-                        <td className={DATA_TABLE_STYLES.bodyCell}>
+                        <td className={`${bodyCellClassName} text-center`}>
                           {renderStatusBadge(item.status)}
                         </td>
 
                         {/* Actions */}
-                        <td className={`${DATA_TABLE_STYLES.bodyCell} text-right`}>
+                        <td className={`${bodyCellClassName} text-right`}>
                           <button
                             type="button"
                             onClick={() => setSelectedItem(item)}
@@ -728,8 +730,8 @@ export default function ProductInventorySplitView({
                             }
                             className={`inline-flex size-8 items-center justify-center rounded-[6px] transition-colors cursor-pointer ${
                               isLight
-                                ? "text-[#666666] hover:bg-[#E4E4E7] hover:text-[#222222]"
-                                : "text-[#A1A1AA] hover:bg-[#444444] hover:text-[#F8FAFC]"
+                                ? "text-[var(--text-muted)] hover:bg-[#E4E4E7] hover:text-[#222222]"
+                                : "text-[var(--text-muted)] hover:bg-[#444444] hover:text-[#F4F4F5]"
                             }`}
                           >
                             <MoreVertical size={17} />
@@ -745,10 +747,11 @@ export default function ProductInventorySplitView({
                         key={`placeholder-${index}`}
                         aria-hidden="true"
                         style={{ height: DATA_TABLE_BODY_ROW_HEIGHT }}
-                        className={`${DATA_TABLE_STYLES.bodyRow} ${dataTableStripedRowClassName(isLight)}`}
+                        className={`${DATA_TABLE_STYLES.bodyRow} ${dataTableRowClassName(isLight)}`}
                       >
                         <td
                           colSpan={9}
+                          className={`border-b ${dataTableRowBorderClassName(isLight)}`}
                           style={{ height: DATA_TABLE_BODY_ROW_HEIGHT, padding: 0 }}
                         />
                       </tr>
@@ -927,7 +930,7 @@ export default function ProductInventorySplitView({
                           setFormFieldErrors((errors) => errors.filter((field) => field !== "category"));
                         }}
                         placeholder={isThai ? "เลือก" : "Select"}
-                        placeholderClassName={isLight ? "!text-[#777777]" : "!text-[#A1A1AA]"}
+                        placeholderClassName={isLight ? "!text-[var(--text-muted)]" : "!text-[var(--text-muted)]"}
                         aria-invalid={formFieldErrors.includes("category")}
                         options={[
                           ...(filters?.categories || []).map((c) => ({
@@ -959,7 +962,7 @@ export default function ProductInventorySplitView({
                           setFormFieldErrors((errors) => errors.filter((field) => field !== "brand"));
                         }}
                         placeholder={isThai ? "เลือก" : "Select"}
-                        placeholderClassName={isLight ? "!text-[#777777]" : "!text-[#A1A1AA]"}
+                        placeholderClassName={isLight ? "!text-[var(--text-muted)]" : "!text-[var(--text-muted)]"}
                         aria-invalid={formFieldErrors.includes("brand")}
                         options={[
                           ...(formRefs?.brands || []).map((b) => ({
@@ -991,7 +994,7 @@ export default function ProductInventorySplitView({
                           setFormFieldErrors((errors) => errors.filter((field) => field !== "unit"));
                         }}
                         placeholder={isThai ? "เลือก" : "Select"}
-                        placeholderClassName={isLight ? "!text-[#777777]" : "!text-[#A1A1AA]"}
+                        placeholderClassName={isLight ? "!text-[var(--text-muted)]" : "!text-[var(--text-muted)]"}
                         aria-invalid={formFieldErrors.includes("unit")}
                         options={[
                           ...(formRefs?.units || []).map((u) => ({

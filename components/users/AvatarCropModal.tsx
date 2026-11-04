@@ -239,13 +239,13 @@ export function AvatarCropModal({
       <div
         ref={containerRef}
         className={`relative w-full max-w-[480px] rounded-[24px] border shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-150 ${
-          isLight ? "bg-white border-[#E4E4E7] text-[#222222]" : "bg-[#2A2A2A] border-[#444444] text-[#FFFFFF]"
+          isLight ? "bg-white border-[#E4E4E7] text-[#222222]" : "bg-[#383838] border-[#444444] text-[#FFFFFF]"
         }`}
       >
         {/* Modal Header */}
-        <div className={`flex items-center justify-between p-5 border-b shrink-0 ${isLight ? "border-[#E4E4E7]" : "border-[#3E3E3E]"}`}>
+        <div className={`flex items-center justify-between p-5 border-b shrink-0 ${isLight ? "border-[#E4E4E7]" : "border-[#444444]"}`}>
           <div className="flex items-center gap-2.5">
-            <div className={`p-2 rounded-xl ${isLight ? "bg-indigo-50 text-indigo-600" : "bg-indigo-500/20 text-indigo-400"}`}>
+            <div className={`p-2 rounded-xl ${isLight ? "bg-indigo-50 text-[var(--status-info)]" : "bg-indigo-500/20 text-[var(--status-info)]"}`}>
               <Crop size={18} />
             </div>
             <div>
@@ -272,7 +272,7 @@ export function AvatarCropModal({
         {/* Modal Body */}
         <div className="p-6 flex flex-col items-center gap-5">
           {errorMsg && (
-            <div className="w-full p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-500 text-xs flex items-center gap-2">
+            <div className="w-full p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-[var(--status-danger-badge-text)] text-xs flex items-center gap-2">
               <AlertCircle size={15} className="shrink-0" />
               <span>{errorMsg}</span>
             </div>
@@ -290,10 +290,10 @@ export function AvatarCropModal({
                   ? "border-indigo-500 bg-indigo-500/15 scale-[1.02] shadow-xl"
                   : isLight
                   ? "border-slate-300 hover:border-indigo-500 hover:bg-indigo-50/20 bg-slate-50 shadow-inner"
-                  : "border-zinc-600 hover:border-indigo-400 hover:bg-indigo-950/10 bg-[#202020] shadow-inner"
+                  : "border-zinc-600 hover:border-indigo-400 hover:bg-indigo-950/10 bg-[#222222] shadow-inner"
               }`}
             >
-              <div className={`p-5 rounded-2xl transition-transform ${isDragOver ? "scale-110" : ""} ${isLight ? "bg-white text-indigo-600 shadow-md" : "bg-[#333333] text-indigo-400"}`}>
+              <div className={`p-5 rounded-2xl transition-transform ${isDragOver ? "scale-110" : ""} ${isLight ? "bg-white text-[var(--status-info)] shadow-md" : "bg-[var(--cards)] text-[var(--status-info)]"}`}>
                 <Upload size={34} />
               </div>
               <div className="flex flex-col gap-1">
@@ -391,7 +391,7 @@ export function AvatarCropModal({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className={`text-[11px] font-semibold flex items-center gap-1 cursor-pointer opacity-70 hover:opacity-100 ${
-                  isLight ? "text-indigo-600" : "text-indigo-400"
+                  isLight ? "text-[var(--status-info)]" : "text-[var(--status-info)]"
                 }`}
               >
                 <ImageIcon size={12} />
@@ -410,7 +410,7 @@ export function AvatarCropModal({
         </div>
 
         {/* Modal Footer Actions */}
-        <div className={`flex items-center justify-end gap-2.5 p-4 sm:px-6 border-t shrink-0 ${isLight ? "border-[#E4E4E7] bg-[#FAFAFA]" : "border-[#3E3E3E] bg-[#222222]"}`}>
+        <div className={`flex items-center justify-end gap-2.5 p-4 sm:px-6 border-t shrink-0 ${isLight ? "border-[#E4E4E7] bg-[#F8FAFC]" : "border-[#444444] bg-[#222222]"}`}>
           <button
             type="button"
             onClick={onClose}

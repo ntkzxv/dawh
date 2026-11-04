@@ -236,9 +236,9 @@ export default function TransferScreen() {
       key: "status",
       header: isThai ? "สถานะ" : "Status",
       render: (item) => item.status === "COMPLETED" ? (
-        <span className="inline-flex rounded-[4px] bg-[#2EC4B6]/10 px-2 py-1 text-[11px] font-semibold text-[#2EC4B6]">{isThai ? "เสร็จสิ้น" : "Completed"}</span>
+        <span className="inline-flex rounded-[4px] bg-[var(--status-success)]/10 px-2 py-1 text-[11px] font-semibold text-[var(--status-success-badge-text)]">{isThai ? "เสร็จสิ้น" : "Completed"}</span>
       ) : (
-        <span className={`inline-flex rounded-[4px] px-2 py-1 text-[11px] font-semibold ${isLight ? "bg-[#E4E4E7] text-[#52525B]" : "bg-[#A1A1AA]/15 text-[#A1A1AA]"}`}>{isThai ? "กลับรายการ" : "Reversed"}</span>
+        <span className={`inline-flex rounded-[4px] px-2 py-1 text-[11px] font-semibold ${isLight ? "bg-[#E4E4E7] text-[var(--text-muted)]" : "bg-[var(--text-muted)]/15 text-[var(--text-muted)]"}`}>{isThai ? "กลับรายการ" : "Reversed"}</span>
       ),
     },
     { key: "date", header: isThai ? "วันที่บันทึก" : "Recorded", className: "whitespace-nowrap text-xs", render: (item) => formatDate(item.posted_at, isThai) },
@@ -427,12 +427,12 @@ function TransferMetric({
   return (
     <div className={`flex min-h-[128px] flex-col justify-between gap-4 rounded-xl border p-4 sm:p-5 ${isLight ? "border-[#E4E4E7] bg-white" : "border-[#444444] bg-[#383838]"}`}>
       <div className="flex items-center justify-between gap-3">
-        <span className={`text-sm ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>{label}</span>
-        <span className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${isLight ? "bg-[#F4F4F5] text-[#383838]" : "bg-white/5 text-[#E4E4E7]"}`}>{icon}</span>
+        <span className={`text-sm ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}>{label}</span>
+        <span className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${isLight ? "bg-[#F1F5F9] text-[#383838]" : "bg-white/5 text-[#E4E4E7]"}`}>{icon}</span>
       </div>
       <div>
         <div className="font-mono text-[30px] font-bold leading-9 tabular-nums text-current">{value === undefined ? <SkeletonBox className="h-8 w-16 rounded" /> : value}</div>
-        <div className={`mt-1 text-xs ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>{detail}</div>
+        <div className={`mt-1 text-xs ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}>{detail}</div>
       </div>
     </div>
   );
@@ -452,16 +452,16 @@ function TransferDetails({
   const { theme } = useTheme();
   const isLight = theme === "light";
   const divider = isLight ? "border-[#E4E4E7]" : "border-[#444444]";
-  const mutedText = isLight ? "text-[#666666]" : "text-[#A1A1AA]";
+  const mutedText = isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]";
   return (
     <div className="space-y-5 py-6 text-sm">
-      <div className={`rounded-xl border p-4 ${isLight ? "border-[#E4E4E7] bg-[#F8FAFC]" : "border-[#444444] bg-[#303030]"}`}>
+      <div className={`rounded-xl border p-4 ${isLight ? "border-[#E4E4E7] bg-[#F8FAFC]" : "border-[#444444] bg-[var(--cards)]"}`}>
         <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1">
             <div className={`text-xs ${mutedText}`}>{isThai ? "คลังต้นทาง" : "Source"}</div>
             <div className="truncate font-semibold">{transfer.source_warehouse_name}</div>
           </div>
-          <ArrowLeftRight className="shrink-0 text-[#6366F1]" size={18} aria-hidden="true" />
+          <ArrowLeftRight className="shrink-0 text-[var(--status-info)]" size={18} aria-hidden="true" />
           <div className="min-w-0 flex-1 text-right">
             <div className={`text-xs ${mutedText}`}>{isThai ? "คลังปลายทาง" : "Destination"}</div>
             <div className="truncate font-semibold">{transfer.destination_warehouse_name}</div>
@@ -470,7 +470,7 @@ function TransferDetails({
       </div>
       <div className="flex items-start justify-between gap-4">
         <span className={mutedText}>{isThai ? "สถานะ" : "Status"}</span>
-        <span className={transfer.status === "COMPLETED" ? "font-semibold text-[#2EC4B6]" : `font-semibold ${mutedText}`}>
+        <span className={transfer.status === "COMPLETED" ? "font-semibold text-[var(--status-success-text)]" : `font-semibold ${mutedText}`}>
           {transfer.status === "COMPLETED" ? (isThai ? "เสร็จสิ้น" : "Completed") : (isThai ? "กลับรายการ" : "Reversed")}
         </span>
       </div>
@@ -508,7 +508,7 @@ function TransferDetails({
         <button
           type="button"
           onClick={onReverse}
-          className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#E71D36]/30 px-3 text-xs font-semibold text-[#E71D36] transition-colors hover:bg-[#E71D36]/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E71D36]"
+          className="inline-flex h-10 items-center gap-2 rounded-lg border border-[var(--status-danger)]/30 px-3 text-xs font-semibold text-[var(--status-danger-text)] transition-colors hover:bg-[var(--status-danger)]/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--status-danger)]"
         >
           <RotateCcw size={14} aria-hidden="true" />
           {isThai ? "กลับรายการโอน" : "Reverse transfer"}
@@ -590,7 +590,7 @@ function TransferForm({
               : "Complete or correct the highlighted fields before saving."}
           </SidePanelAlert>
         )}
-        <div className="rounded-lg border border-[#FF9F1C]/30 bg-[#FF9F1C]/10 p-3 text-xs leading-5 text-[#FF9F1C]">
+        <div className="rounded-lg border border-[var(--status-warning)]/30 bg-[var(--status-warning)]/10 p-3 text-xs leading-5 text-[var(--status-warning-badge-text)]">
           {isThai
             ? "เมื่อยืนยัน ระบบจะตัดยอดจากคลังต้นทางและเพิ่มยอดในคลังปลายทางทันที รายการจะถูกบันทึกในประวัติสต๊อก และไม่ผ่านขั้นตอนอนุมัติหรือจัดส่ง"
             : "Confirming posts the transfer immediately: stock decreases at the source and increases at the destination. Approval and shipment stages are not part of this flow."}
@@ -632,11 +632,11 @@ function TransferForm({
           </div>
           {hasError("duplicate-product") && <SidePanelFieldError>{isThai ? "สินค้าเดียวกันให้รวมจำนวนไว้ในบรรทัดเดียว" : "Combine each product into a single line."}</SidePanelFieldError>}
           {lines.map((line, index) => (
-            <div key={line.key} className={`space-y-3 rounded-xl border p-3 ${theme === "light" ? "border-[#E4E4E7] bg-[#F8FAFC]" : "border-[#444444] bg-[#303030]"}`}>
+            <div key={line.key} className={`space-y-3 rounded-xl border p-3 ${theme === "light" ? "border-[#E4E4E7] bg-[#F8FAFC]" : "border-[#444444] bg-[var(--cards)]"}`}>
               <div className="flex items-center justify-between gap-3">
-              <span className={`text-xs font-semibold ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>{isThai ? `สินค้า ${index + 1}` : `Product ${index + 1}`}</span>
+              <span className={`text-xs font-semibold ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}>{isThai ? `สินค้า ${index + 1}` : `Product ${index + 1}`}</span>
                 {lines.length > 1 && (
-                    <button type="button" aria-label={isThai ? "ลบสินค้า" : "Remove product"} onClick={() => { setLines((current) => current.filter((item) => item.key !== line.key)); setErrors((current) => current.filter((error) => !error.startsWith(`line-${line.key}-`))); }} className={`rounded-md p-1.5 ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"} transition-colors hover:bg-[#E71D36]/10 hover:text-[#E71D36]`}>
+                    <button type="button" aria-label={isThai ? "ลบสินค้า" : "Remove product"} onClick={() => { setLines((current) => current.filter((item) => item.key !== line.key)); setErrors((current) => current.filter((error) => !error.startsWith(`line-${line.key}-`))); }} className={`rounded-md p-1.5 ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"} transition-colors hover:bg-[var(--status-danger)]/10 hover:text-[var(--status-danger-text)] dark:hover:text-[var(--status-danger-badge-text)]`}>
                     <X size={14} aria-hidden="true" />
                   </button>
                 )}

@@ -507,8 +507,8 @@ export default function SettingsView({
             <div
               className={`w-full p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all duration-300 ${
                 isLight
-                  ? "bg-[#FFF7ED] border-[#FDBA74] text-[#9A3412] shadow-sm"
-                  : "bg-[#2D1B13] border-[#7C2D12] text-[#FFEDD5] shadow-lg"
+                  ? "bg-[var(--status-warning)]/10 border-[var(--status-warning)]/30 text-[#222222] shadow-sm"
+                  : "bg-[var(--status-warning)]/15 border-[var(--status-warning)]/30 text-[var(--status-warning-badge-text)] shadow-lg"
               }`}
             >
               <div className="flex flex-col gap-0.5">
@@ -536,8 +536,8 @@ export default function SettingsView({
                     }}
                     className={`px-4 py-2.5 rounded-xl font-bold text-xs active:scale-95 transition-all shadow-sm flex items-center justify-center cursor-pointer ${
                       isLight
-                        ? "bg-[#EA580C] hover:bg-[#C2410C] text-white"
-                        : "bg-[#FB923C] hover:bg-[#F97316] text-[#222222]"
+                        ? "bg-[#222222] hover:bg-black text-white"
+                        : "bg-white hover:bg-[#F1F5F9] text-[#222222]"
                     }`}
                   >
                     <span>{isThai ? "ไปตั้งรหัสผ่านใหม่" : "Set New Password"}</span>
@@ -556,7 +556,7 @@ export default function SettingsView({
                     className={`px-4 py-2.5 rounded-xl font-bold text-xs active:scale-95 transition-all shadow-sm flex items-center justify-center cursor-pointer ${
                       isLight
                         ? "bg-[#222222] hover:bg-black text-white"
-                        : "bg-[#FFFFFF] hover:bg-[#F4F4F5] text-[#222222]"
+                        : "bg-[#FFFFFF] hover:bg-[#F1F5F9] text-[#222222]"
                     }`}
                   >
                     <span>{isThai ? "ไปตั้งรหัส PIN ใหม่" : "Set New PIN"}</span>
@@ -571,7 +571,7 @@ export default function SettingsView({
             <div className="flex items-center gap-3.5 min-w-0">
               <div
                 className={`w-11 h-11 rounded-full border overflow-hidden flex items-center justify-center shrink-0 select-none ${
-                  isLight ? "bg-[#F5F5F5] border-[#E5E5E5]" : "bg-[#282828] border-[#444444]"
+                  isLight ? "bg-[#F1F5F9] border-[#737D88]" : "bg-[var(--cards)] border-[#444444]"
                 }`}
               >
                 {profile.avatar_url ? (
@@ -587,7 +587,7 @@ export default function SettingsView({
                 <span className="font-bold text-[14.5px] leading-tight truncate">
                   {fullName}
                 </span>
-                <span className={`text-[12px] truncate ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
+                <span className={`text-[12px] truncate ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}>
                   {profile.email || "—"} • {profile.department || (isThai ? "ฝ่ายปฏิบัติการ" : "Operations")}
                 </span>
               </div>
@@ -610,7 +610,7 @@ export default function SettingsView({
                     ? "text-[#222222]"
                     : "text-[#FFFFFF]"
                   : isLight
-                  ? "text-[#666666] hover:text-[#222222]"
+                  ? "text-[var(--text-muted)] hover:text-[#222222]"
                   : "text-[#E4E4E7] hover:text-[#FFFFFF]"
               }`}
             >
@@ -641,7 +641,7 @@ export default function SettingsView({
                     ? "text-[#222222]"
                     : "text-[#FFFFFF]"
                   : isLight
-                  ? "text-[#666666] hover:text-[#222222]"
+                  ? "text-[var(--text-muted)] hover:text-[#222222]"
                   : "text-[#E4E4E7] hover:text-[#FFFFFF]"
               }`}
             >
@@ -672,7 +672,7 @@ export default function SettingsView({
                     ? "text-[#222222]"
                     : "text-[#FFFFFF]"
                   : isLight
-                  ? "text-[#666666] hover:text-[#222222]"
+                  ? "text-[var(--text-muted)] hover:text-[#222222]"
                   : "text-[#E4E4E7] hover:text-[#FFFFFF]"
               }`}
             >
@@ -704,7 +704,7 @@ export default function SettingsView({
                   <h3 className="font-bold text-[16px] leading-tight">
                     <span>{isThai ? "โหมดการแสดงผลของธีม" : "Theme Appearance"}</span>
                   </h3>
-                  <p className={`text-[13px] mt-1 ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
+                  <p className={`text-[13px] mt-1 ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}>
                     {isThai
                       ? "เลือกระหว่างโหมดมืดและโหมดสว่าง ระบบจะบันทึกค่าไว้โดยอัตโนมัติ"
                       : "Choose between Dark Obsidian mode and Clean Light mode. Preferences are saved automatically."}
@@ -719,14 +719,14 @@ export default function SettingsView({
                     className={`relative p-4 sm:p-5 rounded-2xl border-2 cursor-pointer transition-all duration-200 flex items-center justify-between ${
                       isLight
                         ? "border-[#222222] bg-[#FFFFFF] shadow-sm ring-1 ring-[#222222]/15"
-                        : "border-[#444444] bg-[#383838] hover:border-[#666666]"
+                        : "border-[#444444] bg-[#383838] hover:border-[var(--text-muted)]"
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shadow-xs shrink-0 ${
                         isLight
                           ? "bg-[#222222] text-white border-[#222222]"
-                          : "bg-[#282828] text-white border-[#444444]"
+                          : "bg-[var(--cards)] text-white border-[#444444]"
                       }`}>
                         <Sun size={20} />
                       </div>
@@ -783,7 +783,7 @@ export default function SettingsView({
                   <h3 className="font-bold text-[16px] leading-tight">
                     <span>{isThai ? "ภาษาและภูมิภาค" : "Language & Region"}</span>
                   </h3>
-                  <p className={`text-[13px] mt-1 ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
+                  <p className={`text-[13px] mt-1 ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}>
                     {isThai
                       ? "กำหนดภาษาหลักที่ใช้ในการแสดงผลเมนู ฟอร์ม และการแจ้งเตือน"
                       : "Choose the primary language for interface menus, forms, and messages."}
@@ -807,7 +807,7 @@ export default function SettingsView({
                           : "border-white bg-[#383838] shadow-sm ring-1 ring-white/20"
                         : isLight
                         ? "border-[#E4E4E7] bg-[#FFFFFF] hover:border-slate-300"
-                        : "border-[#444444] bg-[#2C2C2C] hover:border-[#666666]"
+                        : "border-[#444444] bg-[#2C2C2C] hover:border-[var(--text-muted)]"
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -818,13 +818,13 @@ export default function SettingsView({
                             : "bg-white text-[#222222] border-white"
                           : isLight
                           ? "bg-slate-100 text-slate-700 border-slate-200"
-                          : "bg-[#282828] text-zinc-300 border-[#444444]"
+                          : "bg-[var(--cards)] text-zinc-300 border-[#444444]"
                       }`}>
                         TH
                       </div>
                       <div>
                         <h4 className="font-bold text-[15px] leading-tight">ภาษาไทย</h4>
-                        <span className={`text-[12px] ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
+                        <span className={`text-[12px] ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}>
                           Thai (Default)
                         </span>
                       </div>
@@ -854,7 +854,7 @@ export default function SettingsView({
                           : "border-white bg-[#383838] shadow-sm ring-1 ring-white/20"
                         : isLight
                         ? "border-[#E4E4E7] bg-[#FFFFFF] hover:border-slate-300"
-                        : "border-[#444444] bg-[#2C2C2C] hover:border-[#666666]"
+                        : "border-[#444444] bg-[#2C2C2C] hover:border-[var(--text-muted)]"
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -865,13 +865,13 @@ export default function SettingsView({
                             : "bg-white text-[#222222] border-white"
                           : isLight
                           ? "bg-slate-100 text-slate-700 border-slate-200"
-                          : "bg-[#282828] text-zinc-300 border-[#444444]"
+                          : "bg-[var(--cards)] text-zinc-300 border-[#444444]"
                       }`}>
                         EN
                       </div>
                       <div>
                         <h4 className="font-bold text-[15px] leading-tight">English</h4>
-                        <span className={`text-[12px] ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
+                        <span className={`text-[12px] ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}>
                           International English
                         </span>
                       </div>
@@ -898,7 +898,7 @@ export default function SettingsView({
                   <h3 className="font-bold text-[16px] leading-tight">
                     <span>{isThai ? "อุปกรณ์และเซสชันที่ใช้งานอยู่" : "Active Sessions & Connected Devices"}</span>
                   </h3>
-                  <p className={`text-[13px] mt-1 ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
+                  <p className={`text-[13px] mt-1 ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}>
                     {isThai
                       ? "ตรวจสอบอุปกรณ์และเบราว์เซอร์ที่กำลังลงชื่อเข้าใช้บัญชีของคุณอยู่ในขณะนี้"
                       : "Monitor devices and active browser sessions currently authenticated with your account."}
@@ -935,8 +935,8 @@ export default function SettingsView({
                       onClick={handleRevokeOtherSessions}
                       className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer ${
                         isLight
-                          ? "bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200"
-                          : "bg-rose-950/40 hover:bg-rose-950/70 text-rose-300 border border-rose-800/60"
+                          ? "bg-rose-50 hover:bg-rose-100 text-[var(--status-danger-badge-text)] border border-rose-200"
+                          : "bg-rose-950/40 hover:bg-rose-950/70 text-[var(--status-danger-badge-text)] border border-rose-800/60"
                       }`}
                     >
                       {isRevokingSessions ? (
@@ -987,10 +987,10 @@ export default function SettingsView({
                       <div className="flex items-start gap-3.5">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
                           isCurrent
-                            ? "bg-[#2EC4B6]/15 text-[#2EC4B6] border border-[#2EC4B6]/30"
+                            ? "bg-[var(--status-success)]/15 text-[var(--status-success-badge-text)] border border-[var(--status-success)]/30"
                             : isLight
                             ? "bg-slate-100 text-slate-600"
-                            : "bg-[#282828] text-zinc-300"
+                            : "bg-[var(--cards)] text-zinc-300"
                         }`}>
                           {icon === "phone" ? <Smartphone size={20} /> : icon === "globe" ? <Globe size={20} /> : <Laptop size={20} />}
                         </div>
@@ -998,8 +998,8 @@ export default function SettingsView({
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-bold text-[14px] leading-tight">{device}</span>
                             {isCurrent && (
-                              <span className="px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-[#2EC4B6]/15 text-[#2EC4B6] border border-[#2EC4B6]/30 flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#2EC4B6] animate-pulse" />
+                              <span className="px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-[var(--status-success)]/15 text-[var(--status-success-badge-text)] border border-[var(--status-success)]/30 flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[var(--status-success)] animate-pulse" />
                                 <span>{isThai ? "เซสชันปัจจุบัน" : "Current"}</span>
                               </span>
                             )}
@@ -1019,8 +1019,8 @@ export default function SettingsView({
                           onClick={() => handleRevokeSession(session.token)}
                           className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all cursor-pointer shrink-0 ${
                             isLight
-                              ? "border border-rose-200 text-rose-600 hover:bg-rose-50"
-                              : "border border-rose-800/60 text-rose-300 hover:bg-rose-950/40"
+                              ? "border border-rose-200 text-[var(--status-danger-text)] hover:bg-rose-50"
+                              : "border border-rose-800/60 text-[var(--status-danger-text)] hover:bg-rose-950/40"
                           }`}
                         >
                           {isThai ? "ยกเลิก" : "Revoke"}
@@ -1045,9 +1045,9 @@ export default function SettingsView({
                 {/* All-clear banner after revoking */}
                 {otherSessionsTerminated && sessions.filter(s => s.token !== currentToken).length === 0 && (
                   <div className={`p-4 rounded-xl border flex items-center gap-3 ${
-                    isLight ? "bg-emerald-50 border-emerald-200 text-emerald-800" : "bg-emerald-950/30 border-emerald-800/40 text-emerald-300"
+                    isLight ? "bg-emerald-50 border-emerald-200 text-[var(--status-success-badge-text)]" : "bg-emerald-950/30 border-emerald-800/40 text-[var(--status-success-badge-text)]"
                   }`}>
-                    <CheckCircle2 size={18} className="shrink-0 text-[#2EC4B6]" />
+                    <CheckCircle2 size={18} className="shrink-0 text-[var(--status-success-badge-text)]" />
                     <span className="text-xs font-semibold">
                       {isThai
                         ? "ออกจากระบบอุปกรณ์อื่นเรียบร้อยแล้ว มีเพียงเซสชันปัจจุบันเท่านั้น"
@@ -1069,7 +1069,7 @@ export default function SettingsView({
                   <h3 className="font-bold text-[16px] leading-tight">
                     <span>{isThai ? "ระยะเวลาแสดงการแจ้งเตือน" : "Toast Notification Duration"}</span>
                   </h3>
-                  <p className={`text-[13px] mt-1 ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
+                  <p className={`text-[13px] mt-1 ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}>
                     {isThai
                       ? "กำหนดระยะเวลาที่กล่องแจ้งเตือนจะแสดงผลบนหน้าจอก่อนจะปิดอัตโนมัติ"
                       : "Control how long notification popups stay visible on screen before auto-dismissing."}
@@ -1094,7 +1094,7 @@ export default function SettingsView({
                               : "border-white bg-[#383838] shadow-sm ring-1 ring-white/20"
                             : isLight
                             ? "border-[#E4E4E7] bg-[#FFFFFF] hover:border-slate-300"
-                            : "border-[#444444] bg-[#2C2C2C] hover:border-[#666666]"
+                            : "border-[#444444] bg-[#2C2C2C] hover:border-[var(--text-muted)]"
                         }`}
                       >
                         <span className={`text-[13px] font-bold ${
@@ -1125,7 +1125,7 @@ export default function SettingsView({
                       <h3 className="font-bold text-[15.5px] leading-tight">
                         {isThai ? "เสียงแจ้งเตือน" : "Notification Sound Effects"}
                       </h3>
-                      <p className={`text-[12.5px] mt-1 ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
+                      <p className={`text-[12.5px] mt-1 ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}>
                         {isThai
                           ? "ส่งสัญญาณเสียงระฆังนุ่มเมื่อมีการทำรายการหรือแจ้งเตือนข้อผิดพลาดสำคัญ"
                           : "Play a subtle Soft Bell chime when operations succeed or critical alerts arrive."}
@@ -1138,7 +1138,7 @@ export default function SettingsView({
                     type="button"
                     onClick={handleToggleSound}
                     className={`w-12 h-6.5 rounded-full p-0.5 transition-colors cursor-pointer relative shrink-0 ${
-                      soundEnabled ? "bg-[#2EC4B6]" : isLight ? "bg-slate-300" : "bg-[#444444]"
+                      soundEnabled ? "bg-[var(--status-success)]" : isLight ? "bg-slate-300" : "bg-[#444444]"
                     }`}
                   >
                     <div
@@ -1162,8 +1162,8 @@ export default function SettingsView({
                     >
                       <div className={`p-4 rounded-2xl border flex flex-col gap-3.5 ${
                         isLight
-                          ? "bg-[#F8F9FA] border-[#E4E4E7]"
-                          : "bg-[#2A2A2A] border-[#3E3E3E]"
+                          ? "bg-[#F8FAFC] border-[#E4E4E7]"
+                          : "bg-[#383838] border-[#444444]"
                       }`}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -1194,7 +1194,7 @@ export default function SettingsView({
                                       : "bg-white text-[#222222]"
                                     : isLight
                                     ? "bg-white text-slate-600 hover:bg-slate-200 border border-slate-200"
-                                    : "bg-[#383838] text-zinc-300 hover:bg-[#484848] border border-[#444444]"
+                                    : "bg-[#383838] text-zinc-300 hover:bg-[#444444] border border-[#444444]"
                                 }`}
                               >
                                 {presetVol}%
@@ -1209,7 +1209,7 @@ export default function SettingsView({
                             size={16}
                             className={`shrink-0 cursor-pointer ${
                               soundVolume === 0
-                                ? "text-rose-500"
+                                ? "text-[var(--status-danger-text)]"
                                 : isLight ? "text-slate-400 hover:text-slate-600" : "text-zinc-500 hover:text-zinc-300"
                             }`}
                             onClick={() => handleVolumeChange(0)}
@@ -1223,13 +1223,13 @@ export default function SettingsView({
                             onChange={(e) => handleVolumeChange(parseInt(e.target.value, 10))}
                             onMouseUp={() => handlePreviewSound()}
                             onTouchEnd={() => handlePreviewSound()}
-                            className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-[#2EC4B6] bg-slate-200 dark:bg-zinc-700"
+                            className="w-full h-1.5 rounded-lg appearance-none cursor-pointer accent-[var(--status-success)] bg-slate-200 dark:bg-zinc-700"
                           />
                           <Volume2
                             size={16}
                             className={`shrink-0 cursor-pointer ${
                               soundVolume === 100
-                                ? "text-[#2EC4B6]"
+                                ? "text-[var(--status-success-text)]"
                                 : isLight ? "text-slate-400 hover:text-slate-600" : "text-zinc-500 hover:text-zinc-300"
                             }`}
                             onClick={() => {
@@ -1251,7 +1251,7 @@ export default function SettingsView({
                     <h3 className="font-bold text-[15.5px] leading-tight">
                       {isThai ? "การแจ้งเตือนความปลอดภัยของระบบ" : "Security & Login Alerts"}
                     </h3>
-                    <p className={`text-[12.5px] mt-1 ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
+                    <p className={`text-[12.5px] mt-1 ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}>
                       {isThai
                         ? "แจ้งเตือนเมื่อมีการเข้าสู่ระบบจากอุปกรณ์ใหม่หรือเมื่อมีการเปลี่ยนรหัสผ่าน"
                         : "Receive in-app alerts when logins occur from new devices or credentials change."}

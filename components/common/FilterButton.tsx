@@ -31,8 +31,8 @@ export default function FilterButton({
     <div
       className={`inline-flex items-center gap-1.5 rounded-[6px] border text-[13px] font-semibold transition-colors ${iconOnly ? "size-[38px] justify-center" : "h-[33px]"} ${
         isLight
-          ? "border-[#E4E4E7] bg-white text-[#222222] hover:bg-slate-50"
-          : "border-[#444444] bg-[#383838] text-white hover:bg-white/5"
+          ? "border-[var(--toolbar-control-border)] bg-[var(--toolbar-button-bg)] text-[var(--text-primary)] hover:bg-[var(--toolbar-button-hover)]"
+          : "border-[var(--toolbar-control-border)] bg-[var(--toolbar-button-bg)] text-[var(--text-secondary)] hover:bg-[var(--toolbar-button-hover)]"
       }`}
     >
       <button
@@ -54,13 +54,13 @@ export default function FilterButton({
             onClick={onClear}
             aria-label={clearLabel}
             title={clearLabel}
-            className="group relative mr-3 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#6366F1] px-1 text-xs text-white cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
+            className="group relative mr-3 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--status-info)] px-1 text-xs text-[var(--accent-foreground)] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
           >
             <span className="transition-opacity group-hover:opacity-0 group-focus-visible:opacity-0">{activeFilterCount}</span>
             <X className="absolute h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden="true" />
           </button>
         ) : (
-          <span className="mr-3 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#6366F1] px-1 text-xs text-white">
+          <span className="mr-3 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--status-info)] px-1 text-xs text-[var(--accent-foreground)]">
             {activeFilterCount}
           </span>
         )

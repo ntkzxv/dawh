@@ -12,6 +12,8 @@ import DropdownMenu from "./DropdownMenu";
 export interface HeaderNavbarProps {
   title?: string;
   subtitle?: string;
+  moduleLabel?: string;
+  showOnMobile?: boolean;
   showLogo?: boolean;
   showAccount?: boolean;
   onNavigate?: (target: string) => void;
@@ -23,6 +25,8 @@ export interface HeaderNavbarProps {
 export default function HeaderNavbar({
   title,
   subtitle,
+  moduleLabel,
+  showOnMobile = false,
   showLogo = false,
   showAccount = false,
   onNavigate,
@@ -106,7 +110,7 @@ export default function HeaderNavbar({
   return (
 
     <header
-      className={`hidden md:flex sticky top-0 z-40 w-full h-[72px] px-6 sm:px-8 py-4 flex-row justify-between items-center border-b transition-colors duration-300 ${
+      className={`${showOnMobile ? "flex" : "hidden md:flex"} sticky top-0 z-40 w-full h-[72px] px-4 sm:px-6 md:px-8 py-4 flex-row justify-between items-center border-b transition-colors duration-300 ${
         isLight
           ? "bg-[#FFFFFF] border-[#E4E4E7]"
           : "bg-[#222222] border-[#444444]"
@@ -127,10 +131,19 @@ export default function HeaderNavbar({
           />
         </div>
       ) : (
-        <div className="flex flex-col items-start gap-[2px]">
+        <div className="flex min-w-0 flex-col items-start gap-[1px]">
+          {Boolean(moduleLabel) && (
+            <p
+              className={`text-[11px] leading-4 ${
+                isLight ? "text-[#737D88]" : "text-[#E4E4E7]"
+              }`}
+            >
+              {moduleLabel}
+            </p>
+          )}
           <h1
-            className={`font-bold text-[18px] sm:text-[20px] leading-[26px] tracking-tight ${
-              isLight ? "text-[#18181B]" : "text-[#FFFFFF]"
+            className={`truncate max-w-full font-bold text-[18px] sm:text-[20px] leading-[26px] tracking-tight ${
+              isLight ? "text-[#222222]" : "text-[#FFFFFF]"
             }`}
             style={{ fontFamily: "var(--font-outfit), sans-serif" }}
           >
@@ -139,7 +152,7 @@ export default function HeaderNavbar({
           {Boolean(displaySubtitle) && (
             <p
               className={`font-normal text-[13.5px] leading-[18px] ${
-                isLight ? "text-[#666666]" : "text-[#E4E4E7]"
+                isLight ? "text-[var(--text-muted)]" : "text-[#E4E4E7]"
               }`}
             >
               {displaySubtitle}
@@ -156,7 +169,7 @@ export default function HeaderNavbar({
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           className={`flex items-center gap-3 px-2 py-1.5 rounded-full transition-all duration-200 cursor-pointer ${
             isLight
-              ? "hover:bg-[#F4F4F5] text-[#222222]"
+              ? "hover:bg-[#F1F5F9] text-[#222222]"
               : "hover:bg-white/10 text-white"
           }`}
         >
@@ -165,7 +178,7 @@ export default function HeaderNavbar({
             className={`relative flex items-center justify-center w-[38px] h-[38px] rounded-full overflow-hidden shrink-0 border ${
               isLight
                 ? "bg-slate-100 border-slate-300 text-slate-800"
-                : "bg-[#282828] border-[#444444] text-[#E4E4E7]"
+                : "bg-[var(--cards)] border-[#444444] text-[#E4E4E7]"
             }`}
           >
             {mounted && profile.avatar_url ? (
@@ -203,7 +216,7 @@ export default function HeaderNavbar({
               <div className="flex items-center gap-1.5 mt-[1px]">
                 <span
                   className={`font-medium text-[12px] leading-[15px] truncate max-w-[140px] ${
-                    isLight ? "text-[#666666]" : "text-[#E4E4E7]"
+                    isLight ? "text-[var(--text-muted)]" : "text-[#E4E4E7]"
                   }`}
                   suppressHydrationWarning
                 >
@@ -218,9 +231,9 @@ export default function HeaderNavbar({
           {/* Chevron Indicator */}
           <ChevronDown
             size={16}
-            className={`transition-transform duration-200 shrink-0 ${
+            className={`ml-1 transition-transform duration-200 shrink-0 ${
               isDropdownOpen ? "rotate-180" : ""
-            } ${isLight ? "text-[#666666]" : "text-[#E4E4E7]"}`}
+            } ${isLight ? "text-[var(--text-muted)]" : "text-[#E4E4E7]"}`}
           />
         </button>
 
@@ -238,7 +251,7 @@ export default function HeaderNavbar({
               className={`absolute right-0 mt-2 w-[280px] rounded-2xl border p-2 shadow-2xl z-50 origin-top-right ${
                 isLight
                   ? "bg-white border-[#E4E4E7] shadow-xl text-[#222222]"
-                  : "bg-[#282828] border-[#444444] shadow-2xl text-white"
+                  : "bg-[var(--cards)] border-[#444444] shadow-2xl text-white"
               }`}
             >
               <DropdownMenu

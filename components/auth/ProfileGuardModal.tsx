@@ -40,7 +40,7 @@ export function ProfileGuardModal({
         className={`relative w-full max-w-[500px] rounded-[24px] border p-6 sm:p-8 shadow-lg flex flex-col items-center text-center gap-6 animate-in zoom-in-95 duration-200 ${
           isLight
             ? "bg-white border-[#E4E4E7] text-[#222222] shadow-slate-300/30"
-            : "bg-[#2A2A2A] border-[#444444] text-[#FFFFFF] shadow-black/50"
+            : "bg-[#383838] border-[#444444] text-[#FFFFFF] shadow-black/50"
         }`}
       >
         {/* Close (X) Button (Top Right) */}
@@ -51,7 +51,7 @@ export function ProfileGuardModal({
             className={`absolute top-4 right-4 sm:top-5 sm:right-5 p-2 rounded-full transition-colors cursor-pointer ${
               isLight
                 ? "text-slate-400 hover:text-[#222222] hover:bg-slate-100"
-                : "text-[#A1A1AA] hover:text-white hover:bg-white/10"
+                : "text-[var(--text-muted)] hover:text-white hover:bg-white/10"
             }`}
             title={isThai ? "ปิด" : "Close"}
             aria-label="Close"
@@ -76,7 +76,7 @@ export function ProfileGuardModal({
           </h3>
           <p
             className={`text-[13.5px] sm:text-[14px] leading-relaxed max-w-md mx-auto ${
-              isLight ? "text-[#555555]" : "text-[#B4B4B8]"
+              isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"
             }`}
             style={{
               fontFamily: isThai

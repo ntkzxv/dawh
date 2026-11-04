@@ -59,12 +59,14 @@ export default function ControlPanelLayout({
             ? "scopes"
             : pathname === "/controlpanel/account-status"
               ? "account-status"
+              : pathname === "/controlpanel/module-status"
+                ? "module-status"
               : pathname === "/controlpanel/master-data"
                 ? "master-data"
           : null;
   const activeTab: ControlPanelTab = isAuditRoute
     ? "audit"
-    : routeTab ?? (tab === "audit" || tab === "security" || tab === "scopes" || tab === "account-status" || tab === "master-data" ? "members" : tab);
+    : routeTab ?? (tab === "audit" || tab === "security" || tab === "scopes" || tab === "account-status" || tab === "master-data" || tab === "module-status" ? "members" : tab);
   const auditCategory = isAuditRoute
     ? pathname.split("/").at(-1) ?? ALL_AUDIT_CATEGORIES
     : storedAuditCategory;

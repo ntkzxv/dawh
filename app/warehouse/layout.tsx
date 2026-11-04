@@ -6,6 +6,7 @@ import { NavbarMain, NavbarsubWarehouse } from "@/components/navbar";
 import { useTheme } from "@/context/ThemeContext";
 import { useOptionalWarehouseAccount } from "@/context/WarehouseAccountContext";
 import { motion } from "framer-motion";
+import ModuleAvailabilityGuard from "@/components/modules/ModuleAvailabilityGuard";
 
 export default function WarehouseLayout({
   children,
@@ -96,7 +97,7 @@ function WarehouseLayoutContent({ children }: { children: React.ReactNode }) {
         }}
         className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden"
       >
-        {children}
+        <ModuleAvailabilityGuard moduleKey="warehouse">{children}</ModuleAvailabilityGuard>
       </motion.div>
     </div>
   );

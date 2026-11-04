@@ -456,7 +456,7 @@ export default function ReceiveScreen() {
 
   const countedCarrierIds = new Set(activeData?.carriers.filter((item) => item.has_goods_receipt).map((item) => item.id) ?? []);
   const tabBar = (
-    <nav aria-label={isThai ? "ขั้นตอนการรับสินค้า" : "Goods receiving steps"} className={`flex h-[42px] w-full flex-row items-stretch overflow-x-auto rounded-lg border px-1 select-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${isLight ? "border-[#D4D4D8] bg-white" : "border-[#666666] bg-[#383838]"}`}>
+    <nav aria-label={isThai ? "ขั้นตอนการรับสินค้า" : "Goods receiving steps"} className={`flex h-[42px] w-full flex-row items-stretch overflow-x-auto rounded-lg border px-1 select-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${isLight ? "border-[#D1D5DB] bg-[#E9EBEF]" : "border-[#444444] bg-[#383838]"}`}>
       {steps
         .filter((key) => (data?.me.role ?? account?.me?.role) !== "EMPLOYEE" || key === "carrier")
         .map((key) => {
@@ -481,15 +481,15 @@ export default function ReceiveScreen() {
                     ? "font-semibold text-black"
                     : "font-semibold text-white"
                   : isLight
-                    ? "text-black/65 hover:text-black hover:after:bg-black/50"
-                    : "text-[#E4E4E7] hover:text-white hover:after:bg-[#71717A]"
+                    ? "text-[var(--text-secondary)] hover:text-black hover:after:bg-black/50"
+                    : "text-[#E4E4E7] hover:text-white hover:after:bg-[#E4E4E7]"
               }`}
             >
               <span className="truncate">{stepLabel(key, isThai)}</span>
               {isCurrent && (
                 <motion.div
                   layoutId="receiveActiveTabUnderline"
-                  className={`absolute bottom-0 left-5 right-5 h-[2px] ${isLight ? "bg-black" : "bg-[#D4D4D8]"}`}
+                  className={`absolute bottom-0 left-5 right-5 h-[2px] ${isLight ? "bg-black" : "bg-[var(--text-secondary)]"}`}
                   transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 450, damping: 35 }}
                 />
               )}

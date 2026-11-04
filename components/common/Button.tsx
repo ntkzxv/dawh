@@ -39,19 +39,19 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         // Theme-adaptive Black/White Primary CTA
         variantStyles = isLight
           ? "bg-[#222222] hover:bg-black text-white font-semibold shadow-xs"
-          : "bg-white hover:bg-[#F4F4F5] text-[#222222] font-semibold shadow-xs";
+          : "bg-white hover:bg-[#F1F5F9] text-[#222222] font-semibold shadow-xs";
         break;
 
       case "danger":
         variantStyles = isLight
-          ? "bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 font-medium"
-          : "bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 font-medium";
+          ? "bg-rose-50 text-[var(--status-danger-text)] border border-rose-200 hover:bg-rose-100 font-medium"
+          : "bg-rose-500/10 text-[var(--status-danger-badge-text)] border border-rose-500/30 hover:bg-rose-500/20 font-medium";
         break;
 
       case "secondary":
         variantStyles = isLight
-          ? "bg-zinc-100 border border-zinc-300 text-[#222222] hover:bg-zinc-200 font-medium"
-          : "bg-[#444444] border border-[#555555] text-[#F8FAFC] hover:bg-[#4d4d4d] font-medium";
+          ? "bg-[var(--toolbar-button-bg)] border border-[var(--toolbar-control-border)] text-[var(--text-primary)] hover:bg-[var(--toolbar-button-hover)] font-medium"
+          : "bg-[var(--toolbar-button-bg)] border border-[var(--toolbar-control-border)] text-[var(--text-secondary)] hover:bg-[var(--toolbar-button-hover)] font-medium";
         break;
 
       case "default":
@@ -59,8 +59,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       default:
         // Default standard toolbar button (e.g. export, import, filter buttons)
         variantStyles = isLight
-          ? "bg-white border-[#E4E4E7] text-[#222222] hover:bg-slate-100 border font-normal"
-          : "bg-[#383838] border-[#444444] text-[#F8FAFC] hover:bg-[#444444] border font-normal";
+          ? "bg-[var(--toolbar-button-bg)] border-[var(--toolbar-control-border)] text-[var(--text-primary)] hover:bg-[var(--toolbar-button-hover)] border font-normal"
+          : "bg-[var(--toolbar-button-bg)] border-[var(--toolbar-control-border)] text-[var(--text-secondary)] hover:bg-[var(--toolbar-button-hover)] border font-normal";
         break;
     }
 

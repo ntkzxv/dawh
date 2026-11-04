@@ -232,7 +232,7 @@ export default function Settings() {
                     >
                       Horizon WMS
                     </h2>
-                    <p className={`text-[12px] ${isLight ? "text-slate-500" : "text-[#A1A1AA]"}`}>
+                    <p className={`text-[12px] ${isLight ? "text-slate-500" : "text-[var(--text-muted)]"}`}>
                       DAWH Logistics Framework v1.0
                     </p>
                   </div>
@@ -240,22 +240,22 @@ export default function Settings() {
 
                 <div className="mt-4 pt-4 border-t border-slate-200 dark:border-white/10 flex flex-col gap-2.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className={isLight ? "text-slate-500" : "text-[#A1A1AA]"}>
+                    <span className={isLight ? "text-slate-500" : "text-[var(--text-muted)]"}>
                       {isThai ? "สถาปัตยกรรม:" : "Architecture:"}
                     </span>
                     <span className="font-semibold font-mono">Next.js App Router (BFF)</span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className={isLight ? "text-slate-500" : "text-[#A1A1AA]"}>
+                    <span className={isLight ? "text-slate-500" : "text-[var(--text-muted)]"}>
                       {isThai ? "การเชื่อมต่อฐานข้อมูล:" : "Database Engine:"}
                     </span>
-                    <span className="font-semibold text-[#2EC4B6] flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-[#2EC4B6]" />
+                    <span className="font-semibold text-[var(--status-success-text)] flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-[var(--status-success)]" />
                       PostgreSQL Connected
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className={isLight ? "text-slate-500" : "text-[#A1A1AA]"}>
+                    <span className={isLight ? "text-slate-500" : "text-[var(--text-muted)]"}>
                       {isThai ? "ระบบยืนยันตัวตน:" : "Authentication:"}
                     </span>
                     <span className="font-semibold font-mono">Better Auth Session</span>
@@ -272,7 +272,7 @@ export default function Settings() {
                 <div className="flex items-center gap-2.5">
                   <div
                     className={`p-2 rounded-lg ${
-                      isLight ? "bg-[#F4F4F5] text-[#222222]" : "bg-[#282828] text-white"
+                      isLight ? "bg-[#F1F5F9] text-[#222222]" : "bg-[var(--cards)] text-white"
                     }`}
                   >
                     <ShieldCheck size={18} />
@@ -294,7 +294,7 @@ export default function Settings() {
                   className={`mt-1 inline-flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold border transition-all duration-200 cursor-pointer ${
                     isLight
                       ? "border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-900"
-                      : "border-[#555555] bg-[#292929] hover:bg-[#333333] text-white"
+                      : "border-[#444444] bg-[var(--cards)] hover:bg-[var(--cards)] text-white"
                   }`}
                 >
                   <span>{isThai ? "เปิดหน้าโปรไฟล์บัญชีผู้ใช้" : "Go to Account Profile"}</span>
@@ -306,12 +306,12 @@ export default function Settings() {
               {isGlobalAdmin && (
                 <section
                   className={`w-full p-5 rounded-2xl border transition-all duration-300 shadow-sm flex flex-col gap-2.5 ${
-                    isLight ? "bg-indigo-50/50 border-indigo-200 text-indigo-950" : "bg-indigo-950/20 border-indigo-500/30 text-white"
+                    isLight ? "bg-indigo-50/50 border-indigo-200 text-[var(--status-info)]" : "bg-indigo-950/20 border-indigo-500/30 text-white"
                   }`}
                 >
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-indigo-500" />
-                    <span className="text-[11.5px] font-bold uppercase tracking-wider text-indigo-500">
+                    <span className="text-[11.5px] font-bold uppercase tracking-wider text-[var(--status-info)]">
                       {isThai ? "สิทธิ์ผู้ดูแลระบบสูงสุด" : "Administrator Hub"}
                     </span>
                   </div>
@@ -322,7 +322,7 @@ export default function Settings() {
                   </p>
                   <Link
                     href="/controlpanel"
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline pt-1"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--status-info)] dark:text-[var(--status-info)] hover:underline pt-1"
                   >
                     <span>{isThai ? "เข้าสู่แผงควบคุมระบบ" : "Open Control Panel"}</span>
                     <ArrowRight size={13} />
@@ -351,7 +351,7 @@ export default function Settings() {
                     >
                       <div className="flex items-center justify-between border-b pb-4 border-slate-200 dark:border-white/10 mb-5">
                         <div className="flex items-center gap-2.5">
-                          <Cpu size={18} className="text-indigo-500" />
+                          <Cpu size={18} className="text-[var(--status-info)]" />
                           <h3
                             className="font-bold text-[16px]"
                             style={{ fontFamily: "var(--font-outfit), sans-serif" }}
@@ -359,7 +359,7 @@ export default function Settings() {
                             {isThai ? "สถานะการทำงานระบบ (Horizon Health)" : "System Health & Operational Status"}
                           </h3>
                         </div>
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-[#2EC4B6]/15 text-[#2EC4B6] border border-[#2EC4B6]/30">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-[var(--status-success)]/15 text-[var(--status-success-badge-text)] border border-[var(--status-success)]/30">
                           <CheckCircle2 size={13} />
                           {isThai ? "ระบบปฏิบัติการสมบูรณ์" : "Fully Operational"}
                         </span>
@@ -368,7 +368,7 @@ export default function Settings() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <HealthStatCard
                           isLight={isLight}
-                          icon={<Database size={18} className="text-indigo-500" />}
+                          icon={<Database size={18} className="text-[var(--status-info)]" />}
                           title={isThai ? "การเชื่อมต่อฐานข้อมูลหลัก" : "PostgreSQL Primary Pool"}
                           badge={isThai ? "พร้อมใช้งาน" : "Healthy"}
                           badgeTone="healthy"
@@ -376,7 +376,7 @@ export default function Settings() {
                         />
                         <HealthStatCard
                           isLight={isLight}
-                          icon={<HardDrive size={18} className="text-amber-500" />}
+                          icon={<HardDrive size={18} className="text-[var(--status-warning-text)]" />}
                           title={isThai ? "พื้นที่จัดเก็บไฟล์และหลักฐาน" : "Storage Engine (Proof & Media)"}
                           badge={isThai ? "ปกติ" : "Ready"}
                           badgeTone="healthy"
@@ -384,7 +384,7 @@ export default function Settings() {
                         />
                         <HealthStatCard
                           isLight={isLight}
-                          icon={<ShieldCheck size={18} className="text-emerald-500" />}
+                          icon={<ShieldCheck size={18} className="text-[var(--status-success-text)]" />}
                           title={isThai ? "การตรวจสอบสิทธิ์และเซสชัน" : "Session Policy & Guards"}
                           badge={isThai ? "เปิดใช้งาน" : "Active"}
                           badgeTone="healthy"
@@ -392,7 +392,7 @@ export default function Settings() {
                         />
                         <HealthStatCard
                           isLight={isLight}
-                          icon={<Globe2 size={18} className="text-blue-500" />}
+                          icon={<Globe2 size={18} className="text-[var(--status-info)]" />}
                           title={isThai ? "การรองรับภาษาและภูมิภาค" : "Localization & Timezone"}
                           badge="UTC+07 (BKK)"
                           badgeTone="info"
@@ -465,7 +465,7 @@ export default function Settings() {
                     >
                       <div className="border-b pb-4 border-slate-200 dark:border-white/10">
                         <div className="flex items-center gap-2.5">
-                          <Building2 size={20} className="text-indigo-500" />
+                          <Building2 size={20} className="text-[var(--status-info)]" />
                           <h3
                             className="font-bold text-[17px]"
                             style={{ fontFamily: "var(--font-outfit), sans-serif" }}
@@ -473,7 +473,7 @@ export default function Settings() {
                             {isThai ? "ข้อมูลองค์กรส่วนกลาง" : "Organization Details"}
                           </h3>
                         </div>
-                        <p className={`text-[13px] mt-1 ${isLight ? "text-slate-500" : "text-[#A1A1AA]"}`}>
+                        <p className={`text-[13px] mt-1 ${isLight ? "text-slate-500" : "text-[var(--text-muted)]"}`}>
                           {isThai
                             ? "ข้อมูลนี้ใช้เป็นหัวเอกสารใบตรวจรับ (GRN), ใบกำกับโอนย้ายสินค้าระหว่างสาขา และรายงานสรุป"
                             : "Used across official Goods Receipts (GRN), branch transfer dispatches, and audit reports."}
@@ -482,7 +482,7 @@ export default function Settings() {
 
                       {orgLoading ? (
                         <div className="py-12 flex items-center justify-center" role="status" aria-label={isThai ? "กำลังโหลดข้อมูลองค์กร" : "Loading organization record"}>
-                          <RefreshCw size={24} className="animate-spin text-indigo-500" aria-hidden="true" />
+                          <RefreshCw size={24} className="animate-spin text-[var(--status-info)]" aria-hidden="true" />
                           <span className="sr-only">{isThai ? "กำลังโหลดข้อมูลองค์กร" : "Loading organization record"}</span>
                         </div>
                       ) : (
@@ -501,7 +501,7 @@ export default function Settings() {
                                 className={`h-[42px] px-3.5 rounded-xl border text-sm outline-none transition-all ${
                                   isLight
                                     ? "bg-slate-50 border-slate-300 focus:bg-white focus:border-slate-800 text-slate-900"
-                                    : "bg-[#292929] border-[#444444] focus:border-white text-white"
+                                    : "bg-[#222222] border-[#E4E4E7] focus:border-white text-[#F4F4F5]"
                                 }`}
                               />
                             </label>
@@ -517,7 +517,7 @@ export default function Settings() {
                                 className={`h-[42px] px-3.5 rounded-xl border text-sm outline-none transition-all ${
                                   isLight
                                     ? "bg-slate-50 border-slate-300 focus:bg-white focus:border-slate-800 text-slate-900"
-                                    : "bg-[#292929] border-[#444444] focus:border-white text-white"
+                                    : "bg-[#222222] border-[#E4E4E7] focus:border-white text-[#F4F4F5]"
                                 }`}
                               />
                             </label>
@@ -535,13 +535,13 @@ export default function Settings() {
                               className={`p-3 rounded-xl border text-sm outline-none resize-y transition-all ${
                                 isLight
                                   ? "bg-slate-50 border-slate-300 focus:bg-white focus:border-slate-800 text-slate-900"
-                                  : "bg-[#292929] border-[#444444] focus:border-white text-white"
+                                  : "bg-[#222222] border-[#E4E4E7] focus:border-white text-[#F4F4F5]"
                               }`}
                             />
                           </label>
 
                           <div className="pt-4 border-t border-slate-200 dark:border-white/10 flex items-center justify-between">
-                            <span className={`text-xs ${isLight ? "text-slate-500" : "text-[#A1A1AA]"}`}>
+                            <span className={`text-xs ${isLight ? "text-slate-500" : "text-[var(--text-muted)]"}`}>
                               {isGlobalAdmin
                                 ? isThai ? "คุณมีสิทธิ์ผู้บริหารในการปรับปรุงข้อมูลส่วนกลาง" : "Authorized with Admin/CEO credentials"
                                 : isThai ? "เฉพาะผู้ดูแลระบบและฝ่ายบริหารที่สามารถบันทึกได้" : "Admin privileges required to save"}
@@ -582,7 +582,7 @@ export default function Settings() {
                     >
                       <div className="border-b pb-4 border-slate-200 dark:border-white/10 mb-6">
                         <div className="flex items-center gap-2.5">
-                          <Sliders size={20} className="text-indigo-500" />
+                          <Sliders size={20} className="text-[var(--status-info)]" />
                           <h3
                             className="font-bold text-[17px]"
                             style={{ fontFamily: "var(--font-outfit), sans-serif" }}
@@ -590,7 +590,7 @@ export default function Settings() {
                             {isThai ? "การปรับแต่งหน้าจอและสภาพแวดล้อมใช้งาน" : "Workstation & Interface Settings"}
                           </h3>
                         </div>
-                        <p className={`text-[13px] mt-1 ${isLight ? "text-slate-500" : "text-[#A1A1AA]"}`}>
+                        <p className={`text-[13px] mt-1 ${isLight ? "text-slate-500" : "text-[var(--text-muted)]"}`}>
                           {isThai
                             ? "ตั้งค่ารูปแบบหน้าจอ พฤติกรรมการสแกนบาร์โค้ด และการแสดงผลบนอุปกรณ์นี้"
                             : "Customize display theme, barcode scanner interaction, and refresh intervals for this device."}
@@ -601,7 +601,7 @@ export default function Settings() {
                         {/* Theme Toggle Card */}
                         <div
                           className={`p-4 rounded-xl border flex items-center justify-between ${
-                            isLight ? "bg-slate-50 border-slate-200" : "bg-[#292929] border-[#444444]"
+                            isLight ? "bg-slate-50 border-slate-200" : "bg-[var(--cards)] border-[#444444]"
                           }`}
                         >
                           <div className="flex items-center gap-3">
@@ -625,7 +625,7 @@ export default function Settings() {
                             className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                               isLight
                                 ? "bg-white hover:bg-slate-100 border-slate-300 text-slate-900 shadow-sm"
-                                : "bg-[#383838] hover:bg-[#444444] border-[#555555] text-white"
+                                : "bg-[#383838] hover:bg-[#444444] border-[#444444] text-white"
                             }`}
                           >
                             {isLight
@@ -637,7 +637,7 @@ export default function Settings() {
                         {/* Language Selection Card */}
                         <div
                           className={`p-4 rounded-xl border flex items-center justify-between ${
-                            isLight ? "bg-slate-50 border-slate-200" : "bg-[#292929] border-[#444444]"
+                            isLight ? "bg-slate-50 border-slate-200" : "bg-[var(--cards)] border-[#444444]"
                           }`}
                         >
                           <div className="flex items-center gap-3">
@@ -746,7 +746,7 @@ export default function Settings() {
                               className={`h-9 px-3 rounded-lg border text-xs font-semibold outline-none cursor-pointer ${
                                 isLight
                                   ? "bg-slate-100 border-slate-300 text-slate-900"
-                                  : "bg-[#292929] border-[#444444] text-white"
+                                  : "bg-[var(--cards)] border-[#444444] text-white"
                               }`}
                             >
                               <option value="15">{isThai ? "ทุก 15 วินาที" : "Every 15 Seconds"}</option>
@@ -791,7 +791,7 @@ export default function Settings() {
                     >
                       <div className="border-b pb-4 border-slate-200 dark:border-white/10 mb-6">
                         <div className="flex items-center gap-2.5">
-                          <Lock size={20} className="text-indigo-500" />
+                          <Lock size={20} className="text-[var(--status-info)]" />
                           <h3
                             className="font-bold text-[17px]"
                             style={{ fontFamily: "var(--font-outfit), sans-serif" }}
@@ -799,7 +799,7 @@ export default function Settings() {
                             {isThai ? "นโยบายความปลอดภัยและบันทึกประวัติ (Audit & Compliance)" : "Security Policy & Audit Traceability"}
                           </h3>
                         </div>
-                        <p className={`text-[13px] mt-1 ${isLight ? "text-slate-500" : "text-[#A1A1AA]"}`}>
+                        <p className={`text-[13px] mt-1 ${isLight ? "text-slate-500" : "text-[var(--text-muted)]"}`}>
                           {isThai
                             ? "สอดคล้องกับข้อกำหนดระบบตรวจนับสินค้าคงคลังและระบบควบคุมความปลอดภัยข้อมูล"
                             : "Governance guidelines enforced by Horizon WMS Stock Ledger and Session layer."}
@@ -846,7 +846,7 @@ export default function Settings() {
                         {isGlobalAdmin ? (
                           <Link
                             href="/controlpanel"
-                            className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--status-info)] dark:text-[var(--status-info)] hover:underline"
                           >
                             <span>{isThai ? "เปิดบันทึกกิจกรรมในแผงควบคุมระบบ" : "View Audit Events in Control Panel"}</span>
                             <ArrowRight size={13} />
@@ -892,7 +892,7 @@ function SettingsTabButton({
             ? "text-[#222222]"
             : "text-white"
           : isLight
-          ? "text-[#666666] hover:text-[#222222]"
+          ? "text-[var(--text-muted)] hover:text-[#222222]"
           : "text-[#E4E4E7] hover:text-white"
       }`}
     >
@@ -926,7 +926,7 @@ function HealthStatCard({
   return (
     <div
       className={`p-4 rounded-xl border flex flex-col gap-2 transition-all ${
-        isLight ? "bg-slate-50 border-slate-200" : "bg-[#292929] border-[#444444]"
+        isLight ? "bg-slate-50 border-slate-200" : "bg-[var(--cards)] border-[#444444]"
       }`}
     >
       <div className="flex items-center justify-between">
@@ -937,8 +937,8 @@ function HealthStatCard({
         <span
           className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
             badgeTone === "healthy"
-              ? "bg-[#2EC4B6]/15 text-[#2EC4B6] border-[#2EC4B6]/30"
-              : "bg-indigo-500/15 text-indigo-500 border-indigo-500/30"
+              ? "bg-[var(--status-success)]/15 text-[var(--status-success-badge-text)] border-[var(--status-success)]/30"
+              : "bg-indigo-500/15 text-[var(--status-info)] border-indigo-500/30"
           }`}
         >
           {badge}
@@ -955,10 +955,10 @@ function ParamBox({ isLight, label, value }: { isLight: boolean; label: string; 
   return (
     <div
       className={`p-3 rounded-xl border flex flex-col gap-1 ${
-        isLight ? "bg-slate-50 border-slate-200" : "bg-[#292929] border-[#444444]"
+        isLight ? "bg-slate-50 border-slate-200" : "bg-[var(--cards)] border-[#444444]"
       }`}
     >
-      <span className={`text-[11px] font-semibold ${isLight ? "text-slate-500" : "text-[#A1A1AA]"}`}>
+      <span className={`text-[11px] font-semibold ${isLight ? "text-slate-500" : "text-[var(--text-muted)]"}`}>
         {label}
       </span>
       <span className="text-xs font-bold font-mono truncate">{value}</span>
@@ -980,12 +980,12 @@ function AuditPolicyItem({
   return (
     <div
       className={`p-4 rounded-xl border flex flex-col gap-1.5 ${
-        isLight ? "bg-slate-50 border-slate-200" : "bg-[#292929] border-[#444444]"
+        isLight ? "bg-slate-50 border-slate-200" : "bg-[var(--cards)] border-[#444444]"
       }`}
     >
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-bold">{title}</h4>
-        <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">
+        <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/15 text-[var(--status-success-badge-text)] border border-emerald-500/30">
           {status}
         </span>
       </div>

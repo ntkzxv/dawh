@@ -108,10 +108,10 @@ export default function PlaceholderBlockerView({
         {/* 📌 [Two-Tone Split Background] - Exact Workspace Standard */}
         {/* ======================================================== */}
         <div className="absolute inset-0 flex flex-col pointer-events-none z-0 select-none">
-          {/* Upper Tone: Light #EEF2F6 / Dark #1A1A1A */}
+          {/* Upper Tone: Light #F1F5F9 / Dark #222222 */}
           <div
             className={`w-full h-[52%] relative overflow-hidden transition-colors duration-300 ${
-              isLight ? "bg-[#EEF2F6]" : "bg-[#1A1A1A]"
+              isLight ? "bg-[#F1F5F9]" : "bg-[#222222]"
             }`}
           >
             <div className="absolute inset-0 pointer-events-none select-none">
@@ -119,7 +119,7 @@ export default function PlaceholderBlockerView({
                 <div
                   className="w-full h-full transition-colors duration-300"
                   style={{
-                    backgroundColor: isLight ? "#FFFFFF" : "#282828",
+                    backgroundColor: isLight ? "#FFFFFF" : "var(--cards)",
                     WebkitMaskImage: `url("${DAWH_LONGNOSPACE_DATA_URI}")`,
                     maskImage: `url("${DAWH_LONGNOSPACE_DATA_URI}")`,
                     WebkitMaskSize: "contain",
@@ -133,23 +133,23 @@ export default function PlaceholderBlockerView({
                 />
                 <div
                   className={`absolute top-[61.2%] h-[150vh] left-[76.2%] w-[7%] transition-colors duration-300 ${
-                    isLight ? "bg-[#FFFFFF]" : "bg-[#282828]"
+                    isLight ? "bg-[#FFFFFF]" : "bg-[var(--cards)]"
                   }`}
                 />
               </div>
             </div>
           </div>
 
-          {/* Lower Tone: Light #FFFFFF / Dark #282828 */}
+          {/* Lower Tone: Light #FFFFFF / Dark #383838 */}
           <div
             className={`w-full flex-1 relative overflow-hidden transition-colors duration-300 ${
-              isLight ? "bg-[#FFFFFF]" : "bg-[#282828]"
+              isLight ? "bg-[#FFFFFF]" : "bg-[var(--cards)]"
             }`}
           >
             <div
               className="absolute bottom-0 right-0 h-full w-full pointer-events-none select-none transition-colors duration-300"
               style={{
-                backgroundColor: isLight ? "#EEF2F6" : "#1A1A1A",
+                backgroundColor: isLight ? "#F1F5F9" : "#222222",
                 WebkitMaskImage: `url("${DAWH_LONGNOSPACE_DATA_URI}")`,
                 maskImage: `url("${DAWH_LONGNOSPACE_DATA_URI}")`,
                 WebkitMaskSize: "contain",
@@ -201,7 +201,7 @@ export default function PlaceholderBlockerView({
             className={`box-border w-full max-w-[520px] flex flex-col items-center p-8 sm:p-12 gap-6 sm:gap-8 rounded-[20px] backdrop-blur-md transition-colors duration-300 ${
               isLight
                 ? "bg-white/95 border border-[#E4E4E7] shadow-[0px_12px_32px_rgba(0,0,0,0.06)]"
-                : "bg-[#282828]/95 border border-[#444444] shadow-[0px_12px_32px_rgba(0,0,0,0.25)]"
+                : "bg-[var(--cards)]/95 border border-[#444444] shadow-[0px_12px_32px_rgba(0,0,0,0.25)]"
             }`}
           >
             {/* numeral or icon-wrapper */}
@@ -302,7 +302,7 @@ export default function PlaceholderBlockerView({
                 className={`box-border h-[44px] px-8 py-3 min-w-[180px] sm:min-w-[200px] flex items-center justify-center rounded-[10px] transition-all duration-200 cursor-pointer shadow-sm ${
                   isLight
                     ? "bg-slate-900 hover:bg-black text-white border border-slate-900"
-                    : "bg-[#2B2B2B] hover:bg-[#222222] text-[#F4F4F5] border border-[#555555] hover:border-zinc-300"
+                    : "bg-[var(--canvas)] hover:bg-[#222222] text-[#F4F4F5] border border-[#444444] hover:border-zinc-300"
                 }`}
               >
                 <span

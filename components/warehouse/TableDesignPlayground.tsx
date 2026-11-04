@@ -39,7 +39,7 @@ const rows: PreviewRow[] = [
 ];
 
 const statusBadge = (status: Status, isThai: boolean) => (
-  <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${status === "active" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300" : "bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-zinc-300"}`}>
+  <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${status === "active" ? "bg-emerald-100 text-[var(--status-success-badge-text)] dark:bg-emerald-400/10 dark:text-[var(--status-success-badge-text)]" : "bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-zinc-300"}`}>
     {status === "active" ? (isThai ? "ใช้งาน" : "Active") : (isThai ? "ปิดใช้งาน" : "Inactive")}
   </span>
 );
@@ -98,7 +98,7 @@ export default function TableDesignPlayground() {
                 <button type="button" aria-label={isThai ? "เปิดเมนู" : "Open menu"} className="rounded-lg p-2 hover:bg-black/5 dark:hover:bg-white/10 md:hidden" onClick={() => setMobileOpen(true)}>
                   <Menu size={20} />
                 </button>
-                <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-400/10 dark:text-amber-200">MOCK</span>
+                <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-[var(--status-warning-badge-text)] dark:bg-amber-400/10 dark:text-[var(--status-warning-badge-text)]">MOCK</span>
               </div>
             )}
           >
@@ -317,7 +317,7 @@ function TablePreviewSidebar({
           const selected = activeDesign === kind;
           return (
             <Reorder.Item key={kind} value={kind} as="div" className="touch-none">
-              <button type="button" title={isMinimized ? (isThai ? `แท็บ ${label} · ${isThai ? "ลากเพื่อเรียงลำดับ" : "Drag to reorder"}` : `Tab ${label} · Drag to reorder`) : undefined} aria-label={isThai ? `แท็บ ${label} ลากเพื่อเปลี่ยนลำดับ` : `Tab ${label}, drag to reorder`} aria-current={selected ? "location" : undefined} onClick={() => onSelect(kind)} className={`flex w-full items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-colors ${selected ? isLight ? "border-[#E4E4E7] bg-[#F4F4F5] font-semibold text-[#222222]" : "border-[#444444]/60 bg-[#383838]/80 font-semibold text-white" : isLight ? "border-transparent text-[#2C2C2C] hover:bg-[#F4F4F5]" : "border-transparent text-[#E4E4E7] hover:bg-[#383838]/60"} ${isMinimized && !mobileOpen ? "justify-center px-0" : ""}`}>
+              <button type="button" title={isMinimized ? (isThai ? `แท็บ ${label} · ${isThai ? "ลากเพื่อเรียงลำดับ" : "Drag to reorder"}` : `Tab ${label} · Drag to reorder`) : undefined} aria-label={isThai ? `แท็บ ${label} ลากเพื่อเปลี่ยนลำดับ` : `Tab ${label}, drag to reorder`} aria-current={selected ? "location" : undefined} onClick={() => onSelect(kind)} className={`flex w-full items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-colors ${selected ? isLight ? "border-[#E4E4E7] bg-[#F1F5F9] font-semibold text-[#222222]" : "border-[#444444]/60 bg-[#383838]/80 font-semibold text-white" : isLight ? "border-transparent text-[#222222] hover:bg-[#F1F5F9]" : "border-transparent text-[#E4E4E7] hover:bg-[#383838]/60"} ${isMinimized && !mobileOpen ? "justify-center px-0" : ""}`}>
                 <LayoutGrid size={18} className="shrink-0" />
                 {(!isMinimized || mobileOpen) && <span className="text-[13.5px] font-medium">{label}</span>}
                 {(!isMinimized || mobileOpen) && <GripVertical size={15} className="ml-auto shrink-0 opacity-40" aria-hidden="true" />}
@@ -328,7 +328,7 @@ function TablePreviewSidebar({
         </Reorder.Group>
       </nav>
       {!mobileOpen && <div className={`border-t p-3 ${isLight ? "border-[#E4E4E7]" : "border-[#444444]"}`}>
-        <button type="button" onClick={() => onMinimizedChange(!isMinimized)} aria-label={isThai ? "ย่อหรือขยายแถบด้านข้าง" : "Collapse or expand sidebar"} className={`flex h-10 w-full items-center justify-center rounded-xl border ${isLight ? "border-[#E4E4E7] bg-white hover:bg-[#F4F4F5]" : "border-[#444444] bg-[#383838] hover:bg-[#444444]"}`}>
+        <button type="button" onClick={() => onMinimizedChange(!isMinimized)} aria-label={isThai ? "ย่อหรือขยายแถบด้านข้าง" : "Collapse or expand sidebar"} className={`flex h-10 w-full items-center justify-center rounded-xl border ${isLight ? "border-[#E4E4E7] bg-white hover:bg-[#F1F5F9]" : "border-[#444444] bg-[#383838] hover:bg-[#444444]"}`}>
           <ChevronLeft size={17} className={`transition-transform ${isMinimized ? "rotate-180" : ""}`} />
         </button>
       </div>}

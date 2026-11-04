@@ -140,7 +140,7 @@ export default function MobileNavbar({
               className={`p-2 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
                 isLight
                   ? "text-slate-600 hover:text-black hover:bg-slate-100"
-                  : "text-[#AAAAAA] hover:text-white hover:bg-white/10"
+                  : "text-[var(--text-muted)] hover:text-white hover:bg-white/10"
               }`}
               title={isSubTabsFolded ? "ขยายแท็บย่อย" : "พับแท็บย่อย"}
             >
@@ -235,14 +235,14 @@ export default function MobileNavbar({
             className="flex-1 h-[64px] flex flex-col items-center justify-center gap-0.5 cursor-pointer group"
           >
             <div className="w-[20px] h-[28px] flex flex-col items-center justify-center">
-              <Home size={20} className={isHomeActive ? "text-white" : "text-[#AAAAAA] group-hover:text-white"} />
+              <Home size={20} className={isHomeActive ? "text-white" : "text-[var(--text-muted)] group-hover:text-white"} />
               {isHomeActive && (
                 <div className="w-[4px] h-[4px] rounded-full bg-white shadow-[0_0_4px_#FFFFFF] mt-1" />
               )}
             </div>
             <span
               className={`text-[9px] font-bold uppercase tracking-wider text-center ${
-                isHomeActive ? "text-white font-extrabold" : "text-[#AAAAAA]"
+                isHomeActive ? "text-white font-extrabold" : "text-[var(--text-muted)]"
               }`}
               style={{ fontFamily: "'JetBrains Mono', monospace" }}
             >
@@ -257,14 +257,14 @@ export default function MobileNavbar({
             className="flex-1 h-[64px] flex flex-col items-center justify-center gap-0.5 cursor-pointer group"
           >
             <div className="w-[20px] h-[28px] flex flex-col items-center justify-center">
-              <Settings size={20} className={isAccountActive ? "text-white" : "text-[#AAAAAA] group-hover:text-white"} />
+              <Settings size={20} className={isAccountActive ? "text-white" : "text-[var(--text-muted)] group-hover:text-white"} />
               {isAccountActive && (
                 <div className="w-[4px] h-[4px] rounded-full bg-white shadow-[0_0_4px_#FFFFFF] mt-1" />
               )}
             </div>
             <span
               className={`text-[9px] font-bold uppercase tracking-wider text-center ${
-                isAccountActive ? "text-white font-extrabold" : "text-[#AAAAAA]"
+                isAccountActive ? "text-white font-extrabold" : "text-[var(--text-muted)]"
               }`}
               style={{ fontFamily: "'JetBrains Mono', monospace" }}
             >
@@ -279,14 +279,14 @@ export default function MobileNavbar({
             className="flex-1 h-[64px] flex flex-col items-center justify-center gap-0.5 cursor-pointer group"
           >
             <div className="w-[20px] h-[28px] flex flex-col items-center justify-center">
-              <UserCircle size={20} className={isAccountSheetOpen ? "text-white" : "text-[#AAAAAA] group-hover:text-white"} />
+              <UserCircle size={20} className={isAccountSheetOpen ? "text-white" : "text-[var(--text-muted)] group-hover:text-white"} />
               {isAccountSheetOpen && (
                 <div className="w-[4px] h-[4px] rounded-full bg-white shadow-[0_0_4px_#FFFFFF] mt-1" />
               )}
             </div>
             <span
               className={`text-[9px] font-bold uppercase tracking-wider text-center ${
-                isAccountSheetOpen ? "text-white font-extrabold" : "text-[#AAAAAA]"
+                isAccountSheetOpen ? "text-white font-extrabold" : "text-[var(--text-muted)]"
               }`}
               style={{ fontFamily: "'JetBrains Mono', monospace" }}
             >
@@ -324,12 +324,12 @@ export default function MobileNavbar({
             >
               {/* Drag Handle Bar */}
               <div className="w-full flex justify-center py-1">
-                <div className="w-[40px] h-[4px] bg-[#666666] rounded-[2px]" />
+                <div className="w-[40px] h-[4px] bg-[var(--text-muted)] rounded-[2px]" />
               </div>
 
               {/* Profile Card (Real Live Data) */}
               <div
-                className="w-full bg-[#333333] border border-[#444444] rounded-[16px] p-4 flex items-center gap-4"
+                className="w-full bg-[var(--cards)] border border-[#444444] rounded-[16px] p-4 flex items-center gap-4"
                 style={{ boxSizing: "border-box" }}
               >
                 {/* Glow Avatar / Real Photo */}
@@ -362,13 +362,13 @@ export default function MobileNavbar({
                     </h4>
                     <button
                       onClick={() => setIsAccountSheetOpen(false)}
-                      className="text-[#AAAAAA] hover:text-white p-1"
+                      className="text-[var(--text-muted)] hover:text-white p-1"
                     >
                       <X size={16} />
                     </button>
                   </div>
                   <span
-                    className="text-[11px] text-[#AAAAAA] font-normal block font-mono"
+                    className="text-[11px] text-[var(--text-muted)] font-normal block font-mono"
                   >
                     {userProfile.employeeCode}
                   </span>
@@ -379,7 +379,7 @@ export default function MobileNavbar({
                       {userProfile.role}
                     </span>
                     <span
-                      className="px-1.5 py-0.5 border border-[#444444] rounded-[4px] text-[9px] font-bold text-[#AAAAAA] font-mono"
+                      className="px-1.5 py-0.5 border border-[#444444] rounded-[4px] text-[9px] font-bold text-[var(--text-muted)] font-mono"
                     >
                       {userProfile.department}
                     </span>
@@ -399,7 +399,7 @@ export default function MobileNavbar({
                       isThai ? "กำลังโหลดข้อมูลส่วนบุคคล..." : "Loading employee records..."
                     );
                   }}
-                  className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#333333] hover:bg-[#3E3E3E] text-white text-xs font-semibold border border-[#444444] transition-all cursor-pointer"
+                  className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[var(--cards)] hover:bg-[#383838] text-[#F4F4F5] text-xs font-semibold border border-[#444444] transition-all cursor-pointer"
                 >
                   <User size={14} />
                   <span>{isThai ? "ข้อมูลพนักงาน" : "Profile"}</span>
@@ -415,7 +415,7 @@ export default function MobileNavbar({
                       isThai ? "กำลังโหลดการตั้งค่าและระบบ..." : "Loading settings..."
                     );
                   }}
-                  className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#333333] hover:bg-[#3E3E3E] text-white text-xs font-semibold border border-[#444444] transition-all cursor-pointer"
+                  className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[var(--cards)] hover:bg-[#383838] text-[#F4F4F5] text-xs font-semibold border border-[#444444] transition-all cursor-pointer"
                 >
                   <Settings size={14} />
                   <span>{isThai ? "การตั้งค่าระบบ" : "Settings"}</span>
@@ -433,7 +433,7 @@ export default function MobileNavbar({
                     isThai ? "กำลังโหลดระบบงาน..." : "Loading workspace..."
                   );
                 }}
-                className="w-full flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#282828] hover:bg-[#333333] text-zinc-200 text-xs font-semibold border border-[#444444] transition-all cursor-pointer"
+                className="w-full flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[var(--cards)] hover:bg-[var(--cards)] text-zinc-200 text-xs font-semibold border border-[#444444] transition-all cursor-pointer"
               >
                 <Home size={14} />
                 <span>{isThai ? "ศูนย์รวมระบบ (Workspace)" : "Workspace"}</span>
@@ -451,7 +451,7 @@ export default function MobileNavbar({
                       isThai ? "กำลังโหลดเครื่องมือจัดการสถานะ..." : "Loading management tools..."
                     );
                   }}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-[#282828] hover:bg-[#3E3E3E] text-white text-xs font-semibold border border-[#444444] transition-all cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-[var(--cards)] hover:bg-[#383838] text-[#F4F4F5] text-xs font-semibold border border-[#444444] transition-all cursor-pointer"
                 >
                   <Monitor size={14} />
                   <span>{isThai ? "แผงควบคุมระบบ" : "Control Panel"}</span>
@@ -461,7 +461,7 @@ export default function MobileNavbar({
               {/* System Preferences */}
               <div className="space-y-3 pt-1">
                 <span
-                  className="text-[10px] text-[#AAAAAA] font-normal uppercase tracking-wider block font-mono"
+                  className="text-[10px] text-[var(--text-muted)] font-normal uppercase tracking-wider block font-mono"
                 >
                   System Preferences
                 </span>
@@ -476,14 +476,14 @@ export default function MobileNavbar({
                   </span>
 
                   {/* Theme Toggle Button */}
-                  <div className="w-[64px] h-[32px] bg-[#333333] border border-[#444444] rounded-[16px] p-[3px] flex items-center justify-between">
+                  <div className="w-[64px] h-[32px] bg-[var(--cards)] border border-[#444444] rounded-[16px] p-[3px] flex items-center justify-between">
                     <button
                       type="button"
                       onClick={() => {
                         if (!isLight) toggleTheme();
                       }}
                       className={`w-[22px] h-[22px] flex items-center justify-center rounded-full transition-all cursor-pointer ${
-                        isLight ? "bg-white text-black shadow-xs" : "text-[#AAAAAA]"
+                        isLight ? "bg-white text-black shadow-xs" : "text-[var(--text-muted)]"
                       }`}
                     >
                       <Sun size={14} />
@@ -494,7 +494,7 @@ export default function MobileNavbar({
                         if (isLight) toggleTheme();
                       }}
                       className={`w-[26px] h-[26px] flex items-center justify-center rounded-[13px] transition-all cursor-pointer ${
-                        !isLight ? "bg-white text-black shadow-xs" : "text-[#AAAAAA]"
+                        !isLight ? "bg-white text-black shadow-xs" : "text-[var(--text-muted)]"
                       }`}
                     >
                       <Moon size={14} />
@@ -512,12 +512,12 @@ export default function MobileNavbar({
                   </span>
 
                   {/* Language Segmented Control */}
-                  <div className="w-[100px] h-[32px] bg-[#333333] border border-[#444444] rounded-[8px] p-[2px] flex items-center gap-[2px]">
+                  <div className="w-[100px] h-[32px] bg-[var(--cards)] border border-[#444444] rounded-[8px] p-[2px] flex items-center gap-[2px]">
                     <button
                       type="button"
                       onClick={() => setAppLanguage("TH")}
                       className={`flex-1 h-[28px] rounded-[6px] flex items-center justify-center gap-1 text-[11px] font-bold transition-all cursor-pointer font-mono ${
-                        isThai ? "bg-white text-black font-extrabold" : "text-[#AAAAAA]"
+                        isThai ? "bg-white text-black font-extrabold" : "text-[var(--text-muted)]"
                       }`}
                     >
                       <Globe size={10} />
@@ -527,7 +527,7 @@ export default function MobileNavbar({
                       type="button"
                       onClick={() => setAppLanguage("EN")}
                       className={`flex-1 h-[28px] rounded-[6px] flex items-center justify-center text-[11px] font-bold transition-all cursor-pointer font-mono ${
-                        !isThai ? "bg-white text-black font-extrabold" : "text-[#AAAAAA]"
+                        !isThai ? "bg-white text-black font-extrabold" : "text-[var(--text-muted)]"
                       }`}
                     >
                       <span>EN</span>
@@ -567,11 +567,11 @@ export default function MobileNavbar({
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
               className="w-full max-h-[75vh] bg-[#222222] border-t border-[#444444] rounded-t-[24px] text-white p-4 space-y-4 overflow-y-auto mb-[88px]"
             >
-              <div className="flex items-center justify-between border-b border-[#333333] pb-2">
+              <div className="flex items-center justify-between border-b border-[#444444] pb-2">
                 <span className="font-bold text-sm" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                   Warehouse Menu
                 </span>
-                <button onClick={() => setIsSubMenuDrawerOpen(false)} className="text-[#AAAAAA] hover:text-white p-1">
+                <button onClick={() => setIsSubMenuDrawerOpen(false)} className="text-[var(--text-muted)] hover:text-white p-1">
                   <X size={18} />
                 </button>
               </div>

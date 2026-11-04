@@ -23,7 +23,7 @@ Do not place a generic heading or duplicate count such as “รายการ�
 ## 🎨 DAWH Official Design System & Theme Tokens
 
 ### 1. Theme Configuration (`customTheme`)
-All components and stylesheets MUST map directly to the following palette:
+Map colors to the semantic roles exported in the supplied DAWH CSS. Apply them by role: surfaces establish the canvas and component layers; text uses primary and supporting levels; borders distinguish containers from controls; actions use their primary and on-primary pair; chart and informational colors stay within data and information. Do not substitute a color from one role into another just because it looks similar.
 
 ```typescript
 export const customTheme = {
@@ -32,8 +32,15 @@ export const customTheme = {
     sidebar: "#222222",         // Sidebar container & inputs
     cards: "#383838",           // Cards, active tab highlight, modals
     accent: "#FFFFFF",          // Accent (Auth, primary CTAs, progress bars)
-    secondary: "#6366F1",       // Secondary Accent (Active pagination, highlights, interactive chips)
+    actionOnPrimary: "#222222", // Existing dark text color on primary actions
+    secondary: "#FFFFFF",       // Neutral active emphasis and secondary interaction
     border: "#444444",          // Dividers, card borders, subtle separators
+    borderControl: "#E4E4E7",   // Input and control outlines
+    surfaceHover: "#383838",    // Hover and subtle surface
+    surfaceInput: "#222222",    // Input background
+    chartGrid: "#444444",       // Chart grid lines
+    chartSeries2: "#F4F4F5",    // Secondary chart series
+    statusInfoText: "#FFFFFF",  // Neutral informational text
     text: {
       primary: "#FFFFFF",       // Pure White (Primary Text & Headings)
       secondary: "#F4F4F5",     // Soft White (Secondary Text & Menu Items)
@@ -45,30 +52,44 @@ export const customTheme = {
     sidebar: "#FFFFFF",         // Pure white sidebar
     cards: "#FFFFFF",           // Clean white cards
     accent: "#222222",          // Dark slate accent
-    secondary: "#6366F1",       // Secondary Accent (Active pagination, highlights, interactive chips)
+    actionOnPrimary: "#FFFFFF", // Text and icons on primary actions
+    secondary: "#222222",       // Neutral active emphasis and secondary interaction
     border: "#E4E4E7",          // Subtle light zinc border
+    borderControl: "#737D88",   // Input and control outlines
+    surfaceHover: "#F1F5F9",    // Hover and subtle surface
+    surfaceInput: "#F8FAFC",    // Input background
+    chartGrid: "#E4E4E7",       // Chart grid lines
+    chartSeries2: "#383838",    // Secondary chart series
+    statusInfoText: "#222222",  // Neutral informational text
     text: {
       primary: "#222222",       // Dark slate primary text
-      secondary: "#2C2C2C",     // Slate 700 secondary text
       muted: "#383838",         // Slate 500 muted text
     },
   },
 };
 ```
 
+Apply the Light roles as shown in the supplied CSS: `surface/canvas`, `surface/sidebar`, `surface/card`, `surface/hover`, and `surface/input` for their matching surfaces; `border/default` for dividers and `border/control` for inputs and controls; `text/primary` and `text/muted` for text hierarchy; `action/primary` and `action/on-primary` for primary actions; and `chart/grid`, `chart/series-2`, and `status/info-text` only for chart and information roles. Keep the existing Dark palette values above; the supplied Dark CSS defines role names, but must not replace those existing Dark colors. Use the updated Light success, warning, and danger colors listed below; retain the existing Dark status colors.
+
 ### 2. Status & Form Validation Tokens (Official Harmonized Accent Palette)
 
-When designing forms, badges, status pills, password strength, or indicators, strictly apply the official DAWH status tokens:
+When designing forms, badges, status pills, password strength, or indicators, strictly apply the DAWH status tokens below. Standalone status text uses the status hue. On tinted status backgrounds, use primary text in Light theme and white text in Dark theme. Keep the status hue for indicators, borders, and bars.
 
 | Status Role | Light Theme (`#F8FAFC`) | Dark / Black Theme (`#2C2C2C`) |
 | :--- | :--- | :--- |
-| **🟣 Secondary Accent / Pagination** | **`#6366F1`**<br>`bg-[#6366F1] text-white font-bold`<br>`shadow-sm rounded-lg` | **`#6366F1`**<br>`bg-[#6366F1] text-white font-bold`<br>`shadow-sm rounded-lg` |
-| **✅ Correct / Valid / Success / Active** | **`#2EC4B6`**<br>`text-[#2EC4B6] font-bold`<br>`bg-[#2EC4B6]/10 border-[#2EC4B6]/30`<br>Bar / Badge fill: `bg-[#2EC4B6]` | **`#2EC4B6`**<br>`text-[#2EC4B6] font-semibold`<br>`bg-[#2EC4B6]/15 border-[#2EC4B6]/30`<br>Bar / Badge fill: `bg-[#2EC4B6]` |
-| **❌ Incorrect / Invalid / Error / Danger** | **`#E74C3C`**<br>`text-[#E74C3C] font-bold`<br>`bg-[#E74C3C]/10 border-[#E74C3C]/30`<br>Bar / Badge fill: `bg-[#E74C3C]` | **`#E71D36`**<br>`text-[#E71D36] font-semibold`<br>`bg-[#E71D36]/15 border-[#E71D36]/30`<br>Bar / Badge fill: `bg-[#E71D36]` |
-| **⚠️ Warning / Fair / Pending / Attention** | **`#FF9F1C`**<br>`text-[#FF9F1C] font-bold`<br>`bg-[#FF9F1C]/10 border-[#FF9F1C]/30`<br>Bar / Badge fill: `bg-[#FF9F1C]` | **`#FF9F1C`**<br>`text-[#FF9F1C] font-semibold`<br>`bg-[#FF9F1C]/15 border-[#FF9F1C]/30`<br>Bar / Badge fill: `bg-[#FF9F1C]` |
-| **ℹ️ Info / Active / Secondary Brand** | **`#6366F1`**<br>`text-[#6366F1] font-bold`<br>`bg-[#6366F1]/10 border-[#6366F1]/30`<br>Bar / Badge fill: `bg-[#6366F1]` | **`#6366F1`**<br>`text-[#6366F1] font-semibold`<br>`bg-[#6366F1]/15 border-[#6366F1]/30`<br>Bar / Badge fill: `bg-[#6366F1]` |
+| **⚫ Neutral Active / Pagination** | **`#222222`**<br>`bg-[#222222] text-white font-bold`<br>`shadow-sm rounded-lg` | **`#FFFFFF`**<br>`bg-white text-[#222222] font-bold`<br>`shadow-sm rounded-lg` |
+| **✅ Correct / Valid / Success / Active** | **`#15A465`**<br>Standalone text: `text-[#15A465]`; pale badge label: `text-[#222222] font-semibold`<br>`bg-[#15A465]/10 border-[#15A465]/30`<br>Bar / Badge fill: `bg-[#15A465]` | **`#2EC4B6`**<br>Standalone text: `text-[#2EC4B6]`; tinted badge label: `text-[#F4F4F5] font-semibold`<br>`bg-[#2EC4B6]/15 border-[#2EC4B6]/30`<br>Bar / Badge fill: `bg-[#2EC4B6]` |
+| **❌ Incorrect / Invalid / Error / Danger** | **`#C7291F`**<br>Standalone text: `text-[#C7291F]`; pale badge label: `text-[#222222] font-semibold`<br>`bg-[#C7291F]/10 border-[#C7291F]/30`<br>Bar / Badge fill: `bg-[#C7291F]` | **`#E71D36`**<br>Standalone text: `text-[#E71D36]`; tinted badge label: `text-[#F4F4F5] font-semibold`<br>`bg-[#E71D36]/15 border-[#E71D36]/30`<br>Bar / Badge fill: `bg-[#E71D36]` |
+| **⚠️ Warning / Fair / Pending / Attention** | **`#CE8D10`**<br>Standalone text: `text-[#CE8D10]`; pale badge label: `text-[#222222] font-semibold`<br>`bg-[#CE8D10]/10 border-[#CE8D10]/30`<br>Bar / Badge fill: `bg-[#CE8D10]` | **`#FF9F1C`**<br>Standalone text: `text-[#FF9F1C]`; tinted badge label: `text-[#F4F4F5] font-semibold`<br>`bg-[#FF9F1C]/15 border-[#FF9F1C]/30`<br>Bar / Badge fill: `bg-[#FF9F1C]` |
+| **ℹ️ Info / Active / Secondary Brand** | **`#222222`**<br>`text-[#222222] font-bold`<br>`bg-[#222222]/5 border-[#222222]/20`<br>Bar / Badge fill: `bg-[#222222]` | **`#FFFFFF`**<br>`text-[#FFFFFF] font-semibold`<br>`bg-white/10 border-white/20`<br>Bar / Badge fill: `bg-white` |
 
-### 3. 3-Tier White Color Hierarchy (Dark Theme Rules)
+### 3. Theme Color Priority and Dark White Hierarchy
+
+For Light interfaces, keep the CSS hierarchy consistent: canvas `#F8FAFC`; cards and sidebar `#FFFFFF`; hover and subtle surfaces `#F1F5F9`; primary text `#222222`; supporting text `#383838`; default borders `#E4E4E7`; and control borders `#737D88`. Use black `#222222` and white `#FFFFFF` for primary and informational emphasis. Status colors follow the status table above.
+
+Use the DAWH black-and-white palette for active controls, pagination, informational links, focus states, and secondary emphasis. Reserve indigo `#6366F1` (Light) and `#787BFF` (Dark) for the rare case where a chart or information category must be distinguished from neutral UI and the green, yellow, and red status colors; do not use indigo as decoration or a default accent.
+
+For Dark interfaces, keep the existing palette values in `customTheme`. Apply them by visual priority: `#FFFFFF` for primary text and active emphasis; `#F4F4F5` for secondary labels and interactive text; `#E4E4E7` for muted descriptions and secondary icons; `#444444` for separators; and `#383838` for card and subtle surfaces. Use `#222222` for the sidebar and inputs, and `#2C2C2C` for the canvas. Status colors follow the Dark column in the status table.
 
 When developing dark-mode interfaces, always apply this precise 3-tier white hierarchy:
 

@@ -321,8 +321,8 @@ export function ThaiAddressSelector({
     }
   };
 
-  const baseInput = `w-full p-2.5 rounded-lg border text-xs outline-none transition-all ${isLight ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222] focus:bg-white focus:border-[#222222]" : "bg-[#282828] border-[#444444] text-[#FFFFFF] focus:bg-[#202020] focus:border-white"}`;
-  const dropdownClass = `absolute top-full left-0 right-0 mt-1 z-50 max-h-[200px] overflow-y-auto rounded-xl border shadow-2xl flex flex-col p-1 gap-0.5 animate-in fade-in zoom-in-95 duration-150 ${isLight ? "bg-white/97 border-[#E4E4E7] text-[#222222]" : "bg-[#2B2B2B]/97 border-[#444444] text-[#FFFFFF]"}`;
+  const baseInput = `w-full p-2.5 rounded-lg border text-xs outline-none transition-all bg-[var(--canvas)] ${isLight ? "border-[#737D88] text-[#222222] focus:border-[#222222]" : "border-[#E4E4E7] text-[#F4F4F5] focus:border-white"}`;
+  const dropdownClass = `absolute top-full left-0 right-0 mt-1 z-50 max-h-[200px] overflow-y-auto rounded-xl border shadow-2xl flex flex-col p-1 gap-0.5 animate-in fade-in zoom-in-95 duration-150 ${isLight ? "bg-white/97 border-[#E4E4E7] text-[#222222]" : "bg-[var(--canvas)]/97 border-[#444444] text-[#FFFFFF]"}`;
   const optionClass = (sel: boolean, isHigh: boolean) => `w-full px-2.5 py-1.5 rounded-lg text-left text-xs flex items-center gap-2 cursor-pointer transition-all ${
     sel
       ? (isLight ? "bg-[#222222] text-white font-semibold" : "bg-white text-[#222222] font-semibold")
@@ -386,7 +386,7 @@ export function ThaiAddressSelector({
                     })
                   }
                   placeholder={isThai ? "ค้นหาจังหวัด (↑↓ เพื่อเลือก Enter เพื่อยืนยัน)" : "Search province (↑↓ to navigate)"}
-                  className={`w-full px-2 py-1.5 rounded-lg border text-xs outline-none ${isLight ? "bg-[#F5F5F5] border-[#E5E5E5]" : "bg-[#333] border-[#555]"}`}
+                  className={`w-full px-2 py-1.5 rounded-lg border text-xs outline-none bg-[var(--canvas)] ${isLight ? "border-[#737D88]" : "border-[#E4E4E7]"}`}
                 />
               </div>
               {filteredProvinces.map((p, idx) => (
@@ -434,7 +434,7 @@ export function ThaiAddressSelector({
                     })
                   }
                   placeholder={isThai ? "ค้นหาอำเภอ (↑↓ เพื่อเลือก Enter เพื่อยืนยัน)" : "Search district (↑↓ to navigate)"}
-                  className={`w-full px-2 py-1.5 rounded-lg border text-xs outline-none ${isLight ? "bg-[#F5F5F5] border-[#E5E5E5]" : "bg-[#333] border-[#555]"}`}
+                  className={`w-full px-2 py-1.5 rounded-lg border text-xs outline-none bg-[var(--canvas)] ${isLight ? "border-[#737D88]" : "border-[#E4E4E7]"}`}
                 />
               </div>
               {filteredDistricts.map((d, idx) => (
@@ -485,7 +485,7 @@ export function ThaiAddressSelector({
                     })
                   }
                   placeholder={isThai ? "ค้นหาตำบล (↑↓ เพื่อเลือก Enter เพื่อยืนยัน)" : "Search subdistrict (↑↓ to navigate)"}
-                  className={`w-full px-2 py-1.5 rounded-lg border text-xs outline-none ${isLight ? "bg-[#F5F5F5] border-[#E5E5E5]" : "bg-[#333] border-[#555]"}`}
+                  className={`w-full px-2 py-1.5 rounded-lg border text-xs outline-none bg-[var(--canvas)] ${isLight ? "border-[#737D88]" : "border-[#E4E4E7]"}`}
                 />
               </div>
               {filteredSubdistricts.map((s, idx) => (
@@ -511,7 +511,7 @@ export function ThaiAddressSelector({
           readOnly
           value={zipcode}
           placeholder={isThai ? "รหัสไปรษณีย์" : "Zipcode"}
-          className={`${baseInput} font-mono cursor-default ${isLight ? "bg-[#EFEFEF]" : "bg-[#202020]"}`}
+          className={`${baseInput} font-mono cursor-default`}
         />
       </div>
 

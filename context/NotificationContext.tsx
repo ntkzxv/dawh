@@ -281,34 +281,42 @@ function NotificationToastCard({
   const hasDuration = !!(item.duration && item.duration > 0);
 
   // Colors based on Notification Type & Theme
-  let accentColor = "#10B981";
-  let badgeBg = isLight ? "rgba(16, 185, 129, 0.12)" : "rgba(16, 185, 129, 0.18)";
+  let accentColor = "var(--status-success)";
+  let badgeBg = isLight
+    ? "color-mix(in srgb, var(--status-success) 12%, transparent)"
+    : "color-mix(in srgb, var(--status-success) 18%, transparent)";
   let actionText = "#FFFFFF";
 
   if (item.type === "error") {
-    accentColor = "#EF4444";
-    badgeBg = isLight ? "rgba(239, 68, 68, 0.12)" : "rgba(239, 68, 68, 0.18)";
+    accentColor = "var(--status-danger)";
+    badgeBg = isLight
+      ? "color-mix(in srgb, var(--status-danger) 12%, transparent)"
+      : "color-mix(in srgb, var(--status-danger) 18%, transparent)";
     actionText = "#FFFFFF";
   } else if (item.type === "warning") {
-    accentColor = isLight ? "#D97706" : "#F59E0B";
-    badgeBg = isLight ? "rgba(217, 119, 6, 0.14)" : "rgba(245, 158, 11, 0.18)";
-    actionText = isLight ? "#FFFFFF" : "#000000";
+    accentColor = "var(--status-warning)";
+    badgeBg = isLight
+      ? "color-mix(in srgb, var(--status-warning) 12%, transparent)"
+      : "color-mix(in srgb, var(--status-warning) 18%, transparent)";
+    actionText = "#222222";
   } else if (item.type === "info") {
-    accentColor = isLight ? "#6366F1" : "#818CF8";
-    badgeBg = isLight ? "rgba(99, 102, 241, 0.12)" : "rgba(99, 102, 241, 0.18)";
+    accentColor = "var(--status-info)";
+    badgeBg = isLight
+      ? "color-mix(in srgb, var(--status-info) 12%, transparent)"
+      : "color-mix(in srgb, var(--status-info) 18%, transparent)";
     actionText = "#FFFFFF";
   } else if (item.type === "normal") {
     accentColor = isLight ? "#222222" : "#FFFFFF";
     badgeBg = isLight ? "rgba(0, 0, 0, 0.06)" : "rgba(255, 255, 255, 0.14)";
-    actionText = isLight ? "#FFFFFF" : "#18181B";
+    actionText = isLight ? "#FFFFFF" : "#222222";
   }
 
   // Theme Styles: Light = White (#FFFFFF), Dark = Gray (#383838)
   const cardBg = isLight ? "#FFFFFF" : "#383838";
   const cardBorder = isLight ? "#E4E4E7" : "#444444";
   const titleColor = isLight ? "#222222" : "#FFFFFF";
-  const messageColor = isLight ? "#666666" : "#D4D4D8";
-  const closeColor = isLight ? "#999999" : "#A1A1AA";
+  const messageColor = isLight ? "#383838" : "#F4F4F5";
+  const closeColor = isLight ? "#383838" : "#E4E4E7";
   const closeHoverColor = isLight ? "#222222" : "#FFFFFF";
   const progressTrack = isLight ? "rgba(0, 0, 0, 0.06)" : "rgba(255, 255, 255, 0.1)";
   const shadow = isLight

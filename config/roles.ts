@@ -93,10 +93,10 @@ export const ROLES: Record<UserRole, RoleDefinition> = {
       th: "สิทธิ์สูงสุดในการควบคุมระบบ, กำหนดสิทธิ์พนักงาน, และดูประวัติ Audit Logs ทั้งหมด",
     },
     badgeColor: {
-      bg: "bg-[#111111]/10 dark:bg-white/15",
-      text: "text-[#111111] dark:text-white font-bold",
-      border: "border-[#111111]/30 dark:border-white/30",
-      dot: "bg-[#111111] dark:bg-white",
+      bg: "bg-[#222222]/10 dark:bg-white/15",
+      text: "text-[#222222] dark:text-white font-bold",
+      border: "border-[#222222]/30 dark:border-white/30",
+      dot: "bg-[#222222] dark:bg-white",
     },
     permissions: {
       canManageUsers: true,
@@ -119,7 +119,7 @@ export const ROLES: Record<UserRole, RoleDefinition> = {
       th: "กำกับดูแลการทำงานของสาขา, อนุมัติสัญญาเช่าซื้อ, ควบคุมสต็อกสินค้า และดูรายงาน",
     },
     badgeColor: {
-      bg: "bg-[#111111]/5 dark:bg-white/10",
+      bg: "bg-[#222222]/5 dark:bg-white/10",
       text: "text-[#222222] dark:text-[#F4F4F5] font-semibold",
       border: "border-slate-300 dark:border-white/20",
       dot: "bg-slate-700 dark:bg-neutral-300",
@@ -145,7 +145,7 @@ export const ROLES: Record<UserRole, RoleDefinition> = {
       th: "ติดตามทวงถามหนี้, บริหารสัญญาเช่าซื้อ, ตรวจสอบสถานะชำระเงิน และติดต่อลูกค้า",
     },
     badgeColor: {
-      bg: "bg-[#111111]/5 dark:bg-white/10",
+      bg: "bg-[#222222]/5 dark:bg-white/10",
       text: "text-[#222222] dark:text-[#F4F4F5] font-semibold",
       border: "border-slate-300 dark:border-white/20",
       dot: "bg-slate-700 dark:bg-neutral-300",
@@ -171,7 +171,7 @@ export const ROLES: Record<UserRole, RoleDefinition> = {
       th: "ตรวจสอบความโปร่งใส, รายงานการเงิน, ประวัติการปรับเปลี่ยนสต็อก และความเสี่ยง",
     },
     badgeColor: {
-      bg: "bg-[#111111]/5 dark:bg-white/10",
+      bg: "bg-[#222222]/5 dark:bg-white/10",
       text: "text-[#222222] dark:text-[#F4F4F5] font-semibold",
       border: "border-slate-300 dark:border-white/20",
       dot: "bg-slate-700 dark:bg-neutral-300",
@@ -197,7 +197,7 @@ export const ROLES: Record<UserRole, RoleDefinition> = {
       th: "ปฏิบัติงานประจำวัน, สแกนบาร์โค้ดสินค้า, รับ-จ่ายสินค้าในคลัง และตรวจสอบสภาพ",
     },
     badgeColor: {
-      bg: "bg-[#111111]/5 dark:bg-white/10",
+      bg: "bg-[#222222]/5 dark:bg-white/10",
       text: "text-[#222222] dark:text-[#F4F4F5] font-semibold",
       border: "border-slate-300 dark:border-white/20",
       dot: "bg-slate-600 dark:bg-neutral-400",
@@ -223,8 +223,8 @@ export const ROLES: Record<UserRole, RoleDefinition> = {
       th: "ดูสถิติภาพรวมแดชบอร์ด, ดัชนีชี้วัดธุรกิจ (KPI), และรายงานทั่วไปโดยไม่สามารถแก้ไขได้",
     },
     badgeColor: {
-      bg: "bg-[#111111]/5 dark:bg-white/5",
-      text: "text-[#666666] dark:text-[#E4E4E7]",
+      bg: "bg-[#222222]/5 dark:bg-white/5",
+      text: "text-[var(--text-muted)] dark:text-[#E4E4E7]",
       border: "border-slate-200 dark:border-white/10",
       dot: "bg-slate-400 dark:bg-neutral-500",
     },

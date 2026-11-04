@@ -248,8 +248,8 @@ export default function CustomDropdown<T = string>({
               ? "bg-white border-zinc-400 text-zinc-900 shadow-xs"
               : "bg-zinc-100/90 hover:bg-zinc-100 border-zinc-200 text-zinc-800"
             : isOpen
-            ? "bg-[#333333] border-white/60 text-white shadow-xs"
-            : "bg-[#2C2C2C] hover:bg-[#333333] border-[#555555] text-white"
+            ? "bg-[var(--cards)] border-white/60 text-white shadow-xs"
+            : "bg-[#2C2C2C] hover:bg-[var(--cards)] border-[#444444] text-white"
         } ${triggerClassName}`}
       >
         <div className="flex items-center gap-2 truncate min-w-0 flex-1">
@@ -290,7 +290,7 @@ export default function CustomDropdown<T = string>({
             className={`rounded-xl border p-1.5 shadow-2xl flex flex-col gap-1 animate-in fade-in zoom-in-95 duration-150 ${
               isLight
                 ? "bg-white border-zinc-200 text-zinc-900 shadow-2xl shadow-zinc-900/15"
-                : "bg-[#252525] border-[#444444] text-white shadow-2xl shadow-black/80"
+                : "bg-[var(--cards)] border-[#444444] text-[#F4F4F5] shadow-2xl shadow-black/80"
             } ${menuClassName}`}
           >
             {/* Optional Search Bar */}
@@ -300,7 +300,7 @@ export default function CustomDropdown<T = string>({
                   className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-xs ${
                     isLight
                       ? "bg-zinc-50 border-zinc-200 focus-within:border-zinc-400"
-                      : "bg-[#1E1E1E] border-[#444444] focus-within:border-zinc-400"
+                      : "bg-[var(--input-bg)] border-[#444444] focus-within:border-zinc-400"
                   }`}
                 >
                   <Search size={13} className="opacity-50 shrink-0" />
@@ -381,7 +381,7 @@ export default function CustomDropdown<T = string>({
                                   : "bg-white/20 text-white"
                                 : isLight
                                 ? "bg-zinc-100 text-zinc-600"
-                                : "bg-[#333333] text-zinc-400"
+                                : "bg-[var(--cards)] text-zinc-400"
                             }`}
                           >
                             {opt.badge}

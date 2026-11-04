@@ -35,7 +35,7 @@ export function FilterDropdown<T = string>({
   const defaultTriggerClasses = `!h-[33px] !px-3 !py-2 !rounded-[6px] !border !text-[13px] !font-normal !transition-colors ${
     isLight
       ? "!bg-white !border-[#E4E4E7] !text-[#222222] hover:!bg-slate-100"
-      : "!bg-[#383838] !border-[#444444] !text-[#F8FAFC] hover:!bg-[#444444]"
+      : "!bg-[#383838] !border-[#444444] !text-[#F4F4F5] hover:!bg-[#444444]"
   }`;
 
   return (

@@ -329,14 +329,16 @@ export default function CustomDropdown<T = string>({
           isSmall ? "px-2.5 py-1.5 text-[11px]" : "px-3 py-2 text-xs"
         } ${
           disabled
-            ? "opacity-50 cursor-not-allowed bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700"
+            ? isLight
+              ? "opacity-50 cursor-not-allowed bg-[var(--input-bg)] border-[var(--border)] text-[var(--text-muted)]"
+              : "opacity-50 cursor-not-allowed bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700"
             : isLight
             ? isOpen
-              ? "bg-white border-zinc-400 text-zinc-900 shadow-xs"
-              : "bg-zinc-100/90 hover:bg-zinc-100 border-zinc-200 text-zinc-800"
+              ? "bg-[var(--cards)] border-[var(--toolbar-control-border-focus)] text-[var(--text-primary)] shadow-xs"
+              : "bg-[var(--input-bg)] hover:bg-[var(--cards-hover)] border-[var(--toolbar-control-border)] text-[var(--text-primary)]"
             : isOpen
-            ? "bg-[#333333] border-white/60 text-white shadow-xs"
-            : "bg-[#2C2C2C] hover:bg-[#333333] border-[#555555] text-white"
+            ? "bg-[var(--cards)] border-white/60 text-white shadow-xs"
+            : "bg-[#2C2C2C] hover:bg-[var(--cards)] border-[#444444] text-white"
         } ${triggerClassName}`}
       >
         <div className="flex items-center gap-2 truncate min-w-0 flex-1">
@@ -349,7 +351,9 @@ export default function CustomDropdown<T = string>({
           {selectedOption?.badge && (
             <span
               className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono shrink-0 ${
-                isLight ? "bg-zinc-200 text-zinc-700" : "bg-white/10 text-zinc-300"
+                isLight
+                  ? "bg-[var(--surface-subtle)] text-[var(--text-secondary)]"
+                  : "bg-white/10 text-zinc-300"
               }`}
             >
               {selectedOption.badge}
@@ -377,18 +381,18 @@ export default function CustomDropdown<T = string>({
             style={menuStyle}
             className={`rounded-xl border p-1.5 shadow-2xl flex flex-col gap-1 animate-in fade-in zoom-in-95 duration-150 ${
               isLight
-                ? "bg-white border-zinc-200 text-zinc-900 shadow-2xl shadow-zinc-900/15"
-                : "bg-[#252525] border-[#444444] text-white shadow-2xl shadow-black/80"
+                ? "bg-[var(--cards)] border-[var(--border)] text-[var(--text-primary)] shadow-2xl shadow-black/15"
+                : "bg-[var(--cards)] border-[#444444] text-[#F4F4F5] shadow-2xl shadow-black/80"
             } ${menuClassName}`}
           >
             {/* Optional Search Bar */}
             {searchable && (
-              <div className="p-1 border-b border-zinc-200 dark:border-white/10 mb-1">
+              <div className={`p-1 border-b mb-1 ${isLight ? "border-[var(--border)]" : "border-white/10"}`}>
                 <div
                   className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-xs ${
                     isLight
-                      ? "bg-zinc-50 border-zinc-200 focus-within:border-zinc-400"
-                      : "bg-[#1E1E1E] border-[#444444] focus-within:border-zinc-400"
+                      ? "bg-[var(--input-bg)] border-[var(--border)] focus-within:border-[var(--toolbar-control-border-focus)] text-[var(--text-primary)]"
+                      : "bg-[var(--input-bg)] border-[#444444] focus-within:border-zinc-400"
                   }`}
                 >
                   <Search size={13} className="opacity-50 shrink-0" />
@@ -444,14 +448,14 @@ export default function CustomDropdown<T = string>({
                           ? "opacity-35 cursor-not-allowed"
                           : activeIndex === filteredOptions.indexOf(opt)
                           ? isLight
-                            ? "bg-zinc-100 text-zinc-900"
+                            ? "bg-[var(--surface-subtle)] text-[var(--text-primary)]"
                             : "bg-white/[0.08] text-white"
                           : isSelected
                           ? isLight
-                            ? "bg-zinc-900 text-white font-semibold"
+                            ? "bg-[var(--accent)] text-[var(--accent-foreground)] font-semibold"
                             : "bg-white/15 text-white font-semibold"
                           : isLight
-                          ? "hover:bg-zinc-100 text-zinc-700 hover:text-zinc-900"
+                          ? "hover:bg-[var(--surface-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                           : "hover:bg-white/[0.08] text-zinc-300 hover:text-white"
                       }`}
                     >
@@ -480,8 +484,8 @@ export default function CustomDropdown<T = string>({
                                   ? "bg-white/20 text-white"
                                   : "bg-white/20 text-white"
                                 : isLight
-                                ? "bg-zinc-100 text-zinc-600"
-                                : "bg-[#333333] text-zinc-400"
+                                ? "bg-[var(--surface-subtle)] text-[var(--text-secondary)]"
+                                : "bg-[var(--cards)] text-zinc-400"
                             }`}
                           >
                             {opt.badge}

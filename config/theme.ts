@@ -51,25 +51,25 @@ export interface ColorTokens {
 export const customTheme: Record<ThemeMode, ColorTokens> = {
   dark: {
     // Surfaces & Backgrounds
-    canvas: "#181818",
+    canvas: "#2C2C2C",
     sidebar: "#222222",
     cards: "#383838",
-    cardsHover: "#404040",
-    inputBg: "#202020",
+    cardsHover: "#383838",
+    inputBg: "#222222",
 
     // Accents & Actions
     accent: "#FFFFFF",
-    accentForeground: "#000000",
-    buttonBg: "#282828",
-    buttonBorder: "#444444",
-    buttonText: "#FFFFFF",
+    accentForeground: "#222222",
+    buttonBg: "#383838",
+    buttonBorder: "#E4E4E7",
+    buttonText: "#F4F4F5",
     buttonHoverBg: "#FFFFFF",
-    buttonHoverText: "#000000",
+    buttonHoverText: "#222222",
     buttonHoverBorder: "#FFFFFF",
 
     // Borders & Separators
     border: "#444444",
-    borderSubtle: "#333333",
+    borderSubtle: "#444444",
     borderFocus: "rgba(255, 255, 255, 0.6)",
 
     // Text Hierarchy
@@ -84,7 +84,7 @@ export const customTheme: Record<ThemeMode, ColorTokens> = {
     status: {
       success: "#2EC4B6",
       warning: "#FF9F1C",
-      danger: "#EF4444",
+      danger: "#E71D36",
       info: "#FFFFFF",
     },
   },
@@ -94,37 +94,37 @@ export const customTheme: Record<ThemeMode, ColorTokens> = {
     canvas: "#F8FAFC",
     sidebar: "#FFFFFF",
     cards: "#FFFFFF",
-    cardsHover: "#F8FAFC",
+    cardsHover: "#F1F5F9",
     inputBg: "#F8FAFC",
 
     // Accents & Actions
     accent: "#222222",
     accentForeground: "#FFFFFF",
-    buttonBg: "#F1F5F9",
-    buttonBorder: "#E4E4E7",
+    buttonBg: "#FFFFFF",
+    buttonBorder: "#737D88",
     buttonText: "#222222",
     buttonHoverBg: "#222222",
     buttonHoverText: "#FFFFFF",
-    buttonHoverBorder: "#222222",
+    buttonHoverBorder: "#737D88",
 
     // Borders & Separators
     border: "#E4E4E7",
     borderSubtle: "#F1F5F9",
-    borderFocus: "#222222",
+    borderFocus: "#737D88",
 
     // Text Hierarchy
     text: {
       primary: "#222222",    // Dark Slate 900
-      secondary: "#2C2C2C",  // Slate 800
+      secondary: "#383838",  // Supporting text
       muted: "#383838",      // Slate 700
       contrast: "#FFFFFF",
     },
 
     // Status Indicators
     status: {
-      success: "#10B981",
-      warning: "#F59E0B",
-      danger: "#EF4444",
+      success: "#15A465",
+      warning: "#CE8D10",
+      danger: "#C7291F",
       info: "#222222",
     },
   },

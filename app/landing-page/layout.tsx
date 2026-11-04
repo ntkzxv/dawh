@@ -12,7 +12,7 @@ export default function LandingPageLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="w-full min-h-screen bg-[#FAF9F5] text-[#141416] antialiased selection:bg-purple-600 selection:text-white">
+    <div className="w-full min-h-screen bg-[#F8FAFC] text-[#222222] antialiased selection:bg-[var(--status-info)] selection:text-white">
       {children}
     </div>
   );

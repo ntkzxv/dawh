@@ -46,17 +46,17 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
       <div
         className={`relative flex items-center px-3 py-1.5 h-[33px] rounded-[6px] border text-[13px] transition-colors ${width} ${
           isLight
-            ? `bg-white border-[#E4E4E7] text-[#222222] ${
-                isFocused ? "border-zinc-400 ring-1 ring-zinc-300" : ""
+            ? `bg-[var(--cards)] border-[var(--toolbar-control-border)] text-[var(--text-primary)] ${
+                isFocused ? "border-[var(--toolbar-control-border-focus)] ring-1 ring-[var(--toolbar-control-border)]/30" : ""
               }`
-            : `bg-[#383838] border-[#444444] text-[#F8FAFC] ${
-                isFocused ? "border-white/50 ring-1 ring-white/20" : ""
+            : `bg-[var(--input-bg)] border-[var(--toolbar-control-border)] text-[var(--text-secondary)] ${
+                isFocused ? "border-[var(--toolbar-control-border-focus)] ring-1 ring-[var(--toolbar-control-border)]/30" : ""
               }`
         } ${disabled ? "opacity-50 cursor-not-allowed" : ""} ${className}`}
       >
         <Search
           size={14}
-          className="text-[#A1A1AA] shrink-0 mr-2 select-none pointer-events-none"
+          className="text-[var(--text-muted)] shrink-0 mr-2 select-none pointer-events-none"
           aria-hidden="true"
         />
         <input
@@ -74,7 +74,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
             rest.onBlur?.(e);
           }}
           placeholder={placeholder}
-          className={`w-full bg-transparent border-none outline-none text-[13px] placeholder:text-[#A1A1AA] pr-5 ${inputClassName}`}
+          className={`w-full bg-transparent border-none outline-none text-[13px] placeholder:text-[var(--text-muted)] pr-5 ${inputClassName}`}
           {...rest}
         />
         {showClearButton && value && !disabled && (
@@ -84,8 +84,8 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
             aria-label={clearLabel}
             className={`absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors cursor-pointer ${
               isLight
-                ? "text-[#A1A1AA] hover:text-[#222222] hover:bg-zinc-100"
-                : "text-[#A1A1AA] hover:text-white hover:bg-white/10"
+                ? "text-[var(--text-muted)] hover:text-[#222222] hover:bg-zinc-100"
+                : "text-[var(--text-muted)] hover:text-white hover:bg-white/10"
             }`}
           >
             <X size={12} />

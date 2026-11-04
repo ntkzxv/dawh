@@ -305,7 +305,7 @@ export default function NavbarsubWarehouse({
       }
 
       const rect = e.currentTarget.getBoundingClientRect();
-      const popupEstimatedHeight = (item.children?.length ?? 5) * 40 + 20;
+      const popupEstimatedHeight = (item.children?.length ?? 5) * 40 + 60;
       const windowHeight = typeof window !== "undefined" ? window.innerHeight : 800;
 
       let top = rect.top;
@@ -352,10 +352,10 @@ export default function NavbarsubWarehouse({
                 } ${
                   isSelfActive
                     ? isLight
-                      ? "bg-[#F4F4F5] text-[#222222] border-[#E4E4E7] font-semibold"
+                      ? "bg-[#F1F5F9] text-[#222222] border-[#E4E4E7] font-semibold"
                       : "bg-[#383838]/80 text-[#FFFFFF] border-[#444444]/60 font-semibold"
                     : isLight
-                    ? "border-transparent text-[#2C2C2C] hover:bg-[#F4F4F5] hover:text-[#222222]"
+                    ? "border-transparent text-[#222222] hover:bg-[#F1F5F9] hover:text-[#222222]"
                     : "border-transparent text-[#F4F4F5] hover:bg-[#383838]/60 hover:text-[#FFFFFF]"
                 }`}
                 title={isMinimized ? item.title : undefined}
@@ -368,7 +368,7 @@ export default function NavbarsubWarehouse({
                         ? "text-[#222222]"
                         : "text-[#FFFFFF]"
                       : isLight
-                      ? "text-[#2C2C2C] group-hover:text-[#222222]"
+                      ? "text-[#222222] group-hover:text-[#222222]"
                       : "text-[#E4E4E7] group-hover:text-[#FFFFFF]"
                   } shrink-0 transition-colors duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]`}
                 />
@@ -380,7 +380,7 @@ export default function NavbarsubWarehouse({
                         ? "text-[#222222] font-semibold"
                         : "text-[#FFFFFF] font-semibold"
                       : isLight
-                      ? "text-[#2C2C2C] group-hover:text-[#222222]"
+                      ? "text-[#222222] group-hover:text-[#222222]"
                       : "text-[#E4E4E7] group-hover:text-[#FFFFFF]"
                   } ${
                     isMinimized
@@ -395,8 +395,8 @@ export default function NavbarsubWarehouse({
                   <span
                     className={`ml-auto px-2 py-0.5 text-[10px] font-bold rounded-full ${
                       isLight
-                        ? "bg-[#F4F4F5] text-[#222222] border border-[#E4E4E7]"
-                        : "bg-[#282828] text-[#E4E4E7] border border-[#444444]"
+                        ? "bg-[#F1F5F9] text-[#222222] border border-[#E4E4E7]"
+                        : "bg-[var(--cards)] text-[#E4E4E7] border border-[#444444]"
                     }`}
                   >
                     {item.badge}
@@ -448,14 +448,14 @@ export default function NavbarsubWarehouse({
                 } ${
                   isPopupOpen
                     ? isLight
-                      ? "bg-[#E4E4E7] text-[#222222] border-[#D4D4D8]"
-                      : "bg-[#383838] text-[#FFFFFF] border-[#555555]"
+                      ? "bg-[#E4E4E7] text-[#222222] border-[#737D88]"
+                      : "bg-[#383838] text-[#FFFFFF] border-[#444444]"
                     : isChildActive
                     ? isLight
-                      ? "bg-[#F4F4F5] text-[#222222] border-[#E4E4E7]"
+                      ? "bg-[#F1F5F9] text-[#222222] border-[#E4E4E7]"
                       : "bg-[#383838]/80 text-[#FFFFFF] border-[#444444]/60"
                     : isLight
-                    ? "border-transparent text-[#2C2C2C] hover:bg-[#F4F4F5] hover:text-[#222222]"
+                    ? "border-transparent text-[#222222] hover:bg-[#F1F5F9] hover:text-[#222222]"
                     : "border-transparent text-[#F4F4F5] hover:bg-[#383838]/60 hover:text-[#FFFFFF]"
                 }`}
                 title={isMinimized ? item.title : undefined}
@@ -497,7 +497,7 @@ export default function NavbarsubWarehouse({
                         className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full ${
                           isLight
                             ? "bg-slate-200 text-slate-900"
-                            : "bg-[#282828] text-[#E4E4E7] border border-[#444444]"
+                            : "bg-[var(--cards)] text-[#E4E4E7] border border-[#444444]"
                         }`}
                       >
                         {item.badge}
@@ -555,9 +555,9 @@ export default function NavbarsubWarehouse({
                               isActive
                                 ? isLight
                                   ? "bg-[#222222] text-[#FFFFFF] border-[#222222] shadow-sm font-semibold"
-                                  : "bg-[#383838] text-white border-[#555555] shadow-sm font-semibold"
+                                  : "bg-[#383838] text-white border-[#444444] shadow-sm font-semibold"
                                 : isLight
-                                ? "border-transparent text-[#2C2C2C] hover:text-[#222222] hover:bg-[#F4F4F5] font-normal"
+                                ? "border-transparent text-[#222222] hover:text-[#222222] hover:bg-[#F1F5F9] font-normal"
                                 : "border-transparent text-[#E4E4E7] hover:text-[#FFFFFF] hover:bg-white/5 font-normal"
                             }`}
                           >
@@ -587,7 +587,7 @@ export default function NavbarsubWarehouse({
                                       ? "bg-white/20 text-white"
                                       : isLight
                                       ? "bg-[#E4E4E7] text-[#222222]"
-                                      : "bg-[#383838] text-zinc-200 border border-[#555555]"
+                                      : "bg-[#383838] text-zinc-200 border border-[#444444]"
                                   }`}
                                 >
                                   {child.badge}
@@ -616,9 +616,10 @@ export default function NavbarsubWarehouse({
       </nav>
 
       {/* Floating Sub Sidebar (Flyout only active when sidebar is minimized) */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {isMinimized && activePopupGroup && (
           <motion.div
+            key={activePopupGroup.id}
             ref={popupRef}
             initial={{ opacity: 0, scale: 0.96, x: -6 }}
             animate={{ opacity: 1, scale: 1, x: 0 }}
@@ -633,10 +634,19 @@ export default function NavbarsubWarehouse({
             className={`w-[210px] sm:w-[230px] rounded-2xl border shadow-2xl p-1.5 backdrop-blur-2xl select-none transition-colors ${
               isLight
                 ? "bg-white/95 border-slate-200/90 text-slate-900 shadow-[0_20px_50px_rgba(0,0,0,0.14)]"
-                : "bg-[#252525]/95 border-[#444444] text-white shadow-[0_25px_60px_rgba(0,0,0,0.7)]"
+                : "bg-[var(--cards)]/95 border-[#444444] text-[#F4F4F5] shadow-[0_25px_60px_rgba(0,0,0,0.7)]"
             }`}
           >
-            <div className="space-y-1 max-h-[380px] overflow-y-auto no-scrollbar py-0.5">
+            <div
+              className={`px-3 py-2 text-[12px] font-semibold border-b ${
+                isLight
+                  ? "text-slate-500 border-slate-200/80"
+                  : "text-zinc-400 border-[#444444]"
+              }`}
+            >
+              {activePopupGroup.title}
+            </div>
+            <div className="space-y-1 max-h-[380px] overflow-y-auto no-scrollbar pt-[5px] pb-0.5">
               {activePopupGroup.children?.map((child) => {
                 const isActive = isPathActive(child.path);
                 const ChildIcon = child.icon;
@@ -651,7 +661,7 @@ export default function NavbarsubWarehouse({
                       isActive
                         ? isLight
                           ? "bg-slate-900 text-white border-slate-900 shadow-sm"
-                          : "bg-[#383838] text-white border-[#555555] shadow-sm"
+                          : "bg-[#2C2C2C] text-white border-[#444444] shadow-sm"
                         : isLight
                         ? "border-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-950"
                         : "border-transparent text-[#E4E4E7] hover:bg-white/10 hover:text-white"
@@ -683,7 +693,7 @@ export default function NavbarsubWarehouse({
                               ? "bg-white/20 text-white"
                               : isLight
                               ? "bg-slate-200 text-slate-800"
-                              : "bg-[#383838] text-zinc-200 border border-[#555555]"
+                              : "bg-[#383838] text-zinc-200 border border-[#444444]"
                           }`}
                         >
                           {child.badge}

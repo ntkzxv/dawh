@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronUp,
@@ -79,6 +79,9 @@ export default function NavbarMain({
   const { theme, toggleTheme } = useTheme();
   const [isMinimized, setIsMinimized] = useState(initialMinimized);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [accountPopupPosition, setAccountPopupPosition] = useState({ top: 16, left: 90 });
+  const accountButtonRef = useRef<HTMLButtonElement | null>(null);
+  const accountPopupRef = useRef<HTMLDivElement | null>(null);
   const appLang = useAppLanguage();
   const activeLang = controlledLang ?? (appLang.toLowerCase() as "th" | "en");
   const isLight = theme === "light";
@@ -104,6 +107,51 @@ export default function NavbarMain({
   useEffect(() => {
     setLogoError(false);
   }, [currentLogo]);
+
+  useEffect(() => {
+    if (!isAccountOpen || !isMinimized) return;
+
+    const handleOutsideClick = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
+      if (
+        !accountPopupRef.current?.contains(target) &&
+        !accountButtonRef.current?.contains(target)
+      ) {
+        setIsAccountOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsAccountOpen(false);
+    };
+    const handleResize = () => setIsAccountOpen(false);
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("touchstart", handleOutsideClick);
+    document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("resize", handleResize);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("touchstart", handleOutsideClick);
+      document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [isAccountOpen, isMinimized]);
+
+  const openMinimizedAccountPopup = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (isAccountOpen) {
+      setIsAccountOpen(false);
+      return;
+    }
+    const rect = event.currentTarget.getBoundingClientRect();
+    const popupHeight = 420;
+    const top = Math.max(
+      16,
+      Math.min(rect.bottom - popupHeight, window.innerHeight - popupHeight - 16),
+    );
+    const left = Math.max(16, Math.min(rect.right + 10, window.innerWidth - 296));
+    setAccountPopupPosition({ top, left });
+    setIsAccountOpen(true);
+  };
 
   // Sync with localStorage on mount
   useEffect(() => {
@@ -184,10 +232,10 @@ export default function NavbarMain({
         {/* ======================================================== */}
         {/* Sidebar logo */}
         {/* ======================================================== */}
-        <div className="flex flex-col items-center justify-center w-full overflow-hidden shrink-0 h-[88px] px-2.5 transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]">
+        <div className={`flex flex-col items-center justify-center w-full overflow-hidden shrink-0 px-2.5 transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${isMinimized ? "h-[88px]" : "h-[80px]"}`}>
           <div
             className={`relative flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-              isMinimized ? "w-[38px] h-[38px]" : "w-full h-[39px]"
+              isMinimized ? "w-[38px] h-[38px]" : "w-full h-[39px] scale-95"
             }`}
           >
             {currentLogo && !logoError ? (
@@ -236,19 +284,34 @@ export default function NavbarMain({
 
       {/* Smooth Divider below Logo */}
       <div
-        className={`mx-4 transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] border-b mb-2 ${
+        className={`w-full transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] border-b mb-2 ${
           isLight ? "border-[#E4E4E7]" : "border-[#444444]"
-        } ${isMinimized ? "opacity-60 scale-x-60" : "opacity-100 scale-x-100"}`}
+        } ${isMinimized ? "opacity-60" : "opacity-100"}`}
       />
 
       {/* SUB NAVBAR AREA */}
       <div
-        className={`flex-1 px-3 w-full transition-all duration-700 no-scrollbar ${
+        className={`relative flex-1 px-3 w-full transition-all duration-700 no-scrollbar ${
           isMinimized ? "overflow-visible" : "overflow-y-auto overflow-x-hidden"
         }`}
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         {children}
+        <AnimatePresence>
+          {isAccountOpen && !isMinimized && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              aria-hidden="true"
+              onClick={() => setIsAccountOpen(false)}
+              className={`absolute inset-0 z-20 backdrop-blur-[3px] ${
+                isLight ? "bg-white/20" : "bg-[#222222]/20"
+              }`}
+            />
+          )}
+        </AnimatePresence>
       </div>
 
       {/* ACCOUNT & CONTROL AREA */}
@@ -256,7 +319,7 @@ export default function NavbarMain({
         className={`px-3 ${showAccount ? "pt-5 pb-2.5" : "py-2.5"} mt-auto w-full shrink-0 border-t space-y-2 transition-colors duration-700 ${
           isLight
             ? "bg-[#FFFFFF] border-[#E4E4E7]"
-            : "bg-[#1E1E1E] border-[#383838]"
+            : "bg-[var(--input-bg)] border-[#383838]"
         }`}
       >
         {/* Server Status Indicator (Hidden when minimized) */}
@@ -267,7 +330,7 @@ export default function NavbarMain({
           >
             <p
               className={`text-[11px] font-medium leading-tight truncate text-center ${
-                isLight ? "text-[#383838]" : "text-[#A1A1AA]"
+                isLight ? "text-[#383838]" : "text-[var(--text-muted)]"
               }`}
             >
               {serverStatus.label || serverStatus.sublabel}
@@ -291,7 +354,7 @@ export default function NavbarMain({
               disabled={refreshButton.isLoading}
               className={`flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] group cursor-pointer overflow-hidden ${
                 isLight
-                  ? "bg-[#FFFFFF] border-[#E4E4E7] text-[#222222] hover:bg-[#F4F4F5] disabled:opacity-50"
+                  ? "bg-[#FFFFFF] border-[#E4E4E7] text-[#222222] hover:bg-[#F1F5F9] disabled:opacity-50"
                   : "bg-[#383838] border-[#444444] text-[#FFFFFF] hover:bg-[#444444] disabled:opacity-50"
               } ${
                 isMinimized
@@ -349,7 +412,7 @@ export default function NavbarMain({
               }
               className={`flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] group cursor-pointer overflow-hidden ${
                 isLight
-                  ? "bg-[#FFFFFF] border-[#E4E4E7] text-[#222222] hover:bg-[#F4F4F5]"
+                  ? "bg-[#FFFFFF] border-[#E4E4E7] text-[#222222] hover:bg-[#F1F5F9]"
                   : "bg-[#383838] border-[#444444] text-[#FFFFFF] hover:bg-[#444444]"
               } ${
                 isMinimized
@@ -393,7 +456,7 @@ export default function NavbarMain({
             onClick={handleToggleMinimize}
             className={`flex items-center justify-center rounded-xl border transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] active:scale-75 cursor-pointer shrink-0 ${
               isLight
-                ? "border-[#E4E4E7] bg-[#FFFFFF] text-[#2C2C2C] hover:bg-[#F4F4F5]"
+                ? "border-[#E4E4E7] bg-[#FFFFFF] text-[#222222] hover:bg-[#F1F5F9]"
                 : "border-[#444444] bg-[#383838] text-[#E4E4E7] hover:border-white/30 hover:text-[#FFFFFF]"
             } ${isMinimized ? "w-10 h-10 aspect-square" : "h-9 w-9"}`}
             aria-label="Toggle sidebar minimize"
@@ -419,13 +482,16 @@ export default function NavbarMain({
 
             {/* Main Account Button */}
             <button
+              ref={accountButtonRef}
               type="button"
-              onClick={() =>
-                isMinimized ? handleToggleMinimize() : setIsAccountOpen(!isAccountOpen)
+              onClick={(event) =>
+                isMinimized
+                  ? openMinimizedAccountPopup(event)
+                  : setIsAccountOpen((open) => !open)
               }
               className={`flex items-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden cursor-pointer ${
                 isLight
-                  ? "bg-[#FFFFFF] border-[#E4E4E7] text-[#222222] hover:bg-[#F4F4F5]"
+                  ? "bg-[#FFFFFF] border-[#E4E4E7] text-[#222222] hover:bg-[#F1F5F9]"
                   : "bg-[#383838] border-[#444444] text-[#FFFFFF] hover:bg-[#444444]"
               } ${
                 isMinimized
@@ -438,7 +504,7 @@ export default function NavbarMain({
                   isMinimized ? "w-8 h-8" : "w-9 h-9"
                 } ${
                   isLight
-                    ? "bg-[#F4F4F5] border-[#E4E4E7] text-[#222222]"
+                    ? "bg-[#F1F5F9] border-[#E4E4E7] text-[#222222]"
                     : "bg-white/10 text-[#FFFFFF] border-white/20"
                 }`}
               >
@@ -472,7 +538,7 @@ export default function NavbarMain({
                 </p>
                 <p
                   className={`text-[11.5px] truncate leading-tight mt-0.5 ${
-                    isLight ? "text-[#383838]" : "text-[#D4D4D8]"
+                    isLight ? "text-[#383838]" : "text-[var(--text-secondary)]"
                   }`}
                 >
                   {accountSubtitle}
@@ -491,7 +557,7 @@ export default function NavbarMain({
                   size={15}
                   className={`transition-transform duration-300 ${
                     isAccountOpen ? "rotate-0" : "rotate-180"
-                  } ${isLight ? "text-[#383838]" : "text-[#D4D4D8]"}`}
+                  } ${isLight ? "text-[#383838]" : "text-[var(--text-secondary)]"}`}
                 />
               </div>
             </button>
@@ -510,16 +576,48 @@ export default function NavbarMain({
                     className={`p-2 rounded-2xl border shadow-lg ${
                       isLight
                         ? "bg-[#FFFFFF] border-[#E4E4E7]"
-                        : "bg-[#282828] border-[#444444]"
+                        : "bg-[var(--cards)] border-[#444444]"
                     }`}
                   >
                     <DropdownMenu
                       {...accountMenu}
                       onClose={() => setIsAccountOpen(false)}
                       variant="inline"
+                      redLogoutInLight
                       settingsPath={settingsPath}
                     />
                   </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <AnimatePresence>
+              {isAccountOpen && isMinimized && (
+                <motion.div
+                  ref={accountPopupRef}
+                  initial={{ opacity: 0, scale: 0.96, x: -6 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.96, x: -6 }}
+                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                  style={{
+                    position: "fixed",
+                    top: accountPopupPosition.top,
+                    left: accountPopupPosition.left,
+                    zIndex: 9999,
+                  }}
+                  className={`w-[280px] rounded-2xl border p-2 shadow-[0_12.5px_25px_-6px_rgba(0,0,0,0.125)] ${
+                    isLight
+                      ? "border-[#E4E4E7] bg-white text-[#222222]"
+                      : "border-[#444444] bg-[var(--cards)] text-white"
+                  }`}
+                >
+                  <DropdownMenu
+                    {...accountMenu}
+                    onClose={() => setIsAccountOpen(false)}
+                    variant="popup"
+                    redLogoutInLight
+                    closeOnPreferenceChange={isMinimized}
+                    settingsPath={settingsPath}
+                  />
                 </motion.div>
               )}
             </AnimatePresence>

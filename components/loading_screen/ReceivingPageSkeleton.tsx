@@ -36,7 +36,7 @@ export function ReceivingTabsSkeleton({ employeeOnly = false }: { employeeOnly?:
   return (
     <div
       aria-hidden="true"
-      className={`flex h-[42px] w-full flex-row items-stretch overflow-x-auto rounded-lg border px-1 select-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${isLight ? "border-[#D4D4D8] bg-white" : "border-[#666666] bg-[#383838]"}`}
+      className={`flex h-[42px] w-full flex-row items-stretch overflow-x-auto rounded-lg border px-1 select-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${isLight ? "border-[#737D88] bg-white" : "border-[#444444] bg-[#383838]"}`}
     >
       {tabSteps.map((step) => (
         <div
@@ -45,7 +45,7 @@ export function ReceivingTabsSkeleton({ employeeOnly = false }: { employeeOnly?:
         >
           <SkeletonBox className={`h-3.5 ${stepWidths[step]} rounded`} />
           {step === (employeeOnly ? "carrier" : "po") && (
-            <div className={`absolute bottom-0 left-5 right-5 h-[2px] ${isLight ? "bg-black" : "bg-[#D4D4D8]"}`} />
+            <div className={`absolute bottom-0 left-5 right-5 h-[2px] ${isLight ? "bg-black" : "bg-[var(--text-secondary)]"}`} />
           )}
         </div>
       ))}

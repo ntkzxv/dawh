@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ChevronLeft,
@@ -12,6 +12,7 @@ import {
   Building2,
   Database,
   Package,
+  Power,
   X,
   UserRound,
 } from "lucide-react";
@@ -59,7 +60,55 @@ export default function ControlPanelSidebar({
   const { isThai } = accountMenu;
   const isLight = theme === "light";
   const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [accountPopupPosition, setAccountPopupPosition] = useState({ top: 16, left: 90 });
+  const accountButtonRef = useRef<HTMLButtonElement | null>(null);
+  const accountPopupRef = useRef<HTMLDivElement | null>(null);
   const [logoErrorSource, setLogoErrorSource] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isAccountOpen || !isMinimized) return;
+
+    const handleOutsideClick = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
+      if (
+        !accountPopupRef.current?.contains(target) &&
+        !accountButtonRef.current?.contains(target)
+      ) {
+        setIsAccountOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsAccountOpen(false);
+    };
+    const handleResize = () => setIsAccountOpen(false);
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("touchstart", handleOutsideClick);
+    document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("resize", handleResize);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("touchstart", handleOutsideClick);
+      document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [isAccountOpen, isMinimized]);
+
+  const openMinimizedAccountPopup = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (isAccountOpen) {
+      setIsAccountOpen(false);
+      return;
+    }
+    const rect = event.currentTarget.getBoundingClientRect();
+    const popupHeight = 420;
+    const top = Math.max(
+      16,
+      Math.min(rect.bottom - popupHeight, window.innerHeight - popupHeight - 16),
+    );
+    const left = Math.max(16, Math.min(rect.right + 10, window.innerWidth - 296));
+    setAccountPopupPosition({ top, left });
+    setIsAccountOpen(true);
+  };
 
   const currentLogo = isMinimized
     ? isLight
@@ -78,6 +127,12 @@ export default function ControlPanelSidebar({
       icon: UserRound,
       path: "/controlpanel/users",
     },
+    ...(isAdmin ? [{
+      id: "module-status",
+      title: isThai ? "สถานะโมดูล" : "Module status",
+      icon: Power,
+      path: "/controlpanel/module-status",
+    }] : []),
     {
       id: "master-data",
       title: isThai ? "ข้อมูลหลัก" : "Master Data",
@@ -117,6 +172,7 @@ export default function ControlPanelSidebar({
           : path === "/controlpanel/access-preview" ? "security"
             : path === "/controlpanel/user-scopes" ? "scopes"
               : path === "/controlpanel/account-status" ? "account-status"
+                : path === "/controlpanel/module-status" ? "module-status"
                 : "master-data";
     onTabChange(nextTab);
     onMobileClose?.();
@@ -145,10 +201,10 @@ export default function ControlPanelSidebar({
         {/* ======================================================== */}
         {/* Sidebar logo */}
         {/* ======================================================== */}
-        <div className="flex flex-col items-center justify-center w-full overflow-hidden shrink-0 h-[88px] px-2.5 transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]">
+        <div className={`flex flex-col items-center justify-center w-full overflow-hidden shrink-0 px-2.5 transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${isMinimized ? "h-[88px]" : "h-[80px]"}`}>
           <div
             className={`relative flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-              isMinimized ? "w-[38px] h-[38px]" : "w-full h-[39px]"
+              isMinimized ? "w-[38px] h-[38px]" : "w-full h-[39px] scale-95"
             }`}
           >
             {currentLogo && logoErrorSource !== currentLogo ? (
@@ -206,13 +262,13 @@ export default function ControlPanelSidebar({
 
         {/* Smooth Divider below Logo */}
         <div
-          className={`mx-4 transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] border-b mb-2 ${
+          className={`w-full transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] border-b mb-2 ${
             isLight ? "border-[#E4E4E7]" : "border-[#444444]"
-          } ${isMinimized ? "opacity-60 scale-x-60" : "opacity-100 scale-x-100"}`}
+          } ${isMinimized ? "opacity-60" : "opacity-100"}`}
         />
 
         {/* SUB NAVBAR AREA */}
-        <div className={`flex-1 px-3 w-full transition-all duration-700 no-scrollbar ${isMinimized ? "overflow-visible" : "overflow-y-auto overflow-x-hidden"}`} style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+        <div className={`relative flex-1 px-3 w-full transition-all duration-700 no-scrollbar ${isMinimized ? "overflow-visible" : "overflow-y-auto overflow-x-hidden"}`} style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
           {!isMinimized && (
             <p className={`px-1 pt-2 text-[11px] font-semibold ${isLight ? "text-slate-500" : "text-zinc-400"}`}>
               {isThai ? "เมนูแผงควบคุม" : "Control Panel"}
@@ -224,6 +280,21 @@ export default function ControlPanelSidebar({
             menuItems={menuItems}
             onNavigate={navigateControlPanel}
           />
+          <AnimatePresence>
+            {isAccountOpen && !isMinimized && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                aria-hidden="true"
+                onClick={() => setIsAccountOpen(false)}
+                className={`absolute inset-0 z-20 backdrop-blur-[3px] ${
+                  isLight ? "bg-white/20" : "bg-[#222222]/20"
+                }`}
+              />
+            )}
+          </AnimatePresence>
         </div>
 
         {/* ACCOUNT & CONTROL AREA */}
@@ -231,7 +302,7 @@ export default function ControlPanelSidebar({
           className={`px-3 pt-5 pb-2.5 mt-auto w-full shrink-0 border-t space-y-2 transition-colors duration-700 ${
             isLight
               ? "bg-[#FFFFFF] border-[#E4E4E7]"
-              : "bg-[#1E1E1E] border-[#383838]"
+              : "bg-[var(--input-bg)] border-[#383838]"
           }`}
         >
           {/* Quick Controls: Hub & Minimize Buttons */}
@@ -254,7 +325,7 @@ export default function ControlPanelSidebar({
               }
               className={`flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] group cursor-pointer overflow-hidden ${
                 isLight
-                  ? "bg-[#FFFFFF] border-[#E4E4E7] text-[#222222] hover:bg-[#F4F4F5]"
+                  ? "bg-[#FFFFFF] border-[#E4E4E7] text-[#222222] hover:bg-[#F1F5F9]"
                   : "bg-[#383838] border-[#444444] text-[#FFFFFF] hover:bg-[#444444]"
               } ${
                 isMinimized
@@ -297,7 +368,7 @@ export default function ControlPanelSidebar({
               onClick={handleToggleMinimize}
               className={`flex items-center justify-center rounded-xl border transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] active:scale-75 cursor-pointer shrink-0 ${
                 isLight
-                  ? "border-[#E4E4E7] bg-[#FFFFFF] text-[#2C2C2C] hover:bg-[#F4F4F5]"
+                  ? "border-[#E4E4E7] bg-[#FFFFFF] text-[#222222] hover:bg-[#F1F5F9]"
                   : "border-[#444444] bg-[#383838] text-[#E4E4E7] hover:border-white/30 hover:text-[#FFFFFF]"
               } ${isMinimized ? "w-10 h-10 aspect-square" : "h-9 w-9"}`}
               title={isThai ? "ย่อ/ขยายแถบด้านข้าง" : "Collapse/expand sidebar"}
@@ -327,15 +398,16 @@ export default function ControlPanelSidebar({
 
             {/* Main Account Button */}
             <button
+              ref={accountButtonRef}
               type="button"
-              onClick={() =>
+              onClick={(event) =>
                 isMinimized
-                  ? handleToggleMinimize()
+                  ? openMinimizedAccountPopup(event)
                   : setIsAccountOpen((open) => !open)
               }
               className={`flex items-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden cursor-pointer ${
                 isLight
-                  ? "bg-[#FFFFFF] border-[#E4E4E7] text-[#222222] hover:bg-[#F4F4F5]"
+                  ? "bg-[#FFFFFF] border-[#E4E4E7] text-[#222222] hover:bg-[#F1F5F9]"
                   : "bg-[#383838] border-[#444444] text-[#FFFFFF] hover:bg-[#444444]"
               } ${
                 isMinimized
@@ -348,7 +420,7 @@ export default function ControlPanelSidebar({
                   isMinimized ? "w-8 h-8" : "w-9 h-9"
                 } ${
                   isLight
-                    ? "bg-[#F4F4F5] border-[#E4E4E7] text-[#222222]"
+                    ? "bg-[#F1F5F9] border-[#E4E4E7] text-[#222222]"
                     : "bg-white/10 text-[#FFFFFF] border-white/20"
                 }`}
               >
@@ -383,7 +455,7 @@ export default function ControlPanelSidebar({
                 </p>
                 <p
                   className={`text-[11.5px] truncate leading-tight mt-0.5 ${
-                    isLight ? "text-[#383838]" : "text-[#D4D4D8]"
+                    isLight ? "text-[#383838]" : "text-[var(--text-secondary)]"
                   }`}
                 >
                   {accountMenu.accountSubtitle}
@@ -402,7 +474,7 @@ export default function ControlPanelSidebar({
                   size={15}
                   className={`transition-transform duration-300 ${
                     isAccountOpen ? "rotate-0" : "rotate-180"
-                  } ${isLight ? "text-[#383838]" : "text-[#D4D4D8]"}`}
+                  } ${isLight ? "text-[#383838]" : "text-[var(--text-secondary)]"}`}
                 />
               </div>
             </button>
@@ -421,16 +493,48 @@ export default function ControlPanelSidebar({
                     className={`p-2 rounded-2xl border shadow-lg ${
                       isLight
                         ? "bg-[#FFFFFF] border-[#E4E4E7]"
-                        : "bg-[#282828] border-[#444444]"
+                        : "bg-[var(--cards)] border-[#444444]"
                     }`}
                   >
                     <DropdownMenu
                       {...accountMenu}
                       onClose={() => setIsAccountOpen(false)}
                       variant="inline"
+                      redLogoutInLight
                       settingsPath="/settings"
                     />
                   </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <AnimatePresence>
+              {isAccountOpen && isMinimized && (
+                <motion.div
+                  ref={accountPopupRef}
+                  initial={{ opacity: 0, scale: 0.96, x: -6 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.96, x: -6 }}
+                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                  style={{
+                    position: "fixed",
+                    top: accountPopupPosition.top,
+                    left: accountPopupPosition.left,
+                    zIndex: 9999,
+                  }}
+                  className={`w-[280px] rounded-2xl border p-2 shadow-[0_12.5px_25px_-6px_rgba(0,0,0,0.125)] ${
+                    isLight
+                      ? "border-[#E4E4E7] bg-white text-[#222222]"
+                      : "border-[#444444] bg-[var(--cards)] text-white"
+                  }`}
+                >
+                  <DropdownMenu
+                    {...accountMenu}
+                    onClose={() => setIsAccountOpen(false)}
+                    variant="popup"
+                    redLogoutInLight
+                    closeOnPreferenceChange={isMinimized}
+                    settingsPath="/settings"
+                  />
                 </motion.div>
               )}
             </AnimatePresence>

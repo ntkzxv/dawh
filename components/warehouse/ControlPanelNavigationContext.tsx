@@ -11,7 +11,8 @@ export type ControlPanelTab =
   | "security"
   | "scopes"
   | "account-status"
-  | "master-data";
+  | "master-data"
+  | "module-status";
 
 type ControlPanelNavigationValue = {
   tab: ControlPanelTab;

@@ -16,7 +16,7 @@ export function CarrierForm({ orders, onSave, sidePanel = false, onCancel }: { o
   const isThai = useAppLanguage() === "TH";
   const { theme } = useTheme();
   const styles = sidePanelFormStyles(theme === "light");
-  const sidePanelFooter = `${styles.footer} sticky bottom-0 ${theme === "light" ? "bg-white" : "bg-[#282828]"}`;
+  const sidePanelFooter = `${styles.footer} sticky bottom-0 ${theme === "light" ? "bg-white" : "bg-[var(--cards)]"}`;
   const [code, setCode] = useState("");
   const [searchedOrders, setSearchedOrders] = useState<PurchaseOrder[]>([]);
   const [external, setExternal] = useState("");
@@ -150,7 +150,7 @@ export function CarrierForm({ orders, onSave, sidePanel = false, onCancel }: { o
           </Field>
           {hasError(`line-${index}-quantity`) && <SidePanelFieldError>{isThai ? "กรุณาระบุจำนวนมากกว่า 0" : "Enter a quantity greater than 0."}</SidePanelFieldError>}
         </div>
-        <button type="button" aria-label={isThai ? "ลบรายการสินค้า" : "Remove product"} className="mt-5 inline-flex h-[38px] w-7 items-center justify-center rounded-lg text-rose-600 transition-colors hover:text-rose-400" onClick={() => { setLines((current) => current.filter((_, i) => i !== index)); setErrors((current) => current.filter((error) => !error.startsWith("line-"))); }}><X size={16} aria-hidden="true" /></button>
+        <button type="button" aria-label={isThai ? "ลบรายการสินค้า" : "Remove product"} className="mt-5 inline-flex h-[38px] w-7 items-center justify-center rounded-lg text-[var(--status-danger-text)] transition-colors hover:text-[var(--status-danger-text)]" onClick={() => { setLines((current) => current.filter((_, i) => i !== index)); setErrors((current) => current.filter((error) => !error.startsWith("line-"))); }}><X size={16} aria-hidden="true" /></button>
       </div>
     ))}
     <button type="button" className={subtleButton} onClick={() => setLines((current) => [...current, { productId: "", quantity: "" }])}>{isThai ? "เพิ่มสินค้าที่มีบนใบ" : "Add listed product"}</button>

@@ -102,8 +102,8 @@ export function UniversitySearchSelect({
         <div
           className={`p-3 rounded-xl border flex items-center justify-between gap-3 transition-all ${
             isLight
-              ? "bg-[#F9F9FA] border-[#E4E4E7] hover:border-[#222222]"
-              : "bg-[#282828] border-[#444444] hover:border-white"
+              ? "bg-[var(--canvas)] border-[#E4E4E7] hover:border-[#222222]"
+              : "bg-[var(--canvas)] border-[#444444] hover:border-white"
           }`}
         >
           <div className="flex items-center gap-2.5 min-w-0">
@@ -121,7 +121,7 @@ export function UniversitySearchSelect({
               {(isThai ? valueEn : valueTh) && (isThai ? valueEn !== valueTh : valueTh !== valueEn) && (
                 <span
                   className={`text-[11px] truncate mt-0.5 ${
-                    isLight ? "text-[#666666]" : "text-[#A1A1AA]"
+                    isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"
                   }`}
                 >
                   {isThai ? valueEn : valueTh}
@@ -169,13 +169,13 @@ export function UniversitySearchSelect({
               }
               className={`w-full p-2.5 pl-9 pr-8 rounded-lg border text-xs outline-none transition-all ${
                 isLight
-                  ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222] focus:bg-white focus:border-[#222222]"
-                  : "bg-[#282828] border-[#444444] text-[#FFFFFF] focus:bg-[#202020] focus:border-white"
+                  ? "bg-[var(--canvas)] border-[#737D88] text-[#222222] focus:border-[#222222]"
+                  : "bg-[var(--canvas)] border-[#E4E4E7] text-[#F4F4F5] focus:border-white"
               }`}
             />
             <div
               className={`absolute left-3 pointer-events-none ${
-                isLight ? "text-[#666666]" : "text-[#A1A1AA]"
+                isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"
               }`}
             >
               <Search size={14} />
@@ -197,7 +197,7 @@ export function UniversitySearchSelect({
               className={`absolute top-full left-0 right-0 mt-1.5 z-50 max-h-[260px] overflow-y-auto rounded-xl border shadow-2xl backdrop-blur-md flex flex-col p-1.5 gap-1 animate-in fade-in zoom-in-95 duration-150 ${
                 isLight
                   ? "bg-white/95 border-[#E4E4E7] shadow-xl text-[#222222]"
-                  : "bg-[#2B2B2B]/95 border-[#444444] shadow-2xl text-[#FFFFFF]"
+                  : "bg-[var(--canvas)]/95 border-[#444444] shadow-2xl text-[#FFFFFF]"
               }`}
             >
               <div className="px-2 py-1 flex items-center justify-between text-[10px] font-semibold text-slate-400">
@@ -281,11 +281,11 @@ export function UniversitySearchSelect({
                 className={`w-full p-2.5 mt-1 border-t rounded-lg flex items-center gap-2 text-left transition-all cursor-pointer ${
                   highlightedIndex === filtered.length
                     ? isLight
-                      ? "bg-slate-200/80 text-indigo-700 font-semibold"
-                      : "bg-[#383838] text-indigo-300 font-semibold"
+                      ? "bg-slate-200/80 text-[var(--status-info)] font-semibold"
+                      : "bg-[#383838] text-[var(--status-info)] font-semibold"
                     : isLight
-                    ? "border-slate-100 hover:bg-slate-50 text-indigo-600 font-semibold"
-                    : "border-zinc-700/60 hover:bg-[#353535] text-indigo-400 font-semibold"
+                    ? "border-slate-100 hover:bg-slate-50 text-[var(--status-info)] font-semibold"
+                    : "border-zinc-700/60 hover:bg-[var(--cards)] text-[var(--status-info)] font-semibold"
                 }`}
               >
                 <Plus size={14} />
@@ -313,7 +313,7 @@ export function UniversitySearchSelect({
               onChange={(e) => onChange(e.target.value, valueEn || "")}
               placeholder={isThai ? "ระบุชื่อสถาบันภาษาไทย" : "Thai Institution Name"}
               className={`p-2.5 rounded-lg border text-xs outline-none ${
-                isLight ? "bg-white border-[#E5E5E5] text-[#222222]" : "bg-[#282828] border-[#444444] text-white"
+                isLight ? "bg-[var(--canvas)] border-[#737D88] text-[#222222]" : "bg-[var(--canvas)] border-[#444444] text-white"
               }`}
               autoFocus
             />
@@ -329,7 +329,7 @@ export function UniversitySearchSelect({
               onChange={(e) => onChange(valueTh || "", e.target.value)}
               placeholder="English Institution Name"
               className={`p-2.5 rounded-lg border text-xs outline-none ${
-                isLight ? "bg-white border-[#E5E5E5] text-[#222222]" : "bg-[#282828] border-[#444444] text-white"
+                isLight ? "bg-[var(--canvas)] border-[#737D88] text-[#222222]" : "bg-[var(--canvas)] border-[#444444] text-white"
               }`}
             />
           </div>

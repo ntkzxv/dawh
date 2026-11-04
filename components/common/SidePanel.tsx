@@ -49,10 +49,10 @@ export function SidePanelAlert({
 }) {
   const { theme } = useTheme();
   const colors = tone === "error"
-    ? "border-[#E71D36]/30 bg-[#E71D36]/10 text-[#E71D36]"
+    ? "border-[var(--status-danger)]/30 bg-[var(--status-danger)]/10 text-[var(--status-danger-badge-text)]"
     : theme === "light"
-      ? "border-[#E4E4E7] bg-[#F4F4F5] text-[#222222]"
-      : "border-[#444444] bg-[#333333] text-[#F8FAFC]";
+      ? "border-[#E4E4E7] bg-[#F1F5F9] text-[#222222]"
+      : "border-[#444444] bg-[var(--cards)] text-[#F4F4F5]";
 
   return (
     <div role={tone === "error" ? "alert" : "status"} className={`rounded-[8px] border p-3.5 text-[13px] font-medium ${colors}`}>
@@ -61,11 +61,11 @@ export function SidePanelAlert({
   );
 }
 
-export const sidePanelInvalidFieldClassName = "!border-[#E74C3C] dark:!border-[#E71D36]";
+export const sidePanelInvalidFieldClassName = "!border-[var(--status-danger)] dark:!border-[var(--status-danger)]";
 
 export function SidePanelFieldError({ children }: { children: ReactNode }) {
   return (
-    <span role="alert" className="mt-1 block text-xs text-[#E74C3C] dark:text-[#E71D36]">
+    <span role="alert" className="mt-1 block text-xs text-[var(--status-danger-text)] dark:text-[var(--status-danger-text)]">
       {children}
     </span>
   );
@@ -79,11 +79,11 @@ export function sidePanelFormStyles(isLight: boolean) {
     dividedSection: "flex flex-col gap-3 border-t border-[#444444]/20 pt-2",
     field: "flex flex-col gap-1.5",
     label: `text-[12px] font-bold ${isLight ? "text-[#444444]" : "text-[#E4E4E7]"}`,
-    input: `h-[38px] w-full rounded-[8px] border px-3.5 text-[13px] outline-none transition-colors ${isLight ? "border-[#E5E5E5] bg-[#F5F5F5] text-[#222222] focus:border-[#222222]" : "border-[#444444] bg-[#222222] text-[#F4F4F5] focus:border-[#E4E4E7]"}`,
-    dropdown: `h-[38px] rounded-[8px] border px-3.5 !text-[13px] ${isLight ? "border-[#E5E5E5] bg-[#F5F5F5] text-[#222222]" : "border-[#444444] bg-[#222222] text-[#F4F4F5]"}`,
+    input: `h-[38px] w-full rounded-[8px] border px-3.5 text-[13px] outline-none transition-colors ${isLight ? "border-[#737D88] bg-[#F8FAFC] text-[#222222] focus:border-[#222222]" : "border-[#E4E4E7] bg-[#222222] text-[#F4F4F5] focus:border-white"}`,
+    dropdown: `h-[38px] rounded-[8px] border px-3.5 !text-[13px] ${isLight ? "border-[#737D88] bg-[#F8FAFC] text-[#222222]" : "border-[#E4E4E7] bg-[#222222] text-[#F4F4F5]"}`,
     footer: "mt-6 flex shrink-0 items-center justify-end gap-3 border-t border-[#444444]/30 pt-5",
-    cancel: `h-[42px] rounded-[8px] border px-6 text-[14px] font-bold cursor-pointer transition-colors ${isLight ? "border-[#E4E4E7] bg-white text-[#222222] hover:bg-[#F4F4F5]" : "border-[#444444] bg-[#383838] text-[#F4F4F5] hover:bg-[#444444]"}`,
-    submit: `h-[42px] rounded-[8px] px-6 text-[14px] font-bold cursor-pointer shadow-sm transition-colors disabled:opacity-50 ${isLight ? "bg-[#222222] text-white hover:bg-black" : "bg-white text-[#222222] hover:bg-[#F4F4F5]"}`,
+    cancel: `h-[42px] rounded-[8px] border px-6 text-[14px] font-bold cursor-pointer transition-colors ${isLight ? "border-[#737D88] bg-white text-[#222222] hover:bg-[#F1F5F9]" : "border-[#E4E4E7] bg-[#383838] text-[#F4F4F5] hover:bg-[#383838]"}`,
+    submit: `h-[42px] rounded-[8px] px-6 text-[14px] font-bold cursor-pointer shadow-sm transition-colors disabled:opacity-50 ${isLight ? "bg-[#222222] text-white hover:bg-black" : "bg-white text-[#222222] hover:bg-[#F1F5F9]"}`,
   };
 }
 
@@ -118,18 +118,18 @@ export default function SidePanel({
           className={`relative flex h-full w-full max-w-[560px] shrink-0 flex-col overflow-hidden border-l p-5 shadow-2xl transition-all animate-in slide-in-from-right duration-300 sm:p-6 ${
             isLight
               ? "border-[#E4E4E7] bg-white"
-              : "border-[#444444] bg-[#282828]"
+              : "border-[#444444] bg-[var(--cards)]"
           }`}
         >
           <div className="w-full shrink-0 border-b border-[#444444]/30 pb-3 pr-8">
             {eyebrow && (
-              <div className="text-[11px] font-bold uppercase tracking-wider text-[#A1A1AA]">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                 {eyebrow}
               </div>
             )}
             <h3
               id="side-panel-title"
-              className={`text-[18px] font-bold leading-[24px] ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}
+              className={`text-[18px] font-bold leading-[24px] ${isLight ? "text-[#222222]" : "text-[#F4F4F5]"}`}
             >
               {title ?? (isThai ? "รายละเอียด" : "Details")}
             </h3>
@@ -140,8 +140,8 @@ export default function SidePanel({
             aria-label={isThai ? "ปิดแผงด้านข้าง" : "Close side panel"}
             className={`absolute right-4 top-4 z-10 rounded-[8px] p-1.5 transition-colors ${
               isLight
-                ? "text-[#666666] hover:bg-[#F4F4F5] hover:text-[#222222]"
-                : "text-[#A1A1AA] hover:bg-[#444444] hover:text-white"
+                ? "text-[var(--text-muted)] hover:bg-[#F1F5F9] hover:text-[#222222]"
+                : "text-[var(--text-muted)] hover:bg-[#444444] hover:text-white"
             }`}
           >
             <X size={18} />
@@ -168,19 +168,19 @@ export default function SidePanel({
         className={`relative flex h-full w-full max-w-[560px] shrink-0 flex-col overflow-hidden border-l p-5 shadow-2xl transition-all animate-in slide-in-from-right duration-300 sm:p-6 ${
           isLight
             ? "border-[#E4E4E7] bg-white"
-            : "border-[#444444] bg-[#282828]"
+            : "border-[#444444] bg-[var(--cards)]"
         }`}
       >
         <div className="w-full shrink-0 border-b border-[#444444]/30 pb-3 pr-8">
           <h3
             id="product-detail-title"
             className={`text-[18px] font-bold leading-[24px] ${
-              isLight ? "text-[#222222]" : "text-[#F8FAFC]"
+              isLight ? "text-[#222222]" : "text-[#F4F4F5]"
             }`}
           >
             {item.name}
           </h3>
-          <div className={`mt-1 font-mono text-[12px] font-semibold ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}>
+          <div className={`mt-1 font-mono text-[12px] font-semibold ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}>
             SKU: {item.sku}
           </div>
         </div>
@@ -188,7 +188,7 @@ export default function SidePanel({
           type="button"
           onClick={onClose}
           aria-label={isThai ? "ปิดรายละเอียด" : "Close details"}
-          className={`absolute right-4 top-4 z-10 rounded-[8px] p-1.5 transition-colors ${isLight ? "text-[#666666] hover:bg-[#F4F4F5] hover:text-[#222222]" : "text-[#A1A1AA] hover:bg-[#444444] hover:text-white"}`}
+          className={`absolute right-4 top-4 z-10 rounded-[8px] p-1.5 transition-colors ${isLight ? "text-[var(--text-muted)] hover:bg-[#F1F5F9] hover:text-[#222222]" : "text-[var(--text-muted)] hover:bg-[#444444] hover:text-white"}`}
         >
           <X size={18} />
         </button>
@@ -210,21 +210,21 @@ export default function SidePanel({
           {item.serialTracked !== undefined && <DetailRow label={isThai ? "ติดตามเลขซีเรียล" : "Serial tracking"} value={item.serialTracked ? (isThai ? "เปิด" : "Enabled") : (isThai ? "ปิด" : "Disabled")} isLight={isLight} />}
         </div>
 
-        <section className={`rounded-lg border p-4 ${isLight ? "border-[#E4E4E7] bg-[#FAFAFA]" : "border-[#444444] bg-[#222222]"}`}>
+        <section className={`rounded-lg border p-4 ${isLight ? "border-[#E4E4E7] bg-[#F8FAFC]" : "border-[#444444] bg-[#222222]"}`}>
           <div className="mb-3 flex items-center justify-between gap-3">
-            <h4 className={`text-sm font-bold ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}>{isThai ? "คงเหลือแยกตามสาขา" : "Stock by branch"}</h4>
-            <span className={`font-mono text-sm font-bold ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}>{item.onHand.toLocaleString()} {item.unit}</span>
+            <h4 className={`text-sm font-bold ${isLight ? "text-[#222222]" : "text-[#F4F4F5]"}`}>{isThai ? "คงเหลือแยกตามสาขา" : "Stock by branch"}</h4>
+            <span className={`font-mono text-sm font-bold ${isLight ? "text-[#222222]" : "text-[#F4F4F5]"}`}>{item.onHand.toLocaleString()} {item.unit}</span>
           </div>
           {item.branchStock?.length ? <div className="space-y-2">
             {item.branchStock.map((branch) => <div key={branch.branchId} className={`flex items-center justify-between gap-3 rounded-md px-3 py-2 text-[13px] ${isLight ? "bg-white" : "bg-[#2C2C2C]"}`}>
               <span className={isLight ? "text-[#444444]" : "text-[#E4E4E7]"}>{branch.branchName}</span>
-              <span className={`shrink-0 font-mono font-semibold ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}>{branch.quantity.toLocaleString()} {item.unit}</span>
+              <span className={`shrink-0 font-mono font-semibold ${isLight ? "text-[#222222]" : "text-[#F4F4F5]"}`}>{branch.quantity.toLocaleString()} {item.unit}</span>
             </div>)}
-          </div> : <div className="text-[13px] text-[#A1A1AA]">{isThai ? "ไม่มีสินค้าในสาขา" : "No stock at any branch"}</div>}
+          </div> : <div className="text-[13px] text-[var(--text-muted)]">{isThai ? "ไม่มีสินค้าในสาขา" : "No stock at any branch"}</div>}
         </section>
 
         <a
-          className={`text-sm underline ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}
+          className={`text-sm underline ${isLight ? "text-[#222222]" : "text-[#F4F4F5]"}`}
           href="/warehouse/movements"
         >
           {isThai ? "ดูประวัติการเคลื่อนไหวสต๊อก" : "View stock movements"}
@@ -239,8 +239,8 @@ export default function SidePanel({
                 onClick={() => onEdit?.(item)}
                 className={`flex-1 h-[41px] px-4 py-3 rounded-[6px] border flex items-center justify-center gap-1.5 text-[13px] font-medium transition-colors cursor-pointer ${
                   isLight
-                    ? "bg-[#F4F4F5] border-[#E4E4E7] text-[#222222] hover:bg-slate-200"
-                    : "bg-[#2C2C2C] border-[#444444] text-[#F8FAFC] hover:bg-[#333333]"
+                    ? "bg-[#F1F5F9] border-[#E4E4E7] text-[#222222] hover:bg-slate-200"
+                    : "bg-[#2C2C2C] border-[#444444] text-[#F4F4F5] hover:bg-[var(--cards)]"
                 }`}
               >
                 <Edit size={14} />
@@ -252,7 +252,7 @@ export default function SidePanel({
               <button
                 type="button"
                 onClick={() => onAdjust?.(item)}
-                className={`flex-1 h-[41px] px-4 py-3 rounded-[6px] flex items-center justify-center gap-1.5 text-[13px] font-semibold transition-colors cursor-pointer ${isLight ? "bg-[#222222] text-white hover:bg-black" : "bg-white text-[#222222] hover:bg-[#F4F4F5]"}`}
+                className={`flex-1 h-[41px] px-4 py-3 rounded-[6px] flex items-center justify-center gap-1.5 text-[13px] font-semibold transition-colors cursor-pointer ${isLight ? "bg-[#222222] text-white hover:bg-black" : "bg-white text-[#222222] hover:bg-[#F1F5F9]"}`}
               >
                 <Plus size={14} />
                 <span>{isThai ? "ปรับปรุงยอด" : "Adjust"}</span>
@@ -268,7 +268,7 @@ export default function SidePanel({
 
 function DetailRow({ label, value, isLight }: { label: string; value: string; isLight: boolean }) {
   return <div className="flex items-start justify-between gap-4">
-    <span className="shrink-0 text-[#A1A1AA]">{label}</span>
-    <span className={`text-right font-medium ${isLight ? "text-[#222222]" : "text-[#F8FAFC]"}`}>{value}</span>
+    <span className="shrink-0 text-[var(--text-muted)]">{label}</span>
+    <span className={`text-right font-medium ${isLight ? "text-[#222222]" : "text-[#F4F4F5]"}`}>{value}</span>
   </div>;
 }

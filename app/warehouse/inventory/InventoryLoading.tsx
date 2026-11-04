@@ -5,7 +5,7 @@ export function ProductInventorySkeleton() {
     <div
       aria-busy="true"
       aria-label="กำลังโหลดข้อมูลสินค้า"
-      className="min-h-full bg-[#F8FAFC] p-6 text-[#222222] dark:bg-[#2C2C2C] dark:text-[#F8FAFC] lg:p-8"
+      className="min-h-full bg-[#F8FAFC] p-6 text-[#222222] dark:bg-[#2C2C2C] dark:text-[#F4F4F5] lg:p-8"
       style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
     >
       <main className="mx-auto w-full max-w-[1600px] min-w-0 space-y-6 pb-10">

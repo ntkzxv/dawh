@@ -294,6 +294,8 @@ export type WarehouseDashboard = {
   summary: {
     activeProducts: number | null;
     stockedProducts: number | null;
+    totalInventoryValue: string | null;
+    unpricedStockProducts: number | null;
     receivedToday: number | null;
     issuedToday: number | null;
     lowStockProducts: number | null;
@@ -373,8 +375,19 @@ export const warehouseApi = {
   me: getCurrentMe,
   overview: (signal?: AbortSignal) =>
     data(apiGet<WarehouseOverview>("/api/warehouse/overview", { signal })),
-  dashboard: (signal?: AbortSignal) =>
-    data(apiGet<WarehouseDashboard>("/api/warehouse/dashboard", { signal })),
+  dashboard: (signal?: AbortSignal, from?: string, to?: string) => {
+    const params = new URLSearchParams();
+    if (from && to) {
+      params.set("from", from);
+      params.set("to", to);
+    }
+    return data(
+      apiGet<WarehouseDashboard>(
+        `/api/warehouse/dashboard${params.size ? `?${params}` : ""}`,
+        { signal },
+      ),
+    );
+  },
   inventoryProducts: async (
     params: URLSearchParams,
     signal?: AbortSignal,

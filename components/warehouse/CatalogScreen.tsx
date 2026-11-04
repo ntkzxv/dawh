@@ -336,7 +336,7 @@ export default function CatalogScreen({
       headerClassName: "w-[120px]",
       className: "whitespace-nowrap",
       render: (row: CatalogItem) => (
-        <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${row.active === false ? "bg-[#E74C3C]/15 text-[#E74C3C]" : "bg-[#2EC4B6]/15 text-[#2EC4B6]"}`}>
+        <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${row.active === false ? "bg-[var(--status-danger)]/15 text-[var(--status-danger-badge-text)]" : "bg-[var(--status-success)]/15 text-[var(--status-success-badge-text)]"}`}>
           {row.active === false
             ? (isThai ? "ปิดใช้งาน" : "Inactive")
             : (isThai ? "ใช้งาน" : "Active")}
@@ -549,7 +549,7 @@ export default function CatalogScreen({
                   type="button"
                   ref={addButtonRef}
                   aria-label={isThai ? `เพิ่ม${kindLabel}` : `Add ${kindItemEn}`}
-                  className={`inline-flex h-[33px] shrink-0 items-center gap-1.5 rounded-[6px] px-4 text-[13px] font-semibold transition-colors cursor-pointer ${isLight ? "bg-[#222222] text-white hover:bg-black" : "bg-white text-[#222222] hover:bg-[#F4F4F5]"}`}
+                  className={`inline-flex h-[33px] shrink-0 items-center gap-1.5 rounded-[6px] px-4 text-[13px] font-semibold transition-colors cursor-pointer ${isLight ? "bg-[#222222] text-white hover:bg-black" : "bg-white text-[#222222] hover:bg-[#F1F5F9]"}`}
                   onClick={() => openForm(null)}
                 >
                   <Plus size={14} />
@@ -642,8 +642,8 @@ export default function CatalogScreen({
                 aria-label="ปิดฟอร์ม"
                 className={`absolute top-3.5 right-3.5 rounded-[6px] p-1 transition-colors cursor-pointer z-10 ${
                   isLight
-                    ? "text-[#666666] hover:bg-[#F4F4F5] hover:text-[#222222]"
-                    : "text-[#A1A1AA] hover:bg-[#444444] hover:text-[#F4F4F5]"
+                    ? "text-[var(--text-muted)] hover:bg-[#F1F5F9] hover:text-[#222222]"
+                    : "text-[var(--text-muted)] hover:bg-[#444444] hover:text-[#F4F4F5]"
                 }`}
                 onClick={closeForm}
               >
@@ -771,11 +771,11 @@ function CatalogForm({
   const itemThai = kinds.find((item) => item.key === kind)?.label ?? "ข้อมูล";
   const inputFrameStyle = sidePanel ? panelStyles.input : `box-border flex flex-row items-center px-[12px] py-[10px] gap-2 w-full max-w-[160px] h-[38px] rounded-[8px] border text-[13px] leading-[17px] font-normal outline-none transition-colors ${
     isLight
-      ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222] focus:border-[#222222]"
-      : "bg-[#2C2C2C] border-[#444444] text-[#F4F4F5] focus:border-[#E4E4E7]"
+      ? "bg-[#F8FAFC] border-[#737D88] text-[#222222] focus:border-[#222222]"
+      : "bg-[#222222] border-[#E4E4E7] text-[#F4F4F5] focus:border-white"
   }`;
 
-  const labelStyle = sidePanel ? panelStyles.label : `font-bold text-[12px] leading-[16px] ${isLight ? "text-[#555555]" : "text-[#E4E4E7]"}`;
+  const labelStyle = sidePanel ? panelStyles.label : `font-bold text-[12px] leading-[16px] ${isLight ? "text-[var(--text-muted)]" : "text-[#E4E4E7]"}`;
   const fieldLabel = (key: string) => {
     if (!sidePanel || !["branches", "warehouses", "suppliers"].includes(kind))
       return labels[key] ?? key;
@@ -824,7 +824,7 @@ function CatalogForm({
               <label className={labelStyle}>
                 {fieldLabel(key)}{" "}
                 {["sku", "code", "name"].includes(key) && (
-                  <span className="text-[#E71D36]">*</span>
+                  <span className="text-[var(--status-danger-text)]">*</span>
                 )}
               </label>
 
@@ -832,7 +832,7 @@ function CatalogForm({
                 <label className="flex items-center gap-2 cursor-pointer text-[13px] h-[38px]">
                   <input
                     type="checkbox"
-                    className={`rounded focus:ring-0 ${isLight ? "border-[#A1A1AA] bg-white text-[#222222]" : "border-[#444444] bg-[#2C2C2C] text-white"}`}
+                    className={`rounded focus:ring-0 ${isLight ? "border-[var(--text-muted)] bg-white text-[#222222]" : "border-[#444444] bg-[#2C2C2C] text-white"}`}
                     checked={values[key] === true}
                     onChange={(event) =>
                       setValues({ ...values, [key]: event.target.checked })
@@ -864,7 +864,7 @@ function CatalogForm({
               ) : key === "address" ? (
                 <textarea
                   rows={2}
-                  className={sidePanel ? `${panelStyles.input} min-h-24 resize-y py-2.5` : `box-border flex w-full rounded-[8px] border p-2.5 text-[13px] leading-[18px] font-normal outline-none transition-colors resize-none ${isLight ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222] focus:border-[#222222]" : "bg-[#2C2C2C] border-[#444444] text-[#F4F4F5] focus:border-[#E4E4E7]"}`}
+                  className={sidePanel ? `${panelStyles.input} min-h-24 resize-y py-2.5` : `box-border flex w-full rounded-[8px] border p-2.5 text-[13px] leading-[18px] font-normal outline-none transition-colors resize-none ${isLight ? "bg-[#F8FAFC] border-[#737D88] text-[#222222] focus:border-[#222222]" : "bg-[#222222] border-[#E4E4E7] text-[#F4F4F5] focus:border-white"}`}
                   value={String(values[key] ?? "")}
                   onChange={(event) =>
                     setValues({ ...values, [key]: event.target.value })
@@ -940,7 +940,7 @@ function CatalogForm({
           onClick={onCancel}
           className={sidePanel ? panelStyles.cancel : `box-border flex flex-row justify-center items-center px-5 py-2.5 min-w-[84px] h-[38px] rounded-[8px] border font-bold text-[13px] leading-[18px] transition-colors cursor-pointer ${
             isLight
-              ? "bg-[#FFFFFF] border-[#E4E4E7] text-[#222222] hover:bg-[#F4F4F5]"
+              ? "bg-[#FFFFFF] border-[#E4E4E7] text-[#222222] hover:bg-[#F1F5F9]"
               : "bg-[#383838] border-[#444444] text-[#F4F4F5] hover:bg-[#444444]"
           }`}
         >
@@ -953,7 +953,7 @@ function CatalogForm({
           className={sidePanel ? panelStyles.submit : `box-border flex flex-row justify-center items-center px-5 py-2.5 min-w-[96px] h-[38px] rounded-[8px] font-bold text-[13px] leading-[18px] transition-colors cursor-pointer ${
             isLight
               ? "bg-[#222222] text-[#F4F4F5] hover:bg-black"
-              : "bg-white hover:bg-[#F4F4F5] text-[#222222]"
+              : "bg-white hover:bg-[#F1F5F9] text-[#222222]"
           }`}
         >
           {current

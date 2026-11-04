@@ -8,10 +8,10 @@ import {
   ArrowRight,
   Box,
   ChevronDown,
-  Cpu,
   Database,
   FileText,
   Lock,
+  ShoppingCart,
 } from "lucide-react";
 import { getDawhLogo } from "@/config/brand";
 import { getWarehouseRoleLabel } from "@/utils/warehouseRole";
@@ -21,9 +21,12 @@ import { useTheme } from "@/context/ThemeContext";
 import { useOptionalWarehouseAccount } from "@/context/WarehouseAccountContext";
 import DropdownMenu from "@/components/navbar/DropdownMenu";
 import { Notice } from "./Ui";
+import { apiGet } from "@/lib/api/client";
+import type { ManagedModuleKey, ModuleStatus } from "@/lib/contracts/module-status";
 
 const workspaceModules = [
   {
+    moduleKey: "datacenter",
     title: "HP Datacenter",
     titleTh: "สัญญาเช่าซื้อ",
     description:
@@ -31,13 +34,11 @@ const workspaceModules = [
     descriptionTh:
       "จัดการสัญญาเช่าซื้อ บัญชีแยกประเภท การติดตามหนี้ค้างชำระ และข้อมูลลูกค้า",
     href: "/datacenter",
-    status: "Active",
-    statusTh: "เปิดใช้งาน",
     statusTone: "active",
     icon: Database,
-    disabled: false,
   },
   {
+    moduleKey: "warehouse",
     title: "Warehouse ERP",
     titleTh: "จัดการคลังสินค้า",
     description:
@@ -45,13 +46,23 @@ const workspaceModules = [
     descriptionTh:
       "ติดตามสินค้าคงคลัง ความเคลื่อนไหวสินค้าแบบเรียลไทม์ การจัดสรรสต็อก และการกระจายสินค้า",
     href: "/warehouse",
-    status: "Active",
-    statusTh: "เปิดใช้งาน",
     statusTone: "active",
     icon: Box,
-    disabled: false,
   },
   {
+    moduleKey: "sales",
+    title: "Sales",
+    titleTh: "การขาย",
+    description:
+      "Customer records and staff-entered in-store sales with manually recorded payments.",
+    descriptionTh:
+      "จัดการข้อมูลลูกค้าและบันทึกการขายหน้าร้านพร้อมบันทึกการชำระเงินจริงโดยพนักงาน",
+    href: "/sales",
+    statusTone: "active",
+    icon: ShoppingCart,
+  },
+  {
+    moduleKey: "reports",
     title: "Reports & Auditing",
     titleTh: "รายงานและตรวจสอบ",
     description:
@@ -59,25 +70,8 @@ const workspaceModules = [
     descriptionTh:
       "สร้างรายงานรายเดือน สถิติประสิทธิภาพ บันทึกการตรวจสอบระบบ และรายงานความเสี่ยง",
     href: "/reports",
-    status: "Maintenance",
-    statusTh: "ปิดปรับปรุง",
     statusTone: "maintenance",
     icon: FileText,
-    disabled: false,
-  },
-  {
-    title: "Integration Services",
-    titleTh: "บริการเชื่อมต่อ",
-    description:
-      "API keys, external payment gateways mapping, CRM syncing, and ERP connections.",
-    descriptionTh:
-      "จัดการคีย์เชื่อมต่อ ช่องทางชำระเงินภายนอก การซิงค์ลูกค้า และการเชื่อมต่อระบบองค์กร",
-    href: "/integration",
-    status: "Locked",
-    statusTh: "ปิดใช้งาน",
-    statusTone: "locked",
-    icon: Cpu,
-    disabled: true,
   },
 ] as const;
 
@@ -93,6 +87,13 @@ export default function Workspace() {
   const accountMenu = useAccountMenu({ settingsPath: "/settings" });
   const isThai = accountMenu.isThai;
   const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [moduleUnavailable, setModuleUnavailable] = useState(false);
+  const [moduleStatuses, setModuleStatuses] = useState<Record<ManagedModuleKey, boolean>>({
+    datacenter: true,
+    warehouse: true,
+    sales: true,
+    reports: false,
+  });
   const accountRef = useRef<HTMLDivElement>(null);
   const profileRole = me
     ? getWarehouseRoleLabel(me.role, isThai ? "TH" : "EN")
@@ -114,6 +115,27 @@ export default function Workspace() {
     return () => document.removeEventListener("mousedown", closeOnOutsideClick);
   }, []);
 
+  useEffect(() => {
+    if (!me) return;
+    const controller = new AbortController();
+    void apiGet<ModuleStatus[]>("/api/modules/status", { signal: controller.signal })
+      .then(({ data }) => {
+        setModuleStatuses((current) => {
+          const next = { ...current };
+          for (const status of data) next[status.moduleKey] = status.isEnabled;
+          return next;
+        });
+      })
+      .catch(() => {
+        // Retain the known defaults if the status service is temporarily unavailable.
+      });
+    return () => controller.abort();
+  }, [me]);
+
+  useEffect(() => {
+    setModuleUnavailable(new URLSearchParams(window.location.search).has("moduleUnavailable"));
+  }, []);
+
   if (!loading && !me && !isLoading)
     return (
       <main className="min-h-screen p-8">
@@ -126,7 +148,7 @@ export default function Workspace() {
 
   return (
     <main
-      className={`relative flex min-h-screen flex-col justify-between overflow-hidden transition-colors duration-300 ${isLight ? "bg-[#F8FAFC] text-slate-900 selection:bg-[#222222] selection:text-white" : "bg-[#222222] text-white selection:bg-white/25 selection:text-white"}`}
+      className={`relative flex min-h-screen flex-col overflow-hidden transition-colors duration-300 lg:h-dvh lg:min-h-0 ${isLight ? "bg-[#F8FAFC] text-[var(--text-primary)] selection:bg-[#222222] selection:text-white" : "bg-[#222222] text-[var(--text-primary)] selection:bg-white/25 selection:text-white"}`}
     >
       <WorkspaceAuthBackground theme={theme} />
       <motion.header
@@ -159,7 +181,7 @@ export default function Workspace() {
             onClick={() => setIsAccountOpen((open) => !open)}
             className={`flex h-[50px] w-[232px] flex-none items-center justify-between gap-5 rounded-full px-2 py-1.5 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 ${
               isLight
-                ? "hover:bg-[#F4F4F5] focus-visible:ring-black/20"
+                ? "hover:bg-[#F1F5F9] focus-visible:ring-black/20"
                 : "hover:bg-white/10 focus-visible:ring-white/40"
             }`}
             aria-haspopup="menu"
@@ -169,8 +191,8 @@ export default function Workspace() {
               <div
                 className={`relative flex h-[38px] w-[38px] flex-none items-center justify-center overflow-hidden rounded-full border ${
                   isLight
-                    ? "border-slate-300 bg-slate-100 text-slate-800"
-                    : "border-[#444444] bg-[#282828] text-[#E4E4E7]"
+                    ? "border-slate-300 bg-slate-100 text-[#222222]"
+                    : "border-[#444444] bg-[var(--cards)] text-[#E4E4E7]"
                 }`}
               >
                 {accountMenu.mounted && accountMenu.profile.avatar_url ? (
@@ -182,7 +204,7 @@ export default function Workspace() {
                   />
                 ) : (
                   <span
-                    className={`font-geist text-sm font-bold leading-[18px] ${isLight ? "text-slate-800" : "text-[#F4F4F5]"}`}
+                    className={`font-geist text-sm font-bold leading-[18px] ${isLight ? "text-[#222222]" : "text-[#F4F4F5]"}`}
                     suppressHydrationWarning
                   >
                     {profileInitial}
@@ -191,20 +213,20 @@ export default function Workspace() {
               </div>
               <div className="flex min-w-[70px] flex-col items-start overflow-hidden text-left leading-tight">
                 <p
-                  className={`w-full max-w-[140px] truncate font-outfit text-[14.5px] font-semibold leading-[18px] ${isLight ? "text-[#222222]" : "text-white"}`}
+                  className="w-full max-w-[140px] truncate font-outfit text-[14.5px] font-semibold leading-[18px] text-[var(--text-primary)]"
                   suppressHydrationWarning
                 >
                   {profileName}
                 </p>
                 <p
-                  className={`mt-px w-full max-w-[140px] truncate font-geist text-xs font-medium leading-[15px] ${isLight ? "text-[#666666]" : "text-[#E4E4E7]"}`}
+                  className={`mt-px w-full max-w-[140px] truncate font-geist text-xs font-medium leading-[15px] ${isLight ? "text-[#383838]" : "text-[#E4E4E7]"}`}
                 >
                   {profileRole}
                 </p>
               </div>
             </div>
             <ChevronDown
-              className={`h-4 w-4 flex-none transition-transform duration-200 ${isLight ? "text-[#666666]" : "text-[#E4E4E7]"} ${isAccountOpen ? "rotate-180" : ""}`}
+              className={`h-4 w-4 flex-none transition-transform duration-200 ${isLight ? "text-[var(--text-muted)]" : "text-[#E4E4E7]"} ${isAccountOpen ? "rotate-180" : ""}`}
               strokeWidth={2}
             />
           </button>
@@ -212,7 +234,7 @@ export default function Workspace() {
             className={`absolute right-0 top-[calc(100%+14px)] z-[60] w-[280px] rounded-2xl border p-2 shadow-2xl transition-all duration-200 ${
               isLight
                 ? "border-[#E4E4E7] bg-white text-[#222222] shadow-xl"
-                : "border-[#444444] bg-[#282828] text-white shadow-2xl"
+                : "border-[#444444] bg-[var(--cards)] text-white shadow-2xl"
             } ${
               isAccountOpen
                 ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
@@ -228,7 +250,7 @@ export default function Workspace() {
           </div>
         </div>
       </motion.header>
-      <section className="relative z-10 mx-auto flex w-full max-w-[1344px] flex-1 flex-col items-start justify-center gap-6 self-stretch px-4 py-8 sm:gap-7 sm:px-8 sm:py-10">
+      <section className="relative z-10 mx-auto flex w-full max-w-[1344px] flex-1 flex-col items-start justify-center gap-5 self-stretch px-4 py-6 sm:gap-6 sm:px-8 sm:py-8 lg:min-h-0 lg:justify-start lg:gap-[clamp(0.75rem,2.5vh,1.25rem)] lg:py-[clamp(0.75rem,3vh,1.5rem)]">
         <motion.div
           initial={reduceMotion ? false : { opacity: 0 }}
           animate={isLoading && !reduceMotion ? { opacity: 0 } : { opacity: 1 }}
@@ -236,12 +258,12 @@ export default function Workspace() {
           className="flex max-w-[507px] flex-col items-start gap-1.5"
         >
           <h1
-            className={`font-outfit text-[30px] font-bold leading-[38px] tracking-tight sm:text-[32px] ${isLight ? "text-[#0F172A]" : "text-white"}`}
+            className="font-outfit text-[30px] font-bold leading-[38px] tracking-tight text-[var(--text-primary)] sm:text-[32px]"
           >
             {isThai ? "เลือกพื้นที่ทำงาน" : "Select Workspace"}
           </h1>
           <p
-            className={`font-geist text-[15px] font-normal leading-[22px] sm:text-base ${isLight ? "text-[#64748B]" : "text-[#999999]"}`}
+            className={`font-geist text-[15px] font-normal leading-[22px] sm:text-base ${isLight ? "text-[#383838]" : "text-[var(--text-muted)]"}`}
           >
             {isThai
               ? "เลือกโมดูลเฉพาะทางเพื่อเริ่มต้นการทำงานสำหรับ Horizon Logistics"
@@ -249,37 +271,16 @@ export default function Workspace() {
           </p>
         </motion.div>
 
-        <div className="flex w-full flex-col gap-3">
-          {error && <Notice tone="error">{error}</Notice>}
-        </div>
-
-        <div className="flex w-full flex-col gap-5">
-          <div className="grid w-full grid-cols-1 gap-5 lg:grid-cols-2">
-            {workspaceModules.slice(0, 2).map((module, index) => (
-              <motion.div
-                key={module.title}
-                initial={reduceMotion ? false : { y: 28, opacity: 0 }}
-                animate={
-                  isLoading && !reduceMotion
-                    ? { y: 28, opacity: 0 }
-                    : { y: 0, opacity: 1 }
-                }
-                transition={{
-                  duration: reduceMotion ? 0 : 0.48,
-                  delay: reduceMotion ? 0 : index * 0.08,
-                  ease: [0.22, 1, 0.36, 1],
-                }}
-              >
-                <WorkspaceCard
-                  module={module}
-                  isLight={isLight}
-                  isThai={isThai}
-                  variant="standard"
-                />
-              </motion.div>
-            ))}
+        {(error || moduleUnavailable) && (
+          <div className="w-full">
+            <Notice tone="error">
+              {error || (isThai ? "โมดูลนี้ปิดใช้งานอยู่ โปรดติดต่อผู้ดูแลระบบ" : "This module is currently closed. Contact an administrator for access.")}
+            </Notice>
           </div>
-          {workspaceModules.slice(2).map((module, index) => (
+        )}
+
+        <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:min-h-0 lg:flex-1 lg:grid-rows-2">
+          {workspaceModules.map((module, index) => (
             <motion.div
               key={module.title}
               initial={reduceMotion ? false : { y: 28, opacity: 0 }}
@@ -290,25 +291,26 @@ export default function Workspace() {
               }
               transition={{
                 duration: reduceMotion ? 0 : 0.48,
-                delay: reduceMotion ? 0 : (index + 2) * 0.08,
+                delay: reduceMotion ? 0 : index * 0.08,
                 ease: [0.22, 1, 0.36, 1],
               }}
+              className="min-w-0 sm:h-full lg:min-h-0"
             >
               <WorkspaceCard
                 module={module}
+                moduleStatus={moduleStatuses[module.moduleKey]}
                 isLight={isLight}
                 isThai={isThai}
-                variant="horizontal"
               />
             </motion.div>
           ))}
         </div>
       </section>
       <footer
-        className={`relative z-10 w-full border-t px-6 py-5 text-center ${isLight ? "border-zinc-200/40" : "border-zinc-800/60"}`}
+        className={`relative z-10 w-full flex-none border-t px-6 py-4 text-center ${isLight ? "border-zinc-200/40" : "border-zinc-800/60"}`}
       >
         <p
-          className={`font-geist text-xs font-normal leading-4 ${isLight ? "text-zinc-500" : "text-zinc-400"}`}
+          className={`font-geist text-xs font-normal leading-4 ${isLight ? "text-[#383838]" : "text-zinc-400"}`}
         >
           {isThai
             ? "ระบบบริหารจัดการ dawh Platform © 2026. Horizon Logistics Operations Hub."
@@ -326,14 +328,14 @@ function WorkspaceAuthBackground({ theme }: { theme: "light" | "dark" }) {
   return (
     <div className="pointer-events-none absolute inset-0 z-0 flex flex-col">
       <div
-        className={`relative h-[52%] w-full overflow-hidden transition-colors duration-300 ${isLight ? "bg-[#EEF2F6]" : "bg-[#1A1A1A]"}`}
+        className={`relative h-[52%] w-full overflow-hidden transition-colors duration-300 ${isLight ? "bg-[#F1F5F9]" : "bg-[#222222]"}`}
       >
         <div className="pointer-events-none absolute inset-0 select-none">
           <div className="absolute -top-4 -left-24 h-1/2 aspect-[1580/528] sm:-left-36 md:-left-48">
             <div
               className="h-full w-full transition-colors duration-300"
               style={{
-                backgroundColor: isLight ? "#FFFFFF" : "#282828",
+                backgroundColor: isLight ? "#FFFFFF" : "var(--cards)",
                 WebkitMaskImage: `url(${maskUrl})`,
                 maskImage: `url(${maskUrl})`,
                 WebkitMaskSize: "contain",
@@ -347,19 +349,19 @@ function WorkspaceAuthBackground({ theme }: { theme: "light" | "dark" }) {
             />
             <div
               className={`absolute top-[61.2%] left-[76.2%] h-[150vh] w-[7%] transition-colors duration-300 ${
-                isLight ? "bg-[#FFFFFF]" : "bg-[#282828]"
+                isLight ? "bg-[#FFFFFF]" : "bg-[var(--cards)]"
               }`}
             />
           </div>
         </div>
       </div>
       <div
-        className={`relative flex-1 overflow-hidden transition-colors duration-300 ${isLight ? "bg-[#FFFFFF]" : "bg-[#282828]"}`}
+        className={`relative flex-1 overflow-hidden transition-colors duration-300 ${isLight ? "bg-[#FFFFFF]" : "bg-[var(--cards)]"}`}
       >
         <div
           className="pointer-events-none absolute right-0 bottom-0 h-full w-full select-none transition-colors duration-300"
           style={{
-            backgroundColor: isLight ? "#EEF2F6" : "#1A1A1A",
+            backgroundColor: isLight ? "#F1F5F9" : "#222222",
             WebkitMaskImage: `url(${maskUrl})`,
             maskImage: `url(${maskUrl})`,
             WebkitMaskSize: "contain",
@@ -377,169 +379,113 @@ function WorkspaceAuthBackground({ theme }: { theme: "light" | "dark" }) {
 
 function WorkspaceCard({
   module,
+  moduleStatus,
   isLight,
   isThai,
-  variant,
 }: {
   module: (typeof workspaceModules)[number];
+  moduleStatus?: boolean;
   isLight: boolean;
   isThai: boolean;
-  variant: "standard" | "horizontal";
 }) {
   const { navigateWithLoading } = useLoading();
   const Icon = module.icon;
-  const ButtonIcon = module.disabled ? Lock : ArrowRight;
+  const isEnabled = moduleStatus ?? module.statusTone !== "maintenance";
+  const isDisabled = !isEnabled;
+  const statusTone = isEnabled ? "active" : "maintenance";
+  const ButtonIcon = isDisabled ? Lock : ArrowRight;
   const statusDot =
-    module.statusTone === "active"
-      ? "bg-[#2EC4B6]"
-      : module.statusTone === "maintenance"
-        ? "bg-[#FF9F1C]"
+    statusTone === "active"
+      ? "bg-[var(--status-success)]"
+      : statusTone === "maintenance"
+        ? "bg-[var(--status-warning)]"
         : "bg-[#383838]";
   const title = isThai ? module.titleTh : module.title;
   const description = isThai ? module.descriptionTh : module.description;
-  const status = isThai ? module.statusTh : module.status;
-  const actionLabel = module.disabled
-    ? isThai
-      ? "ปิดใช้งาน"
-      : "Disabled"
-    : module.statusTone === "maintenance"
-      ? isThai
-        ? "ปิดปรับปรุง"
-        : "Maintenance"
-      : isThai
-        ? "เข้าสู่พื้นที่ทำงาน"
-        : "Enter Workspace";
-  const cardChrome = module.disabled
+  const status = isEnabled
+    ? isThai ? "เปิดใช้งาน" : "Active"
+    : isThai ? "ปิดปรับปรุง" : "Maintenance";
+  const actionLabel = !isEnabled
+    ? isThai ? "ปิดปรับปรุง" : "Maintenance"
+    : isThai ? "เข้าสู่พื้นที่ทำงาน" : "Enter Workspace";
+  const cardChrome = isDisabled
     ? isLight
-      ? "bg-[#F4F4F5] border-zinc-300 text-zinc-400 cursor-not-allowed shadow-none"
-      : "bg-[#242424] border-[#383838] text-zinc-500 cursor-not-allowed shadow-none"
+      ? "bg-[#F1F5F9] border-zinc-300 text-zinc-400 cursor-not-allowed shadow-none"
+      : "bg-[var(--input-bg)] border-[#383838] text-zinc-500 cursor-not-allowed shadow-none"
     : isLight
       ? "bg-white border-zinc-200 hover:border-black shadow-[0px_4px_16px_rgba(0,0,0,0.06)] hover:shadow-[0px_8px_24px_rgba(0,0,0,0.12)] cursor-pointer"
-      : "bg-[#282828] border-[#444444] hover:border-white shadow-[0px_4px_16px_rgba(0,0,0,0.3)] hover:shadow-[0px_8px_24px_rgba(0,0,0,0.5)] cursor-pointer";
+      : "bg-[var(--cards)] border-[#444444] hover:border-white shadow-[0px_4px_16px_rgba(0,0,0,0.3)] hover:shadow-[0px_8px_24px_rgba(0,0,0,0.5)] cursor-pointer";
 
-  const iconChrome = module.disabled
+  const iconChrome = isDisabled
     ? isLight
-      ? "bg-zinc-200 border-zinc-300 text-zinc-500"
-      : "bg-[#1E1E1E] border-zinc-700 text-zinc-600"
+      ? "bg-zinc-200 border-zinc-300 text-[#71717A]"
+      : "bg-[var(--input-bg)] border-zinc-700 text-zinc-600"
     : isLight
-      ? "bg-zinc-100 border-zinc-200 text-zinc-900 group-hover:bg-black group-hover:text-white group-hover:border-black"
+      ? "bg-zinc-100 border-zinc-200 text-[#222222] group-hover:bg-black group-hover:text-white group-hover:border-black"
       : "bg-[#222222] border-[#444444] text-white group-hover:bg-white group-hover:text-black group-hover:border-white";
 
-  const buttonChrome = module.disabled
+  const buttonChrome = isDisabled
     ? isLight
-      ? "cursor-not-allowed bg-zinc-200 hover:bg-zinc-200 text-zinc-500 border-zinc-300 shadow-none"
-      : "cursor-not-allowed bg-[#1E1E1E] hover:bg-[#1E1E1E] text-zinc-600 border-zinc-700 shadow-none"
-    : module.statusTone === "maintenance"
+      ? "cursor-not-allowed bg-zinc-200 hover:bg-zinc-200 text-[#71717A] border-zinc-300 shadow-none"
+      : "cursor-not-allowed bg-[var(--input-bg)] hover:bg-[var(--input-bg)] text-zinc-600 border-zinc-700 shadow-none"
+    : !isEnabled
       ? isLight
-        ? "bg-zinc-100 group-hover:bg-black group-hover:border-black group-hover:text-white border-amber-500 text-zinc-800 shadow-xs"
-        : "bg-[#333333] group-hover:bg-white group-hover:border-white group-hover:text-black border-amber-400 text-neutral-200 shadow-xs"
+        ? "bg-zinc-100 group-hover:bg-black group-hover:border-black group-hover:text-white border-amber-500 text-[#222222] shadow-xs"
+        : "bg-[var(--cards)] group-hover:bg-white group-hover:border-white group-hover:text-black border-amber-400 text-[var(--text-muted)] shadow-xs"
       : isLight
-        ? "bg-zinc-100 group-hover:bg-black group-hover:border-black group-hover:text-white border-zinc-300 text-zinc-800 shadow-sm"
-        : "bg-[#333333] group-hover:bg-white group-hover:border-white group-hover:text-black border-[#444444] text-neutral-200";
+        ? "bg-zinc-100 group-hover:bg-black group-hover:border-black group-hover:text-white border-zinc-300 text-[#222222] shadow-sm"
+        : "bg-[var(--cards)] group-hover:bg-white group-hover:border-white group-hover:text-black border-[#444444] text-[var(--text-muted)]";
 
-  const content =
-    variant === "horizontal" ? (
-      <div className="flex w-full flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <div className="flex min-w-0 flex-1 items-center gap-4">
+  const content = (
+    <>
+      <div className="flex w-full items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-3.5">
           <div
-            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors ${iconChrome}`}
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors sm:h-12 sm:w-12 ${iconChrome}`}
           >
             <Icon size={22} strokeWidth={2} />
           </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <h2
-                className={`truncate font-outfit text-lg font-bold tracking-tight sm:text-xl ${
-                  module.disabled
-                    ? "text-zinc-500"
-                    : isLight
-                      ? "text-zinc-900"
-                      : "text-white"
-                }`}
-              >
-                {title}
-              </h2>
-              <StatusPill
-                dotClass={statusDot}
-                label={status}
-                isLight={isLight}
-              />
-            </div>
-            <p
-              className={`mt-0.5 line-clamp-1 font-geist text-[13px] ${
-                module.disabled
-                  ? "text-zinc-500"
-                  : isLight
-                    ? "text-zinc-600"
-                    : "text-zinc-400"
-              }`}
-            >
-              {description}
-            </p>
-          </div>
+          <h2
+            className={`min-w-0 truncate font-outfit text-lg font-bold leading-7 tracking-tight sm:text-xl ${
+              isDisabled
+                ? "text-[#71717A]"
+                : isLight
+                  ? "text-[#222222]"
+                  : "text-[var(--text-primary)]"
+            }`}
+          >
+            {title}
+          </h2>
         </div>
+        <StatusPill dotClass={statusDot} label={status} isLight={isLight} />
+      </div>
+      <div className="flex min-h-0 flex-1 items-center py-3 sm:py-4 lg:py-2">
+        <p
+          className={`line-clamp-3 font-geist text-sm leading-[160%] lg:line-clamp-1 ${
+            isDisabled
+              ? "text-[#71717A]"
+              : isLight
+                ? "text-[#383838]"
+                : "text-zinc-400"
+          }`}
+        >
+          {description}
+        </p>
+      </div>
+      <div className="flex w-full items-center justify-end">
         <ActionButton
           ButtonIcon={ButtonIcon}
-          disabled={module.disabled}
+          disabled={isDisabled}
           label={actionLabel}
           className={buttonChrome}
         />
       </div>
-    ) : (
-      <>
-        <div className="flex w-full items-start justify-between gap-3">
-          <div className="flex min-w-0 flex-1 items-start gap-3.5">
-            <div
-              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border transition-colors ${iconChrome}`}
-            >
-              <Icon size={23} strokeWidth={2} />
-            </div>
-            <div className="min-w-0 flex-1 pt-1">
-              <h2
-                className={`truncate font-outfit text-[21px] font-bold leading-7 tracking-tight ${
-                  module.disabled
-                    ? "text-zinc-500"
-                    : isLight
-                      ? "text-zinc-900"
-                      : "text-white"
-                }`}
-              >
-                {title}
-              </h2>
-            </div>
-          </div>
-          <StatusPill dotClass={statusDot} label={status} isLight={isLight} />
-        </div>
-        <div className="my-auto flex flex-col justify-center py-2">
-          <p
-            className={`font-geist text-[14.5px] leading-[160%] ${
-              module.disabled
-                ? "text-zinc-500"
-                : isLight
-                  ? "text-zinc-600"
-                  : "text-zinc-400"
-            }`}
-          >
-            {description}
-          </p>
-        </div>
-        <div className="mt-auto flex w-full items-center justify-end pt-2">
-          <ActionButton
-            ButtonIcon={ButtonIcon}
-            disabled={module.disabled}
-            label={actionLabel}
-            className={buttonChrome}
-          />
-        </div>
-      </>
-    );
+    </>
+  );
 
-  const cardClass =
-    variant === "horizontal"
-      ? `group relative flex min-h-[100px] w-full rounded-2xl border p-5 transition-all duration-200 select-none sm:h-[100px] sm:px-7 ${cardChrome}`
-      : `group relative flex min-h-[390px] w-full flex-col justify-between rounded-2xl border p-8 transition-all duration-200 select-none sm:p-9 ${cardChrome}`;
+  const cardClass = `group relative flex min-h-[240px] w-full flex-col rounded-2xl border p-5 transition-all duration-200 select-none sm:p-6 lg:h-full lg:min-h-0 lg:p-[clamp(0.75rem,1.3vw,1.5rem)] ${cardChrome}`;
 
-  if (module.disabled || module.statusTone === "maintenance") {
+  if (isDisabled) {
     return <div className={cardClass}>{content}</div>;
   }
 
@@ -582,7 +528,7 @@ function StatusPill({
     <div
       className={`flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 font-geist text-[11px] font-semibold ${
         isLight
-          ? "border-zinc-200 bg-zinc-50 text-zinc-700"
+          ? "border-zinc-200 bg-zinc-50 text-[#383838]"
           : "border-[#444444] bg-[#222222] text-zinc-300"
       }`}
     >

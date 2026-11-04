@@ -7,6 +7,7 @@ import { PlaceholderBlockerView } from "@/components/common";
 import { useTheme } from "@/context/ThemeContext";
 import { useAppLanguage } from "@/utils/language";
 import { useLoading } from "@/components/loading_screen";
+import ModuleAvailabilityGuard from "@/components/modules/ModuleAvailabilityGuard";
 
 export default function ReportsPage() {
   const { theme } = useTheme();
@@ -26,6 +27,7 @@ export default function ReportsPage() {
   }, [count, navigateWithLoading]);
 
   return (
+    <ModuleAvailabilityGuard moduleKey="reports">
     <PlaceholderBlockerView
       icon={
         <motion.div
@@ -55,5 +57,6 @@ export default function ReportsPage() {
         </p>
       }
     />
+    </ModuleAvailabilityGuard>
   );
 }

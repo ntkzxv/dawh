@@ -5,6 +5,7 @@ import { getWarehouseDashboard } from "@/lib/warehouse/dashboard";
 
 export const runtime = "nodejs";
 
-export const GET = apiRoute(async (request) =>
-  jsonOk(request, await getWarehouseDashboard(await getActor(request))),
-);
+export const GET = apiRoute(async (request) => {
+  const search = new URL(request.url).searchParams;
+  return jsonOk(request, await getWarehouseDashboard(await getActor(request), search));
+});

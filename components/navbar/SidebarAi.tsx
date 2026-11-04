@@ -245,22 +245,22 @@ export default function NavbarsubAi({
           const singleButtonClass = isSelfActive
             ? isMinimized
               ? isLight
-                ? "bg-[#18181B] text-[#FFFFFF] border border-[#18181B] font-bold shadow-md"
-                : "bg-[#FFFFFF] text-[#18181B] border border-[#FFFFFF] font-bold shadow-md"
+                ? "bg-[#222222] text-[#FFFFFF] border border-[#222222] font-bold shadow-md"
+                : "bg-[#FFFFFF] text-[#222222] border border-[#FFFFFF] font-bold shadow-md"
               : isLight
-              ? "bg-[#18181B] text-[#FFFFFF] font-bold border border-[#18181B] shadow-sm"
-              : "bg-[#FFFFFF] text-[#18181B] font-bold border border-[#FFFFFF] shadow-sm"
+              ? "bg-[#222222] text-[#FFFFFF] font-bold border border-[#222222] shadow-sm"
+              : "bg-[#FFFFFF] text-[#222222] font-bold border border-[#FFFFFF] shadow-sm"
             : isLight
-            ? "text-[#383838] hover:bg-[#F4F4F5] hover:text-[#18181B] font-medium"
-            : "text-[#D4D4D8] hover:bg-white/[0.08] hover:text-[#FFFFFF] font-medium";
+            ? "text-[#383838] hover:bg-[#F1F5F9] hover:text-[#222222] font-medium"
+            : "text-[var(--text-secondary)] hover:bg-white/[0.08] hover:text-[#FFFFFF] font-medium";
 
           const singleIconClass = isSelfActive
             ? isLight
               ? "text-[#FFFFFF]"
-              : "text-[#18181B]"
+              : "text-[#222222]"
             : isLight
-            ? "text-[#666666] group-hover:text-[#18181B]"
-            : "text-[#A1A1AA] group-hover:text-[#FFFFFF]";
+            ? "text-[var(--text-muted)] group-hover:text-[#222222]"
+            : "text-[var(--text-muted)] group-hover:text-[#FFFFFF]";
 
           return (
             <motion.button
@@ -287,9 +287,9 @@ export default function NavbarsubAi({
                   isSelfActive
                     ? isLight
                       ? "font-bold text-[#FFFFFF]"
-                      : "font-bold text-[#18181B]"
+                      : "font-bold text-[#222222]"
                     : isLight
-                    ? "font-medium text-[#383838] group-hover:text-[#18181B]"
+                    ? "font-medium text-[#383838] group-hover:text-[#222222]"
                     : "font-medium text-[#F4F4F5] group-hover:text-[#FFFFFF]"
                 } ${
                   isMinimized
@@ -308,8 +308,8 @@ export default function NavbarsubAi({
                         ? "bg-white/20 text-white"
                         : "bg-black/15 text-black"
                       : isLight
-                      ? "bg-[#F4F4F5] text-[#18181B] border border-[#E4E4E7]"
-                      : "bg-[#282828] text-[#E4E4E7] border border-[#444444]"
+                      ? "bg-[#F1F5F9] text-[#222222] border border-[#E4E4E7]"
+                      : "bg-[var(--cards)] text-[#E4E4E7] border border-[#444444]"
                   }`}
                 >
                   {item.badge}
@@ -324,35 +324,35 @@ export default function NavbarsubAi({
 
         const parentButtonClass = isFlyoutOpen
           ? isLight
-            ? "bg-[#18181B] text-[#FFFFFF] shadow-sm font-bold border border-[#18181B]"
-            : "bg-[#FFFFFF] text-[#18181B] shadow-md font-bold border border-[#FFFFFF]"
+            ? "bg-[#222222] text-[#FFFFFF] shadow-sm font-bold border border-[#222222]"
+            : "bg-[#FFFFFF] text-[#222222] shadow-md font-bold border border-[#FFFFFF]"
           : isChildActive
           ? isMinimized
             ? isLight
-              ? "bg-[#18181B] text-[#FFFFFF] border border-[#18181B] font-bold shadow-sm"
-              : "bg-[#FFFFFF] text-[#18181B] border border-[#FFFFFF] font-bold shadow-sm"
+              ? "bg-[#222222] text-[#FFFFFF] border border-[#222222] font-bold shadow-sm"
+              : "bg-[#FFFFFF] text-[#222222] border border-[#FFFFFF] font-bold shadow-sm"
             : isLight
-            ? "bg-[#F4F4F5] text-[#18181B] font-semibold border border-[#E4E4E7]"
+            ? "bg-[#F1F5F9] text-[#222222] font-semibold border border-[#E4E4E7]"
             : "bg-[#383838] text-[#FFFFFF] font-semibold border border-[#444444]"
           : isLight
-          ? "text-[#383838] hover:bg-[#F4F4F5] hover:text-[#18181B] font-medium"
-          : "text-[#D4D4D8] hover:bg-white/[0.08] hover:text-[#FFFFFF] font-medium";
+          ? "text-[#383838] hover:bg-[#F1F5F9] hover:text-[#222222] font-medium"
+          : "text-[var(--text-secondary)] hover:bg-white/[0.08] hover:text-[#FFFFFF] font-medium";
 
         const parentIconClass = isFlyoutOpen
           ? isLight
             ? "text-[#FFFFFF]"
-            : "text-[#18181B]"
+            : "text-[#222222]"
           : isChildActive
           ? isMinimized
             ? isLight
               ? "text-[#FFFFFF]"
-              : "text-[#18181B]"
+              : "text-[#222222]"
             : isLight
-            ? "text-[#18181B]"
+            ? "text-[#222222]"
             : "text-[#FFFFFF]"
           : isLight
-          ? "text-[#666666] group-hover:text-[#18181B]"
-          : "text-[#A1A1AA] group-hover:text-[#FFFFFF]";
+          ? "text-[var(--text-muted)] group-hover:text-[#222222]"
+          : "text-[var(--text-muted)] group-hover:text-[#FFFFFF]";
 
         return (
           <div key={item.id} className="relative w-full flex flex-col" data-sidebar-flyout>
@@ -380,10 +380,10 @@ export default function NavbarsubAi({
                   className={`text-[13.5px] leading-tight text-left whitespace-nowrap overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
                     isChildActive
                       ? isLight
-                        ? "font-semibold text-[#18181B]"
+                        ? "font-semibold text-[#222222]"
                         : "font-semibold text-[#FFFFFF]"
                       : isLight
-                      ? "font-medium text-[#383838] group-hover:text-[#18181B]"
+                      ? "font-medium text-[#383838] group-hover:text-[#222222]"
                       : "font-normal text-[#F4F4F5] group-hover:text-[#FFFFFF]"
                   } ${
                     isMinimized
@@ -402,11 +402,11 @@ export default function NavbarsubAi({
                   className={`shrink-0 transition-transform duration-200 ${
                     isChildActive
                       ? isLight
-                        ? "text-[#18181B]"
+                        ? "text-[#222222]"
                         : "text-[#FFFFFF]"
                       : isLight
-                      ? "text-[#666666]"
-                      : "text-[#A1A1AA]"
+                      ? "text-[var(--text-muted)]"
+                      : "text-[var(--text-muted)]"
                   } ${isExpanded ? "rotate-180" : "rotate-0"}`}
                 />
               )}
@@ -422,11 +422,20 @@ export default function NavbarsubAi({
                   transition={{ duration: 0.16, ease: "easeOut" }}
                   className={`absolute left-[70px] top-0 z-50 min-w-[270px] max-w-[310px] p-2.5 rounded-2xl border shadow-2xl ${
                     isLight
-                      ? "bg-[#FFFFFF] border-[#E4E4E7] text-[#18181B] shadow-xl"
+                      ? "bg-[#FFFFFF] border-[#E4E4E7] text-[#222222] shadow-xl"
                       : "bg-[#222222] border-[#383838] text-[#FFFFFF] shadow-black/90"
                   }`}
                 >
-                  <div className="flex flex-col gap-1.5">
+                  <div
+                    className={`px-2.5 pb-2 mb-1.5 border-b text-[12px] font-semibold ${
+                      isLight
+                        ? "text-slate-500 border-[#E4E4E7]"
+                        : "text-zinc-400 border-[#383838]"
+                    }`}
+                  >
+                    {item.title}
+                  </div>
+                  <div className="flex flex-col gap-1.5 pt-[3px]">
                     {item.children?.map((child) => {
                       const SubIcon = child.icon || Icon;
                       const isActive = pathname === child.path.split("#")[0];
@@ -442,8 +451,8 @@ export default function NavbarsubAi({
                           className={`w-full flex items-center gap-3 px-2 py-2 rounded-xl text-left transition-colors duration-150 cursor-pointer group/item ${
                             isActive
                               ? isLight
-                                ? "bg-[#18181B] text-[#FFFFFF] font-bold shadow-sm"
-                                : "bg-[#FFFFFF] text-[#18181B] font-bold shadow-sm"
+                                ? "bg-[#222222] text-[#FFFFFF] font-bold shadow-sm border border-[#222222]"
+                                : "bg-[#2C2C2C] text-[#FFFFFF] font-bold shadow-sm border border-[#444444]"
                               : isLight
                               ? "hover:bg-[#F8FAFC] text-[#383838]"
                               : "hover:bg-white/5 text-[#E4E4E7]"
@@ -456,10 +465,10 @@ export default function NavbarsubAi({
                               isActive
                                 ? isLight
                                   ? "text-white/60"
-                                  : "text-black/60"
+                                  : "text-white/60"
                                 : isLight
                                 ? "text-slate-400"
-                                : "text-[#71717A]"
+                                : "text-[var(--text-muted)]"
                             }`}
                           />
 
@@ -468,11 +477,11 @@ export default function NavbarsubAi({
                             className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border transition-transform group-hover/item:scale-105 ${
                               isActive
                                 ? isLight
-                                  ? "bg-white text-[#18181B] border-white"
-                                  : "bg-[#181818] text-[#FFFFFF] border-[#18181B]"
+                                  ? "bg-white text-[#222222] border-white"
+                                  : "bg-[#383838] text-[#FFFFFF] border-[#444444]"
                                 : isLight
-                                ? "bg-[#F4F4F5] text-[#555555] border-[#E4E4E7]"
-                                : "bg-[#181818] text-[#D4D4D8] border-[#383838]"
+                                ? "bg-[#F1F5F9] text-[var(--text-muted)] border-[#E4E4E7]"
+                                : "bg-[#2C2C2C] text-[var(--text-secondary)] border-[#383838]"
                             }`}
                           >
                             <SubIcon size={16} className="shrink-0" />
@@ -486,7 +495,7 @@ export default function NavbarsubAi({
                                   isActive
                                     ? isLight
                                       ? "font-bold text-[#FFFFFF]"
-                                      : "font-bold text-[#18181B]"
+                                      : "font-bold text-[#FFFFFF]"
                                     : isLight
                                     ? "font-medium text-[#383838]"
                                     : "font-medium text-[#F4F4F5]"
@@ -499,13 +508,13 @@ export default function NavbarsubAi({
                                   className={`px-1.5 py-0.2 text-[9px] font-bold rounded-full ${
                                     typeof child.badge === "string" &&
                                     child.badge.toLowerCase() === "live"
-                                      ? "bg-[#2EC4B6]/15 text-[#2EC4B6] border border-[#2EC4B6]/30 animate-pulse"
+                                      ? "bg-[var(--status-success)]/15 text-[var(--status-success-badge-text)] border border-[var(--status-success)]/30 animate-pulse"
                                       : isActive
                                       ? isLight
                                         ? "bg-white/20 text-white"
-                                        : "bg-black/15 text-black"
+                                        : "bg-white/20 text-white"
                                       : isLight
-                                      ? "bg-[#18181B] text-[#FFFFFF]"
+                                      ? "bg-[#222222] text-[#FFFFFF]"
                                       : "bg-[#383838] text-[#FFFFFF]"
                                   }`}
                                 >
@@ -519,10 +528,10 @@ export default function NavbarsubAi({
                                   isActive
                                     ? isLight
                                       ? "text-white/70"
-                                      : "text-black/70"
+                                      : "text-white/70"
                                     : isLight
-                                    ? "text-[#666666]"
-                                    : "text-[#888888]"
+                                    ? "text-[var(--text-muted)]"
+                                    : "text-[var(--text-muted)]"
                                 }`}
                               >
                                 {child.subtitle}
@@ -563,11 +572,11 @@ export default function NavbarsubAi({
                           className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left transition-all duration-150 cursor-pointer ${
                             isActive
                               ? isLight
-                                ? "bg-[#18181B] text-[#FFFFFF] font-bold shadow-sm border border-[#18181B]"
-                                : "bg-[#FFFFFF] text-[#18181B] font-bold shadow-sm border border-[#FFFFFF]"
+                                ? "bg-[#222222] text-[#FFFFFF] font-bold shadow-sm border border-[#222222]"
+                                : "bg-[#FFFFFF] text-[#222222] font-bold shadow-sm border border-[#FFFFFF]"
                               : isLight
-                              ? "text-[#555555] hover:text-[#18181B] hover:bg-[#F4F4F5] font-normal"
-                              : "text-[#A1A1AA] hover:text-[#FFFFFF] hover:bg-white/[0.08] font-normal"
+                              ? "text-[var(--text-muted)] hover:text-[#222222] hover:bg-[#F1F5F9] font-normal"
+                              : "text-[var(--text-muted)] hover:text-[#FFFFFF] hover:bg-white/[0.08] font-normal"
                           }`}
                         >
                           <span className="text-[13px] leading-tight truncate">
@@ -579,14 +588,14 @@ export default function NavbarsubAi({
                               className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full ${
                                 typeof child.badge === "string" &&
                                 child.badge.toLowerCase() === "live"
-                                  ? "bg-[#2EC4B6]/15 text-[#2EC4B6] border border-[#2EC4B6]/30 animate-pulse"
+                                  ? "bg-[var(--status-success)]/15 text-[var(--status-success-badge-text)] border border-[var(--status-success)]/30 animate-pulse"
                                   : isActive
                                   ? isLight
                                     ? "bg-white/20 text-white"
                                     : "bg-black/15 text-black"
                                   : isLight
-                                  ? "bg-[#F4F4F5] text-[#18181B] border border-[#E4E4E7]"
-                                  : "bg-[#282828] text-[#FFFFFF] border border-[#555555]"
+                                  ? "bg-[#F1F5F9] text-[#222222] border border-[#E4E4E7]"
+                                  : "bg-[var(--cards)] text-[#FFFFFF] border border-[#444444]"
                               }`}
                             >
                               {child.badge}

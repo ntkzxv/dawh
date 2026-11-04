@@ -89,8 +89,8 @@ export default function AccountProfile() {
     <div
       className={`h-screen w-full flex flex-col overflow-hidden transition-colors duration-300 ${
         isLight
-          ? "bg-[#FFFFFF] text-[#222222]"
-          : "bg-[#2C2C2C] text-[#FFFFFF] selection:bg-white/20"
+          ? "bg-[var(--canvas)] text-[#222222]"
+          : "bg-[var(--canvas)] text-[#FFFFFF] selection:bg-white/20"
       }`}
       style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
     >
@@ -156,7 +156,7 @@ export default function AccountProfile() {
                   >
                     <div className="relative group">
                       <div
-                        className={`w-[110px] h-[110px] rounded-full border overflow-hidden flex items-center justify-center select-none shadow-sm transition-all ${isLight ? "bg-[#F5F5F5] border-[#E5E5E5]" : "bg-[#282828] border-[#444444]"}`}
+                        className={`w-[110px] h-[110px] rounded-full border overflow-hidden flex items-center justify-center select-none shadow-sm transition-all ${isLight ? "bg-[#F1F5F9] border-[#737D88]" : "bg-[var(--cards)] border-[#444444]"}`}
                       >
                         {member?.image ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -184,7 +184,7 @@ export default function AccountProfile() {
                             ? "เปลี่ยนรูปโปรไฟล์"
                             : "Change Profile Picture"
                         }
-                        className={`absolute bottom-0 right-0 w-8 h-8 rounded-full border shadow-md flex items-center justify-center transition-all transform hover:scale-110 active:scale-95 cursor-pointer ${isLight ? "bg-[#222222] hover:bg-black text-[#FFFFFF] border-white" : "bg-[#FFFFFF] hover:bg-[#F4F4F5] text-[#222222] border-[#282828]"}`}
+                        className={`absolute bottom-0 right-0 w-8 h-8 rounded-full border shadow-md flex items-center justify-center transition-all transform hover:scale-110 active:scale-95 cursor-pointer ${isLight ? "bg-[#222222] hover:bg-black text-[#FFFFFF] border-white" : "bg-[#FFFFFF] hover:bg-[#F1F5F9] text-[#222222] border-[#444444]"}`}
                       >
                         <Pencil size={14} />
                       </button>
@@ -198,17 +198,17 @@ export default function AccountProfile() {
                         {displayName}
                       </h2>
                       <span
-                        className={`text-[13px] font-medium leading-tight ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}
+                        className={`text-[13px] font-medium leading-tight ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}
                       >
                         {member?.profile.username
                           ? `@${member.profile.username}`
                           : "—"}
                       </span>
                       <div
-                        className={`mt-1.5 px-3 py-1 rounded-[8px] border text-xs font-mono font-semibold flex items-center gap-1.5 select-text ${isLight ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222]" : "bg-[#282828] border-[#444444] text-[#FFFFFF]"}`}
+                        className={`mt-1.5 px-3 py-1 rounded-[8px] border text-xs font-mono font-semibold flex items-center gap-1.5 select-text ${isLight ? "bg-[#F1F5F9] border-[#737D88] text-[#222222]" : "bg-[var(--cards)] border-[#444444] text-[#FFFFFF]"}`}
                       >
                         <span
-                          className={`text-[10.5px] font-sans font-normal ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}
+                          className={`text-[10.5px] font-sans font-normal ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}
                         >
                           {isThai ? "รหัสพนักงาน:" : "Staff ID:"}
                         </span>
@@ -216,7 +216,7 @@ export default function AccountProfile() {
                       </div>
                       <div className="flex flex-row items-center px-2 py-0.5 gap-1.5 text-xs opacity-75">
                         <span
-                          className={`text-[11px] ${isLight ? "text-[#666666]" : "text-[#A1A1AA]"}`}
+                          className={`text-[11px] ${isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}
                         >
                           {isThai ? "แผนก:" : "Dept:"}{" "}
                           {member?.profile.department || "—"}
@@ -236,7 +236,7 @@ export default function AccountProfile() {
                         </h2>
                       </div>
                       <div
-                        className={`space-y-2 font-geist text-sm ${isLight ? "text-[#666666]" : "text-[#E4E4E7]"}`}
+                        className={`space-y-2 font-geist text-sm ${isLight ? "text-[var(--text-muted)]" : "text-[#E4E4E7]"}`}
                       >
                         <p>
                           <strong
@@ -420,7 +420,7 @@ function AccountTabButton({
             ? "text-[#222222]"
             : "text-[#FFFFFF]"
           : isLight
-            ? "text-[#666666] hover:text-[#222222]"
+            ? "text-[var(--text-muted)] hover:text-[#222222]"
             : "text-[#E4E4E7] hover:text-[#FFFFFF]"
       }`}
     >
@@ -548,9 +548,9 @@ function SecuritySettings({
     }
   };
 
-  const fieldClass = `w-full h-[38px] rounded-[8px] border px-2.5 text-xs outline-none transition-all ${isLight ? "bg-white border-[#E5E5E5] text-[#222222] focus:border-[#222222] focus:ring-1 focus:ring-[#222222]" : "bg-[#282828] border-[#444444] text-white focus:border-white focus:ring-1 focus:ring-white"}`;
-  const actionClass = `h-[37px] px-5 rounded-[8px] inline-flex items-center justify-center gap-2 text-xs font-semibold shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${isLight ? "bg-[#222222] text-white hover:bg-black" : "bg-white text-[#222222] hover:bg-[#F4F4F5]"}`;
-  const muted = isLight ? "text-[#666666]" : "text-[#A1A1AA]";
+  const fieldClass = `w-full h-[38px] rounded-[8px] border px-2.5 text-xs outline-none transition-all bg-[var(--canvas)] ${isLight ? "border-[#CBD5E1] text-[#222222] focus:border-[#222222] focus:ring-1 focus:ring-[#222222]" : "border-[#E4E4E7] text-[#F4F4F5] focus:border-white focus:ring-1 focus:ring-white"}`;
+  const actionClass = `h-[37px] px-5 rounded-[8px] inline-flex items-center justify-center gap-2 text-xs font-semibold shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${isLight ? "bg-[#222222] text-white hover:bg-black" : "bg-white text-[#222222] hover:bg-[#F1F5F9]"}`;
+  const muted = isLight ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]";
   const label = isLight ? "text-[#222222]" : "text-[#E4E4E7]";
   const toggle = (key: string) =>
     setVisible((current) => ({ ...current, [key]: !current[key] }));
@@ -560,7 +560,7 @@ function SecuritySettings({
       className={`animate-in fade-in w-full p-6 sm:p-8 flex flex-col items-start gap-6 rounded-[12px] border transition-colors ${isLight ? "bg-white border-[#E4E4E7] shadow-sm" : "bg-[#383838] border-[#444444] shadow-lg"}`}
     >
       <div
-        className={`w-full border-b pb-3.5 ${isLight ? "border-[#E4E4E7]" : "border-[#555555]"}`}
+        className={`w-full border-b pb-3.5 ${isLight ? "border-[#E4E4E7]" : "border-[#444444]"}`}
       >
         <h3
           className={`font-bold text-[16px] leading-5 ${isLight ? "text-[#222222]" : "text-white"}`}
@@ -581,11 +581,11 @@ function SecuritySettings({
             {isThai ? "อีเมลปัจจุบันที่ใช้งานอยู่" : "Current Email Address"}
           </label>
           <div
-            className={`w-full h-[40px] px-2.5 rounded-[8px] border flex items-center justify-between gap-3 text-[13px] font-mono ${isLight ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#383838]" : "bg-[#282828] border-[#444444] text-[#E4E4E7]"}`}
+            className={`w-full h-[40px] px-2.5 rounded-[8px] border flex items-center justify-between gap-3 text-[13px] font-mono bg-[var(--canvas)] ${isLight ? "border-[#CBD5E1] text-[#383838]" : "border-[#444444] text-[#E4E4E7]"}`}
           >
             <span className="truncate">{email}</span>
-            <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded border border-[#2EC4B6]/30 bg-[#2EC4B6]/10 text-[#2EC4B6] text-[10.5px] font-sans font-semibold">
-              <CheckCircle2 size={11} />
+            <span className="shrink-0 inline-flex h-5 items-center gap-1 px-2 rounded border border-[var(--status-success)]/30 bg-[var(--status-success)]/10 text-[var(--status-success-badge-text)] text-[10.5px] leading-none font-sans font-semibold">
+              <CheckCircle2 size={11} className="block shrink-0" />
               {isThai ? "ใช้งานอยู่" : "Active"}
             </span>
           </div>
@@ -731,7 +731,7 @@ function SecuritySettings({
               {[1, 2, 3, 4].map((level) => (
                 <span
                   key={level}
-                  className={`flex-1 rounded-full ${strength >= level ? (strength <= 1 ? "bg-[#E74C3C]" : strength === 2 ? "bg-[#FF9F1C]" : "bg-[#2EC4B6]") : isLight ? "bg-slate-200" : "bg-[#444444]"}`}
+                  className={`flex-1 rounded-full ${strength >= level ? (strength <= 1 ? "bg-[var(--status-danger)]" : strength === 2 ? "bg-[var(--status-warning)]" : "bg-[var(--status-success)]") : isLight ? "bg-slate-200" : "bg-[#444444]"}`}
                 />
               ))}
             </div>
@@ -803,7 +803,7 @@ function PasswordField({
               : "new-password"
           }
           placeholder={placeholder}
-          className={`${fieldClass} pr-10 placeholder:text-[#A1A1AA]`}
+          className={`${fieldClass} pr-10 placeholder:text-[var(--text-muted)]`}
           value={value}
           onChange={(event) => setValue(event.target.value)}
         />
@@ -824,7 +824,7 @@ function SecurityNotice({ text }: { text: string }) {
   return (
     <div
       role="alert"
-      className="p-3 rounded-[8px] border text-xs flex items-center gap-2 bg-[#E74C3C]/10 border-[#E74C3C]/30 text-[#E74C3C]"
+      className="p-3 rounded-[8px] border text-xs flex items-center gap-2 bg-[var(--status-danger)]/10 border-[var(--status-danger)]/30 text-[var(--status-danger-badge-text)]"
     >
       <AlertCircle size={14} />
       <span>{text}</span>
@@ -850,7 +850,7 @@ function OwnProfile({
       className={`flex-1 w-full p-6 sm:p-8 flex flex-col items-start gap-5 rounded-[12px] border transition-colors ${isLight ? "bg-[#FFFFFF] border-[#E4E4E7] shadow-sm" : "bg-[#383838] border-[#444444] shadow-lg"}`}
     >
       <div
-        className={`w-full flex items-center justify-between gap-3 border-b pb-3 ${isLight ? "border-[#E4E4E7]" : "border-[#555555]"}`}
+        className={`w-full flex items-center justify-between gap-3 border-b pb-3 ${isLight ? "border-[#E4E4E7]" : "border-[#444444]"}`}
       >
         <h3
           className={`font-bold text-[16px] leading-[20px] ${isLight ? "text-[#222222]" : "text-[#F4F4F5]"}`}
@@ -1085,7 +1085,7 @@ function OwnProfile({
           className={`h-[37px] px-4 rounded-[8px] font-semibold text-[13px] leading-[17px] transition-all hover:scale-102 active:scale-98 cursor-pointer flex items-center gap-1.5 shadow-sm ${
             isLight
               ? "bg-[#222222] hover:bg-black text-[#FFFFFF]"
-              : "bg-[#FFFFFF] hover:bg-[#F4F4F5] text-[#222222]"
+              : "bg-[#FFFFFF] hover:bg-[#F1F5F9] text-[#222222]"
           }`}
         >
           <Pencil size={14} />
@@ -1208,7 +1208,7 @@ function AccountSectionHeader({
 }) {
   return (
     <div
-      className={`w-full flex items-center justify-between border-b pb-3 ${isLight ? "border-[#E4E4E7]" : "border-[#555555]"}`}
+      className={`w-full flex items-center justify-between border-b pb-3 ${isLight ? "border-[#E4E4E7]" : "border-[#444444]"}`}
     >
       <h3
         className={`font-bold text-[16px] leading-[20px] ${isLight ? "text-[#222222]" : "text-[#FFFFFF]"}`}
@@ -1268,10 +1268,10 @@ function ReadOnlyAccountField({
       <div
         className={`w-full p-2.5 ${multiline ? "min-h-[56px] leading-relaxed whitespace-pre-wrap" : "h-[38px]"} flex items-center rounded-[8px] border text-[12.5px] select-text ${
           mono ? "font-mono" : ""
-        } ${success ? "font-semibold text-[#2EC4B6]" : isLight ? "text-[#383838]" : "text-[#E4E4E7]"} ${
+        } ${success ? "font-semibold text-[var(--status-success-text)]" : isLight ? "text-[#383838]" : "text-[#E4E4E7]"} bg-[var(--canvas)] ${
           isLight
-            ? "bg-[#F5F5F5] border-[#E5E5E5]"
-            : "bg-[#282828] border-[#444444]"
+            ? "border-[#CBD5E1]"
+            : "border-[#444444]"
         }`}
       >
         <span
@@ -1302,10 +1302,10 @@ function EditableAccountField({
   multiline?: boolean;
   disabled?: boolean;
 }) {
-  const className = `w-full p-2.5 ${multiline ? "min-h-[56px] resize-y leading-relaxed" : "h-[38px]"} rounded-[8px] border text-[12.5px] outline-none transition-all ${
+  const className = `w-full p-2.5 ${multiline ? "min-h-[56px] resize-y leading-relaxed" : "h-[38px]"} rounded-[8px] border text-[12.5px] outline-none transition-all bg-[var(--canvas)] ${
     isLight
-      ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#383838] focus:border-[#222222] focus:ring-1 focus:ring-[#222222]"
-      : "bg-[#282828] border-[#444444] text-[#E4E4E7] focus:border-white focus:ring-1 focus:ring-white"
+      ? "border-[#CBD5E1] text-[#222222] focus:border-[#222222] focus:ring-1 focus:ring-[#222222]"
+      : "border-[#E4E4E7] text-[#F4F4F5] focus:border-white focus:ring-1 focus:ring-white"
   }`;
   return (
     <div className="flex flex-col items-start gap-1">

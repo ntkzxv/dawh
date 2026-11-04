@@ -125,20 +125,20 @@ export function SecondaryRegModal({
     setIsReviewAtBottom(scrollHeight - scrollTop - clientHeight < 40);
   };
 
-  const input = `w-full h-[38px] px-2.5 rounded-[8px] border text-xs outline-none transition-all ${
+  const input = `w-full h-[38px] px-2.5 rounded-[8px] border text-xs outline-none transition-all bg-[var(--canvas)] ${
     isLight
-      ? "bg-[#F5F5F5] border-[#E5E5E5] text-[#222222] focus:border-[#222222]"
-      : "bg-[#282828] border-[#444444] text-white focus:border-white"
+      ? "border-[#737D88] text-[#222222] focus:border-[#222222]"
+      : "border-[#E4E4E7] text-white focus:border-white"
   }`;
-  const readOnlyInput = `w-full h-[38px] px-2.5 rounded-[8px] border text-xs outline-none cursor-not-allowed select-none transition-all ${
+  const readOnlyInput = `w-full h-[38px] px-2.5 rounded-[8px] border text-xs outline-none cursor-not-allowed select-none transition-all bg-[var(--canvas)] ${
     isLight
-      ? "bg-[#F4F4F5] border-[#E4E4E7] text-[#222222]"
-      : "bg-[#222222] border-[#383838] text-[#FFFFFF]"
+      ? "border-[#E4E4E7] text-[#222222]"
+      : "border-[#383838] text-[#FFFFFF]"
   }`;
-  const readOnlyArea = `w-full min-h-[64px] p-2.5 rounded-[8px] border text-xs leading-relaxed outline-none resize-none cursor-not-allowed select-none transition-all ${
+  const readOnlyArea = `w-full min-h-[64px] p-2.5 rounded-[8px] border text-xs leading-relaxed outline-none resize-none cursor-not-allowed select-none transition-all bg-[var(--canvas)] ${
     isLight
-      ? "bg-[#F4F4F5] border-[#E4E4E7] text-[#222222]"
-      : "bg-[#222222] border-[#383838] text-[#FFFFFF]"
+      ? "border-[#E4E4E7] text-[#222222]"
+      : "border-[#383838] text-[#FFFFFF]"
   }`;
   const label = `text-xs font-semibold ${isLight ? "text-[#222222]" : "text-[#E4E4E7]"}`;
 
@@ -232,7 +232,7 @@ export function SecondaryRegModal({
               </h4>
               <p
                 className={`text-[12px] mt-0.5 ${
-                  isLight ? "text-[#666666]" : "text-[#E4E4E7]"
+                  isLight ? "text-[var(--text-muted)]" : "text-[#E4E4E7]"
                 }`}
               >
                 {step === "fill"
@@ -283,7 +283,7 @@ export function SecondaryRegModal({
                 className={`absolute bottom-20 right-5 sm:right-7 p-2.5 rounded-full shadow-lg border transition-all hover:scale-110 active:scale-95 cursor-pointer z-20 flex items-center justify-center animate-in fade-in duration-200 ${
                   isLight
                     ? "bg-white/95 hover:bg-white border-[#E4E4E7] text-[#222222] shadow-slate-400/30"
-                    : "bg-[#282828]/95 hover:bg-[#333333] border-[#555555] text-white shadow-black/50"
+                    : "bg-[var(--cards)]/95 hover:bg-[var(--cards)] border-[#444444] text-white shadow-black/50"
                 }`}
                 title={isThai ? "เลื่อนลงไปล่างสุด" : "Scroll to bottom"}
               >
@@ -297,7 +297,7 @@ export function SecondaryRegModal({
               className="flex-1 overflow-y-auto min-h-0 p-5 sm:p-6 pb-28 space-y-6"
             >
               {error && (
-                <p role="alert" className="text-xs text-[#E74C3C] font-medium">
+                <p role="alert" className="text-xs text-[var(--status-danger-text)] font-medium">
                   {error}
                 </p>
               )}
@@ -482,7 +482,7 @@ export function SecondaryRegModal({
                         isThai ? "เลือกวันเกิด" : "Select birth date"
                       }
                       isThai={isThai}
-                      triggerClassName="h-[38px]"
+                      triggerClassName="h-[38px] !bg-[var(--canvas)] hover:!bg-[var(--canvas)]"
                     />
                   </Field>
                   <Field label={isThai ? "เพศ" : "Gender"} labelClass={label}>
@@ -955,7 +955,7 @@ export function SecondaryRegModal({
                 onClick={onClose}
                 className={`h-[38px] px-4 rounded-[8px] text-xs font-semibold ${
                   isLight
-                    ? "text-[#666666] hover:bg-[#F5F5F5]"
+                    ? "text-[var(--text-muted)] hover:bg-[#F1F5F9]"
                     : "text-[#E4E4E7] hover:bg-white/10"
                 }`}
               >
@@ -966,7 +966,7 @@ export function SecondaryRegModal({
                 className={`h-[38px] px-5 rounded-[8px] text-xs font-bold ${
                   isLight
                     ? "bg-[#222222] text-white hover:bg-black"
-                    : "bg-white text-[#222222] hover:bg-[#F4F4F5]"
+                    : "bg-white text-[#222222] hover:bg-[#F1F5F9]"
                 }`}
               >
                 {isThai ? "ตรวจสอบข้อมูล" : "Review Information"}
@@ -988,7 +988,7 @@ export function SecondaryRegModal({
                 className={`absolute bottom-20 right-5 sm:right-7 p-2.5 rounded-full shadow-lg border transition-all hover:scale-110 active:scale-95 cursor-pointer z-20 flex items-center justify-center animate-in fade-in duration-200 ${
                   isLight
                     ? "bg-white/95 hover:bg-white border-[#E4E4E7] text-[#222222] shadow-slate-400/30"
-                    : "bg-[#282828]/95 hover:bg-[#333333] border-[#555555] text-white shadow-black/50"
+                    : "bg-[var(--cards)]/95 hover:bg-[var(--cards)] border-[#444444] text-white shadow-black/50"
                 }`}
                 title={isThai ? "เลื่อนลงไปล่างสุด" : "Scroll to bottom"}
               >
@@ -1002,7 +1002,7 @@ export function SecondaryRegModal({
               className="flex-1 overflow-y-auto min-h-0 p-5 sm:p-6 pb-28 space-y-6"
             >
               {error && (
-                <p role="alert" className="text-xs text-[#E74C3C] font-medium">
+                <p role="alert" className="text-xs text-[var(--status-danger-text)] font-medium">
                   {error}
                 </p>
               )}
@@ -1454,7 +1454,7 @@ export function SecondaryRegModal({
                 onClick={() => setStep("fill")}
                 className={`h-[38px] px-4 rounded-[8px] inline-flex items-center gap-2 text-xs font-semibold ${
                   isLight
-                    ? "text-[#222222] hover:bg-[#F5F5F5]"
+                    ? "text-[#222222] hover:bg-[#F1F5F9]"
                     : "text-white hover:bg-white/10"
                 }`}
               >
@@ -1468,7 +1468,7 @@ export function SecondaryRegModal({
                 className={`h-[38px] px-5 rounded-[8px] inline-flex items-center gap-2 text-xs font-bold disabled:opacity-50 ${
                   isLight
                     ? "bg-[#222222] text-white hover:bg-black"
-                    : "bg-white text-[#222222] hover:bg-[#F4F4F5]"
+                    : "bg-white text-[#222222] hover:bg-[#F1F5F9]"
                 }`}
               >
                 {isThai ? "ต่อไป" : "Next"}
@@ -1539,7 +1539,7 @@ export function SecondaryRegModal({
                 onClick={() => setStep("review")}
                 className={`h-[38px] px-4 rounded-[8px] inline-flex items-center gap-2 text-xs font-semibold ${
                   isLight
-                    ? "text-[#222222] hover:bg-[#F5F5F5]"
+                    ? "text-[#222222] hover:bg-[#F1F5F9]"
                     : "text-white hover:bg-white/10"
                 }`}
               >
@@ -1553,7 +1553,7 @@ export function SecondaryRegModal({
                 className={`h-[38px] px-5 rounded-[8px] inline-flex items-center gap-2 text-xs font-bold disabled:opacity-50 ${
                   isLight
                     ? "bg-[#222222] text-white hover:bg-black"
-                    : "bg-white text-[#222222] hover:bg-[#F4F4F5]"
+                    : "bg-white text-[#222222] hover:bg-[#F1F5F9]"
                 }`}
               >
                 {busy ? (

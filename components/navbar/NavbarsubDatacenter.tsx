@@ -276,7 +276,7 @@ export default function NavbarsubDatacenter({
                     ? "bg-slate-900 text-[#FFFFFF] font-semibold shadow-sm"
                     : "bg-[#383838] text-[#FFFFFF] shadow-md font-semibold border border-[#444444]"
                   : isLight
-                  ? "text-slate-700 hover:bg-[#F4F4F5] hover:text-slate-950 font-medium"
+                  ? "text-slate-700 hover:bg-[#F1F5F9] hover:text-slate-950 font-medium"
                   : "text-[#F4F4F5] hover:bg-[#383838]/60 hover:text-[#FFFFFF]"
               }`}
               title={isMinimized ? group.title : undefined}
@@ -313,7 +313,7 @@ export default function NavbarsubDatacenter({
                   className={`ml-auto px-2 py-0.5 text-[10px] font-bold rounded-full ${
                     isLight
                       ? "bg-slate-200 text-slate-900"
-                      : "bg-[#282828] text-[#E4E4E7] border border-[#444444]"
+                      : "bg-[var(--cards)] text-[#E4E4E7] border border-[#444444]"
                   }`}
                 >
                   {group.badge}
@@ -340,7 +340,7 @@ export default function NavbarsubDatacenter({
                     ? "bg-slate-100 text-slate-950 font-semibold"
                     : "bg-[#383838]/60 text-[#FFFFFF] font-semibold"
                   : isLight
-                  ? "text-slate-700 hover:bg-[#F4F4F5] hover:text-slate-950 font-medium"
+                  ? "text-slate-700 hover:bg-[#F1F5F9] hover:text-slate-950 font-medium"
                   : "text-[#F4F4F5] hover:bg-[#383838]/60 hover:text-[#FFFFFF]"
               }`}
               title={isMinimized ? group.title : undefined}
@@ -413,7 +413,7 @@ export default function NavbarsubDatacenter({
                             isActive
                               ? isLight
                                 ? "bg-slate-900 text-[#FFFFFF] font-semibold shadow-sm"
-                                : "bg-[#383838] text-[#FFFFFF] font-semibold shadow-sm border border-[#555555]"
+                                : "bg-[#383838] text-[#FFFFFF] font-semibold shadow-sm border border-[#444444]"
                               : isLight
                               ? "text-slate-600 hover:text-slate-950 hover:bg-slate-100 font-normal"
                               : "text-[#E4E4E7] hover:text-[#FFFFFF] hover:bg-white/5 font-normal"
@@ -428,10 +428,10 @@ export default function NavbarsubDatacenter({
                               className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full ${
                                 typeof child.badge === "string" &&
                                 child.badge.toLowerCase() === "live"
-                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse"
+                                  ? "bg-emerald-500/20 text-[var(--status-success-badge-text)] border border-emerald-500/40 animate-pulse"
                                   : isLight
                                   ? "bg-slate-200 text-slate-900"
-                                  : "bg-[#282828] text-[#FFFFFF] border border-[#555555]"
+                                  : "bg-[var(--cards)] text-[#FFFFFF] border border-[#444444]"
                               }`}
                             >
                               {child.badge}

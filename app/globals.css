@@ -3,21 +3,43 @@
 @custom-variant dark (&:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *));
 
 :root {
-  /* Canvas, Sidebar, Cards, Accent, Border */
-  --canvas: #181818;
+  /* Dark theme semantic tokens */
+  --canvas: #2C2C2C;
   --sidebar: #222222;
   --cards: #383838;
+  --cards-hover: #383838;
+  --input-bg: #222222;
   --accent: #FFFFFF;
+  --accent-foreground: #222222;
   --border: #444444;
+  --border-control: #E4E4E7;
+  --surface-subtle: #383838;
+  --toolbar-button-bg: #383838;
+  --toolbar-button-hover: #404040;
+  --toolbar-control-border: #4F4F4F;
+  --toolbar-control-border-focus: #666666;
+  --text-primary: #FFFFFF;
+  --text-secondary: #F4F4F5;
+  --text-muted: #E4E4E7;
 
-  --background: #181818;
+  --background: #2C2C2C;
   --foreground: #FFFFFF;
   --card: #383838;
   --card-foreground: #FFFFFF;
   --primary: #FFFFFF;
-  --primary-foreground: #18181B;
-  --muted: #222222;
+  --primary-foreground: #222222;
+  --muted: #383838;
   --muted-foreground: #E4E4E7;
+  --status-success: #2EC4B6;
+  --status-success-badge-text: #F4F4F5;
+  --status-warning: #FF9F1C;
+  --status-warning-badge-text: #F4F4F5;
+  --status-danger: #E71D36;
+  --status-danger-badge-text: #F4F4F5;
+  --status-info: #FFFFFF;
+  --status-success-text: #2EC4B6;
+  --status-warning-text: #FF9F1C;
+  --status-danger-text: #E71D36;
 
   /* Custom White Hierarchy Tokens */
   --pure-white: #FFFFFF;
@@ -34,12 +56,24 @@
 html.light,
 body.light,
 :root.light {
-  /* Canvas, Sidebar, Cards, Accent, Border */
+  /* Light theme semantic tokens */
   --canvas: #F8FAFC;
   --sidebar: #FFFFFF;
   --cards: #FFFFFF;
+  --cards-hover: #F1F5F9;
+  --input-bg: #F8FAFC;
   --accent: #222222;
+  --accent-foreground: #FFFFFF;
   --border: #E4E4E7;
+  --border-control: #737D88;
+  --surface-subtle: #F1F5F9;
+  --toolbar-button-bg: #F8FAFC;
+  --toolbar-button-hover: #F1F5F9;
+  --toolbar-control-border: #737D88;
+  --toolbar-control-border-focus: #222222;
+  --text-primary: #222222;
+  --text-secondary: #383838;
+  --text-muted: #383838;
 
   --background: #F8FAFC;
   --foreground: #222222;
@@ -49,14 +83,29 @@ body.light,
   --primary-foreground: #FFFFFF;
   --muted: #F1F5F9;
   --muted-foreground: #383838;
+  --status-success: #15A465;
+  --status-success-badge-text: #222222;
+  --status-warning: #CE8D10;
+  --status-warning-badge-text: #222222;
+  --status-danger: #C7291F;
+  --status-danger-badge-text: #222222;
+  --status-info: #222222;
+  --status-success-text: #222222;
+  --status-warning-text: #222222;
+  --status-danger-text: #222222;
 }
 
 @theme inline {
   --color-canvas: var(--canvas);
   --color-sidebar: var(--sidebar);
   --color-cards: var(--cards);
+  --color-cards-hover: var(--cards-hover);
+  --color-input-bg: var(--input-bg);
   --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
   --color-border: var(--border);
+  --color-border-control: var(--border-control);
+  --color-surface-subtle: var(--surface-subtle);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -66,6 +115,127 @@ body.light,
   --color-primary-foreground: var(--primary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-success: var(--status-success);
+  --color-warning: var(--status-warning);
+  --color-danger: var(--status-danger);
+  --color-info: var(--status-info);
+
+  /* Map common Tailwind neutral utilities to the DAWH text and surface roles. */
+  --color-slate-50: var(--canvas);
+  --color-slate-100: var(--surface-subtle);
+  --color-slate-200: var(--border);
+  --color-slate-300: var(--border-control);
+  --color-slate-400: var(--text-muted);
+  --color-slate-500: var(--text-muted);
+  --color-slate-600: var(--text-secondary);
+  --color-slate-700: var(--text-primary);
+  --color-slate-800: var(--text-primary);
+  --color-slate-900: var(--text-primary);
+  --color-gray-50: var(--canvas);
+  --color-gray-100: var(--surface-subtle);
+  --color-gray-200: var(--border);
+  --color-gray-300: var(--border-control);
+  --color-gray-400: var(--text-muted);
+  --color-gray-500: var(--text-muted);
+  --color-gray-600: var(--text-secondary);
+  --color-gray-700: var(--text-primary);
+  --color-gray-800: var(--text-primary);
+  --color-gray-900: var(--text-primary);
+  --color-zinc-50: var(--canvas);
+  --color-zinc-100: var(--surface-subtle);
+  --color-zinc-200: var(--border);
+  --color-zinc-300: var(--border-control);
+  --color-zinc-400: var(--text-muted);
+  --color-zinc-500: var(--text-muted);
+  --color-zinc-600: var(--text-secondary);
+  --color-zinc-700: var(--border);
+  --color-zinc-800: var(--cards);
+  --color-zinc-900: var(--sidebar);
+  --color-neutral-50: var(--canvas);
+  --color-neutral-100: var(--surface-subtle);
+  --color-neutral-200: var(--border);
+  --color-neutral-300: var(--border-control);
+  --color-neutral-400: var(--text-muted);
+  --color-neutral-500: var(--text-muted);
+  --color-neutral-600: var(--text-secondary);
+  --color-neutral-700: var(--text-primary);
+  --color-neutral-800: var(--cards);
+  --color-neutral-900: var(--sidebar);
+
+  /* Keep semantic status utilities theme-aware across existing pages. */
+  --color-emerald-50: color-mix(in srgb, var(--status-success) 10%, var(--cards));
+  --color-emerald-100: color-mix(in srgb, var(--status-success) 15%, var(--cards));
+  --color-emerald-200: color-mix(in srgb, var(--status-success) 30%, var(--cards));
+  --color-emerald-300: var(--status-success);
+  --color-emerald-400: var(--status-success);
+  --color-emerald-500: var(--status-success);
+  --color-emerald-600: var(--status-success-text);
+  --color-emerald-700: var(--status-success-text);
+  --color-emerald-800: color-mix(in srgb, var(--status-success) 30%, var(--cards));
+  --color-emerald-950: color-mix(in srgb, var(--status-success) 15%, var(--cards));
+  --color-amber-50: color-mix(in srgb, var(--status-warning) 10%, var(--cards));
+  --color-amber-100: color-mix(in srgb, var(--status-warning) 15%, var(--cards));
+  --color-amber-200: color-mix(in srgb, var(--status-warning) 30%, var(--cards));
+  --color-amber-300: var(--status-warning);
+  --color-amber-400: var(--status-warning);
+  --color-amber-500: var(--status-warning);
+  --color-amber-600: var(--status-warning-text);
+  --color-amber-700: var(--status-warning-text);
+  --color-rose-50: color-mix(in srgb, var(--status-danger) 10%, var(--cards));
+  --color-rose-100: color-mix(in srgb, var(--status-danger) 15%, var(--cards));
+  --color-rose-200: color-mix(in srgb, var(--status-danger) 30%, var(--cards));
+  --color-rose-300: var(--status-danger);
+  --color-rose-400: var(--status-danger);
+  --color-rose-500: var(--status-danger);
+  --color-rose-600: var(--status-danger-text);
+  --color-rose-700: var(--status-danger-text);
+  --color-rose-800: color-mix(in srgb, var(--status-danger) 30%, var(--cards));
+  --color-rose-950: color-mix(in srgb, var(--status-danger) 15%, var(--cards));
+  --color-red-50: color-mix(in srgb, var(--status-danger) 10%, var(--cards));
+  --color-red-100: color-mix(in srgb, var(--status-danger) 15%, var(--cards));
+  --color-red-200: color-mix(in srgb, var(--status-danger) 30%, var(--cards));
+  --color-red-300: var(--status-danger);
+  --color-red-400: var(--status-danger);
+  --color-red-500: var(--status-danger);
+  --color-red-600: var(--status-danger-text);
+  --color-red-700: var(--status-danger-text);
+  --color-red-800: color-mix(in srgb, var(--status-danger) 30%, var(--cards));
+  --color-red-950: color-mix(in srgb, var(--status-danger) 15%, var(--cards));
+  --color-green-50: color-mix(in srgb, var(--status-success) 10%, var(--cards));
+  --color-green-100: color-mix(in srgb, var(--status-success) 15%, var(--cards));
+  --color-green-200: color-mix(in srgb, var(--status-success) 30%, var(--cards));
+  --color-green-300: var(--status-success);
+  --color-green-400: var(--status-success);
+  --color-green-500: var(--status-success);
+  --color-green-600: var(--status-success-text);
+  --color-green-700: var(--status-success-text);
+  --color-green-800: color-mix(in srgb, var(--status-success) 30%, var(--cards));
+  --color-green-950: color-mix(in srgb, var(--status-success) 15%, var(--cards));
+  --color-yellow-50: color-mix(in srgb, var(--status-warning) 10%, var(--cards));
+  --color-yellow-100: color-mix(in srgb, var(--status-warning) 15%, var(--cards));
+  --color-yellow-200: color-mix(in srgb, var(--status-warning) 30%, var(--cards));
+  --color-yellow-400: var(--status-warning);
+  --color-yellow-500: var(--status-warning);
+  --color-orange-50: color-mix(in srgb, var(--status-warning) 10%, var(--cards));
+  --color-orange-100: color-mix(in srgb, var(--status-warning) 15%, var(--cards));
+  --color-orange-200: color-mix(in srgb, var(--status-warning) 30%, var(--cards));
+  --color-orange-400: var(--status-warning);
+  --color-orange-500: var(--status-warning);
+  --color-amber-800: color-mix(in srgb, var(--status-warning) 30%, var(--cards));
+  --color-amber-950: color-mix(in srgb, var(--status-warning) 15%, var(--cards));
+  --color-indigo-50: color-mix(in srgb, var(--status-info) 10%, var(--cards));
+  --color-indigo-100: color-mix(in srgb, var(--status-info) 15%, var(--cards));
+  --color-indigo-200: color-mix(in srgb, var(--status-info) 30%, var(--cards));
+  --color-indigo-300: var(--status-info);
+  --color-indigo-400: var(--status-info);
+  --color-indigo-500: var(--status-info);
+  --color-indigo-600: var(--status-info);
+  --color-indigo-700: var(--status-info);
+  --color-indigo-800: color-mix(in srgb, var(--status-info) 30%, var(--cards));
+  --color-indigo-950: color-mix(in srgb, var(--status-info) 15%, var(--cards));
+  --color-blue-500: var(--status-info);
+  --color-purple-600: var(--status-info);
+  --color-violet-400: var(--status-info);
 
   --color-pure-white: #FFFFFF;
   --color-soft-white: #F4F4F5;
@@ -148,8 +318,8 @@ input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
   -webkit-text-fill-color: #FFFFFF !important;
   caret-color: #FFFFFF !important;
-  -webkit-box-shadow: 0 0 0 1000px #202020 inset !important;
-  box-shadow: 0 0 0 1000px #202020 inset !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--input-bg) inset !important;
+  box-shadow: 0 0 0 1000px var(--input-bg) inset !important;
   transition: background-color 5000s ease-in-out 0s;
 }
 
@@ -239,13 +409,13 @@ body {
 html.light ::-webkit-scrollbar-thumb,
 body.light ::-webkit-scrollbar-thumb,
 :root.light ::-webkit-scrollbar-thumb {
-  background: rgba(85, 85, 90, 0.4);
+  background: color-mix(in srgb, var(--text-muted) 40%, transparent);
 }
 
 html.light ::-webkit-scrollbar-thumb:hover,
 body.light ::-webkit-scrollbar-thumb:hover,
 :root.light ::-webkit-scrollbar-thumb:hover {
-  background: rgba(85, 85, 90, 0.65);
+  background: color-mix(in srgb, var(--text-muted) 65%, transparent);
 }
 
 /* Hide scrollbars for app-like carousels/tabbars */
@@ -377,7 +547,7 @@ select {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236366F1' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23FFFFFF' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
   background-size: 14px 14px;
@@ -388,12 +558,12 @@ select {
 
 select:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.22), 0 2px 8px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--status-info) 22%, transparent), 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 /* Dark mode options */
 select option {
-  background-color: #222222;
+  background-color: var(--sidebar);
   color: #FFFFFF;
   padding: 10px 14px;
   font-size: 13px;
@@ -402,20 +572,26 @@ select option {
 select option:hover,
 select option:focus,
 select option:checked {
-  background-color: #6366F1 !important;
-  color: #FFFFFF !important;
+  background-color: var(--status-info) !important;
+  color: var(--accent-foreground) !important;
 }
 
 /* Light mode options */
 html.light select option,
 body.light select option {
   background-color: #FFFFFF;
-  color: #18181B;
+  color: #222222;
+}
+
+html.light select,
+body.light select,
+:root.light select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23222222' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
 html.light select option:checked {
-  background-color: #6366F1 !important;
-  color: #FFFFFF !important;
+  background-color: var(--status-info) !important;
+  color: var(--accent-foreground) !important;
 }
 
 /* Custom Dropdown Container Hover Glow */
@@ -423,13 +599,13 @@ html.light select option:checked {
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .dropdown-glow:hover {
-  border-color: rgba(99, 102, 241, 0.55);
-  box-shadow: 0 0 16px rgba(99, 102, 241, 0.15);
+  border-color: color-mix(in srgb, var(--status-info) 55%, transparent);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--status-info) 15%, transparent);
 }
 
 .dropdown-glow-teal:hover {
-  border-color: rgba(46, 196, 182, 0.55);
-  box-shadow: 0 0 16px rgba(46, 196, 182, 0.15);
+  border-color: color-mix(in srgb, var(--status-success) 55%, transparent);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--status-success) 15%, transparent);
 }
 
 /* ========================================================================= */
@@ -469,28 +645,28 @@ html.light .dropdown-scrollbar,
 body.light .dropdown-scrollbar,
 .light .dropdown-scrollbar,
 [data-theme="light"] .dropdown-scrollbar {
-  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  scrollbar-color: color-mix(in srgb, var(--text-muted) 20%, transparent) transparent;
 }
 
 html.light .dropdown-scrollbar::-webkit-scrollbar-thumb,
 body.light .dropdown-scrollbar::-webkit-scrollbar-thumb,
 .light .dropdown-scrollbar::-webkit-scrollbar-thumb,
 [data-theme="light"] .dropdown-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
+  background: color-mix(in srgb, var(--text-muted) 20%, transparent);
 }
 
 html.light .dropdown-scrollbar::-webkit-scrollbar-thumb:hover,
 body.light .dropdown-scrollbar::-webkit-scrollbar-thumb:hover,
 .light .dropdown-scrollbar::-webkit-scrollbar-thumb:hover,
 [data-theme="light"] .dropdown-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.38);
+  background: color-mix(in srgb, var(--text-muted) 38%, transparent);
 }
 
 html.light .dropdown-scrollbar::-webkit-scrollbar-thumb:active,
 body.light .dropdown-scrollbar::-webkit-scrollbar-thumb:active,
 .light .dropdown-scrollbar::-webkit-scrollbar-thumb:active,
 [data-theme="light"] .dropdown-scrollbar::-webkit-scrollbar-thumb:active {
-  background: rgba(0, 0, 0, 0.55);
+  background: color-mix(in srgb, var(--text-muted) 55%, transparent);
 }
 
 

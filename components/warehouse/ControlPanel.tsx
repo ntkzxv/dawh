@@ -342,7 +342,7 @@ export default function ControlPanel() {
         if (!hasSnapshot) return isThai ? "ไม่มีรายละเอียด" : "No details";
         return (
           <details className="max-w-[340px]">
-            <summary className="cursor-pointer text-[#6366F1]">
+            <summary className="cursor-pointer text-[var(--status-info)]">
               {isThai ? "ดูข้อมูลก่อนและหลัง" : "View before and after"}
             </summary>
             <div className="mt-2 space-y-2">
@@ -400,11 +400,11 @@ export default function ControlPanel() {
       className: "whitespace-nowrap",
       render: (member) =>
         member.deletedAt ? (
-          <span className="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-medium text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">
+          <span className="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-medium text-[var(--status-danger-badge-text)] dark:bg-rose-500/15 dark:text-[var(--status-danger-badge-text)]">
             {isThai ? "ปิดบัญชีแล้ว" : "Deactivated"}
           </span>
         ) : (
-          <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+          <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-[var(--status-success-badge-text)] dark:bg-emerald-500/15 dark:text-[var(--status-success-badge-text)]">
             {isThai ? "ใช้งาน" : "Active"}
           </span>
         ),
@@ -550,7 +550,7 @@ export default function ControlPanel() {
               {isAdmin && (membersLoading ? <SkeletonBox className="h-[33px] w-32 rounded-md sm:ml-auto" /> :
                 <button
                   type="button"
-                  className={`inline-flex h-[33px] shrink-0 items-center justify-center gap-1.5 self-start rounded-[6px] px-4 py-2 text-[13px] font-semibold shadow-xs transition-colors sm:self-auto ${isLight ? "bg-[#222222] text-white hover:bg-[#383838]" : "bg-white text-[#222222] hover:bg-[#F4F4F5]"}`}
+                  className={`inline-flex h-[33px] shrink-0 items-center justify-center gap-1.5 self-start rounded-[6px] px-4 py-2 text-[13px] font-semibold shadow-xs transition-colors sm:self-auto ${isLight ? "bg-[#222222] text-white hover:bg-[#383838]" : "bg-white text-[#222222] hover:bg-[#F1F5F9]"}`}
                   onClick={() => {
                     setSelectedMember(null);
                     setFailure(null);
@@ -766,14 +766,14 @@ export default function ControlPanel() {
                   <button
                     type="button"
                     role="menuitem"
-                    className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm text-rose-700 transition-colors hover:bg-rose-50 focus-visible:outline-2 focus-visible:outline-rose-500 dark:text-rose-300 dark:hover:bg-rose-500/10"
+                    className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm text-[var(--status-danger-text)] transition-colors hover:bg-rose-50 focus-visible:outline-2 focus-visible:outline-rose-500 dark:text-[var(--status-danger-text)] dark:hover:bg-rose-500/10 dark:hover:text-[var(--status-danger-badge-text)]"
                     onClick={() => {
                       setOpenManageMemberId(null);
                       setOpenRolePickerMemberId(null);
                       setDeletingMember(member);
                     }}
                   >
-                    <span className="flex size-7 shrink-0 items-center justify-center text-rose-600 dark:text-rose-300"><Trash2 className="size-4" aria-hidden="true" /></span>
+                    <span className="flex size-7 shrink-0 items-center justify-center text-[var(--status-danger-text)] dark:text-[var(--status-danger-text)]"><Trash2 className="size-4" aria-hidden="true" /></span>
                     <span className="font-medium">{isThai ? "ลบผู้ใช้" : "Delete user"}</span>
                   </button>
                 )}
@@ -1497,7 +1497,7 @@ function CreateMember({
           options={roleOptions}
           placeholder={isThai ? "ตำแหน่ง" : "Choose role"}
           className="w-full"
-          triggerClassName={`${panelStyles.dropdown} ${role ? (isLight ? "" : "!text-white") : "!text-[#A1A1AA]"} ${fieldErrors.includes("role") ? sidePanelInvalidFieldClassName : ""}`}
+          triggerClassName={`${panelStyles.dropdown} ${role ? (isLight ? "" : "!text-white") : "!text-[var(--text-muted)]"} ${fieldErrors.includes("role") ? sidePanelInvalidFieldClassName : ""}`}
         />
         {fieldErrorText("role")}
       </Field>
@@ -1513,12 +1513,12 @@ function CreateMember({
           placeholder={isThai ? "เลือกสาขา" : "Choose branch"}
           disabled={!activeBranches.length}
           className="w-full"
-          triggerClassName={`${panelStyles.dropdown} ${branchId ? (isLight ? "" : "!text-white") : "!text-[#A1A1AA]"} ${fieldErrors.includes("branch") ? sidePanelInvalidFieldClassName : ""}`}
+          triggerClassName={`${panelStyles.dropdown} ${branchId ? (isLight ? "" : "!text-white") : "!text-[var(--text-muted)]"} ${fieldErrors.includes("branch") ? sidePanelInvalidFieldClassName : ""}`}
         />
         {fieldErrorText("branch")}
       </Field>
       {!activeBranches.length && (
-        <p className="text-xs text-slate-500 dark:text-[#A1A1AA]">
+        <p className="text-xs text-slate-500 dark:text-[var(--text-muted)]">
           {isThai
             ? "ยังไม่มีสาขาให้เลือก ต้องเพิ่มสาขาก่อนสร้างผู้ใช้ที่ต้องระบุสาขา"
             : "No branches are available. Add a branch before creating a user who needs one."}

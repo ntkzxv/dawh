@@ -34,7 +34,7 @@ const prompt = Prompt({
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#FFFFFF" },
-    { media: "(prefers-color-scheme: dark)", color: "#181818" },
+    { media: "(prefers-color-scheme: dark)", color: "#2C2C2C" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -106,7 +106,7 @@ export default function RootLayout({
         />
         <title>dawh</title>
       </head>
-      <body className="min-h-full flex flex-col bg-[#181818] text-white antialiased transition-colors duration-300">
+      <body className="min-h-full flex flex-col bg-[#2C2C2C] text-white antialiased transition-colors duration-300">
         <ThemeProvider>
           <LoadingProvider>
             <NotificationProvider>
