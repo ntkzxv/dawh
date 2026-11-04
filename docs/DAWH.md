@@ -58,7 +58,7 @@ The exact payment fields, accepted payment types, proof/receipt requirements, an
 - **Business scope:** one organization, multiple branches, warehouses assigned to branches. Roles are `ADMIN`, `CEO`, `MANAGER`, `COUNTER_STAFF`, and `EMPLOYEE`; the server enforces permissions and branch scope.
 - **Stock integrity:** posted movements are immutable. Reversals create new records. Stock posting uses transactions and idempotency keys.
 
-The active migration sequence is in [`supabase/migrations`](../supabase/migrations). `20260926000000_single_org_warehouse.sql` is the warehouse rebuild; later migrations add employee profiles, account settings, and audit query indexes. The older [`schema.md`](history/schema.md) and earlier WMS specifications describe another database design and must not be used as the current schema contract.
+The active migration sequence is in [`supabase/migrations`](../supabase/migrations). `20260926000000_single_org_warehouse.sql` is the warehouse rebuild; later migrations add employee profiles, account settings, and audit query indexes. The older [`schema.md`](history/warehouse/schema.md) and earlier WMS specifications describe another database design and must not be used as the current schema contract.
 
 ## 3. Implemented application areas
 
@@ -152,7 +152,7 @@ These are feature gaps, not claims that an implementation already exists.
 
 Bin-level Location Master and Putaway should be added only if operations later need to know the exact shelf/bin for each item. They are not prerequisites for the current branch-warehouse stock model.
 
-The formal Business Model for customer sales and finance was not present in the archived Markdown or Git history. This guide now records the direction agreed in the current project discussion: staff-entered offline sales, manual recording of actual customer payments, customer receivables/installments, and a separate organization/employee administration area. Payment, contract, and accounting rules remain open requirements. The old WMS roadmap in [`history/DESIGN.md`](history/DESIGN.md) remains a proposal for warehouse logistics only; it does not define the sales or finance modules.
+The formal Business Model for customer sales and finance was not present in the archived Markdown or Git history. This guide now records the direction agreed in the current project discussion: staff-entered offline sales, manual recording of actual customer payments, customer receivables/installments, and a separate organization/employee administration area. Payment, contract, and accounting rules remain open requirements. The old WMS roadmap in [`history/warehouse/DESIGN.md`](history/warehouse/DESIGN.md) remains a proposal for warehouse logistics only; it does not define the sales or finance modules.
 
 ## 8. Development rules
 

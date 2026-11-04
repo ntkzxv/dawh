@@ -10,7 +10,7 @@
 เพื่อให้ผู้ใช้ทุกคนสามารถมองเห็นและกดเข้าไปที่เมนู **"แผงควบคุมระบบ" (Control Panel)** ใน Account Dropdown บนแถบ Navbar ได้โดยไม่ต้องมีสิทธิ์เป็น Admin หรือ DevOps ในฐานข้อมูล
 
 ### ไฟล์ที่เกี่ยวข้อง:
-- **[`components/navbar/HeaderNavbar.tsx`](file:///m:/project/dawh/components/navbar/HeaderNavbar.tsx#L152-L161)**
+- **[`components/navbar/HeaderNavbar.tsx`](../../../components/navbar/HeaderNavbar.tsx#L152-L161)**
 
 ### สิ่งที่แก้ไข:
 ```tsx
@@ -46,13 +46,13 @@ const isAdmin = true;
 
 ## 3. ระบบคู่ค้าและการจัดซื้อ (Suppliers & Procurement Portal) — [อยู่นอกขอบเขต MVP ตาม DESIGN.md]
 
-ตามเอกสารสถาปัตยกรรม [`DESIGN.md`](file:///m:/project/dawh/DESIGN.md) ข้อ 2.2 ระบุชัดเจนว่า *"ระบบ Procurement และ Supplier Portal แบบครบวงจร ไม่อยู่ในขอบเขตเวอร์ชันแรก"* ของ Horizon WMS
+ตามเอกสารสถาปัตยกรรม [`DESIGN.md`](DESIGN.md) ข้อ 2.2 ระบุชัดเจนว่า *"ระบบ Procurement และ Supplier Portal แบบครบวงจร ไม่อยู่ในขอบเขตเวอร์ชันแรก"* ของ Horizon WMS
 
 1. **การปรับปรุงหน้าจอ CS:**
-   - หน้า [`app/warehouse/suppliers/page.tsx`](file:///m:/project/dawh/app/warehouse/suppliers/page.tsx) ถูกปรับให้แสดงข้อความชี้แจงสถานะ **อยู่นอกขอบเขตเวอร์ชันแรก (Out-of-Scope MVP)** พร้อมปุ่มนำทางกลับสู่ภาพรวมคลังสินค้า และ Product Master
+   - หน้า [`app/warehouse/suppliers/page.tsx`](../../../app/warehouse/suppliers/page.tsx) ถูกปรับให้แสดงข้อความชี้แจงสถานะ **อยู่นอกขอบเขตเวอร์ชันแรก (Out-of-Scope MVP)** พร้อมปุ่มนำทางกลับสู่ภาพรวมคลังสินค้า และ Product Master
    - ไฟล์ต้นฉบับเดิมถูกสำรองไว้ที่ `app/warehouse/suppliers/LegacySuppliersView.bak.tsx` เพื่อนำกลับมาพัฒนาต่อยอดใน v2 (ระยะหลังจบ MVP)
 2. **การปรับปรุง Sidebar Navigation:**
-   - เพิ่ม Badge กำกับที่เมนู "ผู้ผลิต/คู่ค้า" ใน [`components/navbar/NavbarsubWarehouse.tsx`](file:///m:/project/dawh/components/navbar/NavbarsubWarehouse.tsx) เพื่อให้ผู้ใช้ทราบว่าเป็นฟีเจอร์สำหรับเวอร์ชันถัดไป
+   - เพิ่ม Badge กำกับที่เมนู "ผู้ผลิต/คู่ค้า" ใน [`components/navbar/NavbarsubWarehouse.tsx`](../../../components/navbar/NavbarsubWarehouse.tsx) เพื่อให้ผู้ใช้ทราบว่าเป็นฟีเจอร์สำหรับเวอร์ชันถัดไป
 
 ---
 
@@ -60,7 +60,7 @@ const isAdmin = true;
 
 | ฟังก์ชัน / Guard | สถานะปัจจุบัน | ไฟล์ที่ควบคุม |
 | :--- | :--- | :--- |
-| **Admin Role Check** | ปิดชั่วคราว (Bypassed) | [`components/navbar/HeaderNavbar.tsx`](file:///m:/project/dawh/components/navbar/HeaderNavbar.tsx) (`const isAdmin = true;`) |
-| **Incomplete Profile Guards** | **เปิดใช้งานปกติ (Active & Refactored for New Auth)** | [`lib/user-profile.ts`](file:///m:/project/dawh/lib/user-profile.ts), [`workspace.tsx`](file:///m:/project/dawh/components/users/workspace.tsx), [`HeaderNavbar.tsx`](file:///m:/project/dawh/components/navbar/HeaderNavbar.tsx), [`account.tsx`](file:///m:/project/dawh/components/users/account.tsx), [`WarehouseLayout.tsx`](file:///m:/project/dawh/app/warehouse/layout.tsx) |
-| **Suppliers & Procurement Portal** | **อยู่นอกขอบเขต MVP (Out-of-Scope v1)** | [`app/warehouse/suppliers/page.tsx`](file:///m:/project/dawh/app/warehouse/suppliers/page.tsx), [`components/navbar/NavbarsubWarehouse.tsx`](file:///m:/project/dawh/components/navbar/NavbarsubWarehouse.tsx) |
+| **Admin Role Check** | ปิดชั่วคราว (Bypassed) | [`components/navbar/HeaderNavbar.tsx`](../../../components/navbar/HeaderNavbar.tsx) (`const isAdmin = true;`) |
+| **Incomplete Profile Guards** | **เปิดใช้งานปกติ (Active & Refactored for New Auth)** | `lib/user-profile.ts` (legacy path), `components/users/workspace.tsx` (legacy path), [`HeaderNavbar.tsx`](../../../components/navbar/HeaderNavbar.tsx), `components/users/account.tsx` (legacy path), [`WarehouseLayout.tsx`](../../../app/warehouse/layout.tsx) |
+| **Suppliers & Procurement Portal** | **อยู่นอกขอบเขต MVP (Out-of-Scope v1)** | [`app/warehouse/suppliers/page.tsx`](../../../app/warehouse/suppliers/page.tsx), [`components/navbar/NavbarsubWarehouse.tsx`](../../../components/navbar/NavbarsubWarehouse.tsx) |
 

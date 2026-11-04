@@ -160,8 +160,8 @@ inventory ในข้อ 2 สรุปจาก source code; ยังไม�
 
 ## เอกสารอ้างอิง
 
-- [แผน cache ข้อมูลฝั่ง Warehouse FE](warehouse-frontend-cache.md)
-- [ผลตรวจประสิทธิภาพเว็บ](performance-audit-2026-09-27.md)
+- [แผน cache ข้อมูลฝั่ง Warehouse FE](../warehouse/warehouse-frontend-cache.md)
+- [ผลตรวจประสิทธิภาพเว็บ](../warehouse/performance-audit-2026-09-27.md)
 
 
 
