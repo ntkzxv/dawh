@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createHash } from "node:crypto";
+import type { PoolClient } from "pg";
 import { timedPoolQuery } from "@/lib/core/http/request-timing";
 import { withTransaction } from "@/lib/core/db/transaction";
 import {
@@ -59,6 +60,28 @@ function parseLines(kind: Kind, raw: unknown): Line[] {
     throw new ValidationError({ lines: "Use one line per product." });
   return lines;
 }
+// Moves serials out of warehouseId: to destinationId when set, otherwise marks them ISSUED.
+export async function issueSerials(
+  client: PoolClient,
+  productId: number,
+  serialNumbers: string[],
+  warehouseId: number,
+  destinationId: number | null = null,
+) {
+  for (const serial of serialNumbers) {
+    const moved = await client.query(
+      `UPDATE app.product_serials SET warehouse_id=$1,status=$2 WHERE product_id=$3 AND serial_no=$4 AND warehouse_id=$5 AND status='AVAILABLE' RETURNING id`,
+      [destinationId, destinationId ? "AVAILABLE" : "ISSUED", productId, serial, warehouseId],
+    );
+    if (!moved.rowCount)
+      throw new ApiError(
+        409,
+        "SERIAL_NOT_AVAILABLE",
+        `Serial ${serial} is unavailable in this warehouse.`,
+      );
+  }
+}
+
 export async function postStockDocument(
   actor: Actor,
   body: Record<string, unknown>,
@@ -177,24 +200,7 @@ export async function postStockDocument(
       }
       if (!tracked.get(line.productId)) continue;
       if (Number(line.delta) < 0) {
-        for (const serial of line.serialNumbers) {
-          const moved = await client.query(
-            `UPDATE app.product_serials SET warehouse_id=$1,status=$2 WHERE product_id=$3 AND serial_no=$4 AND warehouse_id=$5 AND status='AVAILABLE' RETURNING id`,
-            [
-              destinationId,
-              destinationId ? "AVAILABLE" : "ISSUED",
-              line.productId,
-              serial,
-              warehouseId,
-            ],
-          );
-          if (!moved.rowCount)
-            throw new ApiError(
-              409,
-              "SERIAL_NOT_AVAILABLE",
-              `Serial ${serial} is unavailable in this warehouse.`,
-            );
-        }
+        await issueSerials(client, line.productId, line.serialNumbers, warehouseId, destinationId);
       } else {
         for (const serial of line.serialNumbers)
           await client.query(
@@ -250,164 +256,188 @@ export async function reverseStockDocument(
       "ALREADY_REVERSAL",
       "A reversal cannot be reversed directly.",
     );
-  const originalIds = original.rows[0].transfer_pair_id
-    ? [documentId, original.rows[0].transfer_pair_id]
+  // Sale stock is returned only by cancelling the bill, so the sale and stock stay consistent.
+  if (original.rows[0].kind === "SALE")
+    throw new ApiError(
+      409,
+      "SALE_DOCUMENT",
+      "Cancel the sales bill instead of reversing its stock document.",
+    );
+  return withTransaction(async (client) => ({
+    reversalDocumentIds: await reverseDocumentInTx(
+      client,
+      actor,
+      documentId,
+      original.rows[0],
+      reason,
+    ),
+  }));
+}
+
+// In-transaction reversal of a document (and its transfer pair). Callers check access first.
+export async function reverseDocumentInTx(
+  client: PoolClient,
+  actor: Actor,
+  documentId: number,
+  original: { kind: string; warehouse_id: number; transfer_pair_id: number | null },
+  reason: string,
+) {
+  const originalIds = original.transfer_pair_id
+    ? [documentId, original.transfer_pair_id]
     : [documentId];
-  return withTransaction(async (client) => {
-    const originals = await client.query<{
-      id: number;
-      warehouse_id: number;
-      kind: string;
+  const originals = await client.query<{
+    id: number;
+    warehouse_id: number;
+    kind: string;
+  }>(
+    `SELECT id,warehouse_id,kind FROM app.inventory_documents WHERE id=ANY($1::integer[]) ORDER BY id FOR UPDATE`,
+    [originalIds],
+  );
+  if (originals.rowCount !== originalIds.length)
+    throw new NotFoundError("Transfer pair");
+  for (const doc of originals.rows) {
+    const warehouse = await client.query<{ branch_id: number }>(
+      `SELECT branch_id FROM app.warehouses WHERE id=$1`,
+      [doc.warehouse_id],
+    );
+    requireBranch(actor, warehouse.rows[0].branch_id);
+    const existing = await client.query(
+      `SELECT id FROM app.inventory_documents WHERE reverses_document_id=$1`,
+      [doc.id],
+    );
+    if (existing.rowCount)
+      throw new ApiError(
+        409,
+        "ALREADY_REVERSED",
+        "This document was already reversed.",
+      );
+  }
+  const reverseIds: number[] = [];
+  for (const doc of originals.rows) {
+    const reversal = await client.query<{ id: number }>(
+      `INSERT INTO app.inventory_documents(kind,warehouse_id,reverses_document_id,reason,posted_by_id) VALUES ('REVERSAL',$1,$2,$3,$4) RETURNING id`,
+      [doc.warehouse_id, doc.id, reason, actor.id],
+    );
+    const reverseId = reversal.rows[0].id;
+    reverseIds.push(reverseId);
+    const lines = await client.query<{
+      product_id: number;
+      quantity: string;
+      serial_numbers: string[];
     }>(
-      `SELECT id,warehouse_id,kind FROM app.inventory_documents WHERE id=ANY($1::integer[]) ORDER BY id FOR UPDATE`,
+      `SELECT product_id,quantity,serial_numbers FROM app.inventory_document_lines WHERE document_id=$1`,
+      [doc.id],
+    );
+    for (const line of lines.rows) {
+      await postInventoryLine(client, {
+        documentId: reverseId,
+        warehouseId: doc.warehouse_id,
+        productId: line.product_id,
+        quantity: line.quantity.startsWith("-")
+          ? line.quantity.slice(1)
+          : `-${line.quantity}`,
+        serialNumbers: line.serial_numbers,
+      });
+    }
+    await audit(
+      client,
+      actor,
+      "STOCK_DOCUMENT_REVERSED",
+      "inventory_documents",
+      reverseId,
+      { reversesDocumentId: doc.id, reason },
+    );
+  }
+  if (reverseIds.length === 2) {
+    await client.query(
+      `UPDATE app.inventory_documents SET transfer_pair_id=$1 WHERE id=$2`,
+      [reverseIds[1], reverseIds[0]],
+    );
+    await client.query(
+      `UPDATE app.inventory_documents SET transfer_pair_id=$1 WHERE id=$2`,
+      [reverseIds[0], reverseIds[1]],
+    );
+  }
+  // Serial records are updated after all balance movements succeed.
+  if (original.kind === "TRANSFER") {
+    const transferLines = await client.query<{
+      warehouse_id: number;
+      product_id: number;
+      quantity: string;
+      serial_numbers: string[];
+    }>(
+      `
+      SELECT doc.warehouse_id,dl.product_id,dl.quantity,dl.serial_numbers
+      FROM app.inventory_document_lines dl JOIN app.inventory_documents doc ON doc.id=dl.document_id
+      WHERE doc.id=ANY($1::integer[])`,
       [originalIds],
     );
-    if (originals.rowCount !== originalIds.length)
-      throw new NotFoundError("Transfer pair");
-    for (const doc of originals.rows) {
-      const warehouse = await client.query<{ branch_id: number }>(
-        `SELECT branch_id FROM app.warehouses WHERE id=$1`,
-        [doc.warehouse_id],
+    for (const line of transferLines.rows.filter((item) =>
+      item.quantity.startsWith("-"),
+    )) {
+      const destination = transferLines.rows.find(
+        (item) =>
+          item.product_id === line.product_id &&
+          !item.quantity.startsWith("-"),
       );
-      requireBranch(actor, warehouse.rows[0].branch_id);
-      const existing = await client.query(
-        `SELECT id FROM app.inventory_documents WHERE reverses_document_id=$1`,
-        [doc.id],
-      );
-      if (existing.rowCount)
+      if (!destination)
         throw new ApiError(
           409,
-          "ALREADY_REVERSED",
-          "This document was already reversed.",
+          "TRANSFER_INCOMPLETE",
+          "Transfer pair is incomplete.",
         );
-    }
-    const reverseIds: number[] = [];
-    for (const doc of originals.rows) {
-      const reversal = await client.query<{ id: number }>(
-        `INSERT INTO app.inventory_documents(kind,warehouse_id,reverses_document_id,reason,posted_by_id) VALUES ('REVERSAL',$1,$2,$3,$4) RETURNING id`,
-        [doc.warehouse_id, doc.id, reason, actor.id],
-      );
-      const reverseId = reversal.rows[0].id;
-      reverseIds.push(reverseId);
-      const lines = await client.query<{
-        product_id: number;
-        quantity: string;
-        serial_numbers: string[];
-      }>(
-        `SELECT product_id,quantity,serial_numbers FROM app.inventory_document_lines WHERE document_id=$1`,
-        [doc.id],
-      );
-      for (const line of lines.rows) {
-        await postInventoryLine(client, {
-          documentId: reverseId,
-          warehouseId: doc.warehouse_id,
-          productId: line.product_id,
-          quantity: line.quantity.startsWith("-")
-            ? line.quantity.slice(1)
-            : `-${line.quantity}`,
-          serialNumbers: line.serial_numbers,
-        });
-      }
-      await audit(
-        client,
-        actor,
-        "STOCK_DOCUMENT_REVERSED",
-        "inventory_documents",
-        reverseId,
-        { reversesDocumentId: doc.id, reason },
-      );
-    }
-    if (reverseIds.length === 2) {
-      await client.query(
-        `UPDATE app.inventory_documents SET transfer_pair_id=$1 WHERE id=$2`,
-        [reverseIds[1], reverseIds[0]],
-      );
-      await client.query(
-        `UPDATE app.inventory_documents SET transfer_pair_id=$1 WHERE id=$2`,
-        [reverseIds[0], reverseIds[1]],
-      );
-    }
-    // Serial records are updated after all balance movements succeed.
-    if (original.rows[0].kind === "TRANSFER") {
-      const transferLines = await client.query<{
-        warehouse_id: number;
-        product_id: number;
-        quantity: string;
-        serial_numbers: string[];
-      }>(
-        `
-        SELECT doc.warehouse_id,dl.product_id,dl.quantity,dl.serial_numbers
-        FROM app.inventory_document_lines dl JOIN app.inventory_documents doc ON doc.id=dl.document_id
-        WHERE doc.id=ANY($1::integer[])`,
-        [originalIds],
-      );
-      for (const line of transferLines.rows.filter((item) =>
-        item.quantity.startsWith("-"),
-      )) {
-        const destination = transferLines.rows.find(
-          (item) =>
-            item.product_id === line.product_id &&
-            !item.quantity.startsWith("-"),
+      for (const serial of line.serial_numbers) {
+        const changed = await client.query(
+          `UPDATE app.product_serials SET warehouse_id=$1 WHERE product_id=$2 AND serial_no=$3 AND warehouse_id=$4 AND status='AVAILABLE' RETURNING id`,
+          [
+            line.warehouse_id,
+            line.product_id,
+            serial,
+            destination.warehouse_id,
+          ],
         );
-        if (!destination)
+        if (!changed.rowCount)
           throw new ApiError(
             409,
-            "TRANSFER_INCOMPLETE",
-            "Transfer pair is incomplete.",
+            "SERIAL_NOT_AVAILABLE",
+            `Serial ${serial} cannot be reversed.`,
           );
-        for (const serial of line.serial_numbers) {
-          const changed = await client.query(
-            `UPDATE app.product_serials SET warehouse_id=$1 WHERE product_id=$2 AND serial_no=$3 AND warehouse_id=$4 AND status='AVAILABLE' RETURNING id`,
-            [
-              line.warehouse_id,
-              line.product_id,
-              serial,
-              destination.warehouse_id,
-            ],
-          );
-          if (!changed.rowCount)
-            throw new ApiError(
-              409,
-              "SERIAL_NOT_AVAILABLE",
-              `Serial ${serial} cannot be reversed.`,
-            );
-        }
       }
-    } else {
-      const serials = await client.query<{
-        product_id: number;
-        quantity: string;
-        serial_numbers: string[];
-      }>(
-        `SELECT product_id,quantity,serial_numbers FROM app.inventory_document_lines WHERE document_id=$1`,
-        [documentId],
-      );
-      for (const line of serials.rows)
-        for (const serial of line.serial_numbers) {
-          const positive = !line.quantity.startsWith("-");
-          const changed = positive
-            ? await client.query(
-                `UPDATE app.product_serials SET warehouse_id=NULL,status='REVERSED' WHERE product_id=$1 AND serial_no=$2 AND warehouse_id=$3 AND status='AVAILABLE' RETURNING id`,
-                [line.product_id, serial, original.rows[0].warehouse_id],
-              )
-            : await client.query(
-                `UPDATE app.product_serials SET warehouse_id=$1,status='AVAILABLE' WHERE product_id=$2 AND serial_no=$3 AND status='ISSUED' RETURNING id`,
-                [original.rows[0].warehouse_id, line.product_id, serial],
-              );
-          if (!changed.rowCount)
-            throw new ApiError(
-              409,
-              "SERIAL_NOT_AVAILABLE",
-              `Serial ${serial} cannot be reversed.`,
+    }
+  } else {
+    const serials = await client.query<{
+      product_id: number;
+      quantity: string;
+      serial_numbers: string[];
+    }>(
+      `SELECT product_id,quantity,serial_numbers FROM app.inventory_document_lines WHERE document_id=$1`,
+      [documentId],
+    );
+    for (const line of serials.rows)
+      for (const serial of line.serial_numbers) {
+        const positive = !line.quantity.startsWith("-");
+        const changed = positive
+          ? await client.query(
+              `UPDATE app.product_serials SET warehouse_id=NULL,status='REVERSED' WHERE product_id=$1 AND serial_no=$2 AND warehouse_id=$3 AND status='AVAILABLE' RETURNING id`,
+              [line.product_id, serial, original.warehouse_id],
+            )
+          : await client.query(
+              `UPDATE app.product_serials SET warehouse_id=$1,status='AVAILABLE' WHERE product_id=$2 AND serial_no=$3 AND status='ISSUED' RETURNING id`,
+              [original.warehouse_id, line.product_id, serial],
             );
-        }
-    }
-    if (original.rows[0].kind === "GOODS_RECEIPT") {
-      await client.query(
-        `UPDATE app.goods_receipts SET reversed_at=now(),reversed_by_id=$1 WHERE id=(SELECT goods_receipt_id FROM app.inventory_documents WHERE id=$2)`,
-        [actor.id, documentId],
-      );
-    }
-    return { reversalDocumentIds: reverseIds };
-  });
+        if (!changed.rowCount)
+          throw new ApiError(
+            409,
+            "SERIAL_NOT_AVAILABLE",
+            `Serial ${serial} cannot be reversed.`,
+          );
+      }
+  }
+  if (original.kind === "GOODS_RECEIPT") {
+    await client.query(
+      `UPDATE app.goods_receipts SET reversed_at=now(),reversed_by_id=$1 WHERE id=(SELECT goods_receipt_id FROM app.inventory_documents WHERE id=$2)`,
+      [actor.id, documentId],
+    );
+  }
+  return reverseIds;
 }

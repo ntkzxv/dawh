@@ -67,7 +67,7 @@ function ledgerFilters(actor: Actor, search?: URLSearchParams) {
   const from = search?.get("from") ? date(search.get("from"), "from") : null;
   const to = search?.get("to") ? date(search.get("to"), "to") : null;
   const kind = search?.get("kind") || null;
-  if (kind && !["GOODS_RECEIPT", "ISSUE", "TRANSFER", "ADJUSTMENT", "REVERSAL"].includes(kind))
+  if (kind && !["GOODS_RECEIPT", "ISSUE", "TRANSFER", "ADJUSTMENT", "REVERSAL", "SALE"].includes(kind))
     throw new ValidationError({ kind: "Invalid movement type." });
   const operatorId = search?.get("operatorId")
     ? id(search.get("operatorId"), "operatorId")

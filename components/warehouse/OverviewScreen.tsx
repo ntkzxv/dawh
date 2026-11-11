@@ -56,6 +56,7 @@ const movementKinds = [
   { value: "TRANSFER", th: "โอนย้ายคลัง", en: "Transfer" },
   { value: "ADJUSTMENT", th: "ปรับปรุงยอด", en: "Adjustment" },
   { value: "REVERSAL", th: "กลับรายการ", en: "Reversal" },
+  { value: "SALE", th: "ขายสินค้า", en: "Sale" },
 ];
 
 function movementKindLabel(kind: string, isThai: boolean) {

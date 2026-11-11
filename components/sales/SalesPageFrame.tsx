@@ -1,34 +1,27 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { HeaderNavbar } from "@/components/navbar";
-import { useAppLanguage } from "@/utils/language";
+import WarehousePageTemplate from "@/app/warehouse/_components/WarehousePageTemplate";
 
+/** Sales pages reuse the warehouse page shell; `narrow` is the form layout (max-w-7xl, centered). */
 export default function SalesPageFrame({
   titleEn,
   titleTh,
   children,
-  contentClassName = "",
+  narrow = false,
 }: {
   titleEn: string;
   titleTh: string;
   children: ReactNode;
-  contentClassName?: string;
+  narrow?: boolean;
 }) {
-  const isThai = useAppLanguage() === "TH";
-
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <HeaderNavbar
-        moduleLabel={isThai ? "โมดูลการขาย" : "Sales module"}
-        title={isThai ? titleTh : titleEn}
-        showOnMobile
-      />
-      <main className="min-h-0 flex-1 overflow-y-auto">
-        <div className={`mx-auto w-full max-w-6xl space-y-7 px-5 py-6 sm:px-8 sm:py-8 lg:px-10 ${contentClassName}`}>
-          {children}
-        </div>
-      </main>
-    </div>
+    <WarehousePageTemplate titleEn={titleEn} titleTh={titleTh} routePath="/sales" fullBleed={!narrow}>
+      {narrow ? (
+        children
+      ) : (
+        <div className="flex w-full min-h-0 flex-1 flex-col gap-6 self-stretch overflow-y-auto p-6 lg:p-8">{children}</div>
+      )}
+    </WarehousePageTemplate>
   );
 }

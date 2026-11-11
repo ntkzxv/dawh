@@ -15,6 +15,7 @@ export default function SalesLayout({ children }: { children: ReactNode }) {
   const { theme } = useTheme();
   const account = useOptionalWarehouseAccount();
   const [isMinimized, setIsMinimized] = useState(false);
+  const [sidebarAnimated, setSidebarAnimated] = useState(false);
 
   useEffect(() => {
     if (account?.loading) return;
@@ -24,11 +25,15 @@ export default function SalesLayout({ children }: { children: ReactNode }) {
   }, [account?.loading, account?.me, account?.error, router]);
 
   useEffect(() => {
+    let frame = 0;
     try {
-      setIsMinimized(localStorage.getItem("dawh_sidebar_minimized") === "true");
+      if (localStorage.getItem("dawh_sidebar_minimized") === "true") {
+        frame = requestAnimationFrame(() => setIsMinimized(true));
+      }
     } catch {
       // Keep the sidebar expanded when browser storage is unavailable.
     }
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   const handleMinimizedChange = (minimized: boolean) => {
@@ -51,9 +56,11 @@ export default function SalesLayout({ children }: { children: ReactNode }) {
       }`}
     >
       <motion.aside
-        initial={{ x: -48, opacity: 0 }}
+        initial={{ x: -100, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+        onAnimationComplete={() => setSidebarAnimated(true)}
+        style={{ transform: sidebarAnimated ? "none" : undefined }}
+        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
         className="sticky top-0 z-40 flex h-screen shrink-0"
       >
         <NavbarMain
@@ -67,9 +74,9 @@ export default function SalesLayout({ children }: { children: ReactNode }) {
       </motion.aside>
 
       <motion.div
-        initial={{ y: -24, opacity: 0 }}
+        initial={{ y: -45, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.45, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.55, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
         className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden"
       >
         <ModuleAvailabilityGuard moduleKey="sales">{children}</ModuleAvailabilityGuard>

@@ -1,6 +1,6 @@
 # DAWH — Product and Engineering Guide
 
-**Updated:** 3 November 2026
+**Updated:** 11 November 2026
 **Source of truth:** the current application code and migrations under `supabase/migrations/`. Archived design documents may describe an earlier database or aspirational features; they are retained under [`history/`](history/).
 
 ## 1. Product status
@@ -9,11 +9,11 @@
 
 DAWH serves one organization operating across multiple branches. The organization buys and receives physical products into branch warehouses, then sells those products to customers at offline stores. Warehouse operations, customer sales/receivables, and organization/employee administration are separate business areas in one application.
 
-After a customer purchase/payment occurs at the store, a staff member records the transaction in the back-office system: customer details first, the actual payment details next, then the products sold. The system keeps the customer and sales/receivable history, records which staff member entered it, and links sold products/quantities to the existing branch warehouse. Customer installment financing is part of the intended customer business direction, but contract, pricing, repayment, and collection rules still need to be defined.
+After a customer purchase/payment occurs at the store, a staff member records the transaction in the back-office system: customer details first, the actual payment details next, then the products sold. The system keeps the customer and sales/receivable history, records which staff member entered it, and links sold products/quantities to the existing branch warehouse. Customer installment financing is supported with the agreed contract, schedule and payment-allocation rules; collection rules such as penalties and follow-up are not defined yet.
 
 Employees are staff users who enter and manage customer transactions; they are not borrowers in this business model. Employee/member records, branches, roles, and access belong to Organization & People. Customer financial history must not be mixed into employee administration. There is no employee loan, employee installment, payroll deduction, automatic payment charge, or automatic collection feature in the current target.
 
-The system records payments after they occur; it does not initiate a charge, automatically deduct money, or collect an installment. Sales are expected to connect to warehouse stock, but the exact stock-posting point, returns, and reversal rules are open requirements. This document records the current direction from the project discussion; it does not infer additional financial rules from old WMS specifications or marketing copy.
+The system records payments after they occur; it does not initiate a charge, automatically deduct money, or collect an installment. A sale deducts warehouse stock when the bill is saved and a cancelled bill reverses it; returns and refunds are still open requirements. This document records the current direction from the project discussion; it does not infer additional financial rules from old WMS specifications or marketing copy.
 
 | Area | Current status |
 | --- | --- |
@@ -25,8 +25,8 @@ The system records payments after they occur; it does not initiate a charge, aut
 | Stock by branch warehouse and SKU | Current model; inventory is tracked per warehouse, without shelf/bin address tracking |
 | Cycle count | Planned; count and reconcile by warehouse and SKU |
 | Transfer request, approval, reservation, picking, packing, dispatch and destination receiving | Planned workflow; current transfer posts stock between warehouses immediately |
-| Customer/debtor records and offline sales entry | Intended addition; staff will manually record customer, actual payment details, and products sold; no customer or sales records/API exist yet |
-| Customer installment records and collections | Intended direction; staff manually record actual payments; no contract, repayment schedule, or payment records exist yet; business rules are pending |
+| Customer/debtor records and offline sales entry | Implemented: org-wide customer registry, cash and installment bills that deduct branch-warehouse stock in the same transaction, bill cancellation with stock reversal |
+| Customer installment records and collections | Implemented: contract terms on the installment bill, monthly schedule, guarantors, manually recorded down payments and installment payments (FIFO allocation), void of the latest payment, A/R read-only views, printable bill and receipt. Not implemented: penalties, credit grade, debt follow-up, early-payoff discount, refunds/returns, tax invoice |
 | Employee loans/installments/payroll deductions | Not part of the current target; employees are transaction operators, not debtors |
 
 ### Intended module boundaries
@@ -34,20 +34,21 @@ The system records payments after they occur; it does not initiate a charge, aut
 | Module | Owns | Must stay outside this module |
 | --- | --- | --- |
 | **Warehouse** (existing) | Product and warehouse stock, receipts, stock movements, issues, and inventory history | Customer debt contracts and employee/org administration |
-| **Sales & Customer Receivables** (planned) | Customer/debtor profile, offline sales entered by staff, manually recorded customer payment details, customer receivables, installment agreements and collection history once rules are approved | Employee records, org setup, roles, and branch membership administration |
+| **Sales & Customer Receivables** (implemented core) | Customer/debtor profile, offline sales entered by staff, manually recorded customer payment details, customer receivables, installment agreements and collection history once rules are approved | Employee records, org setup, roles, and branch membership administration |
 | **Organization & People** (existing foundation; keep separate) | Organization and branch settings, members/employees, roles, branch assignments, and access control | Customer purchase history, receivables, and financing details |
 
 These are logical module and data-ownership boundaries within the current application. They do not require separate microservices. To address loading speed, each module should load only its own paginated data and fetch tab/detail data when needed; separating navigation alone does not guarantee faster loading.
 
-### Planned offline sales recording flow
+### Offline sales recording flow (implemented)
 
-1. A staff member starts a sales record and finds or enters the customer/debtor details.
-2. The staff member records the payment details based on the payment already made at the store. Payment capture is manual; the system does not initiate a charge or deduction.
-3. The staff member links the products and quantities sold to the transaction.
-4. The system saves the transaction, the staff member who entered it, and any remaining customer receivable/installment information supported by the agreed rules.
-5. The transaction will connect to warehouse stock. When stock is deducted, and how corrections, returns, or reversals work, must be defined before implementation.
+1. A staff member (ADMIN, CEO, MANAGER or COUNTER_STAFF) finds or creates the customer in the org-wide registry.
+2. The staff member chooses a cash or installment bill and one warehouse in an allowed branch; only products in stock there can be picked, with the product sale price pre-filled and serials chosen from available serials.
+3. For an installment bill the staff member enters down payment, total interest rate, months, first due date and optional guarantors; the server builds the schedule.
+4. Saving posts a `SALE` inventory document, deducts stock (insufficient stock rejects the bill), stores the bill, lines, schedule and the payment actually received (full amount for cash, down payment for installment) in one transaction.
+5. Later installment payments are recorded in Sales and allocated to the oldest unpaid installments; the contract closes at zero outstanding.
+6. Corrections: cancel a bill (stock is reversed and payments voided in the same transaction; installment bills only before any installment payment) or void the latest installment payment.
 
-The exact payment fields, accepted payment types, proof/receipt requirements, and customer installment calculation are still open requirements. “Manual payment entry” means recording an actual offline payment; it does not mean that the application will process or automatically collect money.
+"Manual payment entry" means recording an actual offline payment; the application does not process or automatically collect money. The agreed calculation, date, permission and correction rules are recorded in [`requirements/sales-ar.md`](requirements/sales-ar.md) §8; open items are in §7.
 
 ## 2. Technical architecture
 
@@ -73,6 +74,9 @@ The active migration sequence is in [`supabase/migrations`](../supabase/migratio
 | Receiving | `/warehouse/receive` | PO, supplier receipt, carrier receipt, confirmation, count and stock posting |
 | Stock and transfers | `/warehouse/stock`, `/warehouse/transfer`, `/warehouse/movements` | Balances, issues, adjustments, immediate transfers, ledger and reversal |
 | Issues and reports | `/warehouse/issues`, `/warehouse/reports` | Operational issue tracking and inbound reports |
+| Sales | `/sales`, `/sales/transactions[/new]`, `/sales/customers`, `/sales/installments` | Customers, cash/installment bills, cancellation, installment payments and voids |
+| Accounts receivable | `/sales/ar/**` | Read-only overview, customer profiles, contracts, payment history, overdue list |
+| Print documents | `/print/sales/bills/{saleId}`, `/print/sales/receipts/{paymentId}` | A4 sales bill and receipt via browser print |
 | HP Datacenter | `/datacenter` | Under-development placeholder |
 
 ### Current inbound workflow
@@ -104,14 +108,22 @@ All business API calls require an authenticated Better Auth session. The server 
 | Stock | `/api/stock/balances`, `/api/stock/ledger`, `/api/stock/documents`, `/api/stock/documents/{documentId}/reverse` |
 | Issues and evidence | `/api/issues`, `/api/media` |
 | Reports and audit | `/api/reports/receipts`, `/api/reports/outstanding`, `/api/audit` |
+| Sales | `/api/sales/customers`, `/api/sales/bills`, `/api/sales/bills/{saleId}/cancel`, `/api/sales/bills/{saleId}/payments`, `/api/sales/payments/{paymentId}[/void]`, `/api/sales/stock` |
+| Accounts receivable | `/api/sales/ar/overview`, `/api/sales/ar/overdue`, `/api/sales/ar/payments`, `/api/sales/ar/customers/{customerId}` |
 
-Stock posting requires an `Idempotency-Key`. Counts support up to three decimal places; money is THB with up to two decimal places. See route handlers and service validation for the definitive request contract.
+Sales services live in [`lib/sales`](../lib/sales) and the browser client in [`lib/api/sales.ts`](../lib/api/sales.ts). Every sales route checks `module_statuses` on the server and returns 503 `MODULE_DISABLED` when the `sales` module is off.
+
+Stock posting, bill creation and installment payments require an `Idempotency-Key`. Counts support up to three decimal places; money is THB with up to two decimal places. See route handlers and service validation for the definitive request contract.
 
 ## 5. Database and data protection
 
 The current business schema is defined by the active SQL migrations, not by the archived September 19 snapshot. The current model includes organization settings, app users and branch memberships, warehouses assigned to branches, product masters, purchase and receipt documents, inventory documents/lines, stock balances and ledger, issues/claims, evidence links, audit records, and idempotency data. Stock is tracked by product and warehouse (with the warehouse belonging to a branch); it does not track an aisle, shelf, bin, or exact storage address. That matches the current operating requirement.
 
-The current schema does not contain customer accounts, hire-purchase contracts, repayment schedules, customer payment records, employee installment loans, or payroll deduction records. Employee profile data is not a lending/credit model.
+Sales tables: `customers`, `sales` (bill header plus installment terms and `closed_at`), `sale_lines`, `sale_installments`, `sale_guarantors` and `sale_payments` (cash sale, down payment and installment receipts, with void fields). A bill links to its `SALE` inventory document; stock for a sale is returned only by cancelling the bill, and the warehouse reverse API rejects `SALE` documents. `stock_balances.quantity` has a non-negative CHECK.
+
+The schema does not contain employee installment loans, payroll deduction records, penalties, credit grades, debt follow-up, refunds or tax invoices. Employee profile data is not a lending/credit model.
+
+The development database's `supabase_migrations.schema_migrations` matches every file in `supabase/migrations`. When applying a migration by hand, record the version from the file name.
 
 Never run the one-time database rebuild script against a database containing data that must be retained. Review [`scripts/rebuild-database.mjs`](../scripts/rebuild-database.mjs) and the migration history before any database reset or migration action.
 
@@ -144,15 +156,15 @@ On a fresh environment, apply the repository's Supabase migrations in timestamp 
 
 These are feature gaps, not claims that an implementation already exists.
 
-1. **Sales & Customer Receivables:** define and build customer/debtor records and a staff-entered offline sales workflow. Decide how completed sales connect to warehouse stock and how receivables are created.
-2. **Customer installment records and collections:** define contract terms, repayment schedule, fees/interest, manual payment entry, adjustments, reversals, and permissions before building financial records. No automatic payment deduction is planned.
+1. **Sales & receivables follow-ups:** tax invoice and VAT, discounts, returns/refunds, contract changes or repossession, penalties and grace periods, early-payoff discount, credit grade and debt follow-up log, back-dated bills. See [`requirements/sales-ar.md`](requirements/sales-ar.md) §7. No automatic payment deduction is planned.
+2. **Sales stock picker scale:** the sale form lists at most 50 in-stock SKUs per warehouse search; add paging if a warehouse sells more.
 3. **Cycle count:** count physical quantities by warehouse and SKU, review variance, and post controlled adjustments. No shelf/bin address is required.
 4. **Transfer fulfillment:** request and approval, reservation, quantity picking from the source warehouse, packing, dispatch/in-transit, and destination receiving. Picking can reference SKU and quantity without a bin location.
 5. **Logistics and claims:** shipment events, exceptions, SLA and resolution workflow.
 
 Bin-level Location Master and Putaway should be added only if operations later need to know the exact shelf/bin for each item. They are not prerequisites for the current branch-warehouse stock model.
 
-The formal Business Model for customer sales and finance was not present in the archived Markdown or Git history. This guide now records the direction agreed in the current project discussion: staff-entered offline sales, manual recording of actual customer payments, customer receivables/installments, and a separate organization/employee administration area. Payment, contract, and accounting rules remain open requirements. The old WMS roadmap in [`history/warehouse/DESIGN.md`](history/warehouse/DESIGN.md) remains a proposal for warehouse logistics only; it does not define the sales or finance modules.
+The sales and installment rules now implemented were agreed with the project owner and are recorded in [`requirements/sales-ar.md`](requirements/sales-ar.md) §8. Tax and accounting rules remain open requirements. The old WMS roadmap in [`history/warehouse/DESIGN.md`](history/warehouse/DESIGN.md) remains a proposal for warehouse logistics only; it does not define the sales or finance modules.
 
 ## 8. Development rules
 

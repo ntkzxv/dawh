@@ -42,23 +42,24 @@ describe("optional document list filters", () => {
 
   it("combines carrier eligibility filters with scope and cursor", async () => {
     const cursor = encodeWarehouseCursor({ parentId: 40 });
-    await listCarrierReceipts(actor, new URLSearchParams({ received: "true", hasGoodsReceipt: "false", cursor }));
+    await listCarrierReceipts(actor, new URLSearchParams({ received: "true", hasGoodsReceipt: "false", q: " CR-1 ", cursor }));
     const [sql, params] = query.mock.calls[0];
     expect(sql).toContain("dc.receiving_branch_id=ANY($2::integer[])");
-    expect(sql).toContain("(dc.received_at IS NOT NULL) = $4::boolean");
-    expect(sql).toContain("gr.carrier_receipt_id=cr.id) = $5::boolean");
-    expect(sql).toContain("LIMIT $6");
-    expect(params).toEqual([false, [7], 40, true, false, 21]);
+    expect(sql).toContain("cr.record_no ILIKE '%'||$4||'%'");
+    expect(sql).toContain("(dc.received_at IS NOT NULL) = $5::boolean");
+    expect(sql).toContain("gr.carrier_receipt_id=cr.id) = $6::boolean");
+    expect(sql).toContain("LIMIT $7");
+    expect(params).toEqual([false, [7], 40, "CR-1", true, false, 11]);
   });
 
   it.each(["received", "hasGoodsReceipt"])("supports false for %s without changing other filters", async (key) => {
     await listCarrierReceipts(actor, new URLSearchParams({ [key]: "false" }));
-    expect(query.mock.calls[0][1]).toEqual([false, [7], null, false, 21]);
+    expect(query.mock.calls[0][1]).toEqual([false, [7], null, "", false, 11]);
   });
 
   it("keeps unfiltered carrier request parameters unchanged", async () => {
     await listCarrierReceipts(actor, new URLSearchParams());
-    expect(query.mock.calls[0][1]).toEqual([false, [7], null, 21]);
+    expect(query.mock.calls[0][1]).toEqual([false, [7], null, "", 11]);
   });
 
   it.each(["", "1", "TRUE", "anything"])("rejects invalid boolean %j before querying", async (value) => {

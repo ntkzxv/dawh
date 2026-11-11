@@ -1,6 +1,6 @@
 # DAWH
 
-DAWH is a multi-branch application. The Warehouse ERP is implemented; the target direction adds a separate Sales & Customer Receivables domain for staff-entered offline transactions and manually recorded customer payments, while Organization & People remains focused on organization, members, employees, roles, and access. Customer installment rules are not implemented yet; employees are transaction operators, not borrowers.
+DAWH is a multi-branch application. The Warehouse ERP and the Sales & Customer Receivables module are implemented: staff record offline cash and installment sales that deduct warehouse stock, manually record actual customer payments, and view receivables read-only. Organization & People remains focused on organization, members, employees, roles, and access. Employees are transaction operators, not borrowers.
 
 ## Documentation
 

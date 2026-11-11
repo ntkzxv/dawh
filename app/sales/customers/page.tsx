@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import SalesResourcePage from "@/components/sales/SalesResourcePage";
+import CustomersPage from "@/components/sales/CustomersPage";
 
-export const metadata: Metadata = { title: "Customers and debtors" };
+export const metadata: Metadata = { title: "Customers" };
 
-export default function SalesCustomersPage() {
-  return <SalesResourcePage kind="customers" />;
+export default function Page() {
+  return <CustomersPage />;
 }

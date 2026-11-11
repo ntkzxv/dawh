@@ -9,7 +9,7 @@ import {
 describe("warehouse cursor pagination", () => {
   it("uses a bounded default page size", () => {
     expect(parseCursorPage(new URLSearchParams())).toEqual({
-      limit: 20,
+      limit: 10,
       cursor: null,
     });
     expect(parseCursorPage(new URLSearchParams("limit=100")).limit).toBe(100);

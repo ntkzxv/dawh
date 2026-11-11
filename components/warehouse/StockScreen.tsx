@@ -56,6 +56,7 @@ const movementKinds = [
   { value: "TRANSFER", th: "โอนย้ายคลัง", en: "Transfer" },
   { value: "ADJUSTMENT", th: "ปรับปรุงยอด", en: "Adjustment" },
   { value: "REVERSAL", th: "กลับรายการ", en: "Reversal" },
+  { value: "SALE", th: "ขายสินค้า", en: "Sale" },
 ] as const;
 
 const movementLabel = (kind: string, isThai: boolean) => {
@@ -623,7 +624,7 @@ function MovementList({
       key: "action",
       header: isThai ? "จัดการ" : "Action",
       align: "right" as const,
-      render: (row: StockMovement) => row.kind === "REVERSAL" ? null : (
+      render: (row: StockMovement) => row.kind === "REVERSAL" || row.kind === "SALE" ? null : (
         <button
           type="button"
           onClick={() => onReverse(row.document_id)}

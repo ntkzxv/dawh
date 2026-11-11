@@ -2,7 +2,9 @@
 
 ## Current guide
 
-- [DAWH product and engineering guide](DAWH.md) is the current project reference. For system behavior and database structure, follow the application code and active Supabase migrations; older documents may describe superseded designs.
+- [DAWH product and engineering guide](DAWH.md) is the current project reference.
+- [คู่มือโครงสร้างไฟล์ Flow และ Feature](PROJECT_CODEBASE_GUIDE_TH.md) อธิบายรายไฟล์และ flow ปัจจุบัน (ภาษาไทย)
+- [Sales และ A/R requirements](requirements/sales-ar.md): ข้อกำหนด UX/UI, ข้อตกลงที่ implement แล้ว (§8) และเรื่องที่ยังรอกำหนด (§7) For system behavior and database structure, follow the application code and active Supabase migrations; older documents may describe superseded designs.
 
 ## Historical archive
 

@@ -237,3 +237,13 @@ export async function updateModuleStatus(
     };
   });
 }
+
+export async function requireModuleEnabled(key: ManagedModuleKey) {
+  const result = await timedPoolQuery<{ is_enabled: boolean }>(
+    `SELECT is_enabled FROM app.module_statuses WHERE module_key = $1`,
+    [key],
+  );
+  if (result.rows[0]?.is_enabled === false) {
+    throw new ApiError(503, "MODULE_DISABLED", "This module is currently unavailable.");
+  }
+}
